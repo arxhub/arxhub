@@ -1,6 +1,6 @@
-import { VirtualFile } from '#/core/vfs/virtual-file.ts'
+import { VirtualFile } from './virtual-file.ts'
 
-export abstract class Storage {
+export abstract class VirtualFileSystem {
   protected constructor() {}
 
   abstract findDocumentOrNull(name: string): Promise<VirtualFile | null>
