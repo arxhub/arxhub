@@ -1,9 +1,14 @@
 import { VirtualFile } from './virtual-file.ts'
 
 export abstract class VirtualFileSystem {
-  protected constructor() {}
+  protected constructor() {
+  }
 
-  abstract findDocumentOrNull(name: string): Promise<VirtualFile | null>
+  public abstract isFileExists(pathname: string): Promise<boolean>
 
-  abstract listDocuments(): Promise<VirtualFile[]>
+  public abstract findFileOrNull(pathname: string): Promise<VirtualFile | null>
+
+  public abstract listFiles(): Promise<VirtualFile[]>
+
+  public abstract readTextFile(pathname: string | VirtualFile): Promise<string>
 }

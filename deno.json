@@ -1,9 +1,12 @@
 {
   "imports": {
+    "~/core/vfs": "./src/core/vfs/index.ts",
+    "~/core/internal/utils/": "./src/core/internal/utils/"
   },
   "fmt": {
     "semiColons": false,
     "singleQuote": true,
-    "useTabs": false
+    "useTabs": false,
+    "lineWidth": 120
   }
 }
