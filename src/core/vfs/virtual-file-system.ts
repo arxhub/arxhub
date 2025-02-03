@@ -11,4 +11,6 @@ export abstract class VirtualFileSystem {
   public abstract listFiles(): Promise<VirtualFile[]>
 
   public abstract readTextFile(pathname: string | VirtualFile): Promise<string>
+
+  public abstract refresh(): Promise<void>
 }
