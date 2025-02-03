@@ -1,5 +1,5 @@
 import vento from '@third-party/vento'
-import { TemplateEngine } from '~/core/template-engine'
+import { TemplateEngine } from "~/core/template-engine"
 
 export class VentoTemplateEngine extends TemplateEngine {
   private readonly vento: ReturnType<typeof vento>

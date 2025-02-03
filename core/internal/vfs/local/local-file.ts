@@ -1,5 +1,5 @@
 import { VirtualFile } from "~/core/vfs"
-import { splitPathname } from '~/core/internal/utils/split-pathname.ts'
+import { splitPathname } from "~/core/internal/utils/split-pathname.ts"
 import { LocalFileSystem } from './local-file-system.ts'
 
 export class LocalFile extends VirtualFile {
