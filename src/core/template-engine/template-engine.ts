@@ -1,3 +1,3 @@
 export abstract class TemplateEngine {
-  public abstract render(template: string, data: unknown): Promise<string>
+  public abstract render(template: string, data: Record<string, unknown>): Promise<string>
 }

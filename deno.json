@@ -1,5 +1,7 @@
 {
+  "lock": false,
   "imports": {
+    "@third-party/vento": "jsr:@vento/vento@^1.12.15",
     "~/core/vfs": "./src/core/vfs/mod.ts",
     "~/core/template-engine": "./src/core/template-engine/mod.ts",
     "~/core/internal/utils/": "./src/core/internal/utils/"

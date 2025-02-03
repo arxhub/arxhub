@@ -1,7 +1,16 @@
+import vento from '@third-party/vento'
 import { TemplateEngine } from '~/core/template-engine'
 
 export class VentoTemplateEngine extends TemplateEngine {
-  public render(template: string, data: unknown): Promise<string> {
-    return Promise.resolve('')
+  private readonly vento: ReturnType<typeof vento>
+
+  public constructor() {
+    super()
+    this.vento = vento({})
+  }
+
+  public override async render(template: string, data: Record<string, unknown>): Promise<string> {
+    const { content } = await this.vento.runString(template, data)
+    return content
   }
 }
