@@ -1,6 +1,7 @@
 {
   "imports": {
-    "~/core/vfs": "./src/core/vfs/index.ts",
+    "~/core/vfs": "./src/core/vfs/mod.ts",
+    "~/core/template-engine": "./src/core/template-engine/mod.ts",
     "~/core/internal/utils/": "./src/core/internal/utils/"
   },
   "fmt": {
