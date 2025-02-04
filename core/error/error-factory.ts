@@ -1,7 +1,6 @@
 import { VirtualFile } from '~/core/vfs'
 import { ArxWikiError } from './arxwiki-error.ts'
 import { ErrorCode } from './error-code.ts'
-import { path } from 'https://jsr.io/@vento/vento/1.12.15/deps.ts'
 
 export const ErrorFactory = {
   NotImplemented: (resource?: string) =>

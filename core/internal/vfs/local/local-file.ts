@@ -6,7 +6,9 @@ export class LocalFile extends VirtualFile {
   public override readonly pathname: string
   public override readonly path: string
   public override readonly name: string
-  public override readonly ext: string
+  public override readonly extension: string
+  public override readonly type: string
+  public override readonly kind: string
 
   private readonly vfs: LocalFileSystem
 
@@ -18,7 +20,10 @@ export class LocalFile extends VirtualFile {
     const splitted = splitPathname(pathname)
     this.path = splitted.path
     this.name = splitted.name
-    this.ext = splitted.ext
+    this.extension = splitted.ext
+
+    this.type = 'text/plain'
+    this.kind = 'document'
   }
 
   public override text(): Promise<string> {

@@ -5,7 +5,9 @@ export abstract class VirtualFile {
   public abstract readonly pathname: string
   public abstract readonly path: string
   public abstract readonly name: string
-  public abstract readonly ext: string
+  public abstract readonly extension: string
+  public abstract readonly type: string
+  public abstract readonly kind: string
 
   public abstract text(): Promise<string>
 }
