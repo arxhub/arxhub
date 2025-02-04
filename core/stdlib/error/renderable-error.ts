@@ -1,4 +1,4 @@
-import { GenericError } from "./app-error.ts"
+import { GenericError } from './app-error.ts'
 
 export interface RenderableError {
   render(): GenericError

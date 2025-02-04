@@ -25,4 +25,3 @@ export class RenderEngine {
     return renderer
   }
 }
-

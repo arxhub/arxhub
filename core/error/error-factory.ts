@@ -40,7 +40,7 @@ export const ErrorFactory = {
         name: file.name,
         extension: file.extension,
         type: file.type,
-        kind: file.kind
+        kind: file.kind,
       },
     }),
 }

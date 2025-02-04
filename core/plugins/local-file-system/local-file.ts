@@ -1,6 +1,6 @@
-import { VirtualFile } from "~/core/vfs"
-import { splitPathname } from "~/core/internal/utils/split-pathname.ts"
+import { VirtualFile } from '~/core/vfs'
 import { LocalFileSystem } from './local-file-system.ts'
+import { splitPathname } from '~/core/stdlib/utils/split-pathname.ts'
 
 export class LocalFile extends VirtualFile {
   public override readonly pathname: string
