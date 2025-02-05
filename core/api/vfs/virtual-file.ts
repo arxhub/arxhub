@@ -1,4 +1,4 @@
-import { VirtualFileSystem } from '~/core/vfs'
+import { VirtualFileSystem } from './mod.ts'
 
 export abstract class VirtualFile {
   protected constructor() {

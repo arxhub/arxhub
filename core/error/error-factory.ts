@@ -1,4 +1,4 @@
-import { VirtualFile } from '~/core/vfs'
+import { VirtualFile } from '../api/vfs/mod.ts'
 import { ArxWikiError } from './arxwiki-error.ts'
 import { ErrorCode } from './error-code.ts'
 
@@ -44,11 +44,11 @@ export const ErrorFactory = {
       },
     }),
 
-    KeyError: (registryName: string, key: string) =>
+  KeyError: (message: string) =>
     new ArxWikiError({
       code: ErrorCode.KeyError,
       httpStatusCode: 500,
-      title: 'Duplicate key',
-      message: `Key '${key}' already exists in registry '${registryName}'`,
+      title: 'Key Error',
+      message: message,
     }),
 }

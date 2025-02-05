@@ -1,6 +1,6 @@
-import { VirtualFile } from '~/core/vfs'
+import { VirtualFile } from '../vfs/mod.ts'
 
-export interface FileRenderer {
+export interface Renderer {
   readonly priority: number
 
   isSupported(file: VirtualFile): boolean

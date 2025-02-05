@@ -1,4 +1,4 @@
-import { RenderableError } from '~/core/stdlib/error'
+import { RenderableError } from '../api/error/mod.ts'
 
 export interface ArxWikiErrorOptions {
   code: string

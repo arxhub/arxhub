@@ -13,12 +13,22 @@ export class Registry<T> {
     return this.registry.has(key)
   }
 
-  public get(key: string): T | undefined {
-    return this.registry.get(key)
+  public getOrNull(key: string): T | null {
+    return this.registry.get(key) ?? null
+  }
+
+  public get(key: string): T {
+    const value = this.getOrNull(key)
+    if (value == null) throw ErrorFactory.KeyError(`Key '${key}' not found in registry '${this.name}'`)
+    return value
+  }
+
+  public values(): T[] {
+    return this.values()
   }
 
   public register(key: string, value: T): void {
-    if (this.has(key)) throw ErrorFactory.KeyError(this.name, key)
+    if (this.has(key)) throw ErrorFactory.KeyError(`Key '${key}' already exists in registry '${this.name}'`)
     this.registry.set(key, value)
   }
 }

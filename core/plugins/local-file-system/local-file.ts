@@ -1,6 +1,6 @@
-import { VirtualFile } from '~/core/vfs'
+import { VirtualFile } from '../../api/vfs/mod.ts'
 import { LocalFileSystem } from './local-file-system.ts'
-import { splitPathname } from '~/core/stdlib/utils/split-pathname.ts'
+import { splitPathname } from '../../stdlib/split-pathname.ts'
 
 export class LocalFile extends VirtualFile {
   public override readonly vfs: LocalFileSystem
