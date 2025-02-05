@@ -4,6 +4,8 @@ export abstract class VirtualFileSystem {
   protected constructor() {
   }
 
+  public abstract readonly name: string
+
   public abstract isFileExists(pathname: string): Promise<boolean>
 
   public abstract findFileOrNull(pathname: string): Promise<VirtualFile | null>

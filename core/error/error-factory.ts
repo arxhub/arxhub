@@ -43,4 +43,12 @@ export const ErrorFactory = {
         kind: file.kind,
       },
     }),
+
+    KeyError: (registryName: string, key: string) =>
+    new ArxWikiError({
+      code: ErrorCode.KeyError,
+      httpStatusCode: 500,
+      title: 'Duplicate key',
+      message: `Key '${key}' already exists in registry '${registryName}'`,
+    }),
 }

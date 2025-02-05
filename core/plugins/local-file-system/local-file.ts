@@ -3,14 +3,14 @@ import { LocalFileSystem } from './local-file-system.ts'
 import { splitPathname } from '~/core/stdlib/utils/split-pathname.ts'
 
 export class LocalFile extends VirtualFile {
+  public override readonly vfs: LocalFileSystem
+
   public override readonly pathname: string
   public override readonly path: string
   public override readonly name: string
   public override readonly extension: string
   public override readonly type: string
   public override readonly kind: string
-
-  private readonly vfs: LocalFileSystem
 
   public constructor(pathname: string, vfs: LocalFileSystem) {
     super()

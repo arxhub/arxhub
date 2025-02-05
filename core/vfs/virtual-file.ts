@@ -1,7 +1,10 @@
+import { VirtualFileSystem } from '~/core/vfs'
+
 export abstract class VirtualFile {
   protected constructor() {
   }
 
+  public abstract readonly vfs: VirtualFileSystem
   public abstract readonly pathname: string
   public abstract readonly path: string
   public abstract readonly name: string

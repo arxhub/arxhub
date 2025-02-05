@@ -4,10 +4,12 @@ import { isFileExists } from '~/core/stdlib/utils/is-file-exists.ts'
 import { listFiles } from '~/core/stdlib/utils/list-files.ts'
 
 export class LocalFileSystem extends VirtualFileSystem {
+  public readonly name: string
   private readonly rootDir: string
 
-  public constructor(rootDir: string) {
+  public constructor(name: string, rootDir: string) {
     super()
+    this.name = name
     this.rootDir = rootDir
   }
 
