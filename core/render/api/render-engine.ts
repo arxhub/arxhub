@@ -1,5 +1,5 @@
-import { VirtualFile } from '../vfs/mod.ts'
-import { Renderer } from './renderer.ts'
+import { VirtualFile } from '../../api/vfs/mod.ts'
+import { Renderer } from '../api/renderer.ts'
 import { ErrorFactory } from '~/core/error'
 
 export class RenderEngine {

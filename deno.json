@@ -1,11 +1,7 @@
 {
   "lock": false,
   "imports": {
-    "@third-party/vento": "jsr:@vento/vento@^1.12.15",
-    "~/core/stdlib/error": "./core/stdlib/error/mod.ts",
-    "~/core/stdlib/utils/": "./core/stdlib/utils/",
-    "~/core/error": "./core/error/mod.ts",
-    "~/core/vfs": "./core/vfs/mod.ts"
+    "@third-party/vento": "jsr:@vento/vento@^1.12.15"
   },
   "fmt": {
     "semiColons": false,
