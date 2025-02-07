@@ -1,2 +1,2 @@
-export * from '../../api/vfs./../vfs/api/virtual-file.ts'
-export * from '../../api/vfs./../vfs/api/virtual-file-system.ts'
+export * from './virtual-file.ts'
+export * from './virtual-file-system.ts'

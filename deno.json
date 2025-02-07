@@ -1,7 +1,13 @@
 {
   "lock": false,
   "imports": {
-    "@third-party/vento": "jsr:@vento/vento@^1.12.15"
+    "@third-party/vento": "jsr:@vento/vento@^1.12.15",
+    "~/core/error/api": "./core/error/api/mod.ts",
+    "~/core/plugin/api": "./core/plugin/api/mod.ts",
+    "~/core/modules/render/api": "./core/modules/render/api/mod.ts",
+    "~/core/modules/vfs/api": "./core/vfs/api/mod.ts",
+    "~/core/wiki/api": "./core/wiki/api/mod.ts",
+    "~/core/stdlib/": "./core/stdlib/"
   },
   "fmt": {
     "semiColons": false,

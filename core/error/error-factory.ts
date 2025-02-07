@@ -1,4 +1,3 @@
-import { VirtualFile } from '../api/vfs/mod.ts'
 import { ArxWikiError } from './arxwiki-error.ts'
 import { ErrorCode } from './error-code.ts'
 

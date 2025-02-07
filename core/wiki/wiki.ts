@@ -1,4 +1,4 @@
-import { Registry } from '../stdlib/registry.ts'
+import { Registry } from '../utils/registry.ts'
 import { VirtualFileSystem } from '../api/vfs/mod.ts'
 import { Renderer } from '../render/api/renderer.ts'
 import { Plugin } from '../plugin/api/mod.ts'
