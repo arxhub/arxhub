@@ -1,7 +1,9 @@
 {
   "lock": false,
   "imports": {
-    "@third-party/vento": "jsr:@vento/vento@^1.12.15",
+    "@third-party/vento": "jsr:@vento/vento@1.12.15",
+    "@third-party/html": "jsr:@sander/html@0.1.12",
+    "@third-party/marked": "npm:marked@15.0.6",
     "~/core/error/api": "./core/error/api/mod.ts",
     "~/core/plugin/api": "./core/plugin/api/mod.ts",
     "~/core/modules/render/api": "./core/modules/render/api/mod.ts",

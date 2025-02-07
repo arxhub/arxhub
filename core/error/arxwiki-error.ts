@@ -1,4 +1,4 @@
-import { RenderableError } from "~/core/error/api"
+import { RenderableError } from '~/core/error/api'
 
 export interface ArxWikiErrorOptions {
   code: string

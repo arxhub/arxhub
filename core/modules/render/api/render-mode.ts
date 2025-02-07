@@ -1,3 +1,6 @@
 export type RenderMode =
   | 'static'
-  | 'interactive'
+  // TODO: Add interactive mode rendering
+  //       For example: Checkbox will be toggable
+  // | 'interactive'
+  | string

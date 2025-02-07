@@ -1,4 +1,4 @@
-import { VirtualFile } from '../../../vfs/api/virtual-file.ts'
+import { VirtualFile } from '~/core/modules/vfs/api'
 import { RenderOptions } from './render-options.ts'
 
 export interface RenderEngine {
