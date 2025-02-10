@@ -15,6 +15,7 @@ export class VentoRenderer implements FileRenderer {
     // For now we want to not to use cache between renders
     // One cache per one file render
     const env = vento()
+    
     return (await env.runString(content, options.data)).content
   }
 }
