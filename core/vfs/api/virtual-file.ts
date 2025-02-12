@@ -4,13 +4,17 @@ export abstract class VirtualFile {
   protected constructor() {
   }
 
-  public abstract readonly vfs: VirtualFileSystem
-  public abstract readonly pathname: string
-  public abstract readonly path: string
-  public abstract readonly name: string
-  public abstract readonly extension: string
-  public abstract readonly type: string
-  public abstract readonly kind: string
+  abstract readonly vfs: VirtualFileSystem
+  
+  abstract readonly location: string
+  abstract readonly pathname: string
+  abstract readonly path: string
+  abstract readonly name: string
+  abstract readonly extension: string
 
-  public abstract text(): Promise<string>
+  abstract readonly fields: Record<string, unknown>
+  abstract readonly type: string
+  abstract readonly kind: string
+
+  abstract text(): Promise<string>
 }

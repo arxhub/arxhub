@@ -1,0 +1,21 @@
+export const snapshot = {};
+
+snapshot[`render engine > fallback loader 1`] = `
+"<p>
+  Fallback file loader
+  <br>
+  location: &quot;local:fallback.ext&quot;
+  <br>
+  kind: &quot;unknown&quot;, type: &quot;application/octet-stream&quot;
+</p>
+"
+`;
+
+snapshot[`render engine > simple vento template 1`] = `
+'Simple template
+
+Foo: "foo"
+Bar: "bar"
+Foo + Bar: "foobar"
+'
+`;

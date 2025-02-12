@@ -8,7 +8,9 @@ export abstract class VirtualFileSystem {
 
   public abstract isFileExists(pathname: string): Promise<boolean>
 
-  public abstract findFileOrNull(pathname: string): Promise<VirtualFile | null>
+  abstract file(pathname: string): Promise<VirtualFile>
+
+  public abstract fileOrNull(pathname: string): Promise<VirtualFile | null>
 
   public abstract listFiles(): Promise<VirtualFile[]>
 
