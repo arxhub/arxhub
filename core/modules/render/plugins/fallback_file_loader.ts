@@ -10,6 +10,7 @@ export class FallbackFileLoaderPlugin implements Plugin<RenderEngine> {
       test(_file: VirtualFile): boolean {
         return true
       },
+
       load(file: VirtualFile): Promise<TemplateSource> {
         const source = html(
           tag('p', [

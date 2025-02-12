@@ -9,6 +9,7 @@ export class VentoFileLoaderPlugin implements Plugin<RenderEngine> {
       test(file: VirtualFile): boolean {
         return file.extension === '.vto' || file.extension === '.vento'
       },
+
       async load(file: VirtualFile): Promise<TemplateSource> {
         return {
           source: await file.text(),
