@@ -5,6 +5,7 @@ import { Environment } from './environment.ts'
 import vento from '@third-party/vento'
 import { RenderOptions } from '~/core/render/api'
 
+// TODO: Maybe add Server interface, to hide RenderEngine implementation api
 export class RenderEngine {
   private readonly loader: CompositeFileLoader
   private readonly env: Environment
