@@ -5,7 +5,7 @@ export abstract class VirtualFile {
   }
 
   abstract readonly vfs: VirtualFileSystem
-  
+
   abstract readonly location: string
   abstract readonly pathname: string
   abstract readonly path: string

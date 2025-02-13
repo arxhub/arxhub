@@ -7,12 +7,13 @@
     "@third-party/path": "jsr:@std/path@1.0.8",
     "@third-party/dedent": "jsr:@qnighy/dedent@0.1.2",
     "~/core/error/api": "./core/error/api/mod.ts",
-    "~/core/modules/plugin/api": "./core/modules/plugin/api/mod.ts",
-    "~/core/modules/render/api": "./core/modules/render/api/mod.ts",
-    "~/core/modules/render": "./core/modules/render/mod.ts",
-    "~/core/modules/vfs/api": "./core/vfs/api/mod.ts",
     "~/core/wiki/api": "./core/wiki/api/mod.ts",
-    "~/core/stdlib/": "./core/stdlib/"
+    "~/core/utils/": "./core/utils/",
+    "~/core/plugin": "./core/plugin/mod.ts",
+    "~/core/modules/render": "./core/modules/render/mod.ts",
+    "~/core/modules/render/api": "./core/modules/render/api/mod.ts",
+    "~/core/modules/vfs/api": "./core/modules/vfs/api/mod.ts",
+    "~/core/modules/vfs/local-file-system": "./core/modules/vfs/local-file-system/mod.ts"
   },
   "fmt": {
     "semiColons": false,

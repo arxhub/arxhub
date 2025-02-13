@@ -1,9 +1,9 @@
-import { Plugin } from '../../plugin/mod.ts'
+import { Plugin } from '~/core/plugin'
 import { VirtualFile, VirtualFileSystem } from '~/core/modules/vfs/api'
 import { CompositeFileLoader } from './composite-file-loader.ts'
 import { Environment } from './environment.ts'
-import { RenderOptions } from './api/render-options.ts'
 import vento from '@third-party/vento'
+import { RenderOptions } from '~/core/modules/render/api'
 
 export class RenderEngine {
   private readonly loader: CompositeFileLoader
@@ -17,7 +17,7 @@ export class RenderEngine {
       autoescape: false,
       autoDataVarname: true,
     })
-    
+
     // TODO: use empty environment, instead of predefined vento
     // new Environment({
     //   loader: this.loader,

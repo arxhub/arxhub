@@ -1,7 +1,7 @@
 import { afterEach, describe, it } from 'jsr:@std/testing/bdd'
 import { createAssertSnapshot } from 'jsr:@std/testing/snapshot'
 import { RenderEngine } from '../render-engine.ts'
-import { LocalFileSystem } from '../../../vfs/local-file-system/mod.ts'
+import { LocalFileSystem } from '~/core/modules/vfs/local-file-system'
 import { FallbackFileLoaderPlugin } from '../plugins/fallback_file_loader.ts'
 import { VentoFileLoaderPlugin } from '../plugins/vento_file_loader.ts'
 import { MarkdownFileLoaderPlugin } from '../plugins/markdown_file_loader.ts'

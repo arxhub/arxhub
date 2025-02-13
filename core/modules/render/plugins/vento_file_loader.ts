@@ -1,4 +1,4 @@
-import { Plugin } from '../../../plugin/mod.ts'
+import { Plugin } from '~/core/plugin'
 import { VirtualFile } from '~/core/modules/vfs/api'
 import { RenderEngine } from '../render-engine.ts'
 import { TemplateSource } from '~/core/modules/render/api'
