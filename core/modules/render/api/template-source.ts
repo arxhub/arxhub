@@ -1,1 +1,4 @@
-export type { TemplateSource } from '@third-party/vento/src/loader.ts'
+export interface TemplateSource {
+  source: string
+  data?: Record<string, unknown>
+}

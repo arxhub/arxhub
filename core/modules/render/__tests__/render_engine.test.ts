@@ -47,4 +47,10 @@ describe('render engine', () => {
     const content = await engine.render(file, { mode: 'static', data: { foo: 'foo', bar: 'bar' } })
     await assertSnapshot(t, content)
   })
+
+  it('include works', async (t) => {
+    const file = await vfs.file('include.vto')
+    const content = await engine.render(file, { mode: 'static', data: { foo: 'foo', bar: 'bar' } })
+    await assertSnapshot(t, content)
+  })
 })

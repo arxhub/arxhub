@@ -18,7 +18,7 @@ export class RenderEngine {
       autoDataVarname: true,
     })
     
-    // TODO: use empty envaironment, instead of predefined vento
+    // TODO: use empty environment, instead of predefined vento
     // new Environment({
     //   loader: this.loader,
     //   dataVarname: 'it',

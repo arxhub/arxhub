@@ -36,6 +36,6 @@ export class CompositeFileLoader implements Loader {
       return pathname
     }
 
-    throw new Error(`Invalid filepath: '${pathname}'. It must be either relative or absolute.`)
+    return path.join(path.dirname(from), pathname)
   }
 }
