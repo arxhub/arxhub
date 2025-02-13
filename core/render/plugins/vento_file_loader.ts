@@ -1,7 +1,7 @@
 import { Plugin } from '~/core/plugin'
-import { VirtualFile } from '~/core/modules/vfs/api'
-import { RenderEngine } from '../render-engine.ts'
-import { TemplateSource } from '~/core/modules/render/api'
+import { VirtualFile } from '~/core/vfs/api'
+import { RenderEngine } from '~/core/render'
+import { TemplateSource } from '~/core/render/api'
 
 export class VentoFileLoaderPlugin implements Plugin<RenderEngine> {
   apply(target: RenderEngine): void {

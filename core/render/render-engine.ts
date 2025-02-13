@@ -1,9 +1,9 @@
 import { Plugin } from '~/core/plugin'
-import { VirtualFile, VirtualFileSystem } from '~/core/modules/vfs/api'
+import { VirtualFile, VirtualFileSystem } from '~/core/vfs/api'
 import { CompositeFileLoader } from './composite-file-loader.ts'
 import { Environment } from './environment.ts'
 import vento from '@third-party/vento'
-import { RenderOptions } from '~/core/modules/render/api'
+import { RenderOptions } from '~/core/render/api'
 
 export class RenderEngine {
   private readonly loader: CompositeFileLoader

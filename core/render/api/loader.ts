@@ -1,4 +1,4 @@
-import { VirtualFile } from '~/core/modules/vfs/api'
+import { VirtualFile } from '~/core/vfs/api'
 import { TemplateSource } from './template-source.ts'
 
 export interface Loader {

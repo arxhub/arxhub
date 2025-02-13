@@ -1,8 +1,8 @@
 import { Plugin } from '~/core/plugin'
-import { VirtualFile } from '~/core/modules/vfs/api'
 import { RenderEngine } from '../render-engine.ts'
-import { TemplateSource } from '~/core/modules/render/api'
+import { TemplateSource } from '~/core/render/api'
 import { html, tag } from '@third-party/html'
+import { VirtualFile } from '~/core/vfs/api'
 
 export class FallbackFileLoaderPlugin implements Plugin<RenderEngine> {
   apply(target: RenderEngine): void {

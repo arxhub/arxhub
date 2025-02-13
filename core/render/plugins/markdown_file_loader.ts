@@ -1,9 +1,9 @@
-import { VirtualFile } from '~/core/modules/vfs/api'
 import { marked } from '@third-party/marked'
 import { Plugin } from '~/core/plugin'
-import { RenderEngine } from '../render-engine.ts'
-import { TemplateSource } from '~/core/modules/render/api'
 import { dedent } from '@third-party/dedent'
+import { RenderEngine } from '../render-engine.ts'
+import { VirtualFile } from '~/core/vfs/api'
+import { TemplateSource } from '~/core/render/api'
 
 export class MarkdownFileLoaderPlugin implements Plugin<RenderEngine> {
   apply(target: RenderEngine): void {

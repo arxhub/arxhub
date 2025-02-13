@@ -1,6 +1,6 @@
-import { VirtualFile, VirtualFileSystem } from '~/core/modules/vfs/api'
+import { VirtualFile, VirtualFileSystem } from '~/core/vfs/api'
 import * as path from '@third-party/path'
-import { FileLoader, Loader, TemplateSource } from '~/core/modules/render/api'
+import { FileLoader, Loader, TemplateSource } from '~/core/render/api'
 
 export class CompositeFileLoader implements Loader {
   // TODO: Create SortedList

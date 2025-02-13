@@ -1,11 +1,11 @@
 import { afterEach, describe, it } from 'jsr:@std/testing/bdd'
 import { createAssertSnapshot } from 'jsr:@std/testing/snapshot'
-import { RenderEngine } from '../render-engine.ts'
-import { LocalFileSystem } from '~/core/modules/vfs/local-file-system'
-import { FallbackFileLoaderPlugin } from '../plugins/fallback_file_loader.ts'
-import { VentoFileLoaderPlugin } from '../plugins/vento_file_loader.ts'
-import { MarkdownFileLoaderPlugin } from '../plugins/markdown_file_loader.ts'
-import { VentoMarkdownFileLoaderPlugin } from '../plugins/vento_markdown_file_loader.ts'
+import { LocalFileSystem } from '~/core/vfs/local-file-system'
+import { RenderEngine } from '~/core/render'
+import { VentoMarkdownFileLoaderPlugin } from '~/core/render/plugins/vento_markdown_file_loader.ts'
+import { MarkdownFileLoaderPlugin } from '~/core/render/plugins/markdown_file_loader.ts'
+import { VentoFileLoaderPlugin } from '~/core/render/plugins/vento_file_loader.ts'
+import { FallbackFileLoaderPlugin } from '~/core/render/plugins/fallback_file_loader.ts'
 
 const assertSnapshot = createAssertSnapshot({
   dir: `${import.meta.dirname}/snapshots`,

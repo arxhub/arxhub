@@ -10,10 +10,11 @@
     "~/core/wiki/api": "./core/wiki/api/mod.ts",
     "~/core/utils/": "./core/utils/",
     "~/core/plugin": "./core/plugin/mod.ts",
-    "~/core/modules/render": "./core/modules/render/mod.ts",
-    "~/core/modules/render/api": "./core/modules/render/api/mod.ts",
-    "~/core/modules/vfs/api": "./core/modules/vfs/api/mod.ts",
-    "~/core/modules/vfs/local-file-system": "./core/modules/vfs/local-file-system/mod.ts"
+    "~/core/render": "./core/render/mod.ts",
+    "~/core/render/plugins/": "./core/render/plugins/",
+    "~/core/render/api": "./core/render/api/mod.ts",
+    "~/core/vfs/api": "./core/vfs/api/mod.ts",
+    "~/core/vfs/local-file-system": "./core/vfs/local-file-system/mod.ts"
   },
   "fmt": {
     "semiColons": false,
