@@ -50,4 +50,12 @@ export const ErrorFactory = {
       title: 'Key Error',
       message: message,
     }),
+
+  NotAllowed: (message: string) =>
+    new ArxWikiError({
+      code: ErrorCode.NotAllowed,
+      httpStatusCode: 403,
+      title: 'Not Allowed',
+      message: message,
+    }),
 }

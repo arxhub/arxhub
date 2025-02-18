@@ -4,4 +4,5 @@ export const ErrorCode = {
   NotFound: 'NotFound',
   FileRendererNotFound: 'FileRendererNotFound',
   KeyError: 'KeyError',
+  NotAllowed: 'NotAllowed',
 } as const
