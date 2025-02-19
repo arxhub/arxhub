@@ -3,6 +3,8 @@ import { ArxHub } from '~/core/arxhub'
 import { Server } from './server.ts'
 
 export class ServerPlugin implements Plugin<ArxHub> {
+  readonly name = 'server'
+
   apply(target: ArxHub): void {
     const server = new Server()
     target.extensions.add('server', server)

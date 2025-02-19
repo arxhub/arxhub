@@ -4,7 +4,7 @@ import { HealthCheckServerPlugin } from '~/core/server/healthcheck_server_plugin
 
 const hub = new ArxHub()
 
-hub.plugins.apply('server', new ServerPlugin())
-hub.plugins.apply('server_healthcheck', new HealthCheckServerPlugin())
+hub.apply(new ServerPlugin())
+hub.apply(new HealthCheckServerPlugin())
 
 await hub.start()

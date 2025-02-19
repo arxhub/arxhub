@@ -1,5 +1,6 @@
 import { ExtensionContainer } from '~/core/stdlib/extension_container.ts'
 import { PluginContainer } from '~/core/stdlib/plugin_container.ts'
+import { Plugin } from '~/core/plugin'
 
 export class ArxHub {
   readonly plugins: PluginContainer<ArxHub>
@@ -8,6 +9,10 @@ export class ArxHub {
   constructor() {
     this.plugins = new PluginContainer(this)
     this.extensions = new ExtensionContainer()
+  }
+
+  apply(plugin: Plugin<ArxHub>): void {
+    this.plugins.apply(plugin.name, plugin)
   }
 
   async start(): Promise<void> {
