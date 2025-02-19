@@ -1,10 +1,23 @@
 import { Hono } from '@third-party/hono'
-import { Plugin } from '~/core/plugin'
+import { HonoOptions } from '@third-party/hono/hono-base'
+import { BlankEnv } from '@third-party/hono/types'
 
-// TODO: Maybe add Server interface, to hide Hono implementation
 export class Server extends Hono {
-  constructor(plugins: Plugin<Server>[] = []) {
-    super()
-    plugins.forEach((it) => it.apply(this))
+  private httpServer: Deno.HttpServer | null
+
+  constructor(options?: HonoOptions<BlankEnv>) {
+    super(options)
+    this.httpServer = null
+  }
+
+  serve(): Promise<void> {
+    this.httpServer = Deno.serve(this.fetch)
+    return Promise.resolve()
+  }
+
+  shutdown(): Promise<void> {
+    const httpServer = this.httpServer
+    this.httpServer = null
+    return httpServer == null ? Promise.resolve() : httpServer.shutdown()
   }
 }
