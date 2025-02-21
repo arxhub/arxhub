@@ -6,20 +6,7 @@
     "@third-party/marked": "npm:marked@15.0.6",
     "@third-party/path": "jsr:@std/path@1.0.8",
     "@third-party/dedent": "jsr:@qnighy/dedent@0.1.2",
-    "@third-party/hono": "jsr:@hono/hono@4.7.1",
-    "~/core/stdlib/": "./core/stdlib/",
-    "~/core/arxhub": "./core/arxhub.ts",
-    "~/core/error/api": "./core/error/api/mod.ts",
-    "~/core/error/": "./core/error/",
-    "~/core/wiki/api": "./core/wiki/api/mod.ts",
-    "~/core/utils/": "./core/utils/",
-    "~/core/plugin": "./core/plugin/mod.ts",
-    "~/core/render": "./core/render/mod.ts",
-    "~/core/render/plugins/": "./core/render/plugins/",
-    "~/core/render/api": "./core/render/api/mod.ts",
-    "~/core/server/": "./core/server/",
-    "~/core/vfs/api": "./core/vfs/api/mod.ts",
-    "~/core/vfs/local-file-system": "./core/vfs/local-file-system/mod.ts"
+    "@third-party/hono": "jsr:@hono/hono@4.7.1"
   },
   "fmt": {
     "semiColons": false,

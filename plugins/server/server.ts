@@ -8,6 +8,7 @@ export class Server extends Hono {
   constructor(options?: HonoOptions<BlankEnv>) {
     super(options)
     this.httpServer = null
+    this.get('/healthcheck', (c) => c.text('200 OK'))
   }
 
   serve(): Promise<void> {

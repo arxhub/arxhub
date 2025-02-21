@@ -1,6 +1,5 @@
-import { ExtensionContainer } from '~/core/stdlib/extension_container.ts'
-import { PluginContainer } from '~/core/stdlib/plugin_container.ts'
-import { Plugin } from '~/core/plugin'
+import { ExtensionContainer } from './extension.ts'
+import { Plugin, PluginContainer } from './plugin.ts'
 
 export class ArxHub {
   readonly plugins: PluginContainer<ArxHub>
@@ -9,14 +8,14 @@ export class ArxHub {
   constructor() {
     this.plugins = new PluginContainer(this)
     this.extensions = new ExtensionContainer()
+    Deno.addSignalListener('SIGTERM', () => this.stop())
   }
 
   apply(plugin: Plugin<ArxHub>): void {
-    this.plugins.apply(plugin.name, plugin)
+    this.plugins.apply(plugin)
   }
 
   async start(): Promise<void> {
-    Deno.addSignalListener('SIGTERM', () => this.stop())
     await Promise.all(
       this.plugins.values()
         .map((it) => it.start?.(this) ?? Promise.resolve()),
