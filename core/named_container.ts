@@ -10,22 +10,19 @@ export class NamedContainer<N extends Named> {
     this.name = name
   }
 
-  getOrNull<T extends N>(key: string | Named): T | null {
-    const { name } = this.named(key)
+  getOrNull<T extends N>(name: string): T | null {
     const value = this.container.get(name)
     return value == null ? null : value as T
   }
 
-  get<T extends N>(key: string | Named): T {
-    const { name } = this.named(key)
+  get<T extends N>(name: string): T {
     const value = this.container.get(name)
     if (value == null) throw new KeyError(`${this.name} '${name}' not found`)
     return value as T
   }
 
-  has(key: string | Named): boolean {
-    key = typeof key === 'string' ? key : key.name
-    return this.container.has(key)
+  has(name: string): boolean {
+    return this.container.has(name)
   }
 
   add<T extends N>(object: T): void {
@@ -34,9 +31,5 @@ export class NamedContainer<N extends Named> {
 
   values(): N[] {
     return Array.from(this.container.values())
-  }
-
-  private named(name: string | Named): Named {
-    return typeof name === 'string' ? { name: name } : name
   }
 }

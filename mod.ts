@@ -1,5 +1,5 @@
-import { ArxHub } from '~/core/arxhub'
-import { ServerPlugin } from '~/core/server/server_plugin.ts'
+import { ArxHub } from './core/arxhub.ts'
+import { ServerPlugin } from './plugins/server/plugin.ts'
 
 const hub = new ArxHub()
 

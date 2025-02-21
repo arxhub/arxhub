@@ -21,6 +21,14 @@ export class PluginContainer<T> extends NamedContainer<Plugin<T>> {
     this.target = target
   }
 
+  getByTypeOrNull<R extends Plugin<T>>(constructor: PluginConstructor<R>): R | null {
+    return this.getOrNull(constructor.name)
+  }
+
+  getByType<R extends Plugin<T>>(constructor: PluginConstructor<R>): R {
+    return this.get(constructor.name)
+  }
+
   apply(value: Plugin<T>): void {
     this.add(value)
     value.apply(this.target)
