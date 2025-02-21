@@ -1,4 +1,4 @@
-import { NamedContainer } from './named_container.ts'
+import { NamedContainer } from '../stdlib/named_container.ts'
 
 export interface Plugin<T> {
   readonly name: string
