@@ -1,4 +1,4 @@
-import { VirtualFile } from './virtual-file.ts'
+import { VirtualFile } from './file.ts'
 
 export abstract class VirtualFileSystem {
   protected constructor() {

@@ -1,4 +1,4 @@
-import { LocalFileSystem } from './local-file-system.ts'
+import { LocalFileSystem } from './system.ts'
 import { splitPathname } from '~/core/utils/split-pathname.ts'
 import { VirtualFile, VirtualFileOptions } from '~/core/vfs/api'
 

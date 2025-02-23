@@ -6,7 +6,11 @@
     "@third-party/marked": "npm:marked@15.0.6",
     "@third-party/path": "jsr:@std/path@1.0.8",
     "@third-party/dedent": "jsr:@qnighy/dedent@0.1.2",
-    "@third-party/hono": "jsr:@hono/hono@4.7.1"
+    "@third-party/hono": "jsr:@hono/hono@4.7.1",
+    "~/boot/": "./boot/",
+    "~/core/": "./core/",
+    "~/plugins/": "./plugins/",
+    "~/stdlib/": "./stdlib/"
   },
   "fmt": {
     "semiColons": false,

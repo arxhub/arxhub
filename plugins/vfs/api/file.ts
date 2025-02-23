@@ -1,4 +1,11 @@
-import { VirtualFileSystem } from './mod.ts'
+import { VirtualFileSystem } from './system.ts'
+
+export type VirtualFileOptions = {
+  pathname: string
+  fields: Record<string, unknown>
+  type: string
+  kind: string
+}
 
 export abstract class VirtualFile {
   protected constructor() {

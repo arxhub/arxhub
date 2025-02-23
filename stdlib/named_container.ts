@@ -5,7 +5,7 @@ export class NamedContainer<N extends Named> {
   private readonly container: Map<string, N>
   private readonly name: string
 
-  constructor(name: string, objects: Record<string, N>) {
+  constructor(name: string, objects: Record<string, N> = {}) {
     this.container = new Map<string, N>(Object.entries(objects))
     this.name = name
   }
