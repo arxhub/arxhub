@@ -1,6 +1,0 @@
-export * from '~/plugins/render/api/file-loader.ts'
-export * from '~/plugins/render/api/loader.ts'
-export * from '~/plugins/render/api/render-mode.ts'
-export * from '~/plugins/render/api/template-source.ts'
-export * from '~/plugins/render/api/render-mode.ts'
-export * from '~/plugins/render/api/render-options.ts'

@@ -1,10 +1,9 @@
-import { CompositeFileLoader } from '~/plugins/render/composite-file-loader.ts'
+import { CompositeFileLoader } from '~/plugins/render/composite_file_loader.ts'
 import { Environment } from '~/plugins/render/environment.ts'
 import vento from '@third-party/vento'
 import { Plugin } from '~/core/plugin.ts'
-import { VirtualFile } from '~/plugins/vfs/file.ts'
 import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
-import { RenderOptions } from '~/plugins/render/api/render-options.ts'
+import { RenderOptions } from '~/plugins/render/api/render_options.ts'
 
 // TODO: Maybe add Server interface, to hide RenderEngine implementation api
 export class RenderEngine {
@@ -31,10 +30,10 @@ export class RenderEngine {
     plugins.forEach((it) => it.apply(this))
   }
 
-  async render(file: VirtualFile, options: RenderOptions): Promise<string> {
-    const template = await this.loader.load(file)
+  async render(location: string, options: RenderOptions): Promise<string> {
+    const template = await this.loader.load(location)
     const data = { mode: options.mode, ...options.data, ...template.data }
-    const { content } = await this.env.runString(template.source, data, file.pathname)
+    const { content } = await this.env.runString(template.source, data, location)
     return content
   }
 

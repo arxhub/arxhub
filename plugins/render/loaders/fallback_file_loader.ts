@@ -1,5 +1,5 @@
 import { Plugin } from '~/core/plugin'
-import { RenderEngine } from '../render-engine.ts'
+import { RenderEngine } from '../render_engine.ts'
 import { TemplateSource } from '~/core/render/api'
 import { html, tag } from '@third-party/html'
 import { VirtualFile } from '~/core/vfs/api'

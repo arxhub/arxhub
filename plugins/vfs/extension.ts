@@ -7,6 +7,6 @@ export class VirtualFileSystemExtension implements Extension {
 
   constructor() {
     this.name = VirtualFileSystemExtension.name
-    this.vfs = new CompositeFileSystem('VFS')
+    this.vfs = new CompositeFileSystem('composite')
   }
 }

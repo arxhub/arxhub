@@ -1,20 +1,18 @@
 import { VirtualFile } from '~/plugins/vfs/file.ts'
 
-export abstract class VirtualFileSystem {
-  protected constructor() {
-  }
+export interface VirtualFileSystem {
+  readonly name: string
 
-  public abstract readonly name: string
+  isFileExists(location: string): Promise<boolean>
 
-  public abstract isFileExists(pathname: string): Promise<boolean>
+  file(location: string): Promise<VirtualFile>
 
-  abstract file(pathname: string): Promise<VirtualFile>
+  fileOrNull(location: string): Promise<VirtualFile | null>
 
-  public abstract fileOrNull(pathname: string): Promise<VirtualFile | null>
+  // TODO: Create AsyncIterator
+  listFiles(): Promise<VirtualFile[]>
 
-  public abstract listFiles(): Promise<VirtualFile[]>
+  readTextFile(location: string | VirtualFile): Promise<string>
 
-  public abstract readTextFile(pathname: string | VirtualFile): Promise<string>
-
-  public abstract refresh(): Promise<void>
+  refresh(): Promise<void>
 }

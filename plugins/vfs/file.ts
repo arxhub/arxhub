@@ -1,27 +1,17 @@
 import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
 
-export type VirtualFileOptions = {
-  pathname: string
-  fields: Record<string, unknown>
-  type: string
-  kind: string
-}
+export interface VirtualFile {
+  readonly vfs: VirtualFileSystem
 
-export abstract class VirtualFile {
-  protected constructor() {
-  }
+  readonly location: string
+  readonly pathname: string
+  readonly path: string
+  readonly name: string
+  readonly extension: string
 
-  abstract readonly vfs: VirtualFileSystem
+  readonly fields: Record<string, unknown>
+  readonly type: string
+  readonly kind: string
 
-  abstract readonly location: string
-  abstract readonly pathname: string
-  abstract readonly path: string
-  abstract readonly name: string
-  abstract readonly extension: string
-
-  abstract readonly fields: Record<string, unknown>
-  abstract readonly type: string
-  abstract readonly kind: string
-
-  abstract text(): Promise<string>
+  text(): Promise<string>
 }

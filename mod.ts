@@ -2,7 +2,7 @@ import { ArxHub } from '~/core/arxhub.ts'
 import { ServerPlugin } from '~/plugins/server/plugin.ts'
 import { VirtualFileSystemPlugin } from '~/plugins/vfs/plugin.ts'
 import { VirtualFileSystemExtension } from '~/plugins/vfs/extension.ts'
-import { LocalFileSystem } from '~/plugins/vfs/local_file_system/system.ts'
+import { LocalFileSystem } from "~/plugins/vfs/local_file_system.ts"
 
 const hub = new ArxHub()
 

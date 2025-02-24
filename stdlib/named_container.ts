@@ -3,11 +3,11 @@ import { Named } from '~/stdlib/named.ts'
 
 export class NamedContainer<N extends Named> {
   private readonly container: Map<string, N>
-  private readonly name: string
+  private readonly domain: string
 
-  constructor(name: string, objects: Record<string, N> = {}) {
+  constructor(domain: string, objects: Record<string, N> = {}) {
     this.container = new Map<string, N>(Object.entries(objects))
-    this.name = name
+    this.domain = domain
   }
 
   getOrNull<T extends N>(name: string): T | null {
@@ -17,7 +17,7 @@ export class NamedContainer<N extends Named> {
 
   get<T extends N>(name: string): T {
     const value = this.container.get(name)
-    if (value == null) throw new KeyError(`${this.name} '${name}' not found`)
+    if (value == null) throw new KeyError(`${this.domain} '${name}' not found`)
     return value as T
   }
 

@@ -1,9 +1,10 @@
-import { VirtualFile, VirtualFileSystem } from '~/core/vfs/api'
 import * as path from '@third-party/path'
-import { FileLoader, Loader, TemplateSource } from '~/core/render/api'
+import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
+import { FileLoader } from '~/plugins/render/api/file_loader.ts'
+import { Loader } from '~/plugins/render/api/loader.ts'
+import { TemplateSource } from '~/plugins/render/api/template_source.ts'
 
 export class CompositeFileLoader implements Loader {
-  // TODO: Create SortedList
   readonly loaders: FileLoader[]
   private readonly vfs: VirtualFileSystem
 
@@ -13,11 +14,10 @@ export class CompositeFileLoader implements Loader {
   }
 
   // TODO: Move errors to ErrorFactory
-  async load(pathname: VirtualFile | string): Promise<TemplateSource> {
-    const file = pathname instanceof VirtualFile ? pathname : await this.vfs.fileOrNull(pathname)
-    if (file == null) throw new Error(`File not found in VFS (pathname: "${pathname}")`)
-
+  async load(location: string): Promise<TemplateSource> {
+    const file = await this.vfs.file(location)
     const loader = this.loaders.find((it) => it.test(file))
+
     // deno-fmt-ignore
     if (loader == null) throw new Error(`Loader not found for (pathname: "${file.pathname}", extension: "${file.extension}", type: "${file.type}", kind: "${file.kind}")`)
 
@@ -25,6 +25,7 @@ export class CompositeFileLoader implements Loader {
   }
 
   // TODO: Move resolve to vfs
+  //       Add prefix support
   resolve(from: string, pathname: string): string {
     if (pathname.startsWith('.')) {
       return path.join(path.dirname(from), pathname)
