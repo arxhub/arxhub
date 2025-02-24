@@ -1,6 +1,6 @@
 import { splitPathname } from '~/stdlib/split_pathname.ts'
 import { VirtualFile } from '~/plugins/vfs/file.ts'
-import { LocalFileSystem } from "~/plugins/vfs/local_file_system.ts"
+import { LocalFileSystem } from "./local_system.ts"
 
 export type VirtualFileOptions = {
   pathname: string
