@@ -1,4 +1,4 @@
-import { RenderMode } from './render-mode.ts'
+import { RenderMode } from '~/plugins/render/api/render-mode.ts'
 
 export interface RenderOptions {
   mode: RenderMode

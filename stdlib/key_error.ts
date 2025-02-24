@@ -1,4 +1,4 @@
-import { AppError } from './error.ts'
+import { AppError } from '~/stdlib/error.ts'
 
 export class KeyError extends AppError {
   constructor(message: string) {

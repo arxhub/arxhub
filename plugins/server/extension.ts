@@ -1,5 +1,5 @@
-import { Extension } from '../../core/extension.ts'
-import { Server } from './server.ts'
+import { Server } from '~/plugins/server/server.ts'
+import { Extension } from '~/core/extension.ts'
 
 export class ServerExtension implements Extension {
   readonly name: string

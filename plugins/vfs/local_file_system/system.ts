@@ -1,7 +1,8 @@
-import { isFileExists } from '~/core/utils/is-file-exists.ts'
-import { listFiles } from '~/core/utils/list-files.ts'
-import { VirtualFile, VirtualFileOptions, VirtualFileSystem } from '~/core/vfs/api'
-import { LocalFile } from './file.ts'
+import { isFileExists } from '~/stdlib/is_file_exists.ts'
+import { listFiles } from '~/stdlib/list_files.ts'
+import { VirtualFile, VirtualFileOptions } from '~/plugins/vfs/file.ts'
+import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
+import { LocalFile } from '~/plugins/vfs/local_file_system/file.ts'
 
 export class LocalFileSystem extends VirtualFileSystem {
   readonly name: string

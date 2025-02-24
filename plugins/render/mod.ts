@@ -1,3 +1,3 @@
-export * from './composite-file-loader.ts'
-export * from './environment.ts'
-export * from './render-engine.ts'
+export * from '~/plugins/render/composite-file-loader.ts'
+export * from '~/plugins/render/environment.ts'
+export * from '~/plugins/render/render-engine.ts'

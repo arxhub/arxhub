@@ -1,6 +1,6 @@
-import { ArxHub } from "~/core/arxhub.ts"
-import { Plugin } from "~/core/plugin.ts"
-import { ServerExtension } from "./extension.ts"
+import { ArxHub } from '~/core/arxhub.ts'
+import { Plugin } from '~/core/plugin.ts'
+import { ServerExtension } from './extension.ts'
 
 export class ServerPlugin implements Plugin<ArxHub> {
   readonly name: string

@@ -1,4 +1,4 @@
-import { VirtualFileSystem } from './system.ts'
+import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
 
 export type VirtualFileOptions = {
   pathname: string

@@ -1,5 +1,5 @@
-import { VirtualFile } from '~/core/vfs/api'
-import { TemplateSource } from './template-source.ts'
+import { TemplateSource } from '~/plugins/render/api/template-source.ts'
+import { VirtualFile } from '~/plugins/vfs/file.ts'
 
 export interface FileLoader {
   test(file: VirtualFile): boolean

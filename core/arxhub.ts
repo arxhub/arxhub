@@ -1,5 +1,5 @@
-import { ExtensionContainer } from './extension.ts'
-import { Plugin, PluginContainer } from './plugin.ts'
+import { ExtensionContainer } from '~/core/extension.ts'
+import { Plugin, PluginContainer } from '~/core/plugin.ts'
 
 export class ArxHub {
   readonly plugins: PluginContainer<ArxHub>
