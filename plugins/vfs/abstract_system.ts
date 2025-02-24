@@ -1,6 +1,7 @@
 import { VirtualFile } from '~/plugins/vfs/file.ts'
+import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
 
-export abstract class AbstractVirtualFileSystem {
+export abstract class AbstractVirtualFileSystem implements VirtualFileSystem {
   abstract readonly name: string
 
   isFileExists(location: string): Promise<boolean> {
