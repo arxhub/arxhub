@@ -14,4 +14,5 @@ export interface VirtualFile {
   readonly kind: string
 
   text(): Promise<string>
+  stat(): string
 }

@@ -1,5 +1,7 @@
 import { VirtualFile } from '~/plugins/vfs/file.ts'
 import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
+import { IllegalStateError } from '~/stdlib/illegal_state_error.ts'
+import { FileNotFound } from '~/plugins/vfs/file_not_found.ts'
 
 export abstract class AbstractVirtualFileSystem implements VirtualFileSystem {
   abstract readonly name: string
@@ -11,7 +13,7 @@ export abstract class AbstractVirtualFileSystem implements VirtualFileSystem {
   async file(location: string): Promise<VirtualFile> {
     const pathname = this.resolveFilename(location)
     const file = await this._fileOrNull(pathname)
-    if (file == null) throw new Error(`File not found in VFS (pathname: "${pathname}")`)
+    if (file == null) throw new FileNotFound(`location: ${location}`)
     return file
   }
 
@@ -36,7 +38,7 @@ export abstract class AbstractVirtualFileSystem implements VirtualFileSystem {
 
   protected resolveFilename(location: string): string {
     const [prefix, ...parts] = location.split(':')
-    if (prefix !== this.name) throw new Error(`Expected "${this.name}" prefix, got "${prefix}"`)
+    if (prefix !== this.name) throw new IllegalStateError(`Expected "${this.name}" prefix, got "${prefix}"`)
     return parts.join(':')
   }
 }

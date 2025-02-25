@@ -37,27 +37,27 @@ export class RenderEngine {
     return content
   }
 
-  public get fileLoaders() {
+  get fileLoaders() {
     return this.loader.loaders
   }
 
-  public get tokenPreprocessors() {
+  get tokenPreprocessors() {
     return this.env.tokenPreprocessors
   }
 
-  public get utils() {
+  get utils() {
     return this.env.utils
   }
 
-  public get filters() {
+  get filters() {
     return this.env.filters
   }
 
-  public get tags() {
+  get tags() {
     return this.env.tags
   }
 
-  public get cache() {
+  get cache() {
     return this.env.cache
   }
 }

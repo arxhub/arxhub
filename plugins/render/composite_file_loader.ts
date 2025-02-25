@@ -3,6 +3,7 @@ import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
 import { FileLoader } from '~/plugins/render/api/file_loader.ts'
 import { Loader } from '~/plugins/render/api/loader.ts'
 import { TemplateSource } from '~/plugins/render/api/template_source.ts'
+import { FileLoaderNotFound } from '~/plugins/render/file_loader_not_found.ts'
 
 export class CompositeFileLoader implements Loader {
   readonly loaders: FileLoader[]
@@ -13,13 +14,11 @@ export class CompositeFileLoader implements Loader {
     this.vfs = vfs
   }
 
-  // TODO: Move errors to ErrorFactory
   async load(location: string): Promise<TemplateSource> {
     const file = await this.vfs.file(location)
     const loader = this.loaders.find((it) => it.test(file))
 
-    // deno-fmt-ignore
-    if (loader == null) throw new Error(`Loader not found for (pathname: "${file.pathname}", extension: "${file.extension}", type: "${file.type}", kind: "${file.kind}")`)
+    if (loader == null) throw new FileLoaderNotFound(file)
 
     return loader.load(file)
   }

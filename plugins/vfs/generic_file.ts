@@ -1,6 +1,7 @@
 import { splitPathname } from '~/stdlib/split_pathname.ts'
 import { VirtualFile } from '~/plugins/vfs/file.ts'
-import { LocalFileSystem } from "~/plugins/vfs/local_system.ts"
+import { LocalFileSystem } from '~/plugins/vfs/local_system.ts'
+import { dedent } from '@third-party/dedent'
 
 export type VirtualFileOptions = {
   pathname: string
@@ -10,19 +11,19 @@ export type VirtualFileOptions = {
 }
 
 export class GenericFile implements VirtualFile {
-  public readonly vfs: LocalFileSystem
+  readonly vfs: LocalFileSystem
 
-  public readonly location: string
-  public readonly pathname: string
-  public readonly path: string
-  public readonly name: string
-  public readonly extension: string
+  readonly location: string
+  readonly pathname: string
+  readonly path: string
+  readonly name: string
+  readonly extension: string
 
-  public readonly fields: Record<string, unknown>
-  public readonly type: string
-  public readonly kind: string
+  readonly fields: Record<string, unknown>
+  readonly type: string
+  readonly kind: string
 
-  public constructor(vfs: LocalFileSystem, options: VirtualFileOptions) {
+  constructor(vfs: LocalFileSystem, options: VirtualFileOptions) {
     this.vfs = vfs
 
     this.location = `${vfs.name}:${options.pathname}`
@@ -37,7 +38,17 @@ export class GenericFile implements VirtualFile {
     this.kind = options.kind
   }
 
-  public text(): Promise<string> {
+  text(): Promise<string> {
     return this.vfs.readTextFile(this)
+  }
+
+  stat(): string {
+    return dedent`
+      location: ${this.location}
+      pathname: ${this.pathname}
+      extension: ${this.extension}
+      type: ${this.type}
+      kind: ${this.kind}
+    `
   }
 }

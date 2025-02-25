@@ -41,7 +41,7 @@ export class CompositeFileSystem extends NamedContainer<VirtualFileSystem> imple
     return vfs.readTextFile(location)
   }
 
-  public async refresh(): Promise<void> {
+  async refresh(): Promise<void> {
     await Promise.all(this.values().map((fs) => fs.refresh()))
   }
 
