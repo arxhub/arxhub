@@ -1,4 +1,4 @@
-import { TemplateSource } from "~/plugins/render/api/template_source.ts"
+import { TemplateSource } from "./template_source.ts"
 import { VirtualFile } from '~/plugins/vfs/file.ts'
 
 export interface FileLoader {

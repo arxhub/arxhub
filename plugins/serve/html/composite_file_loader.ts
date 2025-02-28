@@ -1,9 +1,9 @@
 import * as path from '@third-party/path'
 import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
-import { FileLoader } from '~/plugins/render/api/file_loader.ts'
-import { Loader } from '~/plugins/render/api/loader.ts'
-import { TemplateSource } from '~/plugins/render/api/template_source.ts'
-import { FileLoaderNotFound } from '~/plugins/render/file_loader_not_found.ts'
+import { FileLoader } from './api/file_loader.ts'
+import { Loader } from './api/loader.ts'
+import { TemplateSource } from './api/template_source.ts'
+import { FileLoaderNotFound } from './file_loader_not_found.ts'
 
 export class CompositeFileLoader implements Loader {
   readonly loaders: FileLoader[]
