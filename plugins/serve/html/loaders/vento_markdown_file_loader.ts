@@ -1,10 +1,12 @@
-import { Plugin } from '~/core/plugin'
+import { Plugin } from '~/core/plugin.ts'
 import { dedent } from '@third-party/dedent'
-import { RenderEngine } from '~/core/render'
-import { VirtualFile } from '~/core/vfs/api'
-import { TemplateSource } from '~/core/render/api'
+import { RenderEngine } from '~/plugins/serve/html/render_engine.ts'
+import { VirtualFile } from '~/plugins/vfs/file.ts'
+import { TemplateSource } from '~/plugins/serve/html/api/template_source.ts'
 
 export class VentoMarkdownFileLoaderPlugin implements Plugin<RenderEngine> {
+  readonly name = VentoMarkdownFileLoaderPlugin.name
+
   apply(target: RenderEngine): void {
     target.fileLoaders.push({
       test(file: VirtualFile): boolean {
