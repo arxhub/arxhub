@@ -1,0 +1,49 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  boot: {}
+
+  core: {}
+
+  plugins/cache:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../core
+
+  plugins/entrypoint:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../core
+
+  plugins/serve:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../core
+
+  plugins/server:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../core
+
+  plugins/ui:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../core
+
+  plugins/vfs:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../core

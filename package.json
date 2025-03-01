@@ -1,0 +1,15 @@
+{
+  "name": "arxhub",
+  "version": "0.1.0",
+  "description": "ArxHub - A modular personal knowledge management system",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "wiki",
+    "arxhub"
+  ],
+  "author": "",
+  "license": "AGPL-3.0-or-later"
+}
