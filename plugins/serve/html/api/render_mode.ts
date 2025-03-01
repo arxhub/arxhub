@@ -1,4 +1,1 @@
-export type RenderMode =
-  | 'static'
-  | 'interactive'
-  | string
+export type RenderMode = 'static' | 'interactive' | string

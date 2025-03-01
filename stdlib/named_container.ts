@@ -12,7 +12,7 @@ export class NamedContainer<N extends Named> {
 
   getOrNull<T extends N>(name: string): T | null {
     const value = this.container.get(name)
-    return value == null ? null : value as T
+    return value == null ? null : (value as T)
   }
 
   get<T extends N>(name: string): T {

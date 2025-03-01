@@ -10,12 +10,9 @@ export type GenericError = {
 }
 
 export const isGenericError = (err: unknown): err is GenericError => {
-  return err != null &&
-    typeof err === 'object' &&
-    'statusCode' in err &&
-    'code' in err &&
-    'title' in err &&
-    'message' in err
+  return (
+    err != null && typeof err === 'object' && 'statusCode' in err && 'code' in err && 'title' in err && 'message' in err
+  )
 }
 
 export interface RenderableError {

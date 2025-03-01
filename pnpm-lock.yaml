@@ -5,8 +5,11 @@ settings:
   excludeLinksFromLockfile: false
 
 importers:
-
-  .: {}
+  .:
+    devDependencies:
+      prettier:
+        specifier: ^3.5.2
+        version: 3.5.2
 
   boot: {}
 
@@ -47,3 +50,13 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../core
+
+packages:
+  prettier@3.5.2:
+    resolution:
+      { integrity: sha512-lc6npv5PH7hVqozBR7lkBNOGXV9vMwROAPlumdBkX0wTbbzPu/U1hk5yL8p2pt4Xoc+2mkT8t/sow2YrV/M5qg== }
+    engines: { node: '>=14' }
+    hasBin: true
+
+snapshots:
+  prettier@3.5.2: {}

@@ -1,5 +1,5 @@
 import { Extension } from '~/core/extension.ts'
-import { CompositeFileSystem } from "~/plugins/vfs/composite_system.ts"
+import { CompositeFileSystem } from '~/plugins/vfs/composite_system.ts'
 
 export class VirtualFileSystemExtension implements Extension {
   readonly name: string

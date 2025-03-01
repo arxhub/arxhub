@@ -16,16 +16,10 @@ export class ArxHub {
   }
 
   async start(): Promise<void> {
-    await Promise.all(
-      this.plugins.values()
-        .map((it) => it.start?.(this) ?? Promise.resolve()),
-    )
+    await Promise.all(this.plugins.values().map((it) => it.start?.(this) ?? Promise.resolve()))
   }
 
   async stop(): Promise<void> {
-    await Promise.allSettled(
-      this.plugins.values()
-        .map((it) => it.stop?.(this) ?? Promise.resolve()),
-    )
+    await Promise.allSettled(this.plugins.values().map((it) => it.stop?.(this) ?? Promise.resolve()))
   }
 }

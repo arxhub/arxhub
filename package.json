@@ -4,12 +4,16 @@
   "description": "ArxHub - A modular personal knowledge management system",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write ."
   },
   "keywords": [
     "wiki",
     "arxhub"
   ],
   "author": "",
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "prettier": "^3.5.2"
+  }
 }
