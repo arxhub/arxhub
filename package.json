@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "ArxHub - A modular personal knowledge management system",
   "private": true,
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write ."
@@ -14,7 +15,7 @@
   "author": "",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "prettier": "^3.5.2",
-    "typescript": "^5.8.2"
+    "@arxhub/toolchain-prettier": "workspace:*",
+    "prettier": "^3.5.2"
   }
 }

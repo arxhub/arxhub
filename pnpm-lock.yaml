@@ -5,15 +5,14 @@ settings:
   excludeLinksFromLockfile: false
 
 importers:
-
   .:
     devDependencies:
+      '@arxhub/toolchain-prettier':
+        specifier: workspace:*
+        version: link:toolchains/prettier
       prettier:
         specifier: ^3.5.2
         version: 3.5.2
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
 
   boot: {}
 
@@ -55,20 +54,20 @@ importers:
         specifier: workspace:*
         version: link:../../core
 
+  toolchains/prettier:
+    devDependencies:
+      prettier:
+        specifier: ^3.5.2
+        version: 3.5.2
+
+  toolchains/tsconfig: {}
+
 packages:
-
   prettier@3.5.2:
-    resolution: {integrity: sha512-lc6npv5PH7hVqozBR7lkBNOGXV9vMwROAPlumdBkX0wTbbzPu/U1hk5yL8p2pt4Xoc+2mkT8t/sow2YrV/M5qg==}
-    engines: {node: '>=14'}
-    hasBin: true
-
-  typescript@5.8.2:
-    resolution: {integrity: sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ==}
-    engines: {node: '>=14.17'}
+    resolution:
+      { integrity: sha512-lc6npv5PH7hVqozBR7lkBNOGXV9vMwROAPlumdBkX0wTbbzPu/U1hk5yL8p2pt4Xoc+2mkT8t/sow2YrV/M5qg== }
+    engines: { node: '>=14' }
     hasBin: true
 
 snapshots:
-
   prettier@3.5.2: {}
-
-  typescript@5.8.2: {}

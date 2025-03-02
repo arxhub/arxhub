@@ -1,4 +1,6 @@
 packages:
   - 'boot'
   - 'core'
+  - 'stdlib'
   - 'plugins/*'
+  - 'toolchains/*'
