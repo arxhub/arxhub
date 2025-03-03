@@ -7,6 +7,4 @@
     "tsconfig.json"
   ],
   "exports": "./tsconfig.json",
-  "dependencies": {},
-  "devDependencies": {}
 }

@@ -1,0 +1,1 @@
+https://biomejs.dev/guides/configure-biome/
