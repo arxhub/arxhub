@@ -8,14 +8,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write ."
   },
-  "keywords": [
-    "wiki",
-    "arxhub"
-  ],
+  "keywords": ["wiki", "arxhub"],
   "author": "",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "@arxhub/toolchain-prettier": "workspace:*",
-    "prettier": "^3.5.2"
+    "@arxhub/toolchain-biome": "workspace:*",
+    "@biomejs/biome": "^1.9.4"
   }
 }

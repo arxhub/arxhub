@@ -1,0 +1,7 @@
+{
+  "name": "@arxhub/toolchain-biome",
+  "version": "0.1.0",
+  "type": "module",
+  "files": ["biome.json"],
+  "exports": "./biome.json"
+}

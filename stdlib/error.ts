@@ -64,7 +64,7 @@ export class AppError extends Error implements RenderableError {
     return {
       statusCode: this.httpStatusCode,
       code: this.code,
-      title: this.title || 'Something went wrong ¯\\\_(ツ)_/¯',
+      title: this.title || 'Something went wrong ¯\\_(ツ)_/¯',
       message: this.message,
     }
   }

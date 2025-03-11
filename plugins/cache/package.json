@@ -6,11 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "arxhub",
-    "plugin",
-    "cache"
-  ],
+  "keywords": ["arxhub", "plugin", "cache"],
   "author": "",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
