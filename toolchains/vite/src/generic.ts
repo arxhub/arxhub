@@ -4,7 +4,7 @@ import dtsPlugin from 'vite-plugin-dts'
 import tsconfigPathsPlugin from 'vite-tsconfig-paths'
 import type { UserConfig as UserTestConfig } from 'vitest/node'
 
-export function defineGenericConfig(dirname: string, env: ConfigEnv): UserConfig & UserTestConfig {
+export function createGenericConfig(dirname: string, env: ConfigEnv): UserConfig & UserTestConfig {
   return {
     build: {
       outDir: 'dist',

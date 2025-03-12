@@ -1,10 +1,10 @@
 import { resolve } from 'node:path'
 import nodeExternalsPlugin from 'rollup-plugin-node-externals'
 import { type ConfigEnv, type UserConfig, mergeConfig } from 'vite'
-import { defineGenericConfig } from './generic'
+import { createGenericConfig } from './generic'
 
-export function defineNodeConfig(dirname: string, env: ConfigEnv): UserConfig {
-  return mergeConfig(defineGenericConfig(dirname, env), {
+export function createNodeConfig(dirname: string, env: ConfigEnv): UserConfig {
+  return mergeConfig(createGenericConfig(dirname, env), {
     build: {
       minify: false,
       sourcemap: true,
