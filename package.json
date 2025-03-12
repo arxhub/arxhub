@@ -16,9 +16,8 @@
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
     "@arxhub/toolchain-biome": "workspace:*",
-    "@biomejs/biome": "^1.9.4"
-  },
-  "dependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "typescript": "^5.8.2",
     "turbo": "^2.4.4"
   }
 }

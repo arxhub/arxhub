@@ -1,8 +1,10 @@
 import { resolve } from 'node:path'
+import nodeExternalsPlugin from 'rollup-plugin-node-externals'
 import { type ConfigEnv, type UserConfig, mergeConfig } from 'vite'
+import { defineGenericConfig } from './generic'
 
-export async function defineBaseConfig(dirname: string, env: ConfigEnv): Promise<UserConfig> {
-  return mergeConfig(defineBaseConfig(dirname, env), {
+export function defineNodeConfig(dirname: string, env: ConfigEnv): UserConfig {
+  return mergeConfig(defineGenericConfig(dirname, env), {
     build: {
       minify: false,
       sourcemap: true,
@@ -17,28 +19,15 @@ export async function defineBaseConfig(dirname: string, env: ConfigEnv): Promise
           preserveModules: true,
           preserveModulesRoot: `${dirname}/src`,
         },
-        external: ['.*__generated__.*', '.*__tests__.*'],
-        plugins: [
-          nodeExternals({
-            deps: true,
-            peerDeps: true,
-            devDeps: true,
-            optDeps: true,
-            packagePath: internalPackages.map((it) => it.path),
-            exclude: internalPackages.map((it) => new RegExp(`^${it.name}.*`)),
-          }),
-        ],
       },
     },
-    resolve: {
-      mainFields: ['module', 'jsnext:main', 'jsnext'],
-      conditions: ['node'],
-    },
     plugins: [
-      dts({
-        exclude: [resolve(dirname, 'src', '__tests__', '**')],
-        entryRoot: resolve(dirname, 'src'),
-      }),
+      {
+        enforce: 'pre',
+        ...nodeExternalsPlugin({
+          builtinsPrefix: 'add',
+        }),
+      },
     ],
   } satisfies UserConfig)
 }

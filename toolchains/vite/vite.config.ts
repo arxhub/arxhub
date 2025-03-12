@@ -1,4 +1,11 @@
-import { defineConfig, mergeConfig } from 'vite'
-import { createNodeConfig } from './src'
+import { defineConfig } from 'vite'
+import { defineNodeConfig } from './src'
 
-export default defineConfig(createNodeConfig(__dirname))
+const config = defineConfig(async (env) => {
+    const a = await defineNodeConfig(__dirname, env)
+    console.log(a.plugins)
+    return a
+})
+
+
+export default config

@@ -1,9 +1,10 @@
 import { resolve } from 'node:path'
 import type { ConfigEnv, UserConfig } from 'vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
+import dtsPlugin from 'vite-plugin-dts'
+import tsconfigPathsPlugin from 'vite-tsconfig-paths'
 import type { UserConfig as UserTestConfig } from 'vitest/node'
 
-export async function defineBaseConfig(dirname: string, env: ConfigEnv): Promise<UserConfig & UserTestConfig> {
+export function defineGenericConfig(dirname: string, env: ConfigEnv): UserConfig & UserTestConfig {
   return {
     build: {
       outDir: 'dist',
@@ -16,6 +17,6 @@ export async function defineBaseConfig(dirname: string, env: ConfigEnv): Promise
         hooks: 'stack',
       },
     },
-    plugins: [tsconfigPaths()],
+    plugins: [tsconfigPathsPlugin(), env.mode !== 'production' ? undefined : dtsPlugin()],
   }
 }

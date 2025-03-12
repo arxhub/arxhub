@@ -97,3 +97,6 @@ typings/
 _dist
 
 .local/
+
+# Generic build output
+dist
