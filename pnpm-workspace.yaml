@@ -3,4 +3,5 @@ packages:
   - 'core'
   - 'stdlib'
   - 'plugins/*'
+  - 'externals/*'
   - 'toolchains/*'
