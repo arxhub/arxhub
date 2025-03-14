@@ -16,9 +16,14 @@ Then, configure your project to use this tsconfig by extending it in your projec
 {
   "extends": "@arxhub/toolchain-tsconfig",
   "compilerOptions": {
+    "baseUrl": "./",
     "rootDir": "./src",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "paths": {
+      "~/*": ["./src/*"]
+    }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "include": ["./src"],
+  "exclude": ["./dist", "./node_modules"]
 }
+```
