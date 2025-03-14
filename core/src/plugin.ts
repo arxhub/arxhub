@@ -1,4 +1,4 @@
-import { NamedContainer } from "@arxhub/stdlib/collections"
+import { NamedContainer } from '@arxhub/stdlib/collections'
 
 export interface Plugin<T> {
   readonly name: string
