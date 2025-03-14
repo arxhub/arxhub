@@ -1,4 +1,4 @@
-import { NamedContainer } from '../stdlib/named_container.ts'
+import { NamedContainer } from "@arxhub/stdlib/collections"
 
 export interface Plugin<T> {
   readonly name: string
@@ -21,12 +21,12 @@ export class PluginContainer<T> extends NamedContainer<Plugin<T>> {
     this.target = target
   }
 
-  getByTypeOrNull<R extends Plugin<T>>(constructor: PluginConstructor<R>): R | null {
-    return this.getOrNull(constructor.name)
+  getByTypeOrNull<R extends Plugin<T>>(plugin: PluginConstructor<R>): R | null {
+    return this.getOrNull(plugin.name)
   }
 
-  getByType<R extends Plugin<T>>(constructor: PluginConstructor<R>): R {
-    return this.get(constructor.name)
+  getByType<R extends Plugin<T>>(plugin: PluginConstructor<R>): R {
+    return this.get(plugin.name)
   }
 
   apply(value: Plugin<T>): void {

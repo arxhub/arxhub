@@ -1,4 +1,4 @@
-import { AppError } from '~/stdlib/error.ts'
+import { AppError } from './error'
 
 export class NotImplemented extends AppError {
   constructor(message?: string) {

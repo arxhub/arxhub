@@ -1,4 +1,4 @@
-import { NamedContainer } from '../stdlib/named_container.ts'
+import { NamedContainer } from '@arxhub/stdlib/collections'
 
 export interface Extension {
   readonly name: string
@@ -14,11 +14,11 @@ export class ExtensionContainer extends NamedContainer<Extension> {
     super('Extension', extensions)
   }
 
-  getByTypeOrNull<R extends Extension>(constructor: ExtensionConstructor<R>): R | null {
-    return this.getOrNull(constructor.name)
+  getByTypeOrNull<R extends Extension>(extenstion: ExtensionConstructor<R>): R | null {
+    return this.getOrNull(extenstion.name)
   }
 
-  getByType<R extends Extension>(constructor: ExtensionConstructor<R>): R {
-    return this.get(constructor.name)
+  getByType<R extends Extension>(extenstion: ExtensionConstructor<R>): R {
+    return this.get(extenstion.name)
   }
 }

@@ -1,5 +1,5 @@
-import { ExtensionContainer } from '~/core/extension.ts'
-import { Plugin, PluginContainer } from '~/core/plugin.ts'
+import { ExtensionContainer } from './extension'
+import { type Plugin, PluginContainer } from './plugin'
 
 export class ArxHub {
   readonly plugins: PluginContainer<ArxHub>
@@ -8,7 +8,7 @@ export class ArxHub {
   constructor() {
     this.plugins = new PluginContainer(this)
     this.extensions = new ExtensionContainer()
-    Deno.addSignalListener('SIGTERM', () => this.stop())
+    process.addListener('SIGTERM', () => this.stop())
   }
 
   apply(plugin: Plugin<ArxHub>): void {

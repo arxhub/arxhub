@@ -1,5 +1,5 @@
-import { KeyError } from '~/stdlib/key_error.ts'
-import { Named } from '~/stdlib/named.ts'
+import { KeyError } from '../errors/key-error'
+import type { Named } from './named'
 
 export class NamedContainer<N extends Named> {
   private readonly container: Map<string, N>
