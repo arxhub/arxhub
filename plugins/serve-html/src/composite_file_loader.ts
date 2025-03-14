@@ -1,8 +1,8 @@
 import * as path from '@third-party/path'
-import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
-import { FileLoader } from './api/file_loader.ts'
-import { Loader } from './api/loader.ts'
-import { TemplateSource } from './api/template_source.ts'
+import type { VirtualFileSystem } from '~/plugins/vfs/system.ts'
+import type { FileLoader } from './api/file_loader.ts'
+import type { Loader } from './api/loader.ts'
+import type { TemplateSource } from './api/template_source.ts'
 import { FileLoaderNotFound } from './file_loader_not_found.ts'
 
 export class CompositeFileLoader implements Loader {

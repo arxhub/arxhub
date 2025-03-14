@@ -1,5 +1,5 @@
 import { AppError } from '~/stdlib/error.ts'
-import { VirtualFile } from '~/plugins/vfs/file.ts'
+import type { VirtualFile } from '~/plugins/vfs/file.ts'
 
 export class FileLoaderNotFound extends AppError {
   constructor(file: VirtualFile) {

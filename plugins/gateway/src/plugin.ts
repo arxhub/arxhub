@@ -1,25 +1,24 @@
-import { ArxHub } from '~/core/arxhub.ts'
-import { Plugin } from '~/core/plugin.ts'
-import { ServerExtension } from '~/plugins/server/extension.ts'
+import type { ArxHub, Plugin } from '@arxhub/core'
+import { GatewayExtension } from './extension'
 
-export class ServerPlugin implements Plugin<ArxHub> {
+export class GatewayPlugin implements Plugin<ArxHub> {
   readonly name: string
 
   constructor() {
-    this.name = ServerPlugin.name
+    this.name = GatewayPlugin.name
   }
 
   apply(target: ArxHub): void {
-    target.extensions.add(new ServerExtension())
+    target.extensions.add(new GatewayExtension())
   }
 
   start(target: ArxHub): Promise<void> {
-    const { server } = target.extensions.getByType(ServerExtension)
-    return server.serve()
+    const { gateway } = target.extensions.getByType(GatewayExtension)
+    return gateway.serve()
   }
 
   stop(target: ArxHub): Promise<void> {
-    const { server } = target.extensions.getByType(ServerExtension)
-    return server.shutdown()
+    const { gateway } = target.extensions.getByType(GatewayExtension)
+    return gateway.shutdown()
   }
 }

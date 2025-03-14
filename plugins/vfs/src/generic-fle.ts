@@ -1,7 +1,6 @@
-import { splitPathname } from '~/stdlib/split_pathname.ts'
-import { VirtualFile } from '~/plugins/vfs/file.ts'
-import { LocalFileSystem } from '~/plugins/vfs/local_system.ts'
-import { dedent } from '@third-party/dedent'
+import { splitPathname } from '@arxhub/stdlib/fs'
+import type { VirtualFile } from './file'
+import type { LocalFileSystem } from './local-system'
 
 export type VirtualFileOptions = {
   pathname: string

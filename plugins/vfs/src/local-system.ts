@@ -1,8 +1,7 @@
-import { isFileExists } from '~/stdlib/is_file_exists.ts'
-import { listFiles } from '~/stdlib/list_files.ts'
-import { VirtualFile } from '~/plugins/vfs/file.ts'
-import { AbstractVirtualFileSystem } from '~/plugins/vfs/abstract_system.ts'
-import { GenericFile, VirtualFileOptions } from '~/plugins/vfs/generic_file.ts'
+import { isFileExists, listFiles, readTextFile } from '@arxhub/stdlib/fs'
+import { AbstractVirtualFileSystem } from './abstract-system'
+import type { VirtualFile } from './file'
+import { GenericFile, type VirtualFileOptions } from './generic-fle'
 
 export class LocalFileSystem extends AbstractVirtualFileSystem {
   readonly name: string
@@ -29,14 +28,14 @@ export class LocalFileSystem extends AbstractVirtualFileSystem {
     const files: VirtualFile[] = []
     for await (const pathname of listFiles(this.rootDir)) {
       if (pathname.endsWith('.meta')) continue
-      const meta = JSON.parse(await Deno.readTextFile(`${pathname}.meta`))
+      const meta = JSON.parse(await readTextFile(`${pathname}.meta`))
       files.push(new GenericFile(this, meta))
     }
     return files
   }
 
   override _readTextFile(pathname: string): Promise<string> {
-    return Deno.readTextFile(`${this.rootDir}/${pathname}`)
+    return readTextFile(`${this.rootDir}/${pathname}`)
   }
 
   override refresh(): Promise<void> {
@@ -47,6 +46,7 @@ export class LocalFileSystem extends AbstractVirtualFileSystem {
 
   private async readMeta(pathname: string): Promise<Omit<VirtualFileOptions, 'pathname'>> {
     const meta = { type: 'application/octet-stream', kind: 'unknown', fields: {} }
+    // biome-ignore lint/style/noParameterAssign: Meta files should always be with a .meta extension
     if (!pathname.endsWith('.meta')) pathname = `${pathname}.meta`
     if (!(await this.isFileExists(pathname))) {
       console.warn(`Meta file does not exists (location: "${this.name}:${pathname}")`)

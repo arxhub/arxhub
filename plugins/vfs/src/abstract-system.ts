@@ -1,7 +1,7 @@
-import { VirtualFile } from '~/plugins/vfs/file.ts'
-import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
-import { IllegalStateError } from '~/stdlib/illegal_state_error.ts'
-import { FileNotFound } from '~/plugins/vfs/file_not_found.ts'
+import { IllegalStateError } from '@arxhub/stdlib/errors'
+import type { VirtualFile } from './file'
+import { FileNotFound } from './file-not-found'
+import type { VirtualFileSystem } from './system'
 
 export abstract class AbstractVirtualFileSystem implements VirtualFileSystem {
   abstract readonly name: string
@@ -22,6 +22,7 @@ export abstract class AbstractVirtualFileSystem implements VirtualFileSystem {
   }
 
   readTextFile(location: string | VirtualFile): Promise<string> {
+    // biome-ignore lint/style/noParameterAssign: Unwrap location from VirtualFile
     location = typeof location === 'string' ? location : location.location
     return this._readTextFile(this.resolveFilename(location))
   }

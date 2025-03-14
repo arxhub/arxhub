@@ -1,5 +1,5 @@
-import { AppError } from '~/stdlib/error.ts'
-import { VirtualFile } from '~/plugins/vfs/file.ts'
+import { AppError } from '@arxhub/stdlib/errors'
+import type { VirtualFile } from './file'
 
 export class FileNotFound extends AppError {
   constructor(message: string | VirtualFile) {

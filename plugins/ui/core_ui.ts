@@ -1,6 +1,6 @@
 import { NotImplemented } from '~/stdlib/not_implemented.ts'
-import { ArxHub } from '~/core/arxhub.ts'
-import { Plugin } from '~/core/plugin.ts'
+import type { ArxHub } from '~/core/arxhub.ts'
+import type { Plugin } from '~/core/plugin.ts'
 
 export class CoreUI implements Plugin<ArxHub> {
   readonly name: string

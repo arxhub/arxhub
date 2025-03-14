@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import type { HonoOptions } from 'hono/hono-base'
 import type { BlankEnv } from 'hono/types'
 
-export class Server extends Hono {
+export class Gateway extends Hono {
   private httpServer: HttpServer | null
 
   constructor(options?: HonoOptions<BlankEnv>) {

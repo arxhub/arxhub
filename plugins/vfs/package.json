@@ -1,15 +1,27 @@
 {
   "name": "@arxhub/plugin-vfs",
   "version": "0.1.0",
-  "description": "Virtual File System plugin for ArxHub",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": ["arxhub", "plugin", "vfs"],
-  "author": "",
+  "description": "",
+  "keywords": ["arxhub"],
   "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
   "dependencies": {
-    "@arxhub/core": "workspace:*"
+    "ts-dedent": "^2.2.0"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "^22.13.10"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/stdlib": "workspace:*"
   }
 }

@@ -1,9 +1,9 @@
 import { CompositeFileLoader } from '../src./html/composite_file_loader.ts'
-import { Environment } from '../src./html/environment.ts'
+import type { Environment } from '../src./html/environment.ts'
 import vento from '@third-party/vento'
-import { Plugin } from '~/core/plugin.ts'
-import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
-import { RenderOptions } from '../src./html/api/render_options.ts'
+import type { Plugin } from '~/core/plugin.ts'
+import type { VirtualFileSystem } from '~/plugins/vfs/system.ts'
+import type { RenderOptions } from '../src./html/api/render_options.ts'
 
 // TODO: Maybe add Server interface, to hide RenderEngine implementation api
 export class RenderEngine {

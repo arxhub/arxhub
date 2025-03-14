@@ -1,6 +1,6 @@
-import { NamedContainer } from '~/stdlib/named_container.ts'
-import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
-import { VirtualFile } from '~/plugins/vfs/file.ts'
+import { NamedContainer } from '@arxhub/stdlib/collections'
+import type { VirtualFile } from './file'
+import type { VirtualFileSystem } from './system'
 
 export class CompositeFileSystem extends NamedContainer<VirtualFileSystem> implements VirtualFileSystem {
   readonly name: string
@@ -36,6 +36,7 @@ export class CompositeFileSystem extends NamedContainer<VirtualFileSystem> imple
   }
 
   readTextFile(location: string | VirtualFile): Promise<string> {
+    // biome-ignore lint/style/noParameterAssign: Unwrap location from VirtualFile
     location = typeof location === 'string' ? location : location.location
     const [vfs] = this.getByLocation(location)
     return vfs.readTextFile(location)

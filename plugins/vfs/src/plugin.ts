@@ -1,6 +1,5 @@
-import { ArxHub } from '~/core/arxhub.ts'
-import { Plugin } from '~/core/plugin.ts'
-import { VirtualFileSystemExtension } from '~/plugins/vfs/extension.ts'
+import type { ArxHub, Plugin } from '@arxhub/core'
+import { VirtualFileSystemExtension } from './extension'
 
 export class VirtualFileSystemPlugin implements Plugin<ArxHub> {
   readonly name: string

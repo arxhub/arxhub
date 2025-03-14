@@ -1,12 +1,12 @@
-import { Server } from '~/plugins/server/server.ts'
-import { Extension } from '~/core/extension.ts'
+import type { Extension } from '@arxhub/core'
+import { Gateway } from './gateway'
 
-export class ServerExtension implements Extension {
+export class GatewayExtension implements Extension {
   readonly name: string
-  readonly server: Server
+  readonly gateway: Gateway
 
   constructor() {
-    this.name = ServerExtension.name
-    this.server = new Server()
+    this.name = GatewayExtension.name
+    this.gateway = new Gateway()
   }
 }

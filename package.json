@@ -15,8 +15,8 @@
     "@arxhub/toolchain-biome": "workspace:*",
     "@biomejs/biome": "^1.9.4",
     "turbo": "^2.4.4",
+    "typescript": "^5.8.2",
     "vite": "^6.2.1",
-    "vitest": "^3.0.8",
-    "typescript": "^5.8.2"
+    "vitest": "^3.0.8"
   }
 }

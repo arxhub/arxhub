@@ -1,4 +1,4 @@
-import { VirtualFileSystem } from '~/plugins/vfs/system.ts'
+import type { VirtualFileSystem } from './system'
 
 export interface VirtualFile {
   readonly vfs: VirtualFileSystem

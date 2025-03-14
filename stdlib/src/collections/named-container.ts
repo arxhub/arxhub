@@ -1,4 +1,4 @@
-import { KeyError } from '../errors/key-error'
+import { KeyError } from '~/errors/key-error'
 import type { Named } from './named'
 
 export class NamedContainer<N extends Named> {

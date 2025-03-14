@@ -1,8 +1,8 @@
-import { Plugin } from '~/core/plugin.ts'
-import { RenderEngine } from '../render_engine.ts'
-import { TemplateSource } from '~/plugins/serve/html/api/template_source.ts'
+import type { Plugin } from '~/core/plugin.ts'
+import type { RenderEngine } from '../render_engine.ts'
+import type { TemplateSource } from '~/plugins/serve/html/api/template_source.ts'
 import { html, tag } from '@third-party/html'
-import { VirtualFile } from '~/plugins/vfs/file.ts'
+import type { VirtualFile } from '~/plugins/vfs/file.ts'
 
 export class FallbackFileLoaderPlugin implements Plugin<RenderEngine> {
   readonly name = FallbackFileLoaderPlugin.name

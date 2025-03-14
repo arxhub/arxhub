@@ -1,4 +1,4 @@
-import { VirtualFile } from '~/plugins/vfs/file.ts'
+import type { VirtualFile } from './file'
 
 export interface VirtualFileSystem {
   readonly name: string

@@ -1,7 +1,7 @@
-import { Plugin } from '~/core/plugin.ts'
-import { VirtualFile } from '~/plugins/vfs/file.ts'
-import { RenderEngine } from '~/plugins/serve/html/render_engine.ts'
-import { TemplateSource } from '~/plugins/serve/html/api/template_source.ts'
+import type { Plugin } from '~/core/plugin.ts'
+import type { VirtualFile } from '~/plugins/vfs/file.ts'
+import type { RenderEngine } from '~/plugins/serve/html/render_engine.ts'
+import type { TemplateSource } from '~/plugins/serve/html/api/template_source.ts'
 
 export class VentoFileLoaderPlugin implements Plugin<RenderEngine> {
   readonly name = VentoFileLoaderPlugin.name
