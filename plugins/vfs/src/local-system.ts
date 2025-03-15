@@ -1,46 +1,48 @@
 import { isFileExists, listFiles, readTextFile } from '@arxhub/stdlib/fs'
-import { AbstractVirtualFileSystem } from './abstract-system'
 import type { VirtualFile } from './file'
+import { FileNotFound } from './file-not-found'
 import { GenericFile, type VirtualFileOptions } from './generic-fle'
+import type { VirtualFileSystem } from './system'
 
-export class LocalFileSystem extends AbstractVirtualFileSystem {
-  readonly name: string
+export class LocalFileSystem implements VirtualFileSystem {
   private readonly rootDir: string
 
-  constructor(name: string, rootDir: string) {
-    super()
-    this.name = name
+  constructor(rootDir: string) {
     this.rootDir = rootDir
   }
 
-  override _isFileExists(pathname: string): Promise<boolean> {
+  async file(pathname: string): Promise<VirtualFile> {
+    const file = await this.fileOrNull(pathname)
+    if (file == null) throw new FileNotFound(pathname)
+    return file
+  }
+
+  isFileExists(pathname: string): Promise<boolean> {
     return isFileExists(`${this.rootDir}/${pathname}`)
   }
 
-  override async _fileOrNull(pathname: string): Promise<VirtualFile | null> {
+  async fileOrNull(pathname: string): Promise<VirtualFile | null> {
     if (!(await this.isFileExists(pathname))) return null
     const meta = await this.readMeta(pathname)
     return new GenericFile(this, { ...meta, pathname })
   }
 
   // TODO: Add caching
-  override async listFiles(): Promise<VirtualFile[]> {
-    const files: VirtualFile[] = []
+  async *listFiles(): AsyncGenerator<VirtualFile> {
     for await (const pathname of listFiles(this.rootDir)) {
       if (pathname.endsWith('.meta')) continue
       const meta = JSON.parse(await readTextFile(`${pathname}.meta`))
-      files.push(new GenericFile(this, meta))
+      yield new GenericFile(this, meta)
     }
-    return files
   }
 
-  override _readTextFile(pathname: string): Promise<string> {
+  readTextFile(pathname: string): Promise<string> {
     return readTextFile(`${this.rootDir}/${pathname}`)
   }
 
-  override refresh(): Promise<void> {
+  refresh(): Promise<void> {
     // no-op for now
-    // TODO: Add caching
+    // TODO: Add caching to listFiles
     return Promise.resolve()
   }
 
@@ -49,13 +51,13 @@ export class LocalFileSystem extends AbstractVirtualFileSystem {
     // biome-ignore lint/style/noParameterAssign: Meta files should always be with a .meta extension
     if (!pathname.endsWith('.meta')) pathname = `${pathname}.meta`
     if (!(await this.isFileExists(pathname))) {
-      console.warn(`Meta file does not exists (location: "${this.name}:${pathname}")`)
+      console.warn(`Meta file does not exists: '${pathname}'`)
       return meta
     }
     try {
       return { ...meta, ...JSON.parse(await this.readTextFile(pathname)) }
     } catch (e) {
-      console.error(`Error reading meta file (location: "${this.name}:${pathname}")`, e)
+      console.error(`Error reading meta file: '${pathname}'`, e)
       return meta
     }
   }
