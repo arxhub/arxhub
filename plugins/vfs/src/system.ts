@@ -9,8 +9,7 @@ export interface VirtualFileSystem {
 
   fileOrNull(location: string): Promise<VirtualFile | null>
 
-  // TODO: Create AsyncIterator
-  listFiles(): Promise<VirtualFile[]>
+  listFiles(): AsyncIterator<VirtualFile>
 
   readTextFile(location: string | VirtualFile): Promise<string>
 

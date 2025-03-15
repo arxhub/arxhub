@@ -3,10 +3,16 @@ import type { VirtualFileSystem } from './system'
 export interface VirtualFile {
   readonly vfs: VirtualFileSystem
 
-  readonly location: string
+  // /home/user/file.txt
   readonly pathname: string
+
+  // /home/user
   readonly path: string
+
+  // file.txt
   readonly name: string
+
+  // txt
   readonly extension: string
 
   readonly fields: Record<string, unknown>
@@ -14,5 +20,7 @@ export interface VirtualFile {
   readonly kind: string
 
   text(): Promise<string>
+
+  // TODO: return object with fields: size, mtime, etc
   stat(): string
 }
