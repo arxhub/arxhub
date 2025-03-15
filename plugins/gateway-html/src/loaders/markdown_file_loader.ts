@@ -1,15 +1,15 @@
+import { dedent } from '@third-party/dedent'
 import { marked } from '@third-party/marked'
 import type { Plugin } from '~/core/plugin.ts'
-import { dedent } from '@third-party/dedent'
-import type { RenderEngine } from '../render_engine.ts'
-import type { VirtualFile } from '~/plugins/vfs/file.ts'
 import type { TemplateSource } from '~/plugins/serve/html/api/template_source.ts'
+import type { VirtualFile } from '~/plugins/vfs/file.ts'
+import type { RenderEngine } from '../render_engine.ts'
 
 export class MarkdownFileLoaderPlugin implements Plugin<RenderEngine> {
   readonly name = MarkdownFileLoaderPlugin.name
 
   apply(target: RenderEngine): void {
-    target.filters['__markdown'] = (content: string) => {
+    target.filters.__markdown = (content: string) => {
       return marked.parse(content, { async: true })
     }
 

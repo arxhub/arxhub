@@ -6,8 +6,9 @@
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "files": ["dist"],
   "scripts": {
     "build": "tsc && vite build"
@@ -23,5 +24,13 @@
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/stdlib": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
+    }
   }
 }

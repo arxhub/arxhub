@@ -45,18 +45,6 @@ importers:
         specifier: ^22.13.10
         version: 22.13.10
 
-  plugins/cache:
-    dependencies:
-      '@arxhub/core':
-        specifier: workspace:*
-        version: link:../../core
-
-  plugins/entrypoint:
-    dependencies:
-      '@arxhub/core':
-        specifier: workspace:*
-        version: link:../../core
-
   plugins/gateway:
     dependencies:
       '@arxhub/core':
@@ -79,29 +67,46 @@ importers:
         specifier: ^22.13.10
         version: 22.13.10
 
-  plugins/serve-css:
+  plugins/gateway-html:
     dependencies:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../core
+      '@arxhub/plugin-gateway':
+        specifier: workspace:*
+        version: link:../gateway
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.13.10
 
-  plugins/serve-html:
+  plugins/gateway-vfs:
     dependencies:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../core
-
-  plugins/serve-js:
-    dependencies:
-      '@arxhub/core':
+      '@arxhub/plugin-gateway':
         specifier: workspace:*
-        version: link:../../core
-
-  plugins/ui:
-    dependencies:
-      '@arxhub/core':
+        version: link:../gateway
+      '@arxhub/plugin-vfs':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../vfs
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.13.10
 
   plugins/vfs:
     dependencies:

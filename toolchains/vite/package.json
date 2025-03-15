@@ -2,24 +2,33 @@
   "name": "@arxhub/toolchain-vite",
   "version": "0.1.0",
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "files": ["dist"],
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc && vite build"
   },
   "dependencies": {
     "rollup-plugin-node-externals": "^8.0.0",
-    "vite-tsconfig-paths": "^5.1.4",
-    "vite-plugin-dts": "^4.5.3"
+    "vite-plugin-dts": "^4.5.3",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@types/node": "^22.13.10"
   },
   "peerDependencies": {
+    "typescript": "^5.8.2",
     "vite": "^6.2.1",
-    "vitest": "^3.0.8",
-    "typescript": "^5.8.2"
+    "vitest": "^3.0.8"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
+    }
   }
 }
