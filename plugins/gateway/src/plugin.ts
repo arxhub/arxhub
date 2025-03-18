@@ -1,11 +1,9 @@
-import type { ArxHub, Plugin } from '@arxhub/core'
+import { type ArxHub, Plugin } from '@arxhub/core'
 import { GatewayExtension } from './extension'
 
-export class GatewayPlugin implements Plugin<ArxHub> {
-  readonly name: string
-
+export class GatewayPlugin extends Plugin<ArxHub> {
   constructor() {
-    this.name = GatewayPlugin.name
+    super(GatewayPlugin.name, 'Server')
   }
 
   apply(target: ArxHub): void {

@@ -1,11 +1,24 @@
 import { NamedContainer } from '@arxhub/stdlib/collections'
+import type { Runtime } from './runtime'
 
-export interface Plugin<T> {
+export abstract class Plugin<T> {
   readonly name: string
-  apply(target: T): void
+  readonly supportedRuntimes: Runtime[]
 
-  start?(target: T): Promise<void>
-  stop?(target: T): Promise<void>
+  constructor(name: string, supportedRuntimes: Runtime | Runtime[] = 'Universal') {
+    this.name = name
+    this.supportedRuntimes = Array.isArray(supportedRuntimes) ? supportedRuntimes : [supportedRuntimes]
+  }
+
+  abstract apply(target: T): void
+
+  start(target: T): Promise<void> {
+    return Promise.resolve()
+  }
+
+  stop(target: T): Promise<void> {
+    return Promise.resolve()
+  }
 }
 
 export type PluginConstructor<T extends Plugin<unknown>> = {

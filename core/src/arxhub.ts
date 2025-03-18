@@ -8,7 +8,6 @@ export class ArxHub {
   constructor() {
     this.plugins = new PluginContainer(this)
     this.extensions = new ExtensionContainer()
-    process.addListener('SIGTERM', () => this.stop())
   }
 
   apply(plugin: Plugin<ArxHub>): void {
@@ -16,10 +15,10 @@ export class ArxHub {
   }
 
   async start(): Promise<void> {
-    await Promise.all(this.plugins.values().map((it) => it.start?.(this) ?? Promise.resolve()))
+    await Promise.all(this.plugins.values().map((it) => it.start(this)))
   }
 
   async stop(): Promise<void> {
-    await Promise.allSettled(this.plugins.values().map((it) => it.stop?.(this) ?? Promise.resolve()))
+    await Promise.allSettled(this.plugins.values().map((it) => it.stop(this)))
   }
 }
