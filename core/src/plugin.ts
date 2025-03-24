@@ -39,7 +39,8 @@ export abstract class Plugin<T> implements Named {
 
 export type PluginConstructor<T extends Plugin<unknown>> = {
   readonly name: string
-  new (...args: unknown[]): T
+  // biome-ignore lint/suspicious/noExplicitAny: We want to allow any arguments in constructor
+  new (...args: any[]): T
 }
 
 export class PluginContainer<T> extends NamedContainer<Plugin<T>> {

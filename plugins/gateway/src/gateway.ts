@@ -17,7 +17,7 @@ export class Gateway extends Hono {
     return Promise.resolve()
   }
 
-  shutdown(): Promise<void> {
+  close(): Promise<void> {
     const httpServer = this.httpServer
     this.httpServer = null
 

@@ -6,7 +6,8 @@ export interface Extension {
 
 export type ExtensionConstructor<T extends Extension> = {
   readonly name: string
-  new (...args: unknown[]): T
+  // biome-ignore lint/suspicious/noExplicitAny: We want to allow any arguments in constructor
+  new (...args: any[]): T
 }
 
 export class ExtensionContainer extends NamedContainer<Extension> {

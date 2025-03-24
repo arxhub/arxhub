@@ -1,12 +1,12 @@
 import type { Extension } from '@arxhub/core'
-import { Gateway } from './gateway'
+import type { Gateway } from './gateway'
 
 export class GatewayExtension implements Extension {
   readonly name: string
   readonly gateway: Gateway
 
-  constructor() {
+  constructor(gateway: Gateway) {
     this.name = GatewayExtension.name
-    this.gateway = new Gateway()
+    this.gateway = gateway
   }
 }
