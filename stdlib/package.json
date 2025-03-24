@@ -7,9 +7,9 @@
   "author": "",
   "type": "module",
   "exports": {
-    "./collections": "./src/collections/index.ts",
-    "./errors": "./src/errors/index.ts",
-    "./fs": "./src/fs/index.ts"
+    "./collections/*": "./src/collections/*.ts",
+    "./errors/*": "./src/errors/*.ts",
+    "./fs/*": "./src/fs/*.ts"
   },
   "files": ["dist"],
   "scripts": {
@@ -25,17 +25,17 @@
   "peerDependencies": {},
   "publishConfig": {
     "exports": {
-      "./collections": {
-        "import": "./dist/collections/index.js",
-        "types": "./dist/collections/index.d.ts"
+      "./collections/*": {
+        "import": "./dist/collections/*.js",
+        "types": "./dist/collections/*.d.ts"
       },
-      "./errors": {
-        "import": "./dist/errors/index.js",
-        "types": "./dist/errors/index.d.ts"
+      "./errors/*": {
+        "import": "./dist/errors/*.js",
+        "types": "./dist/errors/*.d.ts"
       },
-      "./fs": {
-        "import": "./dist/fs/index.js",
-        "types": "./dist/fs/index.d.ts"
+      "./fs/*": {
+        "import": "./dist/fs/*.js",
+        "types": "./dist/fs/*.d.ts"
       }
     }
   }

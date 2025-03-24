@@ -1,17 +1,20 @@
-import { NamedContainer } from '@arxhub/stdlib/collections'
-import type { Runtime } from './runtime'
+import { NamedContainer } from '@arxhub/stdlib/collections/named-container'
 
 export abstract class Plugin<T> {
   readonly name: string
   // TODO: Create plugin manifest
-  readonly supportedRuntimes: Runtime[]
 
-  constructor(name: string, supportedRuntimes: Runtime | Runtime[] = 'Universal') {
+  constructor(name: string) {
     this.name = name
-    this.supportedRuntimes = Array.isArray(supportedRuntimes) ? supportedRuntimes : [supportedRuntimes]
   }
 
-  abstract apply(target: T): void
+  create(target: T): Promise<void> {
+    return Promise.resolve()
+  }
+
+  configure(target: T): Promise<void> {
+    return Promise.resolve()
+  }
 
   start(target: T): Promise<void> {
     return Promise.resolve()
@@ -43,8 +46,7 @@ export class PluginContainer<T> extends NamedContainer<Plugin<T>> {
     return this.get(plugin.name)
   }
 
-  apply(value: Plugin<T>): void {
+  register(value: Plugin<T>): void {
     this.add(value)
-    value.apply(this.target)
   }
 }

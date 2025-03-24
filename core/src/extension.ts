@@ -1,4 +1,4 @@
-import { NamedContainer } from '@arxhub/stdlib/collections'
+import { NamedContainer } from '@arxhub/stdlib/collections/named-container'
 
 export interface Extension {
   readonly name: string
