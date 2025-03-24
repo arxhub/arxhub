@@ -1,11 +1,23 @@
+import type { Named } from '@arxhub/stdlib/collections/named'
 import { NamedContainer } from '@arxhub/stdlib/collections/named-container'
 
-export abstract class Plugin<T> {
-  readonly name: string
-  // TODO: Create plugin manifest
+export interface PluginManifest {
+  name: string
+  version: string
+  description?: string
+  author: string
+  minApi?: string
+}
 
-  constructor(name: string) {
-    this.name = name
+export abstract class Plugin<T> implements Named {
+  readonly manifest: PluginManifest
+
+  constructor(manifest: PluginManifest) {
+    this.manifest = manifest
+  }
+
+  get name(): string {
+    return this.manifest.name
   }
 
   create(target: T): Promise<void> {
