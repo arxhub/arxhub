@@ -7,5 +7,3 @@ export * from './mountable-system'
 export * from './plugin'
 export * from './system'
 
-import PluginInstance from './plugin'
-export default PluginInstance
