@@ -3,6 +3,7 @@ import type { Runtime } from './runtime'
 
 export abstract class Plugin<T> {
   readonly name: string
+  // TODO: Create plugin manifest
   readonly supportedRuntimes: Runtime[]
 
   constructor(name: string, supportedRuntimes: Runtime | Runtime[] = 'Universal') {
