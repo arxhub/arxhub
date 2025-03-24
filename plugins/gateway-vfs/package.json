@@ -7,7 +7,8 @@
   "author": "",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    "./api": "./src/api.ts",
+    "./server": "./src/server.ts"
   },
   "files": ["dist"],
   "scripts": {
@@ -22,13 +23,18 @@
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
-    "@arxhub/plugin-vfs": "workspace:*"
+    "@arxhub/plugin-vfs": "workspace:*",
+    "hono": "^4.7.4"
   },
   "publishConfig": {
     "exports": {
-      ".": {
-        "import": "./dist/index.js",
-        "types": "./dist/index.d.ts"
+      "./api": {
+        "import": "./dist/api.js",
+        "types": "./dist/api.d.ts"
+      },
+      "./server": {
+        "import": "./dist/server.js",
+        "types": "./dist/server.d.ts"
       }
     }
   }

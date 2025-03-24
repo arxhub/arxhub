@@ -5,23 +5,28 @@ import { Gateway } from './gateway'
 export class GatewayPlugin extends Plugin<ArxHub> {
   constructor() {
     super({
-      name: 'gateway',
+      name: GatewayPlugin.name,
       version: '0.1.0',
       author: '',
     })
   }
 
-  apply(target: ArxHub): void {
+  override async create(target: ArxHub): Promise<void> {
     const gateway = new Gateway()
     target.extensions.add(new GatewayExtension(gateway))
   }
 
-  start(target: ArxHub): Promise<void> {
+  override async configure(target: ArxHub): Promise<void> {
+    const { gateway } = target.extensions.getByType(GatewayExtension)
+    gateway.get('/healthcheck', (c) => c.text('200 OK'))
+  }
+
+  override start(target: ArxHub): Promise<void> {
     const { gateway } = target.extensions.getByType(GatewayExtension)
     return gateway.serve()
   }
 
-  stop(target: ArxHub): Promise<void> {
+  override stop(target: ArxHub): Promise<void> {
     const { gateway } = target.extensions.getByType(GatewayExtension)
     return gateway.close()
   }

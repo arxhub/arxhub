@@ -49,14 +49,20 @@ importers:
         specifier: ^22.13.10
         version: 22.13.10
 
-  plugins/gateway-html:
+  plugins/gateway:
     dependencies:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../core
-      '@arxhub/plugin-gateway':
+      '@arxhub/stdlib':
         specifier: workspace:*
-        version: link:../http-server
+        version: link:../../stdlib
+      '@hono/node-server':
+        specifier: ^1.13.8
+        version: 1.13.8(hono@4.7.4)
+      hono:
+        specifier: ^4.7.4
+        version: 4.7.4
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -75,10 +81,13 @@ importers:
         version: link:../../core
       '@arxhub/plugin-gateway':
         specifier: workspace:*
-        version: link:../http-server
+        version: link:../gateway
       '@arxhub/plugin-vfs':
         specifier: workspace:*
         version: link:../vfs
+      hono:
+        specifier: ^4.7.4
+        version: 4.7.4
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -98,28 +107,6 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../../stdlib
-    devDependencies:
-      '@arxhub/toolchain-tsconfig':
-        specifier: workspace:*
-        version: link:../../toolchains/tsconfig
-      '@arxhub/toolchain-vite':
-        specifier: workspace:*
-        version: link:../../toolchains/vite
-      '@types/node':
-        specifier: ^22.13.10
-        version: 22.13.10
-
-  plugins/http-server:
-    dependencies:
-      '@arxhub/core':
-        specifier: workspace:*
-        version: link:../../core
-      '@hono/node-server':
-        specifier: ^1.13.8
-        version: 1.13.8(hono@4.7.4)
-      hono:
-        specifier: ^4.7.4
-        version: 4.7.4
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*

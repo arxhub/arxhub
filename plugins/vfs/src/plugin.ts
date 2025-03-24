@@ -4,7 +4,7 @@ import { VirtualFileSystemExtension } from './extension'
 export class VirtualFileSystemPlugin extends Plugin<ArxHub> {
   constructor() {
     super({
-      name: 'virtual-file-system',
+      name: VirtualFileSystemPlugin.name,
       version: '0.1.0',
       author: '',
     })

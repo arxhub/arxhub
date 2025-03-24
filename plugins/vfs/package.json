@@ -7,7 +7,7 @@
   "author": "",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
+    "./api": "./src/api.ts",
     "./client": "./src/client.ts",
     "./server": "./src/server.ts"
   },
@@ -29,9 +29,9 @@
   },
   "publishConfig": {
     "exports": {
-      ".": {
-        "import": "./dist/index.js",
-        "types": "./dist/index.d.ts"
+      "./api": {
+        "import": "./dist/api.js",
+        "types": "./dist/api.d.ts"
       },
       "./client": {
         "import": "./dist/client.js",

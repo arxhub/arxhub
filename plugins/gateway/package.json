@@ -7,7 +7,7 @@
   "author": "",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
+    "./api": "./src/api.ts",
     "./server": "./src/server.ts"
   },
   "files": ["dist"],
@@ -24,13 +24,14 @@
     "@types/node": "^22.13.10"
   },
   "peerDependencies": {
+    "@arxhub/stdlib": "workspace:*",
     "@arxhub/core": "workspace:*"
   },
   "publishConfig": {
     "exports": {
-      ".": {
-        "import": "./dist/index.js",
-        "types": "./dist/index.d.ts"
+      "./api": {
+        "import": "./dist/api.js",
+        "types": "./dist/api.d.ts"
       },
       "./server": {
         "import": "./dist/server.js",
