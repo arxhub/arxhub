@@ -1,4 +1,4 @@
-import { AppError } from './error'
+import { AppError } from './app-error'
 
 export class NotImplemented extends AppError {
   constructor(message?: string) {

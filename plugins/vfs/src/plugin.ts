@@ -1,14 +1,18 @@
-import type { ArxHub, Plugin } from '@arxhub/core'
+import { type ArxHub, Plugin } from '@arxhub/core'
 import { VirtualFileSystemExtension } from './extension'
 
-export class VirtualFileSystemPlugin implements Plugin<ArxHub> {
-  readonly name: string
-
+export class VirtualFileSystemPlugin extends Plugin<ArxHub> {
   constructor() {
-    this.name = VirtualFileSystemPlugin.name
+    super({
+      name: 'virtual-file-system',
+      version: '0.1.0',
+      author: '',
+    })
   }
 
-  apply(target: ArxHub): void {
+  async create(target: ArxHub): Promise<void> {
     target.extensions.add(new VirtualFileSystemExtension())
   }
 }
+
+export default new VirtualFileSystemPlugin()

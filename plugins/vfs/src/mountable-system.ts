@@ -1,4 +1,4 @@
-import { findLongestPrefix } from '@arxhub/stdlib/fs'
+import { findLongestPrefix } from '@arxhub/stdlib/fs/find-longest-prefix'
 import type { VirtualFile } from './file'
 import { FileNotFound } from './file-not-found'
 import type { VirtualFileSystem } from './system'

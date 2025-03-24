@@ -1,4 +1,6 @@
-import { isFileExists, listFiles, readTextFile } from '@arxhub/stdlib/fs'
+import { isFileExists } from '@arxhub/stdlib/fs/is-file-exists'
+import { listFiles } from '@arxhub/stdlib/fs/list-files'
+import { readTextFile } from '@arxhub/stdlib/fs/read-text-file'
 import type { VirtualFile } from './file'
 import { FileNotFound } from './file-not-found'
 import { GenericFile, type VirtualFileOptions } from './generic-fle'

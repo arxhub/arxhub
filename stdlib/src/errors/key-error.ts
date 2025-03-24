@@ -1,4 +1,4 @@
-import { AppError } from './error'
+import { AppError } from './app-error'
 
 export class KeyError extends AppError {
   constructor(message: string) {

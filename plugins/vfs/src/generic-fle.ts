@@ -1,4 +1,4 @@
-import { splitPathname } from '@arxhub/stdlib/fs'
+import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
 import dedent from 'ts-dedent'
 import type { VirtualFile } from './file'
 import type { VirtualFileSystem } from './system'
