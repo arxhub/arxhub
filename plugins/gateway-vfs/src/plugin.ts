@@ -1,7 +1,7 @@
 import { type ArxHub, Plugin } from '@arxhub/core'
 import { GatewayExtension } from '@arxhub/plugin-gateway/api'
 import { VirtualFileSystemExtension } from '@arxhub/plugin-vfs/api'
-import { files } from './files'
+import { files } from './routes/files'
 import type { FilesEnv } from './types'
 
 export class GatewayVFSPlugin extends Plugin<ArxHub> {
@@ -21,7 +21,7 @@ export class GatewayVFSPlugin extends Plugin<ArxHub> {
       ctx.set('vfs', vfs)
       await next()
     })
-    gateway.route('/vfs', files)
+    gateway.route('/vfs/files', files)
   }
 }
 

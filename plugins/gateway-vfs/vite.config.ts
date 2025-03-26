@@ -1,4 +1,9 @@
-import { defineConfig } from 'vite'
 import { createNodeConfig } from '@arxhub/toolchain-vite'
+import { defineConfig } from 'vite'
 
-export default defineConfig((env) => createNodeConfig(__dirname, env))
+// biome-ignore format: Manual formatting is more readable
+export default defineConfig((env) => createNodeConfig(__dirname, env, [
+	'src/api.ts',
+	'src/client.ts',
+	'src/server.ts',
+]))

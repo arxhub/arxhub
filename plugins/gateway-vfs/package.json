@@ -8,7 +8,8 @@
   "type": "module",
   "exports": {
     "./api": "./src/api.ts",
-    "./server": "./src/server.ts"
+    "./server": "./src/server.ts",
+    "./client": "./src/client.ts"
   },
   "files": ["dist"],
   "scripts": {
@@ -35,6 +36,10 @@
       "./server": {
         "import": "./dist/server.js",
         "types": "./dist/server.d.ts"
+      },
+      "./client": {
+        "import": "./dist/client.js",
+        "types": "./dist/client.d.ts"
       }
     }
   }
