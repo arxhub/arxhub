@@ -46,8 +46,17 @@ export type PluginConstructor<T extends Plugin<unknown>> = {
 export class PluginContainer<T> extends NamedContainer<Plugin<T>> {
   private readonly target: T
 
-  constructor(target: T, plugins: Record<string, Plugin<T>> = {}) {
-    super('Plugin', plugins)
+  constructor(target: T, plugins: Plugin<T>[] = []) {
+    super(
+      'Plugin',
+      plugins.reduce(
+        (acc, it) => {
+          acc[it.name] = it
+          return acc
+        },
+        {} as Record<string, Plugin<T>>,
+      ),
+    )
     this.target = target
   }
 

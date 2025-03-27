@@ -34,8 +34,8 @@ export class LocalFileSystem implements VirtualFileSystem {
   async *listFiles(): AsyncGenerator<VirtualFile> {
     for await (const pathname of listFiles(this.rootDir)) {
       if (pathname.endsWith('.meta')) continue
-      const meta = JSON.parse(await readTextFile(`${pathname}.meta`))
-      yield new GenericFile(this, meta)
+      const meta = await this.readMeta(pathname)
+      yield new GenericFile(this, { ...meta, pathname })
     }
   }
 
@@ -61,6 +61,7 @@ export class LocalFileSystem implements VirtualFileSystem {
       console.warn(`Meta file does not exists: '${pathname}'`)
       return meta
     }
+
     try {
       return { ...meta, ...JSON.parse(await this.readTextFile(pathname)) }
     } catch (e) {

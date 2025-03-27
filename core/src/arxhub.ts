@@ -7,20 +7,21 @@ export class ArxHub {
   readonly extensions: ExtensionContainer
   readonly logger: Logger
 
-  constructor() {
-    this.plugins = new PluginContainer(this)
+  static async create(...plugins: Plugin<ArxHub>[]): Promise<ArxHub> {
+    const arxhub = new ArxHub(plugins)
+    await Promise.all(plugins.map((it) => it.create(arxhub)))
+    await Promise.all(plugins.map((it) => it.configure(arxhub)))
+    return arxhub
+  }
+
+  private constructor(plugins: Plugin<ArxHub>[]) {
+    this.plugins = new PluginContainer(this, plugins)
     this.extensions = new ExtensionContainer()
     this.logger = new ConsoleLogger()
   }
 
-  apply(plugin: Plugin<ArxHub>): void {
-    this.plugins.register(plugin)
-  }
-
   async start(): Promise<void> {
     const plugins = this.plugins.values()
-    await Promise.all(plugins.map((it) => it.create(this)))
-    await Promise.all(plugins.map((it) => it.configure(this)))
     await Promise.all(plugins.map((it) => it.start(this)))
   }
 

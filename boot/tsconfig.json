@@ -1,8 +1,11 @@
 {
-  "extends": "../tsconfig.base.json",
+  "extends": "@arxhub/toolchain-tsconfig",
   "compilerOptions": {
-    "composite": true
+    "baseUrl": "./",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "paths": {}
   },
-  "include": ["./src"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src"],
+  "exclude": ["dist", "node_modules"]
 }

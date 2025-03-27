@@ -4,6 +4,7 @@ import { type ServerType as HttpServer, serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import type { HonoOptions } from 'hono/hono-base'
 import { HTTPException } from 'hono/http-exception'
+import { logger } from 'hono/logger'
 import type { BlankEnv } from 'hono/types'
 
 export class Gateway extends Hono {
@@ -12,7 +13,10 @@ export class Gateway extends Hono {
   constructor(options?: HonoOptions<BlankEnv>) {
     super(options)
     this.httpServer = null
+    this.use(logger())
     this.onError((err, ctx) => {
+      console.error(err)
+
       // Backend errors
       if (isRenderableError(err)) {
         const response = err.render()

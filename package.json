@@ -8,10 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write ."
   },
-  "keywords": [
-    "wiki",
-    "arxhub"
-  ],
+  "keywords": ["wiki", "arxhub"],
   "author": "",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
@@ -20,9 +17,8 @@
     "turbo": "^2.4.4",
     "typescript": "^5.8.2",
     "vite": "^6.2.1",
-    "vitest": "^3.0.8"
-  },
-  "dependencies": {
-    "glob": "^11.0.1"
+    "vitest": "^3.0.8",
+    "glob": "^11.0.1",
+    "vite-node": "^3.0.9"
   }
 }
