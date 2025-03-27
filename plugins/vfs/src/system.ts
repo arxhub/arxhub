@@ -11,5 +11,7 @@ export interface VirtualFileSystem {
 
   readTextFile(pathname: string): Promise<string>
 
+  writeTextFile(pathname: string, content: string): Promise<void>
+
   refresh(): Promise<void>
 }

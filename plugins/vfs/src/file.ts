@@ -19,7 +19,9 @@ export interface VirtualFile {
   readonly type: string
   readonly kind: string
 
-  text(): Promise<string>
+  readText(): Promise<string>
+
+  writeText(content: string): Promise<void>
 
   // TODO: return object with fields: size, mtime, etc
   stat(): string

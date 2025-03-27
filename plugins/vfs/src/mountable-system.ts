@@ -1,6 +1,8 @@
 import { findLongestPrefix } from '@arxhub/stdlib/fs/find-longest-prefix'
 import type { VirtualFile } from './file'
 import { FileNotFound } from './file-not-found'
+import { MountNotFound } from './mount-not-found'
+import { ProxyFile } from './proxy-file'
 import type { VirtualFileSystem } from './system'
 
 export class MountableFileSystem implements VirtualFileSystem {
@@ -37,9 +39,10 @@ export class MountableFileSystem implements VirtualFileSystem {
   }
 
   async *listFiles(): AsyncGenerator<VirtualFile> {
-    for (const vfs of this.mounts.values()) {
-      // TODO Add proxy moutable file before yield
-      yield* vfs.listFiles()
+    for (const [mountpoint, vfs] of this.mounts.entries()) {
+      for await (const file of vfs.listFiles()) {
+        yield new ProxyFile(this, file, { prefix: mountpoint })
+      }
     }
   }
 
@@ -49,13 +52,18 @@ export class MountableFileSystem implements VirtualFileSystem {
     return mount.vfs.readTextFile(mount.pathname)
   }
 
+  writeTextFile(pathname: string, content: string): Promise<void> {
+    const mount = this.resolve(pathname)
+    if (mount == null) throw new MountNotFound(pathname)
+    return mount.vfs.writeTextFile(pathname, content)
+  }
+
   async refresh(): Promise<void> {
     await Promise.all([...this.mounts.values()].map((fs) => fs.refresh()))
   }
 
   private resolve(pathname: string): { vfs: VirtualFileSystem; pathname: string } | null {
-    // TODO: Optimize keys destructuring
-    const prefix = findLongestPrefix([...this.mounts.keys()], pathname)
+    const prefix = findLongestPrefix(this.mounts.keys(), pathname)
     const vfs = prefix ? this.mounts.get(prefix) : null
     if (prefix == null || vfs == null) return null
     return { vfs, pathname: pathname.slice(prefix.length) }

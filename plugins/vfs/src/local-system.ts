@@ -1,9 +1,10 @@
 import { isFileExists } from '@arxhub/stdlib/fs/is-file-exists'
 import { listFiles } from '@arxhub/stdlib/fs/list-files'
 import { readTextFile } from '@arxhub/stdlib/fs/read-text-file'
+import { writeTextFile } from '@arxhub/stdlib/fs/write-text-file'
 import type { VirtualFile } from './file'
 import { FileNotFound } from './file-not-found'
-import { GenericFile, type VirtualFileOptions } from './generic-fle'
+import { GenericFile, type GenericFileOptions } from './generic-file'
 import type { VirtualFileSystem } from './system'
 
 export class LocalFileSystem implements VirtualFileSystem {
@@ -42,13 +43,17 @@ export class LocalFileSystem implements VirtualFileSystem {
     return readTextFile(`${this.rootDir}/${pathname}`)
   }
 
+  writeTextFile(pathname: string, content: string): Promise<void> {
+    return writeTextFile(`${this.rootDir}/${pathname}`, content)
+  }
+
   refresh(): Promise<void> {
     // no-op for now
     // TODO: Add caching to listFiles
     return Promise.resolve()
   }
 
-  private async readMeta(pathname: string): Promise<Omit<VirtualFileOptions, 'pathname'>> {
+  private async readMeta(pathname: string): Promise<Omit<GenericFileOptions, 'pathname'>> {
     const meta = { type: 'application/octet-stream', kind: 'unknown', fields: {} }
     // biome-ignore lint/style/noParameterAssign: Meta files should always be with a .meta extension
     if (!pathname.endsWith('.meta')) pathname = `${pathname}.meta`

@@ -3,7 +3,7 @@ import dedent from 'ts-dedent'
 import type { VirtualFile } from './file'
 import type { VirtualFileSystem } from './system'
 
-export type VirtualFileOptions = {
+export type GenericFileOptions = {
   pathname: string
   fields: Record<string, unknown>
   type: string
@@ -22,7 +22,7 @@ export class GenericFile implements VirtualFile {
   readonly type: string
   readonly kind: string
 
-  constructor(vfs: VirtualFileSystem, options: VirtualFileOptions) {
+  constructor(vfs: VirtualFileSystem, options: GenericFileOptions) {
     this.vfs = vfs
 
     this.pathname = options.pathname
@@ -36,8 +36,12 @@ export class GenericFile implements VirtualFile {
     this.kind = options.kind
   }
 
-  text(): Promise<string> {
+  readText(): Promise<string> {
     return this.vfs.readTextFile(this.pathname)
+  }
+
+  writeText(content: string): Promise<void> {
+    return this.vfs.writeTextFile(this.pathname, content)
   }
 
   stat(): string {
