@@ -1,3 +1,4 @@
+import type { VirtualFile } from '@arxhub/plugin-vfs/api'
 import { Hono } from 'hono'
 import type { FilesEnv } from '../types'
 
@@ -5,14 +6,26 @@ export const files = new Hono<FilesEnv>()
   //
   // --- --- ---
   //
-  .get('/list/:prefix{.+}?', async (ctx) => {
-    const { vfs } = ctx.var
-    const prefix = ctx.req.param('prefix') || '/'
+  .get('/list', async (ctx) => {
+    const files: VirtualFile[] = []
+    for await (const file of ctx.var.vfs.listFiles()) {
+      files.push(file)
+    }
+    return ctx.json(
+      {
+        files: files.map((it) => it.props()),
+      },
+      200,
+    )
   })
-  .get('/list-v2/:prefix{.+}?', async (ctx) => {
-    const { vfs } = ctx.var
-    const prefix = ctx.req.param('prefix') || '/'
-  })
+  // .get('/list/:prefix{.+}?', async (ctx) => {
+  //   const { vfs } = ctx.var
+  //   const prefix = ctx.req.param('prefix') || '/'
+  // })
+  // .get('/list-v2/:prefix{.+}?', async (ctx) => {
+  //   const { vfs } = ctx.var
+  //   const prefix = ctx.req.param('prefix') || '/'
+  // })
   //
   // --- --- ---
   //
@@ -20,7 +33,7 @@ export const files = new Hono<FilesEnv>()
     const { vfs } = ctx.var
     const pathname = ctx.req.param('pathname')
   })
-  .get(async (ctx) => {
+  .get('/:pathname{.+}', async (ctx) => {
     const { vfs } = ctx.var
     const pathname = ctx.req.param('pathname')
 
@@ -36,11 +49,11 @@ export const files = new Hono<FilesEnv>()
       kind: file.kind,
     })
   })
-  .put(async (ctx) => {
+  .put('/:pathname{.+}', async (ctx) => {
     const { vfs } = ctx.var
     const pathname = ctx.req.param('pathname')
   })
-  .delete(async (ctx) => {
+  .delete('/:pathname{.+}', async (ctx) => {
     const { vfs } = ctx.var
     const pathname = ctx.req.param('pathname')
   })

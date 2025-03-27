@@ -25,7 +25,9 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
-    "hono": "^4.7.4"
+    "hono": "^4.7.4",
+    "@hono/zod-validator": "^0.4.3",
+    "zod": "^3.24.2"
   },
   "publishConfig": {
     "exports": {

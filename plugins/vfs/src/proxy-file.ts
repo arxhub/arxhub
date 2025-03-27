@@ -1,5 +1,5 @@
 import dedent from 'ts-dedent'
-import type { VirtualFile } from './file'
+import type { VirtualFile, VirtualFileProps } from './file'
 import type { VirtualFileSystem } from './system'
 
 export type ProxyFileOptions = {
@@ -62,5 +62,9 @@ export class ProxyFile implements VirtualFile {
       type: ${this.type}
       kind: ${this.kind}
     `
+  }
+
+  props(): VirtualFileProps {
+    return this.actual.props()
   }
 }

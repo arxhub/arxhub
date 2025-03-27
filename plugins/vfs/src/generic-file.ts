@@ -1,6 +1,6 @@
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
 import dedent from 'ts-dedent'
-import type { VirtualFile } from './file'
+import type { VirtualFile, VirtualFileProps } from './file'
 import type { VirtualFileSystem } from './system'
 
 export type GenericFileOptions = {
@@ -51,5 +51,17 @@ export class GenericFile implements VirtualFile {
       type: ${this.type}
       kind: ${this.kind}
     `
+  }
+
+  props(): VirtualFileProps {
+    return {
+      pathname: this.pathname,
+      path: this.path,
+      name: this.name,
+      extension: this.extension,
+      fields: this.fields,
+      type: this.type,
+      kind: this.kind,
+    }
   }
 }
