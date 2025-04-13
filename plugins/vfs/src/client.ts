@@ -1,2 +1,3 @@
-import PluginInstance from './plugin'
-export default PluginInstance
+export { VirtualFileSystemExtension } from './extension'
+export { VirtualFileSystemPlugin as default, VirtualFileSystemPlugin } from './plugin'
+

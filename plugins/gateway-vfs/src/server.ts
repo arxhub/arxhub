@@ -13,9 +13,9 @@ export class GatewayVFSPlugin extends Plugin<ArxHub> {
     })
   }
 
-  async configure(target: ArxHub): Promise<void> {
-    const { vfs } = target.extensions.getByType(VirtualFileSystemExtension)
-    const { gateway } = target.extensions.getByType(GatewayExtension)
+  override configure(target: ArxHub): void {
+    const { vfs } = target.extensions.get(VirtualFileSystemExtension)
+    const { gateway } = target.extensions.get(GatewayExtension)
 
     gateway.use<string, FilesEnv>('/vfs/*', async (ctx, next) => {
       ctx.set('vfs', vfs)
@@ -25,4 +25,4 @@ export class GatewayVFSPlugin extends Plugin<ArxHub> {
   }
 }
 
-export default new GatewayVFSPlugin()
+export default GatewayVFSPlugin

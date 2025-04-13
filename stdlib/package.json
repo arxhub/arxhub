@@ -9,7 +9,8 @@
   "exports": {
     "./collections/*": "./src/collections/*.ts",
     "./errors/*": "./src/errors/*.ts",
-    "./fs/*": "./src/fs/*.ts"
+    "./fs/*": "./src/fs/*.ts",
+    "./record/*": "./src/record/*.ts"
   },
   "files": ["dist"],
   "scripts": {
@@ -20,7 +21,8 @@
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/node": "^22.13.10"
+    "@types/node": "^22.13.10",
+		"type-fest": "^4.39.1"
   },
   "peerDependencies": {},
   "publishConfig": {
@@ -36,6 +38,10 @@
       "./fs/*": {
         "import": "./dist/fs/*.js",
         "types": "./dist/fs/*.d.ts"
+      },
+			"./record/*": {
+        "import": "./dist/record/*.js",
+        "types": "./dist/record/*.d.ts"
       }
     }
   }

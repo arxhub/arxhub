@@ -10,9 +10,7 @@ export class VirtualFileSystemPlugin extends Plugin<ArxHub> {
     })
   }
 
-  async create(target: ArxHub): Promise<void> {
-    target.extensions.add(new VirtualFileSystemExtension())
+  override create(target: ArxHub): void {
+    target.extensions.register(VirtualFileSystemExtension)
   }
 }
-
-export default new VirtualFileSystemPlugin()

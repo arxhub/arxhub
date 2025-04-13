@@ -1,5 +1,6 @@
+import { LazyContainer } from '@arxhub/stdlib/collections/lazy-container'
 import type { Named } from '@arxhub/stdlib/collections/named'
-import { NamedContainer } from '@arxhub/stdlib/collections/named-container'
+import type { NamedFactory } from '@arxhub/stdlib/collections/named-factory'
 
 export interface PluginManifest {
   name: string
@@ -20,13 +21,9 @@ export abstract class Plugin<T> implements Named {
     return this.manifest.name
   }
 
-  create(target: T): Promise<void> {
-    return Promise.resolve()
-  }
+  create(target: T): void {}
 
-  configure(target: T): Promise<void> {
-    return Promise.resolve()
-  }
+  configure(target: T): void {}
 
   start(target: T): Promise<void> {
     return Promise.resolve()
@@ -37,38 +34,11 @@ export abstract class Plugin<T> implements Named {
   }
 }
 
-export type PluginConstructor<T extends Plugin<unknown>> = {
-  readonly name: string
-  // biome-ignore lint/suspicious/noExplicitAny: We want to allow any arguments in constructor
-  new (...args: any[]): T
-}
-
-export class PluginContainer<T> extends NamedContainer<Plugin<T>> {
+export class PluginContainer<T> extends LazyContainer<Plugin<T>> {
   private readonly target: T
 
-  constructor(target: T, plugins: Plugin<T>[] = []) {
-    super(
-      'Plugin',
-      plugins.reduce(
-        (acc, it) => {
-          acc[it.name] = it
-          return acc
-        },
-        {} as Record<string, Plugin<T>>,
-      ),
-    )
+  constructor(target: T, plugins: NamedFactory<Plugin<T>>[] = []) {
+    super('Plugin', plugins)
     this.target = target
-  }
-
-  getByTypeOrNull<R extends Plugin<T>>(plugin: PluginConstructor<R>): R | null {
-    return this.getOrNull(plugin.name)
-  }
-
-  getByType<R extends Plugin<T>>(plugin: PluginConstructor<R>): R {
-    return this.get(plugin.name)
-  }
-
-  register(value: Plugin<T>): void {
-    this.add(value)
   }
 }

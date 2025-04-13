@@ -1,2 +1,3 @@
-import PluginInstance from './plugin'
-export default PluginInstance
+export { GatewayExtension } from './extension'
+export { GatewayPlugin as default, GatewayPlugin } from './plugin'
+
