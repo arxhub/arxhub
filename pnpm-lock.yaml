@@ -11,6 +11,9 @@ importers:
       '@arxhub/toolchain-biome':
         specifier: workspace:*
         version: link:toolchains/biome
+      '@arxhub/toolchain-tsconfig':
+        specifier: ^0.2.0
+        version: 0.2.0
       '@biomejs/biome':
         specifier: ^1.9.4
         version: 1.9.4
@@ -194,18 +197,12 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../../stdlib
-      '@elysiajs/node':
-        specifier: ^1.2.6
-        version: 1.2.6(elysia@1.2.25(@sinclair/typebox@0.34.33)(typescript@5.8.2))(formidable@3.5.2)(ws@8.18.1)
       '@parcel/config-default':
         specifier: ^2.14.4
         version: 2.14.4(@parcel/core@2.14.4(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(postcss@8.5.3)(typescript@5.8.2)
       '@parcel/core':
         specifier: ^2.14.4
         version: 2.14.4(@swc/helpers@0.5.17)
-      elysia:
-        specifier: ^1.2.25
-        version: 1.2.25(@sinclair/typebox@0.34.33)(typescript@5.8.2)
       hono:
         specifier: ^4.7.4
         version: 4.7.4
@@ -268,6 +265,9 @@ importers:
         version: 22.13.10
 
 packages:
+
+  '@arxhub/toolchain-tsconfig@0.2.0':
+    resolution: {integrity: sha512-KjaQ1Ow8eqxQKoT2MqkmV8/x0vEuqosd2F8oNSQ6qR3hxvmwqYSZItTxoVYILYZ3E5mS1MLxSwqME76Qcpf2qQ==}
 
   '@babel/code-frame@7.26.2':
     resolution: {integrity: sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==}
@@ -2231,6 +2231,8 @@ packages:
     resolution: {integrity: sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ==}
 
 snapshots:
+
+  '@arxhub/toolchain-tsconfig@0.2.0': {}
 
   '@babel/code-frame@7.26.2':
     dependencies:

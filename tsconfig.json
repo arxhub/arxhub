@@ -1,3 +1,5 @@
+// Used for configuration files (e.g., vite.config.ts)
 {
-  "$schema": "https://json.schemastore.org/tsconfig.json"
+  "$schema": "https://json.schemastore.org/tsconfig.json",
+  "extends": "@arxhub/toolchain-tsconfig"
 }
