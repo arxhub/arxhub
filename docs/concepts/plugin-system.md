@@ -4,7 +4,7 @@ ArxHub is designed with a modular architecture built around a core system, plugi
 
 ## Core
 
-The **Core** is the central orchestrator of ArxHub. Its primary responsibility is managing the lifecycle of plugins. It provides essential shared services, like logging, but doesn't implement major features itself. Think of the Core as the foundation upon which all other functionality is built.
+The **Core** (`@arxhub/core`) is the central orchestrator of ArxHub. Its primary responsibility is managing the lifecycle of plugins. It provides essential shared services, like logging (via an injectable `Logger` instance that supports child loggers for prefixing), and manages the extension registry. The Core doesn't implement major features itself but provides the foundation and context (`ArxHub` instance) for plugins.
 
 ## Plugins
 
@@ -22,18 +22,18 @@ The **Core** is the central orchestrator of ArxHub. Its primary responsibility i
 ArxHub utilizes several core plugins:
 
 *   **`vfs`:** Provides a Virtual File System, abstracting how and where files are stored and accessed.
-*   **`gateway`:** Acts as the main entry point, often an HTTP server, handling requests and responses.
+*   **`gateway`:** Acts as the main entry point, often an HTTP server, handling requests and responses. It exposes a `GatewayExtension` allowing other plugins to add routes or middleware.
 *   **`file-renderer`:** Renders various file types (like Markdown) into formats suitable for display (like HTML), often used by the `gateway`.
-*   **`web-app`:** Contains the user interface components served to the browser.
+*   **`web-app`:** Serves the main user interface assets (like `index.html` and associated JavaScript/CSS) by interacting with the `gateway` plugin to register routes.
 *   *(Other plugins like `gateway-vfs` and `http-client` provide specific integrations and utilities).*
 
 **Plugin Lifecycle:**
 
 Plugins follow a defined lifecycle managed by the Core:
 
-1.  **Create:** The plugin initializes itself and registers any Extensions it provides.
-2.  **Configure:** After all plugins are created, they can interact with each other and apply configurations.
-3.  **Start:** Plugins initiate any long-running processes (like starting a web server).
+1.  **Create:** The plugin initializes itself, often obtaining a logger instance (`target.logger.child(...)`), and registers any Extensions it provides (`target.extensions.register(...)`).
+2.  **Configure:** After all plugins are created, they can interact with each other by retrieving registered extensions (`target.extensions.get(...)`) and applying configurations (e.g., adding routes to the `gateway`).
+3.  **Start:** Plugins initiate any long-running processes (like starting a web server or connecting to external services).
 4.  **Running:** The plugin is active and performing its function.
 5.  **Stop:** The plugin gracefully shuts down its processes and cleans up resources.
 
@@ -53,7 +53,7 @@ graph LR
 
 *   Provide configuration options (e.g., setting a port number for an HTTP server plugin).
 *   Enable/disable specific sub-features within a plugin.
-*   Allow other plugins to integrate or modify behavior (e.g., an authentication plugin adding a check to an HTTP server plugin).
+*   Allow other plugins to integrate or modify behavior. This is the primary way plugins interact. For instance, the `web-app` plugin uses the `GatewayExtension` from the `gateway` plugin to add routes for serving its UI.
 
 **Examples:**
 
