@@ -3,6 +3,6 @@ import { defineConfig } from 'vite'
 
 // biome-ignore format: Manual formatting is more readable
 export default defineConfig((env) => createNodeConfig(__dirname, env, [
-	'src/client.ts',
+	'src/api.ts',
 	'src/server.ts',
 ]))

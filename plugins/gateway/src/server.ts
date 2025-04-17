@@ -1,3 +1,2 @@
-export * from './server/extension'
-export * from './server/plugin'
+export { GatewayServerPlugin as default } from './server/plugin';
 

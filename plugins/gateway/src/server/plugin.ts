@@ -27,5 +27,3 @@ export class GatewayServerPlugin extends Plugin<ArxHub> {
     return gateway.stop()
   }
 }
-
-export default GatewayServerPlugin

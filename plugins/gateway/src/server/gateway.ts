@@ -1,6 +1,6 @@
 import type { Logger } from '@arxhub/core'
 import { node } from '@elysiajs/node'
-import Elysia from 'elysia'
+import Elysia, { type AnyElysia } from 'elysia'
 
 export class Gateway {
   private readonly logger: Logger
@@ -11,7 +11,7 @@ export class Gateway {
     this.elysia = new Elysia({ adapter: node() })
   }
 
-  use(plugin: Elysia): void {
+  use(plugin: AnyElysia): void {
     this.elysia.use(plugin)
   }
 
