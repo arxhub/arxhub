@@ -20,7 +20,8 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
-    "@arxhub/plugin-gateway-vfs": "workspace:*"
+    "@arxhub/plugin-gateway-vfs": "workspace:*",
+    "@arxhub/plugin-web-app": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

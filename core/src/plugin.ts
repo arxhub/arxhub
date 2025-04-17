@@ -10,6 +10,10 @@ export interface PluginManifest {
   minApi?: string
 }
 
+export function definePluginManifest(manifest: PluginManifest): PluginManifest {
+  return manifest
+}
+
 export abstract class Plugin<T> implements Named {
   readonly manifest: PluginManifest
 
@@ -18,7 +22,7 @@ export abstract class Plugin<T> implements Named {
   }
 
   get name(): string {
-    return this.manifest.name
+    return this.constructor.name
   }
 
   create(target: T): void {}

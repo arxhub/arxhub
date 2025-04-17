@@ -23,11 +23,11 @@ export class LazyContainer<T extends Named> {
     return this._factories.has(factory.name)
   }
 
-  getOrNull<I extends T>(factory: NamedFactory<I>): I | null {
-    return this._instances.getOrNull<I>(factory.name)
+  getOrNull<R extends T>(factory: NamedFactory<R>): R | null {
+    return this._instances.getOrNull<R>(factory.name)
   }
 
-  get<I extends T>(factory: NamedFactory<I>): I {
+  get<R extends T>(factory: NamedFactory<R>): R {
     const value = this.getOrNull(factory)
     if (value == null) throw new KeyError(`${this.domain} '${factory.name}' not found`)
     return value

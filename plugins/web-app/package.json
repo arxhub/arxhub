@@ -1,0 +1,51 @@
+{
+  "name": "@arxhub/plugin-web-app",
+  "version": "0.1.0",
+  "description": "Provides the ArxHub web user interface.",
+  "keywords": ["arxhub"],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./manifest": "./src/manifest.ts",
+    "./api": "./src/api.ts",
+    "./server": "./src/server.ts",
+    "./client": "./src/client.ts"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "^22.13.10"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/stdlib": "workspace:*",
+		"@arxhub/plugin-gateway": "workspace:*",
+    "@arxhub/plugin-vfs": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+			"./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
+      },
+      "./api": {
+        "import": "./dist/api.js",
+        "types": "./dist/api.d.ts"
+      },
+      "./server": {
+        "import": "./dist/server.js",
+        "types": "./dist/server.d.ts"
+      },
+      "./client": {
+        "import": "./dist/client.js",
+        "types": "./dist/client.d.ts"
+      }
+    }
+  }
+}
