@@ -9,20 +9,20 @@ export class ArxHub {
   readonly logger: Logger
 
   constructor(...factories: NamedFactory<Plugin<ArxHub>>[]) {
-    this.plugins = new PluginContainer(this, factories)
+    this.plugins = new PluginContainer(factories)
     this.extensions = new ExtensionContainer()
     this.logger = new ConsoleLogger()
 
     // Initialization order:
     // 1. Create instances of all registered plugins
-    const plugins = this.plugins.instantiate()
+    const plugins = this.plugins.instantiate({ logger: this.logger })
     for (const plugin of plugins) {
       // 2. Invoke lifecycle `create` method
       plugin.create(this)
     }
     // 3. Plugin `create` method should register extensions,
     //    Create instances of all registered extensions
-    this.extensions.instantiate()
+    this.extensions.instantiate({ logger: this.logger })
     for (const plugin of plugins) {
       // 4. Now we have all extensions, plugins can configure self or each-other
       plugin.configure(this)

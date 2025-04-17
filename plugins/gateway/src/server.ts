@@ -1,3 +1,3 @@
-export { GatewayExtension } from './extension'
-export { GatewayPlugin as default, GatewayPlugin } from './plugin'
+export * from './server/extension'
+export * from './server/plugin'
 

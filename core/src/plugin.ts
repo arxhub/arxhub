@@ -1,6 +1,7 @@
 import { LazyContainer } from '@arxhub/stdlib/collections/lazy-container'
 import type { Named } from '@arxhub/stdlib/collections/named'
 import type { NamedFactory } from '@arxhub/stdlib/collections/named-factory'
+import type { Logger } from './logger'
 
 export interface PluginManifest {
   name: string
@@ -14,12 +15,18 @@ export function definePluginManifest(manifest: PluginManifest): PluginManifest {
   return manifest
 }
 
-export abstract class Plugin<T> implements Named {
-  readonly manifest: PluginManifest
+export interface PluginArgs {
+  logger: Logger
+}
 
-  constructor(manifest: PluginManifest) {
-    this.manifest = manifest
+export abstract class Plugin<T> implements Named {
+  protected readonly logger: Logger
+
+  constructor(args: PluginArgs) {
+    this.logger = args.logger.child(`[${this.name}] -`)
   }
+
+  abstract get manifest(): PluginManifest
 
   get name(): string {
     return this.constructor.name
@@ -38,11 +45,8 @@ export abstract class Plugin<T> implements Named {
   }
 }
 
-export class PluginContainer<T> extends LazyContainer<Plugin<T>> {
-  private readonly target: T
-
-  constructor(target: T, plugins: NamedFactory<Plugin<T>>[] = []) {
+export class PluginContainer<T> extends LazyContainer<Plugin<T>, [PluginArgs]> {
+  constructor(plugins: NamedFactory<Plugin<T>>[] = []) {
     super('Plugin', plugins)
-    this.target = target
   }
 }
