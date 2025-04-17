@@ -2,7 +2,9 @@
   "name": "@arxhub/plugin-web-app",
   "version": "0.1.0",
   "description": "Provides the ArxHub web user interface.",
-  "keywords": ["arxhub"],
+  "keywords": [
+    "arxhub"
+  ],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
@@ -12,11 +14,17 @@
     "./server": "./src/server.ts",
     "./client": "./src/client.ts"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@parcel/config-default": "^2.14.4",
+    "@parcel/core": "^2.14.4",
+    "hono": "^4.7.4"
+  },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
@@ -24,13 +32,13 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/stdlib": "workspace:*",
-		"@arxhub/plugin-gateway": "workspace:*",
-    "@arxhub/plugin-vfs": "workspace:*"
+    "@arxhub/plugin-gateway": "workspace:*",
+    "@arxhub/plugin-vfs": "workspace:*",
+    "@arxhub/stdlib": "workspace:*"
   },
   "publishConfig": {
     "exports": {
-			"./manifest": {
+      "./manifest": {
         "import": "./dist/manifest.js",
         "types": "./dist/manifest.d.ts"
       },

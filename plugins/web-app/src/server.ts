@@ -1,10 +1,12 @@
 import type { ArxHub, Logger } from '@arxhub/core'
 import { Plugin } from '@arxhub/core'
 import { GatewayExtension } from '@arxhub/plugin-gateway/api'
+import { VirtualFileSystemExtension } from '@arxhub/plugin-vfs/api' // Added VFS extension
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import manifest from './manifest'
+import { createWebComponentsRouter } from './routes/web-components' // Added router import
 
 export class WebAppPlugin extends Plugin<ArxHub> {
   private logger!: Logger
@@ -56,6 +58,17 @@ export class WebAppPlugin extends Plugin<ArxHub> {
       return ctx.json({ pong: new Date().toISOString() })
     })
     this.logger.info('Added /api/webapp/ping route.')
+
+    // --- Add Web Components Router ---
+    try {
+      const { vfs } = target.extensions.get(VirtualFileSystemExtension)
+      const webComponentsApp = createWebComponentsRouter(vfs, this.logger)
+      gateway.route('/', webComponentsApp) // Mount the router
+      this.logger.info('Mounted /web-components.js route.')
+    } catch (error) {
+       this.logger.error('Failed to get VFS extension or mount web components router:', error)
+    }
+    // --- End Web Components Router ---
   }
 }
 
