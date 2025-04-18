@@ -1,3 +1,1 @@
-export { VirtualFileSystemExtension } from './extension'
-export { VirtualFileSystemPlugin as default, VirtualFileSystemPlugin } from './plugin'
-
+export {VirtualFileSystemPlugin as default} from './shared/plugin'

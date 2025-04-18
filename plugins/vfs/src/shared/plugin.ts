@@ -1,6 +1,6 @@
 import { type ArxHub, Plugin, type PluginArgs } from '@arxhub/core'
+import manifest from '../manifest'
 import { VirtualFileSystemExtension } from './extension'
-import manifest from './manifest'
 
 export class VirtualFileSystemPlugin extends Plugin<ArxHub> {
   constructor(args: PluginArgs) {

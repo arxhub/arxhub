@@ -9,7 +9,8 @@
   "exports": {
     "./api": "./src/api.ts",
     "./client": "./src/client.ts",
-    "./server": "./src/server.ts"
+    "./server": "./src/server.ts",
+    "./manifest": "./src/manifest.ts"
   },
   "files": ["dist"],
   "scripts": {
@@ -40,6 +41,10 @@
       "./server": {
         "import": "./dist/server.js",
         "types": "./dist/server.d.ts"
+      },
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
       }
     }
   }
