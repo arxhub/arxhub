@@ -155,3 +155,15 @@ export function createWebComponentsRouter(vfs: VirtualFileSystem, logger: Logger
 
   return app
 }
+
+
+    // --- Add Web Components Router ---
+    try {
+      const { vfs } = target.extensions.get(VirtualFileSystemExtension)
+      const webComponentsApp = createWebComponentsRouter(vfs, this.logger)
+      gateway.route('/', webComponentsApp) // Mount the router
+      this.logger.info('Mounted /web-components.js route.')
+    } catch (error) {
+      this.logger.error('Failed to get VFS extension or mount web components router:', error)
+    }
+    // --- End Web Components Router ---

@@ -2,28 +2,22 @@
   "name": "@arxhub/plugin-web-app",
   "version": "0.1.0",
   "description": "Provides the ArxHub web user interface.",
-  "keywords": [
-    "arxhub"
-  ],
+  "keywords": ["arxhub"],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
   "exports": {
     "./manifest": "./src/manifest.ts",
     "./api": "./src/api.ts",
-    "./server": "./src/server.ts",
-    "./client": "./src/client.ts"
+    "./server": "./src/server.ts"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc && vite build"
   },
   "dependencies": {
     "@parcel/config-default": "^2.14.4",
-    "@parcel/core": "^2.14.4",
-    "hono": "^4.7.4"
+    "@parcel/core": "^2.14.4"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
@@ -34,7 +28,8 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
-    "@arxhub/stdlib": "workspace:*"
+    "@arxhub/stdlib": "workspace:*",
+    "elysia": "^1.2.25"
   },
   "publishConfig": {
     "exports": {
@@ -49,10 +44,6 @@
       "./server": {
         "import": "./dist/server.js",
         "types": "./dist/server.d.ts"
-      },
-      "./client": {
-        "import": "./dist/client.js",
-        "types": "./dist/client.d.ts"
       }
     }
   }

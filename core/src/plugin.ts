@@ -21,12 +21,12 @@ export interface PluginArgs {
 
 export abstract class Plugin<T> implements Named {
   protected readonly logger: Logger
+  readonly manifest: PluginManifest
 
-  constructor(args: PluginArgs) {
-    this.logger = args.logger.child(`[${this.name}] -`)
+  constructor(args: PluginArgs, manifest: PluginManifest) {
+    this.logger = args.logger.child(`[${this.name}] - `)
+    this.manifest = manifest
   }
-
-  abstract get manifest(): PluginManifest
 
   get name(): string {
     return this.constructor.name

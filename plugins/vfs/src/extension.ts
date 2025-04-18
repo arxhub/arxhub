@@ -1,12 +1,11 @@
-import type { Extension } from '@arxhub/core'
+import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { MountableFileSystem } from './mountable-system'
 
-export class VirtualFileSystemExtension implements Extension {
-  readonly name: string
+export class VirtualFileSystemExtension extends Extension {
   readonly vfs: MountableFileSystem
 
-  constructor() {
-    this.name = VirtualFileSystemExtension.name
+  constructor(args: ExtensionArgs) {
+    super(args)
     this.vfs = new MountableFileSystem()
   }
 }

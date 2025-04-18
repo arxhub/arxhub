@@ -1,12 +1,12 @@
-import { type ArxHub, Plugin, type PluginManifest } from '@arxhub/core'
+import { type ArxHub, Plugin, type PluginArgs } from '@arxhub/core'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/api'
 import { VirtualFileSystemExtension } from '@arxhub/plugin-vfs/api'
 import manifest from '../manifest'
 import { filesRoute } from './routes/files'
 
 export class GatewayVFSServerPlugin extends Plugin<ArxHub> {
-  get manifest(): PluginManifest {
-    return manifest
+  constructor(args: PluginArgs) {
+    super(args, manifest)
   }
 
   override configure(target: ArxHub): void {

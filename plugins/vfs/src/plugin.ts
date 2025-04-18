@@ -1,13 +1,10 @@
-import { type ArxHub, Plugin } from '@arxhub/core'
+import { type ArxHub, Plugin, type PluginArgs } from '@arxhub/core'
 import { VirtualFileSystemExtension } from './extension'
+import manifest from './manifest'
 
 export class VirtualFileSystemPlugin extends Plugin<ArxHub> {
-  constructor() {
-    super({
-      name: VirtualFileSystemPlugin.name,
-      version: '0.1.0',
-      author: '',
-    })
+  constructor(args: PluginArgs) {
+    super(args, manifest)
   }
 
   override create(target: ArxHub): void {

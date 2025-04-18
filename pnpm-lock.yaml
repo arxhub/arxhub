@@ -197,9 +197,9 @@ importers:
       '@parcel/core':
         specifier: ^2.14.4
         version: 2.14.4(@swc/helpers@0.5.17)
-      hono:
-        specifier: ^4.7.4
-        version: 4.7.4
+      elysia:
+        specifier: ^1.2.25
+        version: 1.2.25(@sinclair/typebox@0.34.33)(typescript@5.8.2)
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -1507,10 +1507,6 @@ packages:
   hexoid@2.0.0:
     resolution: {integrity: sha512-qlspKUK7IlSQv2o+5I7yhUd7TxlOG2Vr5LTa3ve2XSNVKAL/n/u/7KLvKmFNimomDIKvZFXWHv0T12mv7rT8Aw==}
     engines: {node: '>=8'}
-
-  hono@4.7.4:
-    resolution: {integrity: sha512-Pst8FuGqz3L7tFF+u9Pu70eI0xa5S3LPUmrNd5Jm8nTHze9FxLTK9Kaj5g/k4UcwuJSXTP65SyHOPLrffpcAJg==}
-    engines: {node: '>=16.9.0'}
 
   htmlnano@2.1.1:
     resolution: {integrity: sha512-kAERyg/LuNZYmdqgCdYvugyLWNFAm8MWXpQMz1pLpetmCbFwoMxvkSoaAMlFrOC4OKTWI4KlZGT/RsNxg4ghOw==}
@@ -3640,8 +3636,6 @@ snapshots:
   he@1.2.0: {}
 
   hexoid@2.0.0: {}
-
-  hono@4.7.4: {}
 
   htmlnano@2.1.1(postcss@8.5.3)(typescript@5.8.2):
     dependencies:

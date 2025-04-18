@@ -7,6 +7,15 @@ import WebAppPlugin from '@arxhub/plugin-web-app/server'
 
 const hub = new ArxHub(VFSPlugin, GatewayPlugin, GatewayVFSPlugin, WebAppPlugin)
 
+if (import.meta.hot) {
+  const prev = import.meta.hot.data.hub
+  if (prev != null) {
+    prev?.stop()
+    console.log('--- VITE NODE HOT UPDATED ---')
+  }
+  import.meta.hot.data.hub = hub
+}
+
 const { vfs } = hub.extensions.get(VirtualFileSystemExtension)
 vfs.mount('/local', new LocalFileSystem('data'))
 
