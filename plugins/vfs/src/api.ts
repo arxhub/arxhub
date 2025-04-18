@@ -15,5 +15,6 @@ export * from './shared/generic-file'
 export * from './shared/local-system'
 export * from './shared/mountable-system'
 export * from './shared/proxy-file'
+export * from './shared/searchable-system'
 export * from './shared/system'
 

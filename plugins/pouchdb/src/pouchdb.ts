@@ -1,2 +1,6 @@
-import pouchdb from 'pouchdb-core'
-export default pouchdb
+import MemoryAdapter from 'pouchdb-adapter-memory'
+import PouchDB from 'pouchdb-core'
+
+PouchDB.plugin(MemoryAdapter)
+
+export default PouchDB

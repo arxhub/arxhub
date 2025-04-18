@@ -26,7 +26,8 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/stdlib": "workspace:*"
+    "@arxhub/stdlib": "workspace:*",
+    "@arxhub/plugin-pouchdb": "workspace:*"
   },
   "publishConfig": {
     "exports": {
