@@ -11,7 +11,7 @@
   },
   "files": ["dist"],
   "scripts": {
-    "dev": "vite-node -w ./src/index.ts --debug hmr",
+    "dev": "vite-node -w ./src/index.ts",
     "build": "tsc && vite build",
     "test": "vitest"
   },

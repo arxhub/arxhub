@@ -1,7 +1,7 @@
 import { ArxHub } from '@arxhub/core'
 import GatewayVFSPlugin from '@arxhub/plugin-gateway-vfs/server'
 import GatewayPlugin from '@arxhub/plugin-gateway/server'
-import { LocalFileSystem, VirtualFileSystemExtension } from '@arxhub/plugin-vfs/api'
+import { LocalFileSystem, VirtualFileSystemServerExtension } from '@arxhub/plugin-vfs/api'
 import VFSPlugin from '@arxhub/plugin-vfs/server'
 import WebAppPlugin from '@arxhub/plugin-web-app/server'
 
@@ -16,7 +16,7 @@ if (import.meta.hot) {
   import.meta.hot.data.hub = hub
 }
 
-const { vfs } = hub.extensions.get(VirtualFileSystemExtension)
+const vfs = hub.extensions.get(VirtualFileSystemServerExtension)
 vfs.mount('/local', new LocalFileSystem('data'))
 
 await hub.start()
