@@ -1,32 +1,33 @@
 {
-  "name": "@arxhub/plugin-gateway",
+  "name": "@arxhub/plugin-pouchdb",
   "version": "0.1.0",
   "description": "",
-  "keywords": ["arxhub"],
+  "keywords": [
+    "arxhub"
+  ],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
   "exports": {
     "./manifest": "./src/manifest.ts",
-    "./api": "./src/api.ts",
-    "./server": "./src/server.ts"
+    "./pouchdb": "./src/pouchdb.ts"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "@elysiajs/node": "^1.2.6",
-    "elysia": "^1.2.25"
+    "pouchdb-core": "^9.0.0"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/node": "^22.13.10"
+    "@types/pouchdb-core": "^7.0.15"
   },
   "peerDependencies": {
-    "@arxhub/core": "workspace:*",
-    "@arxhub/stdlib": "workspace:*"
+    "@arxhub/core": "workspace:*"
   },
   "publishConfig": {
     "exports": {
@@ -34,13 +35,9 @@
         "import": "./dist/manifest.js",
         "types": "./dist/manifest.d.ts"
       },
-      "./api": {
-        "import": "./dist/api.js",
-        "types": "./dist/api.d.ts"
-      },
-      "./server": {
-        "import": "./dist/server.js",
-        "types": "./dist/server.d.ts"
+      "./pouchdb": {
+        "import": "./dist/pouchdb.js",
+        "types": "./dist/pouchdb.d.ts"
       }
     }
   }

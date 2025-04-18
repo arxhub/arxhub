@@ -1,0 +1,1 @@
+# @arxhub/plugin-pouchdb
