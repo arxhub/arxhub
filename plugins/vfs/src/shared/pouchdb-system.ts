@@ -1,15 +1,35 @@
 import PouchDB from '@arxhub/plugin-pouchdb/pouchdb'
+import AsyncLock from 'async-lock'
 import type { VirtualFile } from './file'
 import type { SearchableFileSystem } from './searchable-system'
 import type { VirtualFileSystem } from './system'
 
 export class PouchDBFileSystem implements SearchableFileSystem {
-  private readonly index: PouchDB.Database
   private readonly actual: VirtualFileSystem
+  private index: PouchDB.Database | null
+  private lock: AsyncLock
 
   constructor(actual: VirtualFileSystem) {
-    this.index = new PouchDB('vfs', { adapter: 'memory' })
     this.actual = actual
+    this.index = null
+    this.lock = new AsyncLock()
+  }
+
+  private async getIndex(rebuild = false): Promise<PouchDB.Database> {
+    if (!rebuild && !this.lock.isBusy() && this.index != null) return this.index
+
+    this.index = await this.lock.acquire('index', async () => {
+      const newIndex = this.index == null
+      const index = this.index ?? new PouchDB('vfs', { adapter: 'memory' })
+
+      if (newIndex || rebuild) {
+        // TODO
+      }
+
+      return index
+    })
+
+    return this.index
   }
 
   isFileExists(pathname: string): Promise<boolean> {
