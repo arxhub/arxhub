@@ -3,13 +3,7 @@ import dedent from 'ts-dedent'
 import type { VirtualFile, VirtualFileProps } from './file'
 import type { VirtualFileSystem } from './system'
 
-export type GenericFileOptions = {
-  pathname: string
-  fields: Record<string, unknown>
-  metadata: Record<string, unknown>
-  type: string
-  kind: string
-}
+export type GenericFileOptions = Omit<VirtualFileProps, 'name' | 'path'>
 
 export class GenericFile implements VirtualFile {
   readonly vfs: VirtualFileSystem

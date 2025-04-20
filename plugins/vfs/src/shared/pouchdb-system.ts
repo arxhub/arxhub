@@ -17,6 +17,12 @@ export class PouchDBFileSystem implements SearchableFileSystem {
     this.lock = new AsyncLock()
   }
 
+  async find(request: PouchDB.Find.FindRequest<GenericFileOptions>): Promise<VirtualFile[]> {
+    const index = await this.getIndex()
+    const { docs } = await index.find(request)
+    return docs.map((it) => new GenericFile(this, it))
+  }
+
   private async getIndex(rebuild = false): Promise<PouchDB.Database<VirtualFileProps>> {
     if (!rebuild && !this.lock.isBusy() && this.index != null) return this.index
 
@@ -35,10 +41,10 @@ export class PouchDBFileSystem implements SearchableFileSystem {
         // Maybe use bulkDocs
         for await (const file of this.actual.listFiles()) {
           await index.put({
-						// Later will be some sort of uuid
-						_id: file.pathname,
-						...file.props(),
-					})
+            // Later will be some sort of uuid
+            _id: file.pathname,
+            ...file.props(),
+          })
         }
       }
 
