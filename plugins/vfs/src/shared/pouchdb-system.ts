@@ -1,12 +1,14 @@
 import PouchDB from '@arxhub/plugin-pouchdb/pouchdb'
 import AsyncLock from 'async-lock'
-import type { VirtualFile } from './file'
+import { FileNotFound } from './errors/file-not-found'
+import type { VirtualFile, VirtualFileProps } from './file'
+import { GenericFile, type GenericFileOptions } from './generic-file'
 import type { SearchableFileSystem } from './searchable-system'
 import type { VirtualFileSystem } from './system'
 
 export class PouchDBFileSystem implements SearchableFileSystem {
   private readonly actual: VirtualFileSystem
-  private index: PouchDB.Database | null
+  private index: PouchDB.Database<VirtualFileProps> | null
   private lock: AsyncLock
 
   constructor(actual: VirtualFileSystem) {
@@ -15,15 +17,29 @@ export class PouchDBFileSystem implements SearchableFileSystem {
     this.lock = new AsyncLock()
   }
 
-  private async getIndex(rebuild = false): Promise<PouchDB.Database> {
+  private async getIndex(rebuild = false): Promise<PouchDB.Database<VirtualFileProps>> {
     if (!rebuild && !this.lock.isBusy() && this.index != null) return this.index
 
     this.index = await this.lock.acquire('index', async () => {
-      const newIndex = this.index == null
       const index = this.index ?? new PouchDB('vfs', { adapter: 'memory' })
 
-      if (newIndex || rebuild) {
-        // TODO
+      if (this.index == null) {
+        await index.createIndex({ index: { fields: ['pathname', 'path', 'name', 'extension', 'type', 'kind'] } })
+      }
+
+      // There may be a performance issue, but rebuild will be called very, very rarely
+      if (this.index == null || rebuild) {
+        const { rows: docs } = await index.allDocs()
+        await Promise.all(docs.map((it) => index.remove(it.id, it.value.rev)))
+
+        // Maybe use bulkDocs
+        for await (const file of this.actual.listFiles()) {
+          await index.put({
+						// Later will be some sort of uuid
+						_id: file.pathname,
+						...file.props(),
+					})
+        }
       }
 
       return index
@@ -32,20 +48,52 @@ export class PouchDBFileSystem implements SearchableFileSystem {
     return this.index
   }
 
-  isFileExists(pathname: string): Promise<boolean> {
-    return this.actual.isFileExists(pathname)
+  async createIndex(name: string, fields: string[], selector?: PouchDB.Find.Selector): Promise<void> {
+    const index = await this.getIndex()
+    await index.createIndex({
+      index: {
+        name: name,
+        fields: fields,
+        partial_filter_selector: selector,
+      },
+    })
   }
 
-  file(pathname: string): Promise<VirtualFile> {
-    return this.actual.file(pathname)
+  async isFileExists(pathname: string): Promise<boolean> {
+    const index = await this.getIndex()
+    const { docs } = await index.find({
+      selector: { pathname },
+      fields: ['pathname'],
+      limit: 1,
+    })
+    return docs[0] != null
   }
 
-  fileOrNull(pathname: string): Promise<VirtualFile | null> {
-    return this.actual.fileOrNull(pathname)
+  async file(pathname: string): Promise<VirtualFile> {
+    const file = await this.fileOrNull(pathname)
+    if (file == null) throw new FileNotFound(pathname)
+    return file
   }
 
-  listFiles(): AsyncGenerator<VirtualFile> {
-    return this.actual.listFiles()
+  async fileOrNull(pathname: string): Promise<VirtualFile | null> {
+    const index = await this.getIndex()
+    const resp: PouchDB.Find.FindResponse<GenericFileOptions> = await index.find({
+      selector: { pathname },
+      fields: ['pathname', 'fields', 'metadata', 'type', 'kind'],
+      limit: 1,
+    })
+    const options = resp.docs[0]
+    if (options == null) return null
+    return new GenericFile(this, options)
+  }
+
+  async *listFiles(): AsyncGenerator<VirtualFile> {
+    const index = await this.getIndex()
+    const docs = await index.allDocs({ include_docs: true })
+    for (const { doc } of docs.rows) {
+      // biome-ignore lint/style/noNonNullAssertion: exists if `include_docs` is `true`
+      yield new GenericFile(this, doc!)
+    }
   }
 
   readTextFile(pathname: string): Promise<string> {
@@ -56,7 +104,8 @@ export class PouchDBFileSystem implements SearchableFileSystem {
     return this.actual.writeTextFile(pathname, content)
   }
 
-  refresh(): Promise<void> {
-    return this.actual.refresh()
+  async refresh(): Promise<void> {
+    await this.actual.refresh()
+    await this.getIndex(true)
   }
 }

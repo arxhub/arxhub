@@ -1,6 +1,9 @@
 import type { VirtualFileSystem } from './system'
 
 export interface VirtualFileProps {
+  // readonly id: string
+  // readonly revision: string
+
   // /home/user/file.txt
   readonly pathname: string
 
@@ -14,6 +17,7 @@ export interface VirtualFileProps {
   readonly extension: string
 
   readonly fields: Record<string, unknown>
+  readonly metadata: Record<string, unknown>
   readonly type: string
   readonly kind: string
 }

@@ -39,6 +39,10 @@ export class ProxyFile implements VirtualFile {
     return this.actual.fields
   }
 
+  get metadata(): Record<string, unknown> {
+    return this.actual.metadata
+  }
+
   get type(): string {
     return this.actual.type
   }

@@ -5,7 +5,7 @@ import { LocalFileSystem, VirtualFileSystemServerExtension } from '@arxhub/plugi
 import VFSPlugin from '@arxhub/plugin-vfs/server'
 import WebAppPlugin from '@arxhub/plugin-web-app/server'
 
-const hub = new ArxHub(VFSPlugin, GatewayPlugin, GatewayVFSPlugin, WebAppPlugin)
+const hub = new ArxHub([VFSPlugin, GatewayPlugin, GatewayVFSPlugin, WebAppPlugin])
 
 if (import.meta.hot) {
   const prev = import.meta.hot.data.hub

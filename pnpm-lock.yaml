@@ -169,6 +169,9 @@ importers:
       pouchdb-core:
         specifier: ^9.0.0
         version: 9.0.0
+      pouchdb-find:
+        specifier: ^9.0.0
+        version: 9.0.0
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -182,6 +185,9 @@ importers:
       '@types/pouchdb-core':
         specifier: ^7.0.15
         version: 7.0.15
+      '@types/pouchdb-find':
+        specifier: ^7.3.3
+        version: 7.3.3
 
   plugins/vfs:
     dependencies:
@@ -2064,6 +2070,9 @@ packages:
     resolution: {integrity: sha512-JcEmHlyLK/o0uGAlj65vgg+7LIms0xKXe60lcDOTU7oVX/3LuEuLwrQpW3VJ7de5TaFKiW4kWkaIpJL42FEgxQ==}
     engines: {node: '>=12.0.0'}
 
+  pouchdb-abstract-mapreduce@9.0.0:
+    resolution: {integrity: sha512-SnTtqwAEiAa3uxKbc1J7LfiBViwEkKe2xkK92zxyTXPqWBvMnh4UU3GXxx7GrXTM4L9llsQ3lSjpbH4CNqG1Mw==}
+
   pouchdb-adapter-leveldb-core@9.0.0:
     resolution: {integrity: sha512-b3ZGPtVXyivGL5SK3AIDG7PrNsZdoDpGFkmTytDTtctkVhxOg71gnXXP+CrupENPqSNG/eGbKW4w+bbMpxy6aA==}
 
@@ -2091,8 +2100,14 @@ packages:
   pouchdb-fetch@9.0.0:
     resolution: {integrity: sha512-TbE3cUcAJQrwb9kr44tDP0X+NAbcqgjsTvcL30L4xzBNJeCPTIRjukYX80s154SHJUXBxcWRiPsMmNqpXsjfCA==}
 
+  pouchdb-find@9.0.0:
+    resolution: {integrity: sha512-vvVhq4eEOmSkwSRwf2NBYtdhURB7ryJ7sUI4WDN00GuLUj2g8jAXBJuZIryVgdYt/5S5cfn70iRL6Eow+LFhpA==}
+
   pouchdb-json@9.0.0:
     resolution: {integrity: sha512-aI41mYVyI195GXuT1Ys7mLIB/Mvrz11ihoTP6km6hYqVgSuaUxuZcFUozlyTJiZXr7H5kdhNgclhlVnjir4JAA==}
+
+  pouchdb-mapreduce-utils@9.0.0:
+    resolution: {integrity: sha512-Bjh8W6QXqp1j7MKmHhYYp5cYlcQsm5drD8Jd/F+ZlfNt18uiD2SQXWzGM5797+tiW/LszFGb8ttw0uHWjxufCQ==}
 
   pouchdb-md5@9.0.0:
     resolution: {integrity: sha512-58xUYBvW3/s+aH0j4uOhhN8yCk0LQ254cxBzI/gbKA9PrfwHpe4zrr0L/ia5ml3A30oH1f8aTnuVMwWDkFcuww==}
@@ -4476,6 +4491,18 @@ snapshots:
       posthtml-parser: 0.11.0
       posthtml-render: 3.0.0
 
+  pouchdb-abstract-mapreduce@9.0.0:
+    dependencies:
+      pouchdb-binary-utils: 9.0.0
+      pouchdb-collate: 9.0.0
+      pouchdb-errors: 9.0.0
+      pouchdb-fetch: 9.0.0
+      pouchdb-mapreduce-utils: 9.0.0
+      pouchdb-md5: 9.0.0
+      pouchdb-utils: 9.0.0
+    transitivePeerDependencies:
+      - encoding
+
   pouchdb-adapter-leveldb-core@9.0.0:
     dependencies:
       double-ended-queue: 2.1.0-0
@@ -4538,9 +4565,25 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  pouchdb-find@9.0.0:
+    dependencies:
+      pouchdb-abstract-mapreduce: 9.0.0
+      pouchdb-collate: 9.0.0
+      pouchdb-errors: 9.0.0
+      pouchdb-fetch: 9.0.0
+      pouchdb-md5: 9.0.0
+      pouchdb-selector-core: 9.0.0
+      pouchdb-utils: 9.0.0
+    transitivePeerDependencies:
+      - encoding
+
   pouchdb-json@9.0.0:
     dependencies:
       vuvuzela: 1.0.3
+
+  pouchdb-mapreduce-utils@9.0.0:
+    dependencies:
+      pouchdb-utils: 9.0.0
 
   pouchdb-md5@9.0.0:
     dependencies:

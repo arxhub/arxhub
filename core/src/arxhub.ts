@@ -1,14 +1,14 @@
 import type { NamedFactory } from '@arxhub/stdlib/collections/named-factory'
 import { ExtensionContainer } from './extension'
 import { ConsoleLogger, type Logger } from './logger'
-import { type Plugin, PluginContainer } from './plugin'
+import { type Plugin, type PluginArgs, PluginContainer } from './plugin'
 
 export class ArxHub {
   readonly plugins: PluginContainer<ArxHub>
   readonly extensions: ExtensionContainer
   readonly logger: Logger
 
-  constructor(...factories: NamedFactory<Plugin<ArxHub>>[]) {
+  constructor(factories: NamedFactory<Plugin<ArxHub>, [PluginArgs]>[]) {
     this.plugins = new PluginContainer(factories)
     this.extensions = new ExtensionContainer()
     this.logger = new ConsoleLogger()

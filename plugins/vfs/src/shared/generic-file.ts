@@ -6,6 +6,7 @@ import type { VirtualFileSystem } from './system'
 export type GenericFileOptions = {
   pathname: string
   fields: Record<string, unknown>
+  metadata: Record<string, unknown>
   type: string
   kind: string
 }
@@ -19,6 +20,7 @@ export class GenericFile implements VirtualFile {
   readonly extension: string
 
   readonly fields: Record<string, unknown>
+  readonly metadata: Record<string, unknown>
   readonly type: string
   readonly kind: string
 
@@ -32,6 +34,7 @@ export class GenericFile implements VirtualFile {
     this.extension = splitted.ext
 
     this.fields = options.fields
+    this.metadata = options.metadata
     this.type = options.type
     this.kind = options.kind
   }
@@ -60,6 +63,7 @@ export class GenericFile implements VirtualFile {
       name: this.name,
       extension: this.extension,
       fields: this.fields,
+      metadata: this.metadata,
       type: this.type,
       kind: this.kind,
     }

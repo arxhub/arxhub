@@ -54,7 +54,13 @@ export class LocalFileSystem implements VirtualFileSystem {
   }
 
   private async readMeta(pathname: string): Promise<Omit<GenericFileOptions, 'pathname'>> {
-    const meta = { type: 'application/octet-stream', kind: 'unknown', fields: {} }
+    const meta: Omit<GenericFileOptions, 'pathname'> = {
+      type: 'application/octet-stream',
+      kind: 'unknown',
+      fields: {},
+      metadata: {},
+    }
+
     // biome-ignore lint/style/noParameterAssign: Meta files should always be with a .meta extension
     if (!pathname.endsWith('.meta')) pathname = `${pathname}.meta`
     if (!(await this.isFileExists(pathname))) {

@@ -1,1 +1,2 @@
-export {VirtualFileSystemPlugin as default} from './shared/plugin'
+export { VirtualFileSystemPlugin as default } from './shared/plugin';
+

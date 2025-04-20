@@ -46,7 +46,7 @@ export abstract class Plugin<T> implements Named {
 }
 
 export class PluginContainer<T> extends LazyContainer<Plugin<T>, [PluginArgs]> {
-  constructor(plugins: NamedFactory<Plugin<T>>[] = []) {
+  constructor(plugins: NamedFactory<Plugin<T>, [PluginArgs]>[] = []) {
     super('Plugin', plugins)
   }
 }

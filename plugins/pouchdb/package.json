@@ -21,13 +21,15 @@
   "dependencies": {
     "pouchdb": "^9.0.0",
     "pouchdb-adapter-memory": "^9.0.0",
-    "pouchdb-core": "^9.0.0"
+    "pouchdb-core": "^9.0.0",
+    "pouchdb-find": "^9.0.0"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
     "@types/pouchdb-adapter-memory": "^6.1.6",
-    "@types/pouchdb-core": "^7.0.15"
+    "@types/pouchdb-core": "^7.0.15",
+    "@types/pouchdb-find": "^7.3.3"
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*"
