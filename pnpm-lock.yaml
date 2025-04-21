@@ -86,6 +86,37 @@ importers:
         specifier: ^4.39.1
         version: 4.39.1
 
+  externals/pouchdb:
+    dependencies:
+      pouchdb:
+        specifier: ^9.0.0
+        version: 9.0.0
+      pouchdb-adapter-memory:
+        specifier: ^9.0.0
+        version: 9.0.0
+      pouchdb-core:
+        specifier: ^9.0.0
+        version: 9.0.0
+      pouchdb-find:
+        specifier: ^9.0.0
+        version: 9.0.0
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/pouchdb-adapter-memory':
+        specifier: ^6.1.6
+        version: 6.1.6
+      '@types/pouchdb-core':
+        specifier: ^7.0.15
+        version: 7.0.15
+      '@types/pouchdb-find':
+        specifier: ^7.3.3
+        version: 7.3.3
+
   plugins/gateway:
     dependencies:
       '@arxhub/core':
@@ -155,48 +186,14 @@ importers:
         specifier: ^22.13.10
         version: 22.13.10
 
-  plugins/pouchdb:
-    dependencies:
-      '@arxhub/core':
-        specifier: workspace:*
-        version: link:../../core
-      pouchdb:
-        specifier: ^9.0.0
-        version: 9.0.0
-      pouchdb-adapter-memory:
-        specifier: ^9.0.0
-        version: 9.0.0
-      pouchdb-core:
-        specifier: ^9.0.0
-        version: 9.0.0
-      pouchdb-find:
-        specifier: ^9.0.0
-        version: 9.0.0
-    devDependencies:
-      '@arxhub/toolchain-tsconfig':
-        specifier: workspace:*
-        version: link:../../toolchains/tsconfig
-      '@arxhub/toolchain-vite':
-        specifier: workspace:*
-        version: link:../../toolchains/vite
-      '@types/pouchdb-adapter-memory':
-        specifier: ^6.1.6
-        version: 6.1.6
-      '@types/pouchdb-core':
-        specifier: ^7.0.15
-        version: 7.0.15
-      '@types/pouchdb-find':
-        specifier: ^7.3.3
-        version: 7.3.3
-
   plugins/vfs:
     dependencies:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../core
-      '@arxhub/plugin-pouchdb':
+      '@arxhub/external-pouchdb':
         specifier: workspace:*
-        version: link:../pouchdb
+        version: link:../../externals/pouchdb
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../../stdlib

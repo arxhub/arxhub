@@ -32,7 +32,7 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/plugin-pouchdb": "workspace:*",
+    "@arxhub/external-pouchdb": "workspace:*",
     "@arxhub/stdlib": "workspace:*"
   },
   "publishConfig": {

@@ -22,9 +22,9 @@ class CounterComponent extends HTMLElement {
         }
       </style>
       <div>
+        <button id="decrement">-</button>
         <span id="count">${this.count}</span>
         <button id="increment">+</button>
-        <button id="decrement">-</button>
       </div>
 		`
 

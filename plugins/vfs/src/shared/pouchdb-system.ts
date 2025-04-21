@@ -1,4 +1,4 @@
-import PouchDB from '@arxhub/plugin-pouchdb/pouchdb'
+import PouchDB from '@arxhub/external-pouchdb/memory'
 import AsyncLock from 'async-lock'
 import { FileNotFound } from './errors/file-not-found'
 import type { VirtualFile, VirtualFileProps } from './file'

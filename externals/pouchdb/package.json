@@ -1,20 +1,15 @@
 {
-  "name": "@arxhub/plugin-pouchdb",
+  "name": "@arxhub/external-pouchdb",
   "version": "0.1.0",
   "description": "",
-  "keywords": [
-    "arxhub"
-  ],
-  "license": "AGPL-3.0-or-later",
+  "keywords": ["arxhub", "pouchdb"],
+  "license": "MIT",
   "author": "",
   "type": "module",
   "exports": {
-    "./manifest": "./src/manifest.ts",
-    "./pouchdb": "./src/pouchdb.ts"
+    "./memory": "./src/memory.ts"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc && vite build"
   },
@@ -31,18 +26,12 @@
     "@types/pouchdb-core": "^7.0.15",
     "@types/pouchdb-find": "^7.3.3"
   },
-  "peerDependencies": {
-    "@arxhub/core": "workspace:*"
-  },
+  "peerDependencies": {},
   "publishConfig": {
     "exports": {
-      "./manifest": {
-        "import": "./dist/manifest.js",
-        "types": "./dist/manifest.d.ts"
-      },
-      "./pouchdb": {
-        "import": "./dist/pouchdb.js",
-        "types": "./dist/pouchdb.d.ts"
+      "./memory": {
+        "import": "./dist/memory.js",
+        "types": "./dist/memory.d.ts"
       }
     }
   }
