@@ -8,3 +8,5 @@ export default defineConfig((env) => createNodeConfig(__dirname, env, [
 	// 'src/client.ts',
 	'src/server.ts',
 ]))
+
+// TODO: Add static-copy files into dist folder

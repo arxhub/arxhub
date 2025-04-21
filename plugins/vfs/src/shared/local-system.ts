@@ -32,8 +32,9 @@ export class LocalFileSystem implements VirtualFileSystem {
 
   // TODO: Add caching
   async *listFiles(): AsyncGenerator<VirtualFile> {
-    for await (const pathname of listFiles(this.rootDir)) {
-      if (pathname.endsWith('.meta')) continue
+    for await (const realPathname of listFiles(this.rootDir)) {
+      if (realPathname.endsWith('.meta')) continue
+      const pathname = realPathname.replace(`${this.rootDir}/`, '')
       const meta = await this.readMeta(pathname)
       yield new GenericFile(this, { ...meta, pathname })
     }
@@ -64,7 +65,7 @@ export class LocalFileSystem implements VirtualFileSystem {
     // biome-ignore lint/style/noParameterAssign: Meta files should always be with a .meta extension
     if (!pathname.endsWith('.meta')) pathname = `${pathname}.meta`
     if (!(await this.isFileExists(pathname))) {
-      console.warn(`Meta file does not exists: '${pathname}'`)
+      console.warn(`Meta file does not exists for: '${pathname}'`)
       return meta
     }
 

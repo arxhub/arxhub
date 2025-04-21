@@ -69,6 +69,11 @@ export class ProxyFile implements VirtualFile {
   }
 
   props(): VirtualFileProps {
-    return this.actual.props()
+    return {
+      ...this.actual.props(),
+      pathname: this.pathname,
+      path: this.path,
+      name: this.name,
+    }
   }
 }

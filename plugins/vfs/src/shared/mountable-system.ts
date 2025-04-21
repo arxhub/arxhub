@@ -1,7 +1,7 @@
 import { findLongestPrefix } from '@arxhub/stdlib/fs/find-longest-prefix'
 import { FileNotFound } from './errors/file-not-found'
-import type { VirtualFile } from './file'
 import { MountNotFound } from './errors/mount-not-found'
+import type { VirtualFile } from './file'
 import { ProxyFile } from './proxy-file'
 import type { VirtualFileSystem } from './system'
 
