@@ -8,7 +8,7 @@ export class ArxHub {
   readonly extensions: ExtensionContainer
   readonly logger: Logger
 
-  constructor(factories: NamedFactory<Plugin<ArxHub>, [PluginArgs]>[]) {
+  constructor(factories: NamedFactory<Plugin<ArxHub>, [PluginArgs]>[] = []) {
     this.plugins = new PluginContainer(factories)
     this.extensions = new ExtensionContainer()
     this.logger = new ConsoleLogger()
