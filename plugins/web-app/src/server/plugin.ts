@@ -16,7 +16,7 @@ export class WebAppServerPlugin extends Plugin<ArxHub> {
 
     const { gateway } = target.extensions.get(GatewayServerExtension)
     const vfs = target.extensions.get(VirtualFileSystemServerExtension)
-    vfs.mount('/node_modules/@arxhub/plugin-web-app/files', new LocalFileSystem(`${__dirname}/files`))
+    vfs.mount('/node_modules/@arxhub/web-app/files', new LocalFileSystem(`${__dirname}/files`))
 
     gateway.use(entrypointRoute(vfs.files))
     gateway.use(createWebComponentsRouter(vfs.files))

@@ -137,6 +137,9 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
+      '@radix-ui/colors':
+        specifier: ^3.0.0
+        version: 3.0.0
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -150,6 +153,25 @@ importers:
       type-fest:
         specifier: ^4.39.1
         version: 4.39.1
+
+  packages/web-app:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arxhub/stdlib':
+        specifier: workspace:*
+        version: link:../stdlib
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.13.10
 
   plugins/gateway:
     dependencies:
@@ -265,6 +287,9 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../../packages/stdlib
+      '@arxhub/web-app':
+        specifier: workspace:*
+        version: link:../../packages/web-app
       elysia:
         specifier: ^1.2.25
         version: 1.2.25(@sinclair/typebox@0.34.33)(typescript@5.8.2)
@@ -719,6 +744,9 @@ packages:
 
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
+
+  '@radix-ui/colors@3.0.0':
+    resolution: {integrity: sha512-FUOsGBkHrYJwCSEtWRCIfQbZG7q1e6DgxCIOe1SUQzDe/7rXXeA47s8yCn6fuTNQAj1Zq4oTFi9Yjp3wzElcxg==}
 
   '@rollup/pluginutils@5.1.4':
     resolution: {integrity: sha512-USm05zrsFxYLPdWWq+K3STlWiT/3ELn3RcV5hJMghpeAIhxfsUIg6mt12CBJBInWMV4VneoV7SfGv8xIwo2qNQ==}
@@ -2337,6 +2365,8 @@ snapshots:
       resolve: 1.22.10
 
   '@microsoft/tsdoc@0.15.1': {}
+
+  '@radix-ui/colors@3.0.0': {}
 
   '@rollup/pluginutils@5.1.4(rollup@4.40.0)':
     dependencies:

@@ -1,2 +1,1 @@
-export { WebAppServerPlugin as default } from './server/plugin';
-
+export { WebAppServerPlugin as default } from './server/plugin'
