@@ -40,7 +40,7 @@ importers:
     dependencies:
       '@arxhub/core':
         specifier: workspace:*
-        version: link:../core
+        version: link:../packages/core
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../plugins/gateway
@@ -55,7 +55,7 @@ importers:
         version: link:../plugins/web-app
       '@arxhub/stdlib':
         specifier: workspace:*
-        version: link:../stdlib
+        version: link:../packages/stdlib
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -66,25 +66,6 @@ importers:
       '@types/node':
         specifier: ^22.13.10
         version: 22.13.10
-
-  core:
-    dependencies:
-      '@arxhub/stdlib':
-        specifier: workspace:*
-        version: link:../stdlib
-    devDependencies:
-      '@arxhub/toolchain-tsconfig':
-        specifier: workspace:*
-        version: link:../toolchains/tsconfig
-      '@arxhub/toolchain-vite':
-        specifier: workspace:*
-        version: link:../toolchains/vite
-      '@types/node':
-        specifier: ^22.13.10
-        version: 22.13.10
-      type-fest:
-        specifier: ^4.39.1
-        version: 4.39.1
 
   externals/pouchdb:
     dependencies:
@@ -117,14 +98,67 @@ importers:
         specifier: ^7.3.3
         version: 7.3.3
 
+  packages/core:
+    dependencies:
+      '@arxhub/stdlib':
+        specifier: workspace:*
+        version: link:../stdlib
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.13.10
+      type-fest:
+        specifier: ^4.39.1
+        version: 4.39.1
+
+  packages/stdlib:
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.13.10
+      type-fest:
+        specifier: ^4.39.1
+        version: 4.39.1
+
+  packages/uikit:
+    dependencies:
+      '@arxhub/stdlib':
+        specifier: workspace:*
+        version: link:../stdlib
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.13.10
+      type-fest:
+        specifier: ^4.39.1
+        version: 4.39.1
+
   plugins/gateway:
     dependencies:
       '@arxhub/core':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../../packages/core
       '@arxhub/stdlib':
         specifier: workspace:*
-        version: link:../../stdlib
+        version: link:../../packages/stdlib
       '@elysiajs/node':
         specifier: ^1.2.6
         version: 1.2.6(elysia@1.2.25(@sinclair/typebox@0.34.33)(typescript@5.8.2))(formidable@3.5.2)(ws@8.18.1)
@@ -146,7 +180,7 @@ importers:
     dependencies:
       '@arxhub/core':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../../packages/core
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../gateway
@@ -171,10 +205,10 @@ importers:
     dependencies:
       '@arxhub/core':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../../packages/core
       '@arxhub/stdlib':
         specifier: workspace:*
-        version: link:../../stdlib
+        version: link:../../packages/stdlib
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -190,13 +224,13 @@ importers:
     dependencies:
       '@arxhub/core':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../../packages/core
       '@arxhub/external-pouchdb':
         specifier: workspace:*
         version: link:../../externals/pouchdb
       '@arxhub/stdlib':
         specifier: workspace:*
-        version: link:../../stdlib
+        version: link:../../packages/stdlib
       async-lock:
         specifier: ^1.4.1
         version: 1.4.1
@@ -221,7 +255,7 @@ importers:
     dependencies:
       '@arxhub/core':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../../packages/core
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../gateway
@@ -230,7 +264,7 @@ importers:
         version: link:../vfs
       '@arxhub/stdlib':
         specifier: workspace:*
-        version: link:../../stdlib
+        version: link:../../packages/stdlib
       elysia:
         specifier: ^1.2.25
         version: 1.2.25(@sinclair/typebox@0.34.33)(typescript@5.8.2)
@@ -247,21 +281,6 @@ importers:
       '@types/node':
         specifier: ^22.13.10
         version: 22.13.10
-
-  stdlib:
-    devDependencies:
-      '@arxhub/toolchain-tsconfig':
-        specifier: workspace:*
-        version: link:../toolchains/tsconfig
-      '@arxhub/toolchain-vite':
-        specifier: workspace:*
-        version: link:../toolchains/vite
-      '@types/node':
-        specifier: ^22.13.10
-        version: 22.13.10
-      type-fest:
-        specifier: ^4.39.1
-        version: 4.39.1
 
   toolchains/biome: {}
 
