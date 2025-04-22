@@ -18,8 +18,8 @@ export interface VirtualFileProps {
 
   readonly fields: Record<string, unknown>
   readonly metadata: Record<string, unknown>
-  readonly type: string
-  readonly kind: string
+  readonly contentType: string
+  readonly moduleType: string
 }
 
 export interface VirtualFile<P extends VirtualFileProps = VirtualFileProps> extends VirtualFileProps {

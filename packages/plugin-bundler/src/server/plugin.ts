@@ -1,0 +1,20 @@
+import { type ArxHub, Plugin, type PluginArgs } from '@arxhub/core'
+import manifest from '../manifest'
+import { BundlerServerExtension } from './extension'
+
+export class BundlerServerPlugin extends Plugin<ArxHub> {
+  constructor(args: PluginArgs) {
+    super(args, manifest)
+  }
+
+  override create(target: ArxHub): void {
+    target.extensions.register(BundlerServerExtension, target.logger)
+  }
+
+  override async start(target: ArxHub): Promise<void> {
+    const { bundler } = target.extensions.get(BundlerServerExtension)
+    for (const type of bundler.modules) {
+      await bundler.build(type)
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@arxhub/plugin-bundler",
+  "version": "0.1.0",
+  "description": "",
+  "keywords": ["arxhub"],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./manifest": "./src/manifest.ts",
+    "./server": "./src/server.ts"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "esbuild": "catalog:server"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain",
+    "type-fest": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/stdlib": "workspace:*",
+    "@arxhub/core": "workspace:*",
+    "@arxhub/plugin-vfs": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
+      },
+      "./server": {
+        "import": "./dist/server.js",
+        "types": "./dist/server.d.ts"
+      }
+    }
+  }
+}

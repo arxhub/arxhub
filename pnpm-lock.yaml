@@ -205,6 +205,34 @@ importers:
         specifier: catalog:toolchain
         version: 7.3.3
 
+  packages/plugin-bundler:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arxhub/plugin-vfs':
+        specifier: workspace:*
+        version: link:../plugin-vfs
+      '@arxhub/stdlib':
+        specifier: workspace:*
+        version: link:../stdlib
+      esbuild:
+        specifier: catalog:server
+        version: 0.25.2
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 22.14.1
+      type-fest:
+        specifier: catalog:toolchain
+        version: 4.40.0
+
   packages/plugin-gateway:
     dependencies:
       '@arxhub/core':

@@ -1,55 +1,45 @@
-import { KeyError } from '../errors/key-error'
-import { arrayToRecord } from '../record/array-to-record'
+import { Container } from './container'
 import type { Named } from './named'
-import { NamedContainer } from './named-container'
 import type { NamedFactory } from './named-factory'
 
-export class LazyContainer<T extends Named, A extends unknown[] = []> {
-  private readonly domain: string
-  private readonly _factories: NamedContainer<NamedFactory<T, A>>
-  private readonly _instances: NamedContainer<T>
+type Entry<T extends Named> = {
+  // biome-ignore lint/suspicious/noExplicitAny: We want allow to use any args
+  factory: NamedFactory<T, any[]>
+  args: unknown[]
+}
 
-  constructor(domain: string, factories: NamedFactory<T, A>[] = []) {
-    this.domain = domain
-    this._factories = new NamedContainer(domain, arrayToRecord(factories))
-    this._instances = new NamedContainer(domain)
+export class LazyContainer<T extends Named> {
+  private readonly factories: Container<Entry<T>>
+  private readonly instances: Container<T>
+
+  constructor(domain: string) {
+    this.factories = new Container(`${domain} Factory`)
+    this.instances = new Container(`${domain} Instance`)
   }
 
-  register(factory: NamedFactory<T, A>): void {
-    this._factories.add(factory)
+  register<A extends unknown[]>(factory: NamedFactory<T, A>, ...args: A): void {
+    this.factories.set(factory.name, { factory, args })
   }
 
-  has(factory: NamedFactory<T, A>): boolean {
-    return this._factories.has(factory.name)
+  has(factory: NamedFactory<T>): boolean {
+    return this.factories.has(factory.name)
   }
 
-  getOrNull<R extends T>(factory: NamedFactory<R, A>): R | null {
-    return this._instances.getOrNull<R>(factory.name)
+  // biome-ignore lint/suspicious/noExplicitAny:We don't care about args here, it should be checked in the register function
+  get<R extends T>(factory: NamedFactory<R, any[]>): R {
+    let instance = this.instances.getOrNull(factory.name) as R | null
+    if (instance == null) {
+      const { factory: realFactory, args } = this.factories.get(factory.name)
+      instance = new realFactory(...args) as R
+      this.instances.set(factory.name, instance)
+    }
+    return instance
   }
 
-  get<R extends T>(factory: NamedFactory<R, A>): R {
-    const value = this.getOrNull(factory)
-    if (value == null) throw new KeyError(`${this.domain} '${factory.name}' not found`)
-    return value
-  }
-
-  factories(): NamedFactory<T, A>[] {
-    return this._factories.values()
-  }
-
-  instances(): T[] {
-    return this._instances.values()
-  }
-
-  instantiate(...args: A): T[] {
+  instantiate(): T[] {
     const instances: T[] = []
-    for (const factory of this.factories()) {
-      let instance = this._instances.getOrNull(factory.name)
-      if (instance == null) {
-        instance = new factory(...args)
-        this._instances.add(instance)
-      }
-      instances.push(instance)
+    for (const { factory } of this.factories.values()) {
+      instances.push(this.get(factory))
     }
     return instances
   }
