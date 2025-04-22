@@ -2,7 +2,9 @@
   "name": "@arxhub/plugin-web-app",
   "version": "0.1.0",
   "description": "Provides the ArxHub web user interface.",
-  "keywords": ["arxhub"],
+  "keywords": [
+    "arxhub"
+  ],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
@@ -11,17 +13,19 @@
     "./api": "./src/api.ts",
     "./server": "./src/server.ts"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "esbuild": "^0.25.2"
+    "esbuild": "catalog:server"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/node": "^22.13.10"
+    "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",

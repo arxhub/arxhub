@@ -20,8 +20,8 @@
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/node": "^22.13.10",
-    "type-fest": "^4.39.1"
+    "@types/node": "catalog:toolchain",
+    "type-fest": "catalog:toolchain"
   },
   "peerDependencies": {
     "@arxhub/stdlib": "workspace:*"

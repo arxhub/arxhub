@@ -2,29 +2,34 @@
   "name": "@arxhub/external-pouchdb",
   "version": "0.1.0",
   "description": "",
-  "keywords": ["arxhub", "pouchdb"],
+  "keywords": [
+    "arxhub",
+    "pouchdb"
+  ],
   "license": "MIT",
   "author": "",
   "type": "module",
   "exports": {
     "./memory": "./src/memory.ts"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "pouchdb": "^9.0.0",
-    "pouchdb-adapter-memory": "^9.0.0",
-    "pouchdb-core": "^9.0.0",
-    "pouchdb-find": "^9.0.0"
+    "pouchdb": "catalog:common",
+    "pouchdb-adapter-memory": "catalog:common",
+    "pouchdb-core": "catalog:common",
+    "pouchdb-find": "catalog:common"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/pouchdb-adapter-memory": "^6.1.6",
-    "@types/pouchdb-core": "^7.0.15",
-    "@types/pouchdb-find": "^7.3.3"
+    "@types/pouchdb-adapter-memory": "catalog:toolchain",
+    "@types/pouchdb-core": "catalog:toolchain",
+    "@types/pouchdb-find": "catalog:toolchain"
   },
   "peerDependencies": {},
   "publishConfig": {

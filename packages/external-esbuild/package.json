@@ -19,7 +19,7 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "esbuild": "^0.25.2"
+    "esbuild": "catalog:server"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

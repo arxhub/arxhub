@@ -1,11 +1,10 @@
 import { ArxHub } from '@arxhub/core'
-import GatewayVFSPlugin from '@arxhub/plugin-gateway-vfs/server'
 import GatewayPlugin from '@arxhub/plugin-gateway/server'
 import { LocalFileSystem, VirtualFileSystemServerExtension } from '@arxhub/plugin-vfs/api'
 import VFSPlugin from '@arxhub/plugin-vfs/server'
 import WebAppPlugin from '@arxhub/plugin-web-app/server'
 
-const hub = new ArxHub([VFSPlugin, GatewayPlugin, GatewayVFSPlugin, WebAppPlugin])
+const hub = new ArxHub([VFSPlugin, GatewayPlugin, WebAppPlugin])
 
 if (import.meta.hot) {
   const prev = import.meta.hot.data.hub

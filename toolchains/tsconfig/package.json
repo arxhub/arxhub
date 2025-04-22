@@ -2,6 +2,8 @@
   "name": "@arxhub/toolchain-tsconfig",
   "version": "0.2.0",
   "type": "module",
-  "files": ["tsconfig.json"],
+  "files": [
+    "tsconfig.json"
+  ],
   "exports": "./tsconfig.json"
 }

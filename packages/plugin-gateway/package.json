@@ -16,13 +16,13 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "@elysiajs/node": "^1.2.6",
-    "elysia": "^1.2.25"
+    "@elysiajs/node": "catalog:server",
+    "elysia": "catalog:server"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/node": "^22.13.10"
+    "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",

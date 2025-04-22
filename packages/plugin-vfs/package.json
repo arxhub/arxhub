@@ -21,14 +21,14 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "async-lock": "^1.4.1",
-    "ts-dedent": "^2.2.0"
+    "async-lock": "catalog:server",
+    "ts-dedent": "catalog:common"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/async-lock": "^1.4.2",
-    "@types/node": "^22.13.10"
+    "@types/async-lock": "catalog:toolchain",
+    "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",

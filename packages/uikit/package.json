@@ -2,28 +2,26 @@
   "name": "@arxwiki/uikit",
   "version": "0.1.0",
   "description": "UI Kit for ArxWiki",
-  "keywords": [
-    "arxwiki",
-    "uikit"
-  ],
+  "keywords": ["arxwiki", "uikit"],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc && vite build",
     "test": "vitest"
   },
+  "dependencies": {
+    "@radix-ui/colors": "catalog:client"
+  },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/node": "^22.13.10",
-    "type-fest": "^4.39.1"
+    "@types/node": "catalog:toolchain",
+    "type-fest": "catalog:toolchain"
   },
   "peerDependencies": {
     "@arxhub/stdlib": "workspace:*"
@@ -35,8 +33,5 @@
         "types": "./dist/index.d.ts"
       }
     }
-  },
-  "dependencies": {
-    "@radix-ui/colors": "^3.0.0"
   }
 }

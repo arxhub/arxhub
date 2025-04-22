@@ -20,13 +20,12 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
-    "@arxhub/plugin-gateway-vfs": "workspace:*",
     "@arxhub/plugin-web-app": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/node": "^22.13.10"
+    "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {},
   "publishConfig": {
