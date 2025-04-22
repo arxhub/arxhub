@@ -1,0 +1,39 @@
+{
+  "name": "@arxhub/vfs",
+  "version": "0.1.0",
+  "description": "",
+  "keywords": ["arxhub", "fs", "vfs", "virtual"],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "async-lock": "^1.4.1",
+    "ts-dedent": "^2.2.0"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/async-lock": "^1.4.2",
+    "@types/node": "^22.13.10"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/external-pouchdb": "workspace:*",
+    "@arxhub/stdlib": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
+    }
+  }
+}
