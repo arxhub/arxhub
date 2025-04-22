@@ -1,6 +1,4 @@
 packages:
   - 'boot'
-  - 'plugins/*'
-  - 'externals/*'
   - 'toolchains/*'
   - 'packages/*'
