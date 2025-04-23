@@ -1,15 +1,15 @@
-import { type ArxHub, Plugin, type PluginArgs } from '@arxhub/core'
+import { type ArxHub, type Logger, Plugin } from '@arxhub/core'
 import manifest from '../manifest'
 import { GatewayServerExtension } from './extension'
 import { healthcheckRoute } from './routes/healthcheck'
 
 export class GatewayServerPlugin extends Plugin<ArxHub> {
-  constructor(args: PluginArgs) {
-    super(args, manifest)
+  constructor(logger: Logger) {
+    super(logger, manifest)
   }
 
   override create(target: ArxHub): void {
-    target.extensions.register(GatewayServerExtension)
+    target.extensions.register(GatewayServerExtension, () => [target.logger])
   }
 
   override configure(target: ArxHub): void {

@@ -1,46 +1,51 @@
+import type { Constructor } from 'type-fest'
 import { Container } from './container'
-import type { Named } from './named'
-import type { NamedFactory } from './named-factory'
 
-type Entry<T extends Named> = {
+type Entry<T> = {
   // biome-ignore lint/suspicious/noExplicitAny: We want allow to use any args
-  factory: NamedFactory<T, any[]>
-  args: unknown[]
+  factory: Constructor<T, any[]>
+  args?: () => unknown[]
 }
 
-export class LazyContainer<T extends Named> {
-  private readonly factories: Container<Entry<T>>
-  private readonly instances: Container<T>
+export class LazyContainer<T> {
+  private readonly _factories: Container<Entry<T>>
+  private readonly _instances: Container<T>
 
   constructor(domain: string) {
-    this.factories = new Container(`${domain} Factory`)
-    this.instances = new Container(`${domain} Instance`)
+    this._factories = new Container(`${domain} Factory`)
+    this._instances = new Container(`${domain} Instance`)
   }
 
-  register<A extends unknown[]>(factory: NamedFactory<T, A>, ...args: A): void {
-    this.factories.set(factory.name, { factory, args })
+  register(factory: Constructor<T, []>): void
+  register<A extends unknown[]>(factory: Constructor<T, A>, args: () => [...A]): void
+  register<A extends unknown[]>(factory: Constructor<T, A>, args?: () => [...A]): void {
+    this._factories.set(factory.name, { factory, args })
   }
 
-  has(factory: NamedFactory<T>): boolean {
-    return this.factories.has(factory.name)
+  has(factory: Constructor<T>): boolean {
+    return this._factories.has(factory.name)
   }
 
   // biome-ignore lint/suspicious/noExplicitAny:We don't care about args here, it should be checked in the register function
-  get<R extends T>(factory: NamedFactory<R, any[]>): R {
-    let instance = this.instances.getOrNull(factory.name) as R | null
+  get<R extends T>(factory: Constructor<R, any[]>): R {
+    let instance = this._instances.getOrNull(factory.name)
     if (instance == null) {
-      const { factory: realFactory, args } = this.factories.get(factory.name)
-      instance = new realFactory(...args) as R
-      this.instances.set(factory.name, instance)
+      const { factory: realFactory, args } = this._factories.get(factory.name)
+      instance = args == null ? new realFactory() : new realFactory(...args())
+      this._instances.set(factory.name, instance)
     }
-    return instance
+    return instance as R
   }
 
   instantiate(): T[] {
     const instances: T[] = []
-    for (const { factory } of this.factories.values()) {
+    for (const { factory } of this._factories.values()) {
       instances.push(this.get(factory))
     }
     return instances
+  }
+
+  instances(): T[] {
+    return this._instances.values()
   }
 }

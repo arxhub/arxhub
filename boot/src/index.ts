@@ -4,7 +4,11 @@ import { LocalFileSystem, VirtualFileSystemServerExtension } from '@arxhub/plugi
 import VFSPlugin from '@arxhub/plugin-vfs/server'
 import WebAppPlugin from '@arxhub/plugin-web-app/server'
 
-const hub = new ArxHub([VFSPlugin, GatewayPlugin, WebAppPlugin])
+const hub = new ArxHub()
+
+hub.use(VFSPlugin, () => [hub.logger])
+hub.use(GatewayPlugin, () => [hub.logger])
+hub.use(WebAppPlugin, () => [hub.logger])
 
 if (import.meta.hot) {
   const prev = import.meta.hot.data.hub
@@ -15,7 +19,7 @@ if (import.meta.hot) {
   import.meta.hot.data.hub = hub
 }
 
-const vfs = hub.extensions.get(VirtualFileSystemServerExtension)
-vfs.mount('/local', new LocalFileSystem('data'))
-
-await hub.start()
+await hub.start(({ plugins, extensions }) => {
+  const vfs = extensions.get(VirtualFileSystemServerExtension)
+  vfs.mount('/local', new LocalFileSystem('data'))
+})

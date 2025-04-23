@@ -1,4 +1,4 @@
-import type { ArxHub, PluginArgs } from '@arxhub/core'
+import type { ArxHub, Logger } from '@arxhub/core'
 import { Plugin } from '@arxhub/core'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/api'
 import { VirtualFileSystemServerExtension } from '@arxhub/plugin-vfs/api'
@@ -8,8 +8,8 @@ import { entrypointRoute } from './routes/entrypoint'
 import { createWebComponentsRouter as webComponentsRoute } from './routes/web-components'
 
 export class WebAppServerPlugin extends Plugin<ArxHub> {
-  constructor(args: PluginArgs) {
-    super(args, manifest)
+  constructor(logger: Logger) {
+    super(logger, manifest)
   }
 
   override configure(target: ArxHub): void {

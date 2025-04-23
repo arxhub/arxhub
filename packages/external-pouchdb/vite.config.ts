@@ -3,6 +3,6 @@ import { defineConfig } from 'vite'
 
 // biome-ignore format: Manual formatting is more readable
 export default defineConfig((env) => createNodeConfig(__dirname, env, [
-	'src/manifest.ts',
-	'src/pouchdb.ts',
+	// 'src/manifest.ts',
+	'src/memory.ts',
 ]))

@@ -25,12 +25,10 @@ export function createNodeConfig(dirname: string, env: ConfigEnv, entries: strin
       },
     },
     plugins: [
-      {
-        enforce: 'pre',
-        ...nodeExternalsPlugin({
-          builtinsPrefix: 'add',
-        }),
-      },
+      nodeExternalsPlugin({
+        builtinsPrefix: 'add',
+        devDeps: true,
+      }),
     ],
   } satisfies UserConfig)
 }
