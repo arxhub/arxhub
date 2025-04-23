@@ -1,4 +1,4 @@
-import type { VirtualFile } from './file'
+import type { VirtualFile } from './virtual-file'
 
 export interface VirtualFileSystem {
   isFileExists(pathname: string): Promise<boolean>

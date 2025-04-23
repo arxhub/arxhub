@@ -1,7 +1,7 @@
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
 import dedent from 'ts-dedent'
-import type { VirtualFile, VirtualFileProps } from './file'
-import type { VirtualFileSystem } from './system'
+import type { VirtualFile, VirtualFileProps } from './virtual-file'
+import type { VirtualFileSystem } from './virtual-file-system'
 
 export type GenericFileOptions = Omit<VirtualFileProps, 'name' | 'path' | 'extension'>
 
@@ -15,8 +15,8 @@ export class GenericFile implements VirtualFile {
 
   readonly fields: Record<string, unknown>
   readonly metadata: Record<string, unknown>
-  readonly type: string
-  readonly kind: string
+  readonly contentType: string
+  readonly moduleType: string
 
   constructor(vfs: VirtualFileSystem, options: GenericFileOptions) {
     this.vfs = vfs
@@ -29,8 +29,8 @@ export class GenericFile implements VirtualFile {
 
     this.fields = options.fields
     this.metadata = options.metadata
-    this.type = options.type
-    this.kind = options.kind
+    this.contentType = options.contentType
+    this.moduleType = options.moduleType
   }
 
   readText(): Promise<string> {
@@ -45,8 +45,8 @@ export class GenericFile implements VirtualFile {
     return dedent`
       pathname: ${this.pathname}
       extension: ${this.extension}
-      type: ${this.type}
-      kind: ${this.kind}
+      contentType: ${this.contentType}
+      moduleType: ${this.moduleType}
     `
   }
 
@@ -58,8 +58,8 @@ export class GenericFile implements VirtualFile {
       extension: this.extension,
       fields: this.fields,
       metadata: this.metadata,
-      type: this.type,
-      kind: this.kind,
+      contentType: this.contentType,
+      moduleType: this.moduleType,
     }
   }
 }

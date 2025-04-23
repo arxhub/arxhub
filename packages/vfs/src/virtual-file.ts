@@ -1,4 +1,4 @@
-import type { VirtualFileSystem } from './system'
+import type { VirtualFileSystem } from './virtual-file-system'
 
 export interface VirtualFileProps {
   // readonly id: string
@@ -16,8 +16,10 @@ export interface VirtualFileProps {
   // txt
   readonly extension: string
 
-  readonly fields: Record<string, unknown>
-  readonly metadata: Record<string, unknown>
+  // biome-ignore lint/suspicious/noExplicitAny: We want allow to use any in fields
+  readonly fields: Record<string, any>
+  // biome-ignore lint/suspicious/noExplicitAny: We want allow to use any in metadata
+  readonly metadata: Record<string, any>
   readonly contentType: string
   readonly moduleType: string
 }

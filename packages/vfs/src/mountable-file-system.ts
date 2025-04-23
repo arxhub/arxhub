@@ -1,9 +1,9 @@
 import { findLongestPrefix } from '@arxhub/stdlib/fs/find-longest-prefix'
 import { FileNotFound } from './errors/file-not-found'
 import { MountNotFound } from './errors/mount-not-found'
-import type { VirtualFile } from './file'
 import { ProxyFile } from './proxy-file'
-import type { VirtualFileSystem } from './system'
+import type { VirtualFile } from './virtual-file'
+import type { VirtualFileSystem } from './virtual-file-system'
 
 export class MountableFileSystem implements VirtualFileSystem {
   private mounts: Map<string, VirtualFileSystem>

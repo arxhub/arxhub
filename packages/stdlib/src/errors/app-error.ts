@@ -1,3 +1,5 @@
+import type { Constructor } from 'type-fest'
+
 export const isError = (err?: unknown): err is Error => {
   return err != null && typeof err === 'object' && 'name' in err && 'message' in err
 }
@@ -26,7 +28,6 @@ export function isRenderableError(error: unknown): error is RenderableError {
 }
 
 export interface AppErrorOptions {
-  code: string
   httpStatusCode: number
   title?: string
   message: string
@@ -39,20 +40,21 @@ export class AppError extends Error implements RenderableError {
   httpStatusCode: number
   originalError: unknown
   resource?: string
-  code: string
   title?: string
   metadata?: Record<string, unknown>
 
   constructor(options: AppErrorOptions) {
     super(options.message)
-    this.code = options.code
     this.httpStatusCode = options.httpStatusCode
     this.message = options.message
     this.originalError = options.originalError
     this.resource = options.resource
     this.title = options.title
     this.metadata = options.metadata
-    Object.setPrototypeOf(this, AppError.prototype)
+  }
+
+  get code(): string {
+    return this.name
   }
 
   withMetadata(metadata: Record<string, unknown>) {
@@ -74,6 +76,6 @@ export class AppError extends Error implements RenderableError {
   }
 }
 
-export function isAppError(errorCode: string, err: unknown): err is AppError {
-  return err instanceof AppError && err.code === errorCode
+export function isAppError(factory: Constructor<AppError>, err: unknown): err is AppError {
+  return err instanceof AppError && err.code === factory.name
 }

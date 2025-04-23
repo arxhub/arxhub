@@ -1,6 +1,6 @@
 import dedent from 'ts-dedent'
-import type { VirtualFile, VirtualFileProps } from './file'
-import type { VirtualFileSystem } from './system'
+import type { VirtualFile, VirtualFileProps } from './virtual-file'
+import type { VirtualFileSystem } from './virtual-file-system'
 
 export type ProxyFileOptions = {
   prefix: string
@@ -43,12 +43,12 @@ export class ProxyFile implements VirtualFile {
     return this.actual.metadata
   }
 
-  get type(): string {
-    return this.actual.type
+  get contentType(): string {
+    return this.actual.contentType
   }
 
-  get kind(): string {
-    return this.actual.kind
+  get moduleType(): string {
+    return this.actual.moduleType
   }
 
   readText(): Promise<string> {
@@ -63,8 +63,8 @@ export class ProxyFile implements VirtualFile {
     return dedent`
       pathname: ${this.pathname}
       extension: ${this.extension}
-      type: ${this.type}
-      kind: ${this.kind}
+      type: ${this.contentType}
+      kind: ${this.moduleType}
     `
   }
 

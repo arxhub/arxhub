@@ -3,9 +3,9 @@ import { listFiles } from '@arxhub/stdlib/fs/list-files'
 import { readTextFile } from '@arxhub/stdlib/fs/read-text-file'
 import { writeTextFile } from '@arxhub/stdlib/fs/write-text-file'
 import { FileNotFound } from './errors/file-not-found'
-import type { VirtualFile } from './file'
 import { GenericFile, type GenericFileOptions } from './generic-file'
-import type { VirtualFileSystem } from './system'
+import type { VirtualFile } from './virtual-file'
+import type { VirtualFileSystem } from './virtual-file-system'
 
 export class LocalFileSystem implements VirtualFileSystem {
   private readonly rootDir: string
@@ -56,8 +56,8 @@ export class LocalFileSystem implements VirtualFileSystem {
 
   private async readMeta(pathname: string): Promise<Omit<GenericFileOptions, 'pathname'>> {
     const meta: Omit<GenericFileOptions, 'pathname'> = {
-      type: 'application/octet-stream',
-      kind: 'unknown',
+      contentType: 'application/octet-stream',
+      moduleType: 'unknown',
       fields: {},
       metadata: {},
     }
