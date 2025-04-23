@@ -8,6 +8,6 @@ export class VirtualFileSystemPlugin extends Plugin<ArxHub> {
   }
 
   override create(target: ArxHub): void {
-    target.extensions.register(VirtualFileSystemExtension)
+    target.extensions.register(VirtualFileSystemExtension, () => [target.logger])
   }
 }

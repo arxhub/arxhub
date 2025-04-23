@@ -24,7 +24,7 @@ export interface VirtualFileProps {
   readonly moduleType: string
 }
 
-export interface VirtualFile<P extends VirtualFileProps = VirtualFileProps> extends VirtualFileProps {
+export interface VirtualFile extends VirtualFileProps {
   readonly vfs: VirtualFileSystem
 
   readText(): Promise<string>
@@ -34,5 +34,5 @@ export interface VirtualFile<P extends VirtualFileProps = VirtualFileProps> exte
   // TODO: return object with fields: size, mtime, etc
   stat(): string
 
-  props(): P
+  props(): VirtualFileProps
 }

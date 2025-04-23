@@ -1,10 +1,15 @@
 import PouchDB from '@arxhub/external-pouchdb/memory'
+import {
+  FileNotFound,
+  GenericFile,
+  type GenericFileOptions,
+  type MangoQuery,
+  type SearchableFileSystem,
+  type VirtualFile,
+  type VirtualFileProps,
+  type VirtualFileSystem,
+} from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
-import { FileNotFound } from './errors/file-not-found'
-import type { VirtualFile, VirtualFileProps } from './file'
-import { GenericFile, type GenericFileOptions } from './generic-file'
-import type { SearchableFileSystem } from './searchable-system'
-import type { VirtualFileSystem } from './system'
 
 export class PouchDBFileSystem implements SearchableFileSystem {
   private readonly actual: VirtualFileSystem
@@ -17,9 +22,16 @@ export class PouchDBFileSystem implements SearchableFileSystem {
     this.lock = new AsyncLock()
   }
 
-  async find(request: PouchDB.Find.FindRequest<GenericFileOptions>): Promise<VirtualFile[]> {
+  async find<T extends VirtualFileProps>(query: MangoQuery.FindRequest<T>): Promise<VirtualFile[]> {
     const index = await this.getIndex()
-    const { docs } = await index.find(request)
+    const { docs } = await index.find({
+      selector: query.selector,
+      fields: query.fields,
+      limit: query.limit,
+      skip: query.skip,
+      sort: query.sort,
+      use_index: query.index,
+    })
     return docs.map((it) => new GenericFile(this, it))
   }
 

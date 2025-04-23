@@ -5,6 +5,5 @@ import { defineConfig } from 'vite'
 export default defineConfig((env) => createNodeConfig(__dirname, env, [
 	'src/client.ts',
 	'src/server.ts',
-	'src/api.ts',
 	'src/manifest.ts',
 ]))

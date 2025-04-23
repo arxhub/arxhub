@@ -1,15 +1,13 @@
-import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { MountableFileSystem } from './mountable-system'
+import { Extension, type Logger } from '@arxhub/core'
+import { MountableFileSystem, type SearchableFileSystem, type VirtualFileSystem } from '@arxhub/vfs'
 import { PouchDBFileSystem } from './pouchdb-system'
-import type { SearchableFileSystem } from './searchable-system'
-import type { VirtualFileSystem } from './system'
 
 export class VirtualFileSystemExtension extends Extension {
   private readonly mountable: MountableFileSystem
   private readonly searchable: SearchableFileSystem
 
-  constructor(args: ExtensionArgs) {
-    super(args)
+  constructor(logger: Logger) {
+    super(logger)
     this.mountable = new MountableFileSystem()
     this.searchable = new PouchDBFileSystem(this.mountable)
   }
