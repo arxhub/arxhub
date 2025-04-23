@@ -3,7 +3,7 @@ import {
   FileNotFound,
   GenericFile,
   type GenericFileOptions,
-  type MangoQuery,
+  type Mango,
   type SearchableFileSystem,
   type VirtualFile,
   type VirtualFileProps,
@@ -22,7 +22,7 @@ export class PouchDBFileSystem implements SearchableFileSystem {
     this.lock = new AsyncLock()
   }
 
-  async find<T extends VirtualFileProps>(query: MangoQuery.FindRequest<T>): Promise<VirtualFile[]> {
+  async find<T extends VirtualFileProps>(query: Mango.FindQuery<T>): Promise<VirtualFile[]> {
     const index = await this.getIndex()
     const { docs } = await index.find({
       selector: query.selector,

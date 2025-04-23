@@ -5,7 +5,7 @@ import type { Get, Paths } from 'type-fest'
 // - https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/pouchdb-find/index.d.ts#L4
 //
 
-export namespace MangoQuery {
+export namespace Mango {
   export interface ConditionOperators<T> {
     // Match fields "less than" this value.
     $lt?: T
@@ -74,7 +74,7 @@ export namespace MangoQuery {
     & { [P in Paths<T> & string]?: Selector<Get<T, P>> | ConditionOperators<Get<T, P>> | CombinationOperators<Get<T, P>> }
     & { [P in keyof T]?: Selector<T[P]> | ConditionOperators<T[P]> | CombinationOperators<T[P]> }
 
-  export interface FindRequest<T extends object> {
+  export interface FindQuery<T extends object> {
     selector: Selector<T>
     fields?: (Extract<keyof T, string> | '_id' | '_rev')[]
     sort?: Array<Extract<keyof T, string> | Record<Paths<T> & string, 'asc' | 'desc'>>
