@@ -19,6 +19,7 @@
     "@arxhub/stdlib": "workspace:*",
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
     "@arxhub/plugin-web-app": "workspace:*"
   },

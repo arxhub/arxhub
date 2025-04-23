@@ -31,6 +31,7 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
     "@arxhub/stdlib": "workspace:*",
     "elysia": "^1.2.25"
   },

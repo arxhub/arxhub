@@ -1,10 +1,10 @@
-import type { SearchableFileSystem } from '@arxhub/plugin-vfs/api'
+import type { SearchableFileSystem } from '@arxhub/vfs'
 import Elysia from 'elysia'
 import { build } from 'esbuild'
 
 export function createWebComponentsRouter(files: SearchableFileSystem) {
   return new Elysia().get('/scripts/web-components.js', async () => {
-    const components = await files.find({ selector: { kind: 'web-component' } })
+    const components = await files.find({ selector: { moduleType: 'web-component' } })
 
     const entryPointContent = components.map((file) => `import "${file.pathname}"`).join('\n')
     const virtualFiles: Record<string, string> = {

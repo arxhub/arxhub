@@ -131,6 +131,9 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../packages/stdlib
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../packages/vfs
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -216,6 +219,9 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../vfs
       esbuild:
         specifier: catalog:server
         version: 0.25.2
@@ -269,6 +275,9 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../vfs
       async-lock:
         specifier: catalog:server
         version: 1.4.1
@@ -303,6 +312,9 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../vfs
       elysia:
         specifier: ^1.2.25
         version: 1.2.25(@sinclair/typebox@0.34.33)(typescript@5.8.3)
@@ -387,6 +399,9 @@ importers:
       '@types/node':
         specifier: catalog:toolchain
         version: 22.14.1
+      type-fest:
+        specifier: catalog:toolchain
+        version: 4.40.0
 
   toolchains/biome: {}
 

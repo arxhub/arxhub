@@ -1,7 +1,7 @@
 import type { ArxHub, Logger } from '@arxhub/core'
 import { Plugin } from '@arxhub/core'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/api'
-import { VirtualFileSystemServerExtension } from '@arxhub/plugin-vfs/api'
+import { VirtualFileSystemServerExtension } from '@arxhub/plugin-vfs/server'
 import manifest from '../manifest'
 import { createClientBundleRouter as clientBundleRoute } from './routes/client-bundle'
 import { entrypointRoute } from './routes/entrypoint'

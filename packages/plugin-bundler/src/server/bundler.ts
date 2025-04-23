@@ -1,4 +1,4 @@
-import type { SearchableFileSystem } from '@arxhub/plugin-vfs/api'
+import type { SearchableFileSystem } from '@arxhub/vfs'
 
 export type Entrypoint = {
   content: string

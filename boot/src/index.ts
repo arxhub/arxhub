@@ -1,7 +1,7 @@
 import { ArxHub } from '@arxhub/core'
 import GatewayPlugin from '@arxhub/plugin-gateway/server'
-import { LocalFileSystem, VirtualFileSystemServerExtension } from '@arxhub/plugin-vfs/api'
-import VFSPlugin from '@arxhub/plugin-vfs/server'
+import { LocalFileSystem } from '@arxhub/vfs'
+import VFSPlugin, { VirtualFileSystemServerExtension } from '@arxhub/plugin-vfs/server'
 import WebAppPlugin from '@arxhub/plugin-web-app/server'
 
 const hub = new ArxHub()

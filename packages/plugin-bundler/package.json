@@ -26,6 +26,7 @@
   "peerDependencies": {
     "@arxhub/stdlib": "workspace:*",
     "@arxhub/core": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*"
   },
   "publishConfig": {
