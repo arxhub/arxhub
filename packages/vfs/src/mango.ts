@@ -1,7 +1,9 @@
+import type { Get, Paths } from 'type-fest'
+
 // References:
 // - https://github.com/apache/couchdb-nano/blob/main/lib/nano.d.ts#L1698
 // - https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/pouchdb-find/index.d.ts#L4
-// 
+//
 
 export namespace MangoQuery {
   export interface ConditionOperators<T> {
@@ -67,14 +69,15 @@ export namespace MangoQuery {
   }
 
   // biome-ignore format: Hand formatting is more readable
-  export type Selector<T> = 
-    & { _id?: string | CombinationOperators<T> }
+  export type Selector<T> =
+    & { _id?: string | ConditionOperators<string> }
+    & { [P in Paths<T> & string]?: Selector<Get<T, P>> | ConditionOperators<Get<T, P>> | CombinationOperators<Get<T, P>> }
     & { [P in keyof T]?: Selector<T[P]> | ConditionOperators<T[P]> | CombinationOperators<T[P]> }
 
-  export interface FindRequest<T extends object = object> {
+  export interface FindRequest<T extends object> {
     selector: Selector<T>
-    fields?: (keyof T | '_id' | '_rev')[]
-    sort?: Array<keyof T | { [P in keyof T]?: 'asc' | 'desc' } | string>
+    fields?: (Extract<keyof T, string> | '_id' | '_rev')[]
+    sort?: Array<Extract<keyof T, string> | Record<Paths<T> & string, 'asc' | 'desc'>>
     limit?: number
     skip?: number
     index?: string | [string, string]
