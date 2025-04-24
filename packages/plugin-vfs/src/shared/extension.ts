@@ -1,6 +1,6 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { MountableFileSystem, type SearchableFileSystem, type VirtualFileSystem } from '@arxhub/vfs'
-import { PouchDBFileSystem } from './pouchdb-system'
+import { PouchDBFileSystem } from './pouchdb-file-system'
 
 export class VirtualFileSystemExtension extends Extension {
   private readonly mountable: MountableFileSystem
