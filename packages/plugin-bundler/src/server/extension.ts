@@ -1,13 +1,17 @@
-import { Extension, type Logger } from '@arxhub/core'
+import { Extension, type ExtensionArgs } from '@arxhub/core'
 import type { SearchableFileSystem } from '@arxhub/vfs'
 import type { Bundler } from './bundler'
 import { ESBuildBundler } from './esbuild-bundler'
 
+export type BundlerServerExtensionArgs = ExtensionArgs & {
+  vfs: SearchableFileSystem
+}
+
 export class BundlerServerExtension extends Extension {
   readonly bundler: Bundler
 
-  constructor(logger: Logger, vfs: SearchableFileSystem) {
-    super(logger)
-    this.bundler = new ESBuildBundler(vfs)
+  constructor(args: BundlerServerExtensionArgs) {
+    super(args)
+    this.bundler = new ESBuildBundler(args.vfs)
   }
 }

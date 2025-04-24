@@ -16,7 +16,6 @@ export class LazyContainer<T> {
     this._instances = new Container(`${domain} Instance`)
   }
 
-  // Maybe pass logger/extensions/plugins to args function as input?
   register(factory: Constructor<T, []>): void
   register<A extends unknown[]>(factory: Constructor<T, A>, args: () => [...A]): void
   register<A extends unknown[]>(factory: Constructor<T, A>, args?: () => [...A]): void {

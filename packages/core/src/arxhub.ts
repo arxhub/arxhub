@@ -13,13 +13,9 @@ export class ArxHub {
   readonly logger: Logger
 
   constructor() {
-    this.plugins = new PluginContainer()
-    this.extensions = new ExtensionContainer()
     this.logger = new ConsoleLogger()
-  }
-
-  get use() {
-    return this.plugins.register
+    this.plugins = new PluginContainer({ logger: this.logger })
+    this.extensions = new ExtensionContainer({ logger: this.logger })
   }
 
   async start(configure: ConfigureCallback): Promise<void> {

@@ -1,5 +1,6 @@
 import { LazyContainer } from '@arxhub/stdlib/collections/lazy-container'
 import type { Named } from '@arxhub/stdlib/collections/named'
+import type { Constructor, Except } from 'type-fest'
 import type { Logger } from './logger'
 
 export interface PluginManifest {
@@ -14,11 +15,15 @@ export function definePluginManifest(manifest: PluginManifest): PluginManifest {
   return manifest
 }
 
+export type PluginArgs = {
+  logger: Logger
+}
+
 export abstract class Plugin<T> implements Named {
   protected readonly logger: Logger
   readonly manifest: PluginManifest
 
-  constructor(logger: Logger, manifest: PluginManifest) {
+  constructor({ logger }: PluginArgs, manifest: PluginManifest) {
     this.logger = logger.child(`[${this.name}] - `)
     this.manifest = manifest
   }
@@ -47,7 +52,20 @@ export abstract class Plugin<T> implements Named {
 }
 
 export class PluginContainer<T> extends LazyContainer<Plugin<T>> {
-  constructor() {
+  private readonly defaults: PluginArgs
+
+  constructor(defaults: PluginArgs) {
     super('Plugin')
+    this.defaults = defaults
+  }
+
+  // TODO: waiting for biome 2.0 https://github.com/biomejs/biome/discussions/187
+  // biome-ignore format: Hand formatting is more readable
+  override register(factory: Constructor<Plugin<T>, [PluginArgs]>): void
+  // biome-ignore format: Hand formatting is more readable
+  override register<A extends PluginArgs>(factory: Constructor<Plugin<T>, [A]>, args: () => Except<A, keyof PluginArgs>): void
+  // biome-ignore format: Hand formatting is more readable
+  override register<A extends PluginArgs>(factory: Constructor<Plugin<T>, [PluginArgs] | [A]>, args?: () => Except<A, keyof PluginArgs>): void {
+    super.register(factory, args == null ? () => [this.defaults] : () => [{ ...this.defaults, ...args() }])
   }
 }

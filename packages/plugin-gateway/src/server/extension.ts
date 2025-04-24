@@ -1,11 +1,11 @@
-import { Extension, type Logger } from '@arxhub/core'
+import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { Gateway } from './gateway'
 
 export class GatewayServerExtension extends Extension {
   readonly gateway: Gateway
 
-  constructor(logger: Logger) {
-    super(logger)
-    this.gateway = new Gateway(logger)
+  constructor(args: ExtensionArgs) {
+    super(args)
+    this.gateway = new Gateway(this.logger)
   }
 }
