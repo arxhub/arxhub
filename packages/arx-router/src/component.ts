@@ -93,14 +93,12 @@ export class ArxRouter extends HTMLElement {
 
     const page = document.createElement(component)
     for (const key in params) {
-      if (key === '*') continue
-      page.setAttribute(key, params[key])
+      const value = params[key]
+      page.setAttribute(key === '*' ? 'wildcard' : key, value)
     }
     outlet.appendChild(page)
   }
 }
-
-customElements.define('wc-router', ArxRouter)
 
 declare global {
   interface GlobalEventHandlersEventMap {

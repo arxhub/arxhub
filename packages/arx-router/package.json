@@ -7,7 +7,7 @@
   "author": "",
   "type": "module",
   "exports": {
-    ".": "./src/component.ts",
+    ".": "./src/index.ts",
     "./define": "./src/define.ts"
   },
   "files": ["dist"],
@@ -27,8 +27,8 @@
   "publishConfig": {
     "exports": {
       ".": {
-        "import": "./dist/component.js",
-        "types": "./dist/component.d.ts"
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
       },
       "./define": {
         "import": "./dist/define.js",
