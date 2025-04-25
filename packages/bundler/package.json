@@ -1,5 +1,5 @@
 {
-  "name": "@arxhub/plugin-bundler",
+  "name": "@arxhub/bundler",
   "version": "0.1.0",
   "description": "",
   "keywords": ["arxhub"],
@@ -7,8 +7,7 @@
   "author": "",
   "type": "module",
   "exports": {
-    "./manifest": "./src/manifest.ts",
-    "./server": "./src/server.ts"
+    ".": "./src/index.ts"
   },
   "files": ["dist"],
   "scripts": {
@@ -26,18 +25,13 @@
   "peerDependencies": {
     "@arxhub/stdlib": "workspace:*",
     "@arxhub/core": "workspace:*",
-    "@arxhub/vfs": "workspace:*",
-    "@arxhub/plugin-vfs": "workspace:*"
+    "@arxhub/vfs": "workspace:*"
   },
   "publishConfig": {
     "exports": {
-      "./manifest": {
-        "import": "./dist/manifest.js",
-        "types": "./dist/manifest.d.ts"
-      },
-      "./server": {
-        "import": "./dist/server.js",
-        "types": "./dist/server.d.ts"
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
       }
     }
   }

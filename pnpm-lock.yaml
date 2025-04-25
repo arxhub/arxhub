@@ -13,9 +13,6 @@ catalogs:
     memoirist:
       specifier: ^0.3.0
       version: 0.3.0
-    nanoid:
-      specifier: ^5.1.5
-      version: 5.1.5
     pouchdb:
       specifier: ^9.0.0
       version: 9.0.0
@@ -156,9 +153,6 @@ importers:
       memoirist:
         specifier: catalog:common
         version: 0.3.0
-      nanoid:
-        specifier: catalog:common
-        version: 5.1.5
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -166,6 +160,34 @@ importers:
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      type-fest:
+        specifier: catalog:toolchain
+        version: 4.40.0
+
+  packages/bundler:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arxhub/stdlib':
+        specifier: workspace:*
+        version: link:../stdlib
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../vfs
+      esbuild:
+        specifier: catalog:server
+        version: 0.25.2
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 22.14.1
       type-fest:
         specifier: catalog:toolchain
         version: 4.40.0
@@ -233,37 +255,6 @@ importers:
         specifier: catalog:toolchain
         version: 7.3.3
 
-  packages/plugin-bundler:
-    dependencies:
-      '@arxhub/core':
-        specifier: workspace:*
-        version: link:../core
-      '@arxhub/plugin-vfs':
-        specifier: workspace:*
-        version: link:../plugin-vfs
-      '@arxhub/stdlib':
-        specifier: workspace:*
-        version: link:../stdlib
-      '@arxhub/vfs':
-        specifier: workspace:*
-        version: link:../vfs
-      esbuild:
-        specifier: catalog:server
-        version: 0.25.2
-    devDependencies:
-      '@arxhub/toolchain-tsconfig':
-        specifier: workspace:*
-        version: link:../../toolchains/tsconfig
-      '@arxhub/toolchain-vite':
-        specifier: workspace:*
-        version: link:../../toolchains/vite
-      '@types/node':
-        specifier: catalog:toolchain
-        version: 22.14.1
-      type-fest:
-        specifier: catalog:toolchain
-        version: 4.40.0
-
   packages/plugin-gateway:
     dependencies:
       '@arxhub/core':
@@ -325,6 +316,9 @@ importers:
 
   packages/plugin-web-app:
     dependencies:
+      '@arxhub/bundler':
+        specifier: workspace:*
+        version: link:../bundler
       '@arxhub/core':
         specifier: workspace:*
         version: link:../core
@@ -341,7 +335,7 @@ importers:
         specifier: workspace:*
         version: link:../vfs
       elysia:
-        specifier: ^1.2.25
+        specifier: catalog:server
         version: 1.2.25(@sinclair/typebox@0.34.33)(typescript@5.8.3)
       esbuild:
         specifier: catalog:server
@@ -1447,11 +1441,6 @@ packages:
   nanoid@3.3.9:
     resolution: {integrity: sha512-SppoicMGpZvbF1l3z4x7No3OlIjP7QJvC9XR7AhZr1kL133KHnKPztkKDc+Ir4aJ/1VhTySrtKhrsycmrMQfvg==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
-    hasBin: true
-
-  nanoid@5.1.5:
-    resolution: {integrity: sha512-Ir/+ZpE9fDsNH0hQ3C68uyThDXzYcim2EqcZ8zn8Chtt1iylPT9xXJB0kPCnqzgcEGikO9RxSrh63MsmVCU7Fw==}
-    engines: {node: ^18 || >=20}
     hasBin: true
 
   napi-macros@2.0.0:
@@ -2832,8 +2821,6 @@ snapshots:
   muggle-string@0.4.1: {}
 
   nanoid@3.3.9: {}
-
-  nanoid@5.1.5: {}
 
   napi-macros@2.0.0: {}
 

@@ -3,24 +3,38 @@ import { Plugin } from '@arxhub/core'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/api'
 import { VirtualFileSystemServerExtension } from '@arxhub/plugin-vfs/server'
 import manifest from '../manifest'
-import { createClientBundleRouter as clientBundleRoute } from './routes/client-bundle'
+import { WebAppServerExtension } from './extension'
 import { entrypointRoute } from './routes/entrypoint'
-import { createWebComponentsRouter as webComponentsRoute } from './routes/web-components'
+import { modulesRoute } from './routes/modules'
 
 export class WebAppServerPlugin extends Plugin<ArxHub> {
   constructor(args: PluginArgs) {
     super(args, manifest)
   }
 
-  override configure(target: ArxHub): void {
-    this.logger.info('Plugin configuring...')
+  override create({ plugins, extensions }: ArxHub): void {
+    extensions.register(WebAppServerExtension, () => ({
+      files: extensions.get(VirtualFileSystemServerExtension).files,
+    }))
+  }
 
-    const { gateway } = target.extensions.get(GatewayServerExtension)
-    const vfs = target.extensions.get(VirtualFileSystemServerExtension)
+  override configure({ plugins, extensions }: ArxHub): void {
+    const { bundler } = extensions.get(WebAppServerExtension)
+    bundler.registerModule('web-component', async (files) => {
+      const modules = await files.select({
+        selector: { moduleType: 'web-component' },
+        fields: ['pathname', 'moduleType'],
+      })
 
+      return {
+        content: modules.map((it) => `import '${it.pathname}';`).join('\n'),
+        loader: 'ts',
+      }
+    })
+
+    const { gateway } = extensions.get(GatewayServerExtension)
     gateway.use(entrypointRoute())
-    gateway.use(webComponentsRoute(vfs.files))
-    gateway.use(clientBundleRoute(target.plugins.instances().map((it) => it.manifest)))
+    gateway.use(modulesRoute(bundler))
   }
 }
 

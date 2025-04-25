@@ -20,9 +20,9 @@ export abstract class Bundler {
     return [...this.registry.keys()]
   }
 
-  registerModule(type: string, entirypoint: EntrypointFactory): void {
-    this.registry.set(type, entirypoint)
+  registerModule(type: string, factory: EntrypointFactory): void {
+    this.registry.set(type, factory)
   }
 
-  abstract build(moduleType: string): Promise<void>
+  abstract build(moduleType: string): Promise<string>
 }

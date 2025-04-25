@@ -33,7 +33,8 @@
     "@arxhub/plugin-vfs": "workspace:*",
     "@arxhub/vfs": "workspace:*",
     "@arxhub/stdlib": "workspace:*",
-    "elysia": "^1.2.25"
+    "@arxhub/bundler": "workspace:*",
+    "elysia": "catalog:server"
   },
   "publishConfig": {
     "exports": {
