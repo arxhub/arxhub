@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { UrlMatcher } from '../url-matcher'
 
 describe('UrlMatcher', () => {
@@ -12,7 +12,7 @@ describe('UrlMatcher', () => {
 
     // Assert
     expect(result).not.toBeNull()
-    expect(result?.component).toBe('HomePage')
+    expect(result?.store).toBe('HomePage')
     expect(result?.params).toEqual({})
   })
 
@@ -38,7 +38,7 @@ describe('UrlMatcher', () => {
 
     // Assert
     expect(result).not.toBeNull()
-    expect(result?.component).toBe('UserPage')
+    expect(result?.store).toBe('UserPage')
     expect(result?.params).toEqual({ id: '123' })
   })
 
@@ -52,7 +52,7 @@ describe('UrlMatcher', () => {
 
     // Assert
     expect(result).not.toBeNull()
-    expect(result?.component).toBe('PostPage')
+    expect(result?.store).toBe('PostPage')
     expect(result?.params).toEqual({ year: '2023', month: '10', slug: 'hello-world' })
   })
 
@@ -67,11 +67,11 @@ describe('UrlMatcher', () => {
 
     // Assert
     expect(resultWithParam).not.toBeNull()
-    expect(resultWithParam?.component).toBe('FilePage')
+    expect(resultWithParam?.store).toBe('FilePage')
     expect(resultWithParam?.params).toEqual({ name: 'document' })
 
     expect(resultWithoutParam).not.toBeNull()
-    expect(resultWithoutParam?.component).toBe('FilePage')
+    expect(resultWithoutParam?.store).toBe('FilePage')
     expect(resultWithoutParam?.params).toEqual({})
   })
 
@@ -85,7 +85,7 @@ describe('UrlMatcher', () => {
 
     // Assert
     expect(result).not.toBeNull()
-    expect(result?.component).toBe('AssetHandler')
+    expect(result?.store).toBe('AssetHandler')
     expect(result?.params).toEqual({ '*': 'images/logo.png' })
   })
 
@@ -99,7 +99,7 @@ describe('UrlMatcher', () => {
 
     // Assert
     expect(result).not.toBeNull()
-    expect(result?.component).toBe('DataHandler')
+    expect(result?.store).toBe('DataHandler')
     expect(result?.params).toEqual({ type: 'users', '*': 'profile/details' })
   })
 
@@ -115,11 +115,11 @@ describe('UrlMatcher', () => {
 
     // Assert
     expect(resultSpecific).not.toBeNull()
-    expect(resultSpecific?.component).toBe('NewUserPage')
+    expect(resultSpecific?.store).toBe('NewUserPage')
     expect(resultSpecific?.params).toEqual({})
 
     expect(resultParam).not.toBeNull()
-    expect(resultParam?.component).toBe('UserPage')
+    expect(resultParam?.store).toBe('UserPage')
     expect(resultParam?.params).toEqual({ id: '123' })
   })
 
@@ -133,7 +133,7 @@ describe('UrlMatcher', () => {
 
     // Assert
     expect(result).not.toBeNull()
-    expect(result?.component).toBe('RootPage')
+    expect(result?.store).toBe('RootPage')
     expect(result?.params).toEqual({})
   })
 })

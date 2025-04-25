@@ -23,6 +23,10 @@ export class ArxRouter extends HTMLElement {
     this.navigate(window.location.pathname)
   }
 
+  private readonly handleNavigate = (event: CustomEvent<{ url: string }>) => {
+    this.navigate(event.detail.url)
+  }
+
   connectedCallback() {
     this.matcher = new UrlMatcher()
     for (const route of this.querySelectorAll('arx-route')) {
@@ -43,11 +47,14 @@ export class ArxRouter extends HTMLElement {
     }
 
     this.navigate(window.location.pathname)
+
     window.addEventListener('popstate', this.handlePopstate)
+    window.addEventListener('arx-navigate', this.handleNavigate)
   }
 
   disconnectedCallback() {
     window.removeEventListener('popstate', this.handlePopstate)
+    window.removeEventListener('arx-navigate', this.handleNavigate)
   }
 
   private get outlet() {
@@ -94,3 +101,9 @@ export class ArxRouter extends HTMLElement {
 }
 
 customElements.define('wc-router', ArxRouter)
+
+declare global {
+  interface GlobalEventHandlersEventMap {
+    'arx-navigate': CustomEvent<{ url: string }>
+  }
+}
