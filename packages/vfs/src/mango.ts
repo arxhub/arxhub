@@ -74,7 +74,7 @@ export namespace Mango {
     & { [P in Paths<T> & string]?: Selector<Get<T, P>> | ConditionOperators<Get<T, P>> | CombinationOperators<Get<T, P>> }
     & { [P in keyof T]?: Selector<T[P]> | ConditionOperators<T[P]> | CombinationOperators<T[P]> }
 
-  export interface FindQuery<T extends object> {
+  export interface SelectQuery<T extends object> {
     selector: Selector<T>
     fields?: (Extract<keyof T, string> | '_id' | '_rev')[]
     sort?: Array<Extract<keyof T, string> | Record<Paths<T> & string, 'asc' | 'desc'>>

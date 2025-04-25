@@ -22,7 +22,7 @@ export class PouchDBFileSystem implements SearchableFileSystem {
     this.lock = new AsyncLock()
   }
 
-  async find<T extends VirtualFileProps>(query: Mango.FindQuery<T>): Promise<VirtualFile[]> {
+  async select<T extends VirtualFileProps>(query: Mango.SelectQuery<T>): Promise<VirtualFile[]> {
     const index = await this.getIndex()
     const { docs } = await index.find({
       selector: query.selector,

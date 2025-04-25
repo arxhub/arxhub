@@ -1,0 +1,36 @@
+{
+  "name": "@arxhub/arx-router",
+  "version": "0.1.0",
+  "description": "",
+  "keywords": ["arxhub", "ui", "router", "web-component", "component"],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/component.ts",
+    "./define": "./src/define.ts"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "type-fest": "catalog:toolchain"
+  },
+  "peerDependencies": {},
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/component.js",
+        "types": "./dist/component.d.ts"
+      },
+      "./define": {
+        "import": "./dist/define.js",
+        "types": "./dist/define.d.ts"
+      }
+    }
+  }
+}
