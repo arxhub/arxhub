@@ -1,7 +1,11 @@
 import type { Constructor } from 'type-fest'
 
-export const isError = (err?: unknown): err is Error => {
+export function isError(err?: unknown): err is Error {
   return err != null && typeof err === 'object' && 'name' in err && 'message' in err
+}
+
+export function isNodeError(err: unknown | undefined, code: string): boolean {
+  return err != null && typeof err === 'object' && 'code' in err && err.code === code
 }
 
 export type GenericError = {

@@ -1,5 +1,6 @@
 {
   "name": "@arxwiki/uikit",
+  "sideEffects": false,
   "version": "0.1.0",
   "description": "UI Kit for ArxWiki",
   "keywords": ["arxwiki", "uikit"],

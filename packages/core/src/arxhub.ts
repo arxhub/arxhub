@@ -18,7 +18,7 @@ export class ArxHub {
     this.extensions = new ExtensionContainer({ logger: this.logger })
   }
 
-  async start(configure: ConfigureCallback): Promise<void> {
+  async start(configure?: ConfigureCallback): Promise<void> {
     // Initialization order:
     // 1. Create instances of all registered plugins
     const plugins = this.plugins.instantiate()
@@ -34,7 +34,7 @@ export class ArxHub {
       plugin.configure(this)
     }
 
-    await configure(this)
+    await configure?.(this)
     await Promise.all(plugins.map((it) => it.start(this)))
   }
 

@@ -1,44 +1,31 @@
-import { Bundler } from './bundler'
+import { type Plugin as ESBuildPlugin, build } from 'esbuild'
+import { Bundler, type Entrypoint } from './bundler'
+import { ESBuildVirtualPlugin } from './esbuild-virtual-plugin'
 
 export class ESBuildBundler extends Bundler {
-  build(moduleType: string): Promise<string> {
-    throw new Error('Method not implemented.')
+  override async bundle(entrypoint: Entrypoint): Promise<string> {
+    const plugins: ESBuildPlugin[] = []
+
+    if (entrypoint?.plugins?.virtual === true) plugins.push(ESBuildVirtualPlugin(this.files))
+    if (entrypoint?.plugins?.nodePolyfill === true) plugins.push()
+
+    const result = await build({
+      stdin: {
+        sourcefile: entrypoint.sourcefile,
+        contents: entrypoint.content,
+        loader: entrypoint.loader,
+        resolveDir: process.cwd(),
+      },
+      bundle: true,
+      treeShaking: true,
+      write: false,
+      platform: 'browser',
+      format: 'esm',
+      sourcemap: 'inline',
+      // minify: true,
+      plugins,
+    })
+
+    return result.outputFiles[0].text
   }
 }
-
-
-    // const entryPointContent = components.map((file) => `import "${file.pathname}"`).join('\n')
-    // const virtualFiles: Record<string, string> = {
-    //   'entry.ts': entryPointContent,
-    //   ...Object.fromEntries(await Promise.all(components.map(async (file) => [file.pathname, await file.readText()]))),
-    // }
-
-    // const result = await build({
-    //   entryPoints: ['entry.ts'],
-    //   bundle: true,
-    //   write: false,
-    //   platform: 'browser',
-    //   format: 'esm',
-    //   sourcemap: 'inline',
-    //   plugins: [
-    //     {
-    //       name: 'virtual-files',
-    //       setup(build) {
-    //         build.onResolve({ filter: /.*/ }, (args) => {
-    //           if (args.path === 'entry.ts') {
-    //             return { path: args.path, namespace: 'virtual' }
-    //           }
-    //           return { path: args.path }
-    //         })
-    //         build.onLoad({ filter: /.*/ }, (args) => {
-    //           return {
-    //             contents: virtualFiles[args.path],
-    //             loader: args.path.endsWith('.ts') ? 'ts' : 'js',
-    //           }
-    //         })
-    //       },
-    //     },
-    //   ],
-    // })
-
-    // const bundledCode = result.outputFiles[0].text

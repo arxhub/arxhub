@@ -1,10 +1,9 @@
 {
   "name": "@arxhub/stdlib",
+  "sideEffects": false,
   "version": "0.1.0",
   "description": "",
-  "keywords": [
-    "arxhub"
-  ],
+  "keywords": ["arxhub"],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
@@ -14,9 +13,7 @@
     "./fs/*": "./src/fs/*.ts",
     "./record/*": "./src/record/*.ts"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc && vite build",
     "test": "vitest"

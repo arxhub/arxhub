@@ -1,20 +1,27 @@
 {
   "name": "@arxhub/bundler",
+  "sideEffects": false,
   "version": "0.1.0",
   "description": "",
-  "keywords": ["arxhub"],
+  "keywords": [
+    "arxhub"
+  ],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "esbuild": "catalog:server"
+    "esbuild": "catalog:server",
+    "esbuild-plugin-polyfill-node": "^0.3.0",
+    "esbuild-plugins-node-modules-polyfill": "^1.7.0"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
@@ -23,8 +30,8 @@
     "type-fest": "catalog:toolchain"
   },
   "peerDependencies": {
-    "@arxhub/stdlib": "workspace:*",
     "@arxhub/core": "workspace:*",
+    "@arxhub/stdlib": "workspace:*",
     "@arxhub/vfs": "workspace:*"
   },
   "publishConfig": {

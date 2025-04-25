@@ -1,5 +1,6 @@
 {
   "name": "@arxhub/vfs",
+  "sideEffects": false,
   "version": "0.1.0",
   "description": "",
   "keywords": ["arxhub", "fs", "vfs", "virtual"],
