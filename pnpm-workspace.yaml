@@ -27,6 +27,8 @@ catalogs:
     pouchdb-core: ^9.0.0
     pouchdb-find: ^9.0.0
     ts-dedent: ^2.2.0
+    memoirist: ^0.3.0
+    nanoid: ^5.1.5
   
   client:
     '@radix-ui/colors': ^3.0.0

@@ -12,9 +12,12 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
-  "dependencies": {},
+  "dependencies": {
+    "memoirist": "catalog:common"
+  },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
