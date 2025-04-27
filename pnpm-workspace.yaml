@@ -22,10 +22,7 @@ catalogs:
     vitest: ^3.1.2
 
   common:
-    pouchdb: ^9.0.0
-    pouchdb-adapter-memory: ^9.0.0
-    pouchdb-core: ^9.0.0
-    pouchdb-find: ^9.0.0
+    '@signaldb/core': ^1.5.2
     ts-dedent: ^2.2.0
     memoirist: ^0.3.0
     nanoid: ^5.1.5
