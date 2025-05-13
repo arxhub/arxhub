@@ -1,5 +1,4 @@
 import { Container } from '@arxhub/stdlib/collections/container'
-import type { SearchableFileSystem } from '@arxhub/vfs'
 
 export type Entrypoint = {
   content: string
@@ -12,14 +11,17 @@ export type Entrypoint = {
   }
 }
 
-export type EntrypointFactory = (files: SearchableFileSystem) => Promise<Entrypoint>
+export type BuildResult = {
+  content: string
+  contentType: string
+}
+
+export type EntrypointFactory = () => Promise<Entrypoint>
 
 export abstract class Bundler {
-  protected files: SearchableFileSystem
   private registry: Container<EntrypointFactory>
 
-  constructor(vfs: SearchableFileSystem) {
-    this.files = vfs
+  constructor() {
     this.registry = new Container('Bundler Modules')
   }
 
@@ -27,9 +29,9 @@ export abstract class Bundler {
     this.registry.set(type, factory)
   }
 
-  async build(moduleType: string): Promise<{ content: string; contentType: string }> {
+  async build(moduleType: string): Promise<BuildResult> {
     const factory = this.registry.get(moduleType)
-    const entrypoint = await factory(this.files)
+    const entrypoint = await factory()
     const content = await this.bundle(entrypoint, moduleType)
     return { content, contentType: entrypoint.contentType }
   }

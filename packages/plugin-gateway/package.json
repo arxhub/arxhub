@@ -9,7 +9,6 @@
   "type": "module",
   "exports": {
     "./manifest": "./src/manifest.ts",
-    "./api": "./src/api.ts",
     "./server": "./src/server.ts"
   },
   "files": ["dist"],
@@ -34,10 +33,6 @@
       "./manifest": {
         "import": "./dist/manifest.js",
         "types": "./dist/manifest.d.ts"
-      },
-      "./api": {
-        "import": "./dist/api.js",
-        "types": "./dist/api.d.ts"
       },
       "./server": {
         "import": "./dist/server.js",

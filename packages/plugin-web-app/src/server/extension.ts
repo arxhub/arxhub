@@ -1,9 +1,9 @@
 import { type Bundler, ESBuildBundler } from '@arxhub/bundler'
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import type { SearchableFileSystem } from '@arxhub/vfs'
+import type { VirtualFileSystem } from '@arxhub/vfs'
 
 export type WebAppServerExtensionArgs = ExtensionArgs & {
-  files: SearchableFileSystem
+  files: VirtualFileSystem
 }
 
 export class WebAppServerExtension extends Extension {

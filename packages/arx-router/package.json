@@ -17,7 +17,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "memoirist": "catalog:common"
+    "memoirist": "catalog:shared"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

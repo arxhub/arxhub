@@ -1,8 +1,16 @@
+import type { VirtualFileSystem } from '@arxhub/vfs'
 import { type Plugin as ESBuildPlugin, build } from 'esbuild'
 import { Bundler, type Entrypoint } from './bundler'
 import { ESBuildVirtualPlugin } from './esbuild-virtual-plugin'
 
 export class ESBuildBundler extends Bundler {
+  private readonly files: VirtualFileSystem
+
+  constructor(files: VirtualFileSystem) {
+    super()
+    this.files = files
+  }
+
   override async bundle(entrypoint: Entrypoint): Promise<string> {
     const plugins: ESBuildPlugin[] = []
 

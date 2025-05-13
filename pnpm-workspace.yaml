@@ -21,17 +21,17 @@ catalogs:
     vite-tsconfig-paths: ^5.1.4
     vitest: ^3.1.2
 
-  common:
+  shared:
     '@signaldb/core': ^1.5.2
     ts-dedent: ^2.2.0
     memoirist: ^0.3.0
     nanoid: ^5.1.5
+    async-lock: ^1.4.1
   
   client:
     '@radix-ui/colors': ^3.0.0
   
   server:
-    async-lock: ^1.4.1
     elysia: ^1.2.25
     '@elysiajs/node': ^1.2.6
     esbuild: ^0.25.2

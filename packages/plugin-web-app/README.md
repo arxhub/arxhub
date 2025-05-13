@@ -16,7 +16,6 @@ pnpm --filter @arxhub/plugin-web-app build
 
 *   Serves the main ArxHub UI.
 *   Integrates with `@arxhub/plugin-gateway` to handle web requests.
-*   Uses `@arxhub/plugin-vfs` for accessing UI assets if needed.
 
 ## Integration
 

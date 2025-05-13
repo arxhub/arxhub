@@ -15,8 +15,8 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "async-lock": "catalog:server",
-    "ts-dedent": "catalog:common"
+    "async-lock": "catalog:shared",
+    "ts-dedent": "catalog:shared"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
@@ -27,7 +27,6 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/external-pouchdb": "workspace:*",
     "@arxhub/stdlib": "workspace:*"
   },
   "publishConfig": {

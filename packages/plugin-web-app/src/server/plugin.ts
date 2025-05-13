@@ -1,7 +1,6 @@
 import type { ArxHub, PluginArgs } from '@arxhub/core'
 import { Plugin } from '@arxhub/core'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/api'
-import { VirtualFileSystemServerExtension } from '@arxhub/plugin-vfs/server'
 import { isNodeError } from '@arxhub/stdlib/errors/app-error'
 import manifest from '../manifest'
 import { WebAppServerExtension } from './extension'
@@ -86,7 +85,6 @@ export default WebAppServerPlugin
 /*
 
 import GatewayPlugin from '@arxhub/plugin-gateway/server'
-import VFSPlugin, { VirtualFileSystemServerExtension } from '@arxhub/plugin-vfs/server'
 import WebAppPlugin from '@arxhub/plugin-web-app/server'
 import { LocalFileSystem } from '@arxhub/vfs'
 

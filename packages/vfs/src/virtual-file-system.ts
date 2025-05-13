@@ -1,17 +1,16 @@
 import type { VirtualFile } from './virtual-file'
 
 export interface VirtualFileSystem {
-  isFileExists(pathname: string): Promise<boolean>
-
-  file(pathname: string): Promise<VirtualFile>
-
-  fileOrNull(pathname: string): Promise<VirtualFile | null>
+  file(id: string): Promise<VirtualFile>
+  fileOrNull(id: string): Promise<VirtualFile | null>
 
   listFiles(): AsyncGenerator<VirtualFile>
 
-  readTextFile(pathname: string): Promise<string>
+  readFile(id: string): Promise<Buffer>
+  readTextFile(id: string): Promise<string>
 
-  writeTextFile(pathname: string, content: string): Promise<void>
+  writeFile(id: string): Promise<Buffer>
+  writeTextFile(id: string, content: string): Promise<void>
 
-  refresh(): Promise<void>
+  isFileExists(id: string): Promise<boolean>
 }

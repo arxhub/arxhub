@@ -24,7 +24,6 @@ Plugins typically reside within the `plugins/` directory of the ArxHub monorepo.
     *   Use the `publishConfig.exports` field to point to the compiled JavaScript files in your output directory (e.g., `./dist/manifest.js`). This is used when the package is published.
     *   Common export keys include:
         *   `./manifest`: Points to the file exporting the plugin's `manifest` object. (Required)
-        *   `./api`: Points to the file exporting the plugin's public API types and extensions. (Optional, but recommended)
         *   `./server`: Points to the main server-side plugin class/entry point. (Common)
         *   `./client`: Points to the client-side entry point (if applicable). (Optional)
 
@@ -36,7 +35,6 @@ Plugins typically reside within the `plugins/` directory of the ArxHub monorepo.
       "type": "module",
       "exports": {
         "./manifest": "./src/manifest.ts",
-        "./api": "./src/api.ts",
         "./server": "./src/server.ts"
       },
       "peerDependencies": {
@@ -52,10 +50,6 @@ Plugins typically reside within the `plugins/` directory of the ArxHub monorepo.
           "./manifest": {
             "import": "./dist/manifest.js",
             "types": "./dist/manifest.d.ts"
-          },
-          "./api": {
-            "import": "./dist/api.js",
-            "types": "./dist/api.d.ts"
           },
           "./server": {
             "import": "./dist/server.js",
