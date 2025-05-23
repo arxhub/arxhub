@@ -1,16 +1,15 @@
-import type { VirtualFile, VirtualFileProps, VirtualFileSystem } from '@arxhub/vfs'
-import { Collection } from '@signaldb/core'
+import type { Logger } from '@arxhub/core'
+import { GenericFile, type VirtualFile, type VirtualFileProps, type VirtualFileSystem } from '@arxhub/vfs'
+import { Collection, type Selector } from '@signaldb/core'
 import AsyncLock from 'async-lock'
+import type Cursor from 'node_modules/@signaldb/core/dist/Collection/Cursor'
 import type { Constructor } from 'type-fest'
 
 export interface SearchableFileSystem extends VirtualFileSystem {
-  query(): Promise<VirtualFile[]>
-
-  search(): Promise<VirtualFile[]>
+  query(selector: Selector<VirtualFileProps>): Promise<VirtualFile[]>
 }
 
-// TODO: Maybe use class
-export function SearchableFileSystemMixin<T extends Constructor<VirtualFileSystem>>(Base: T) {
+export function SearchableFileSystemMixin<T extends Constructor<VirtualFileSystem>>(Base: T, logger: Logger) {
   return class extends Base implements SearchableFileSystem {
     private readonly memory: Collection<VirtualFileProps>
     private lock: AsyncLock
@@ -24,21 +23,46 @@ export function SearchableFileSystemMixin<T extends Constructor<VirtualFileSyste
       this.outdated = true
     }
 
-    async query(): Promise<VirtualFile[]> {
+    async query(selector: Selector<VirtualFileProps>): Promise<VirtualFile[]> {
       if (this.outdated) await this.invalidate()
-      return Promise.resolve([])
-    }
+      const files: VirtualFile[] = []
 
-    async search(): Promise<VirtualFile[]> {
-      if (this.outdated) await this.invalidate()
-      return Promise.resolve([])
+      let cursor: Cursor<VirtualFileProps> | null = null
+      try {
+        cursor = this.memory.find(selector)
+        // biome-ignore lint/complexity/noForEach: Cursor is not an iterator
+        cursor.forEach((file) =>
+          files.push(
+            new GenericFile(this, {
+              id: file.id,
+              version: file.version,
+              pathname: file.pathname,
+              fields: file.fields,
+              metadata: file.metadata,
+              contentType: file.contentType,
+              moduleType: file.moduleType,
+            }),
+          ),
+        )
+      } catch (e) {
+        logger.error(e)
+        cursor?.cleanup()
+      }
+
+      return files
     }
 
     private invalidate(): Promise<void> {
       return this.lock.acquire('invalidate', async () => {
         if (!this.outdated) return
 
-        // TODO: Invalidate memory index
+        this.memory.removeMany({})
+
+        for await (const file of super.listFiles()) {
+          const fileProps = file.props()
+          this.memory.insert(fileProps)
+        }
+
         this.outdated = false
       })
     }

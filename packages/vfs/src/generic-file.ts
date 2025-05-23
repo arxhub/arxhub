@@ -8,6 +8,9 @@ export type GenericFileOptions = Omit<VirtualFileProps, 'name' | 'path' | 'exten
 export class GenericFile implements VirtualFile {
   readonly vfs: VirtualFileSystem
 
+  readonly id: string
+  readonly version: number
+
   readonly pathname: string
   readonly path: string
   readonly name: string
@@ -21,6 +24,9 @@ export class GenericFile implements VirtualFile {
   constructor(vfs: VirtualFileSystem, options: GenericFileOptions) {
     this.vfs = vfs
 
+    this.id = options.id
+    this.version = options.version
+
     this.pathname = options.pathname
     const splitted = splitPathname(options.pathname)
     this.path = splitted.path
@@ -31,6 +37,14 @@ export class GenericFile implements VirtualFile {
     this.metadata = options.metadata
     this.contentType = options.contentType
     this.moduleType = options.moduleType
+  }
+  
+  read(): Promise<Buffer> {
+    throw new Error('Method not implemented.')
+  }
+
+  write(content: Buffer): Promise<Buffer> {
+    throw new Error('Method not implemented.')
   }
 
   readText(): Promise<string> {
