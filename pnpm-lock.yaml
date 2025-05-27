@@ -21,8 +21,8 @@ catalogs:
       version: 0.25.2
   shared:
     '@signaldb/core':
-      specifier: ^1.5.2
-      version: 1.5.2
+      specifier: ^1.6.0
+      version: 1.6.0
     async-lock:
       specifier: ^1.4.1
       version: 1.4.1
@@ -240,7 +240,7 @@ importers:
         version: link:../vfs
       '@signaldb/core':
         specifier: catalog:shared
-        version: 1.5.2
+        version: 1.6.0
       async-lock:
         specifier: catalog:shared
         version: 1.4.1
@@ -748,8 +748,8 @@ packages:
   '@rushstack/ts-command-line@4.23.6':
     resolution: {integrity: sha512-7WepygaF3YPEoToh4MAL/mmHkiIImQq3/uAkQX46kVoKTNOOlCtFGyNnze6OYuWw2o9rxsyrHVfIBKxq/am2RA==}
 
-  '@signaldb/core@1.5.2':
-    resolution: {integrity: sha512-Tw5Jh6Jpq6z7TRQmcT5EfQ0uFwb5K7n3YOn7qdYJoE3KQCozthGYbch92vUx5frWWQgiEVGBdAZtKsyK7PpMLw==}
+  '@signaldb/core@1.6.0':
+    resolution: {integrity: sha512-m+Ot7QqPdfSp3q63ymPZp2U/XHWpzFnQ5IgGfOdyVvKpDGCTyZ/IgG+QsP9/RycMgdqmv6W6uaJ9/xlPhSp/FQ==}
 
   '@sinclair/typebox@0.34.33':
     resolution: {integrity: sha512-5HAV9exOMcXRUxo+9iYB5n09XxzCXnfy4VTNW4xnDv+FgjzAGY989C28BIdljKqmF+ZltUwujE3aossvcVtq6g==}
@@ -1850,7 +1850,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@signaldb/core@1.5.2':
+  '@signaldb/core@1.6.0':
     dependencies:
       fast-sort: 3.4.1
       mingo: 6.6.0

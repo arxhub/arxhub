@@ -1,6 +1,7 @@
 import type { ArxHub, PluginArgs } from '@arxhub/core'
 import { Plugin } from '@arxhub/core'
-import { GatewayServerExtension } from '@arxhub/plugin-gateway/api'
+import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
+import {  } from '@arxhub/vfs'
 import { isNodeError } from '@arxhub/stdlib/errors/app-error'
 import manifest from '../manifest'
 import { WebAppServerExtension } from './extension'
@@ -14,7 +15,7 @@ export class WebAppServerPlugin extends Plugin<ArxHub> {
 
   override create({ plugins, extensions }: ArxHub): void {
     extensions.register(WebAppServerExtension, () => ({
-      files: extensions.get(VirtualFileSystemServerExtension).files,
+      files: extensions.get(VirtualFileSystemExtension).files,
     }))
   }
 
@@ -81,31 +82,3 @@ export class WebAppServerPlugin extends Plugin<ArxHub> {
 }
 
 export default WebAppServerPlugin
-
-/*
-
-import GatewayPlugin from '@arxhub/plugin-gateway/server'
-import WebAppPlugin from '@arxhub/plugin-web-app/server'
-import { LocalFileSystem } from '@arxhub/vfs'
-
-const hub = new ArxHub()
-
-hub.plugins.register(VFSPlugin)
-hub.plugins.register(GatewayPlugin)
-hub.plugins.register(WebAppPlugin)
-
-if (import.meta.hot) {
-  const prev = import.meta.hot.data.hub
-  if (prev != null) {
-    prev?.stop()
-    console.log('--- VITE NODE HOT UPDATED ---')
-  }
-  import.meta.hot.data.hub = hub
-}
-
-await hub.start(({ plugins, extensions }) => {
-  const vfs = extensions.get(VirtualFileSystemServerExtension)
-  vfs.mount('/local', new LocalFileSystem('data'))
-})
-
-*/

@@ -38,7 +38,7 @@ export class GenericFile implements VirtualFile {
     this.contentType = options.contentType
     this.moduleType = options.moduleType
   }
-  
+
   read(): Promise<Buffer> {
     throw new Error('Method not implemented.')
   }
@@ -66,6 +66,8 @@ export class GenericFile implements VirtualFile {
 
   props(): VirtualFileProps {
     return {
+      id: this.id,
+      version: this.version,
       pathname: this.pathname,
       path: this.path,
       name: this.name,
