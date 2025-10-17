@@ -1,0 +1,37 @@
+{
+  "name": "@arxhub/sync",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "",
+  "keywords": ["arxhub"],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain",
+    "type-fest": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/stdlib": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
+    }
+  }
+}

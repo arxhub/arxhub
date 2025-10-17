@@ -282,6 +282,28 @@ importers:
         specifier: catalog:toolchain
         version: 4.40.0
 
+  packages/sync:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arxhub/stdlib':
+        specifier: workspace:*
+        version: link:../stdlib
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 22.14.1
+      type-fest:
+        specifier: catalog:toolchain
+        version: 4.40.0
+
   packages/uikit:
     dependencies:
       '@arxhub/stdlib':
