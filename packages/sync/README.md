@@ -52,8 +52,10 @@ When you sync, SyncEngine:
 
 ### Data Storage
 
-- **Local**: Your notes are stored in a local database for instant access
+- **Local**: Your notes are stored in a local file system for instant access (decrypted)
 - **Remote**: Encrypted copies are stored in cloud storage for backup and cross-device sync
+
+For detailed technical specifications, refer to the [Technical Design Document](./TECH_DESIGN.md).
 
 ### Security
 
