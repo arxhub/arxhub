@@ -24,6 +24,12 @@ export function createNodeConfig(dirname: string, env: ConfigEnv, entries: strin
         },
       },
     },
+    optimizeDeps: {
+      include: [
+        '@arxhub/plugin-gateway',
+      ],
+      force: true,
+    },
     plugins: [
       nodeExternalsPlugin({
         builtinsPrefix: 'add',
