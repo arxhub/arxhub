@@ -30,5 +30,9 @@ export interface VirtualFile extends VirtualFileProps {
   write(content: Buffer): Promise<Buffer>
   writeText(content: string): Promise<void>
 
+  appendText(content: string): Promise<void>
+
   props(): VirtualFileProps
+
+  sha256(): Promise<string>
 }

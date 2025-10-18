@@ -16,6 +16,7 @@ catalogs:
     memoirist: ^0.3.0
     nanoid: ^5.1.5
     ts-dedent: ^2.2.0
+    rabin-rs: ^2.1.0
   toolchain:
     '@biomejs/biome': ^2.2.6
     '@types/async-lock': ^1.4.2
