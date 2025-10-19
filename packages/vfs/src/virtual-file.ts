@@ -26,6 +26,7 @@ export interface VirtualFileProps {
 export interface VirtualFile extends VirtualFileProps {
   read(): Promise<Buffer>
   readText(): Promise<string>
+  readJSON<T>(): Promise<T>
 
   write(content: Buffer): Promise<Buffer>
   writeText(content: string): Promise<void>

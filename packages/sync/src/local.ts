@@ -5,7 +5,7 @@ import type { FileStatus } from './types/file-status'
 
 export class Local extends Repo {
   async add(path: string): Promise<void> {
-    const changes = await this.vfs.file(`./repo/changes`, { create: true })
+    const changes = await this.vfs.file(`/repo/changes`, { create: true })
     await changes.appendText(`${path}\n`)
   }
 
@@ -23,12 +23,12 @@ export class Local extends Repo {
     }
 
     // Collect statuses for added files
-    const changesFile = await this.vfs.file(`./repo/changes`, { create: true })
+    const changesFile = await this.vfs.file(`/repo/changes`, { create: true })
     const changesFileText = await changesFile.readText()
     const changes = changesFileText.split('\n').filter(Boolean)
 
     for (const change of changes) {
-      const pathname = `./data/${change}`
+      const pathname = `/data/${change}`
       if (processed.has(pathname)) continue
 
       const file = await this.vfs.file(pathname)
