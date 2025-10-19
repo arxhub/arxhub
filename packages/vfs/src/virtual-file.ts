@@ -35,4 +35,7 @@ export interface VirtualFile extends VirtualFileProps {
   props(): VirtualFileProps
 
   sha256(): Promise<string>
+
+  isExists(): Promise<boolean>
+  isDirectory(): Promise<boolean>
 }

@@ -12,32 +12,37 @@ export class Local extends Repo {
   async status(): Promise<FileStatus[]> {
     const head = await this.head()
     const result: FileStatus[] = []
-    const processedPaths = new Set<string>()
+    const processed = new Set<string>()
 
+    // Collect statuses for already tracked files
+    for (const path in head.files) {
+      const file = await this.vfs.file(path)
+      const status = await this.fileStatus(file, head)
+      result.push(status)
+      processed.add(file.pathname)
+    }
+
+    // Collect statuses for added files
     const changesFile = await this.vfs.file(`./repo/changes`, { create: true })
     const changesFileText = await changesFile.readText()
     const changes = changesFileText.split('\n').filter(Boolean)
 
     for (const change of changes) {
-      const path = `./data/${change}`
-      const file = await this.vfs.file(path)
+      const pathname = `./data/${change}`
+      if (processed.has(pathname)) continue
+
+      const file = await this.vfs.file(pathname)
       if (await file.isDirectory()) {
-        for await (const subFile of this.vfs.listFiles(path, { recursive: true })) {
-          const status = await this.fileStatus(subFile, head)
+        for await (const child of this.vfs.listFiles(pathname, { recursive: true })) {
+          if (processed.has(child.pathname)) continue
+          const status = await this.fileStatus(child, head)
           result.push(status)
-          processedPaths.add(subFile.path)
+          processed.add(child.pathname)
         }
       } else {
         const status = await this.fileStatus(file, head)
         result.push(status)
-        processedPaths.add(file.path)
-      }
-    }
-
-    // Check for deleted files
-    for (const path in head.files) {
-      if (!processedPaths.has(path) && !(await this.vfs.exists(path))) {
-        result.push({ pathname: path, type: 'deleted' })
+        processed.add(file.pathname)
       }
     }
 
@@ -45,9 +50,7 @@ export class Local extends Repo {
   }
 
   private async fileStatus(file: VirtualFile, head: Snapshot): Promise<FileStatus> {
-    const exists = await file.isExists()
-
-    if (exists) {
+    if (await file.isExists()) {
       const hash = await file.sha256()
       const local = head.files[file.pathname]
 
