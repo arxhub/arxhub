@@ -1,5 +1,6 @@
 import type { Local } from './local'
 import type { Remote } from './remote'
+import type { ConflictResolver, Snapshot } from './types'
 
 export type SyncEngineOptions = {
   local: Local
@@ -24,35 +25,26 @@ export class SyncEngine {
    * Ensures local and remote repositories are in sync, handling conflicts.
    */
   async sync(): Promise<void> {
+    // TODO: Maybe set lock in remote on sync
     // 1. Call pull() to fetch remote changes and handle initial conflicts.
     // 2. If conflicts are detected during pull, mark them for manual resolution and exit.
     // 3. Call commit() to gather local changes and create a new local revision.
     // 4. Call push() to send local changes to the remote.
   }
 
-  /**
-   * Downloads all remote revisions and attempts to unpack the head.
-   * Marks conflicts if they arise during the unpack/merge process.
-   * @param ref Optional reference to a specific revision to pull.
-   */
-  async pull(ref?: string): Promise<void> {
-    // This method should:
-    // 1. Call _fetchRemoteHead(ref) to get the latest remote HEAD.json or a specific revision.
-    // 2. Call _downloadRemoteFiles(snapshot) to download and decrypt necessary revision files and chunks.
-    // 3. Call _unpackRemoteHead(snapshot) to handle chunk merging, decryption, and applying changes
-    //    to the local baseDir and SQLite database. This is where conflicts will be detected and marked.
-    console.log(`Pulling changes (ref: ${ref || 'latest'})...`)
+  async pull(hash: string = 'head'): Promise<void> {
+    await this.local.download(this.remote, hash)
+    await this.local.unpack(hash, (_, incoming) => incoming)
   }
 
   /**
    * Uploads all local revisions that do not exist on the remote.
    */
-  async push(): Promise<void> {
-    // This method should:
-    // 1. Call _uploadLocalRevisions() to identify and upload new encrypted chunks and revision files to S3.
-    // 2. Call _updateRemoteHead(newHead) to perform an atomic update of /HEAD.json on S3.
-    console.log('Pushing local commits...')
+  async push(hash: string = 'head'): Promise<void> {
+    await this.local.upload(this.remote, hash)
+    await this.remote.updateHead(hash)
   }
+
 
   /**
    * Gathers the status of changed files locally, creates chunks, and a new revision.

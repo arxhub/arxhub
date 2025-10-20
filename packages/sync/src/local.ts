@@ -1,6 +1,6 @@
 import type { VirtualFile } from '@arxhub/vfs'
-import type { Snapshot } from 'src/types'
 import { Repo } from './repo'
+import type { ConflictResolver, Snapshot } from './types'
 import type { FileStatus } from './types/file-status'
 
 export class Local extends Repo {
@@ -68,4 +68,8 @@ export class Local extends Repo {
     // Special case, it does not exists on local and remote
     return { pathname: file.pathname, type: 'unmodified' }
   }
+
+  async unpack(hash: string, resolver: ConflictResolver): Promise<void> {}
+
+  async pack(hash: string): Promise<void> {}
 }

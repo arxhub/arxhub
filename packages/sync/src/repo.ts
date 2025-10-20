@@ -10,15 +10,25 @@ export class Repo {
     this._head = null
   }
 
-  protected async refreshHead(): Promise<Snapshot> {
-    const file = await this.vfs.file(`/repo/head`)
-    const head = (await file.isExists()) ? await file.readJSON<Snapshot>() : EMPTY_SNAPSHOT
-    this._head = head
-    return head
+  async head(skipCache?: boolean): Promise<Snapshot> {
+    if (this._head == null || skipCache) {
+      const file = await this.vfs.file(`/repo/head`)
+      const head = (await file.isExists()) ? await file.readJSON<Snapshot>() : EMPTY_SNAPSHOT
+      this._head = head
+    }
+
+    return this._head
   }
 
-  async head(): Promise<Snapshot> {
-    return this._head == null ? this.refreshHead() : this._head
+  // Only download files with chunks from, by given snapshot hash
+  async download(from: Repo, hash: string = 'head'): Promise<Snapshot> {}
+
+  // Only upload files with chunks to, by given snapshot hash
+  async upload(to: Repo, hash: string = 'head'): Promise<Snapshot> {}
+
+  async updateHead(hash: string): Promise<void> {
+    // TODO: Save into vfs new snapshot head hash, and check if revision is exists
+    await this.head(true)
   }
 }
 
