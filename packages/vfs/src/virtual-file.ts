@@ -30,6 +30,7 @@ export interface VirtualFile extends VirtualFileProps {
 
   write(content: Buffer): Promise<Buffer>
   writeText(content: string): Promise<void>
+  writeJSON<T>(content: T): Promise<void>
 
   appendText(content: string): Promise<void>
 
