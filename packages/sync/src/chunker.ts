@@ -1,0 +1,82 @@
+import type { VirtualFile } from '@arxhub/vfs'
+import AsyncLock from 'async-lock'
+import { create, cut, type Rabin } from 'rabin-rs'
+
+const kiB = 1024
+const miB = 1024 * kiB
+
+const bits = 20
+const minSize = 512 * kiB
+const maxSize = 8 * miB
+const windowSize = 64
+
+export class Chunker {
+  private rabin!: Rabin
+  private readonly lock: AsyncLock
+
+  constructor() {
+    this.lock = new AsyncLock()
+  }
+
+  private async initialize(): Promise<void> {
+    if (this.rabin == null) {
+      this.lock.acquire('rabin', async () => {
+        this.rabin?.free()
+        this.rabin = await create(bits, minSize, maxSize, windowSize)
+      })
+    }
+  }
+
+  async *encode(file: VirtualFile): AsyncGenerator<Uint8Array> {
+    await this.initialize()
+
+    let stream: ReadableStream<Uint8Array> | null = null
+    try {
+      stream = await file.readable()
+      const reader = stream.getReader()
+
+      let bytes = new Uint8Array()
+      while (true) {
+        const { done, value } = await reader.read()
+
+        if (value) {
+          const chunk = new Uint8Array(bytes.length + value.length)
+          chunk.set(bytes)
+          chunk.set(value, bytes.length)
+          bytes = chunk
+        }
+
+        if (bytes.length === 0) {
+          break
+        }
+
+        const cuts = cut(this.rabin, bytes, done)
+        for (const cutOffset of cuts) {
+          yield bytes.subarray(0, cutOffset)
+          bytes = bytes.subarray(cutOffset)
+        }
+      }
+    } finally {
+      await stream?.cancel()
+    }
+  }
+
+  async decode(chunks: VirtualFile[]): Promise<ReadableStream<Uint8Array>> {
+    return new ReadableStream<Uint8Array>({
+      async start(controller) {
+        for (const chunk of chunks) {
+          const stream = await chunk.readable()
+          const reader = stream.getReader()
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) {
+              break
+            }
+            controller.enqueue(value)
+          }
+        }
+        controller.close()
+      },
+    })
+  }
+}

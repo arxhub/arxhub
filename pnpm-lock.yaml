@@ -296,6 +296,9 @@ importers:
       '@arxhub/vfs':
         specifier: workspace:*
         version: link:../vfs
+      async-lock:
+        specifier: catalog:shared
+        version: 1.4.1
       rabin-rs:
         specifier: catalog:shared
         version: 2.1.0
@@ -306,6 +309,9 @@ importers:
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      '@types/async-lock':
+        specifier: catalog:toolchain
+        version: 1.4.2
       '@types/node':
         specifier: catalog:toolchain
         version: 22.14.1
