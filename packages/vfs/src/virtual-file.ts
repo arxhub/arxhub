@@ -29,7 +29,7 @@ export interface VirtualFile extends VirtualFileProps {
   readJSON<T>(): Promise<T>
   readable(): Promise<ReadableStream<Uint8Array>>
 
-  write(content: Buffer): Promise<Buffer>
+  write(content: Buffer): Promise<void>
   writeText(content: string): Promise<void>
   writeJSON<T>(content: T): Promise<void>
 

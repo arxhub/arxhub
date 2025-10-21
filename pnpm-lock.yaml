@@ -26,6 +26,9 @@ catalogs:
     async-lock:
       specifier: ^1.4.1
       version: 1.4.1
+    fflate:
+      specifier: ^0.8.2
+      version: 0.8.2
     memoirist:
       specifier: ^0.3.0
       version: 0.3.0
@@ -299,6 +302,9 @@ importers:
       async-lock:
         specifier: catalog:shared
         version: 1.4.1
+      fflate:
+        specifier: catalog:shared
+        version: 0.8.2
       rabin-rs:
         specifier: catalog:shared
         version: 2.1.0
@@ -1104,6 +1110,9 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  fflate@0.8.2:
+    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
 
   foreground-child@3.3.1:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
@@ -2259,6 +2268,8 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.3):
     optionalDependencies:
       picomatch: 4.0.3
+
+  fflate@0.8.2: {}
 
   foreground-child@3.3.1:
     dependencies:

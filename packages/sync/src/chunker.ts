@@ -2,12 +2,12 @@ import type { VirtualFile } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import { create, cut, type Rabin } from 'rabin-rs'
 
-const kiB = 1024
-const miB = 1024 * kiB
+const KB = 1024
+const MB = 1024 * KB
 
 const bits = 20
-const minSize = 512 * kiB
-const maxSize = 8 * miB
+const minSize = 512 * KB
+const maxSize = 8 * MB
 const windowSize = 64
 
 export class Chunker {
@@ -31,9 +31,10 @@ export class Chunker {
     await this.initialize()
 
     let stream: ReadableStream<Uint8Array> | null = null
+    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null
     try {
       stream = await file.readable()
-      const reader = stream.getReader()
+      reader = stream.getReader()
 
       let bytes = new Uint8Array()
       while (true) {
@@ -57,6 +58,7 @@ export class Chunker {
         }
       }
     } finally {
+      reader?.releaseLock()
       await stream?.cancel()
     }
   }

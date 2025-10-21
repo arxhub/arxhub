@@ -16,11 +16,13 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "rabin-rs": "catalog:shared",
-    "async-lock": "catalog:shared"
+    "async-lock": "catalog:shared",
+    "fflate": "catalog:shared"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
