@@ -1,8 +1,9 @@
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { isFileExists } from '@arxhub/stdlib/fs/is-file-exists'
 import { listFiles } from '@arxhub/stdlib/fs/list-files'
 import { readTextFile } from '@arxhub/stdlib/fs/read-text-file'
 import { writeTextFile } from '@arxhub/stdlib/fs/write-text-file'
-import { FileNotFound } from './errors/file-not-found'
 import { GenericFile, type GenericFileOptions } from './generic-file'
 import type { VirtualFile } from './virtual-file'
 import type { VirtualFileSystem } from './virtual-file-system'
@@ -13,21 +14,36 @@ export class LocalFileSystem implements VirtualFileSystem {
   constructor(rootDir: string) {
     this.rootDir = rootDir
   }
+  getFileReadable(id: string): Promise<ReadableStream> {
+    throw new Error('Method not implemented.')
+  }
+  getFileWritable(id: string): Promise<WritableStream> {
+    throw new Error('Method not implemented.')
+  }
+  readFile(id: string): Promise<Buffer> {
+    const absolute = path.join(this.rootDir, id)
+    return fs.readFile(absolute)
+  }
+  async writeFile(id: string, content: Buffer): Promise<void> {
+    const absolute = path.join(this.rootDir, id)
+    const dirname = path.dirname(absolute)
+    await fs.mkdir(dirname, { recursive: true })
+    await fs.writeFile(absolute, content)
+  }
+  appendTextFile(id: string, content: string): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+  isDirectory(id: string): Promise<boolean> {
+    throw new Error('Method not implemented.')
+  }
 
   async file(pathname: string): Promise<VirtualFile> {
-    const file = await this.fileOrNull(pathname)
-    if (file == null) throw new FileNotFound(pathname)
-    return file
+    const meta = await this.readMeta(pathname)
+    return new GenericFile(this, { ...meta, pathname })
   }
 
   isFileExists(pathname: string): Promise<boolean> {
     return isFileExists(`${this.rootDir}/${pathname}`)
-  }
-
-  async fileOrNull(pathname: string): Promise<VirtualFile | null> {
-    if (!(await this.isFileExists(pathname))) return null
-    const meta = await this.readMeta(pathname)
-    return new GenericFile(this, { ...meta, pathname })
   }
 
   // TODO: Add caching

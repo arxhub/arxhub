@@ -1,5 +1,4 @@
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
-import dedent from 'ts-dedent'
 import type { VirtualFile, VirtualFileProps } from './virtual-file'
 import type { VirtualFileSystem } from './virtual-file-system'
 
@@ -40,42 +39,44 @@ export class GenericFile implements VirtualFile {
   }
 
   read(): Promise<Buffer> {
-    throw new Error('Method not implemented.')
+    return this.vfs.readFile(this.pathname)
   }
-
-  write(content: Buffer): Promise<Buffer> {
-    throw new Error('Method not implemented.')
-  }
-
   readText(): Promise<string> {
-    return this.vfs.readTextFile(this.pathname)
+  }
+  readJSON<T>(): Promise<T> {
+  }
+  readable(): Promise<ReadableStream<Uint8Array>> {
+    return this.vfs.getFileReadable(this.pathname)
   }
 
+  // --- --- ---
+
+  write(content: Buffer): Promise<void> {
+    return this.vfs.writeFile(this.pathname, content)
+  }
   writeText(content: string): Promise<void> {
-    return this.vfs.writeTextFile(this.pathname, content)
+  }
+  writeJSON<T>(content: T): Promise<void> {
+  }
+  writable(): Promise<WritableStream<Uint8Array>> {
+    return this.vfs.getFileWritable(this.pathname)
   }
 
-  stat(): string {
-    return dedent`
-      pathname: ${this.pathname}
-      extension: ${this.extension}
-      contentType: ${this.contentType}
-      moduleType: ${this.moduleType}
-    `
+  // --- --- ---
+
+  delete(): Promise<void> {
+    return this.vfs.deleteFile(this.pathname)
   }
 
-  props(): VirtualFileProps {
-    return {
-      id: this.id,
-      version: this.version,
-      pathname: this.pathname,
-      path: this.path,
-      name: this.name,
-      extension: this.extension,
-      fields: this.fields,
-      metadata: this.metadata,
-      contentType: this.contentType,
-      moduleType: this.moduleType,
-    }
+  // --- --- ---
+
+  isExists(): Promise<boolean> {
+    return this.vfs.isFileExists(this.pathname)
+  }
+
+  // --- --- ---
+
+  hash(): Promise<string> {
+    return this.vfs.getFileHash(this.pathname, 'sha256')
   }
 }

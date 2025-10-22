@@ -29,16 +29,16 @@ export interface VirtualFile extends VirtualFileProps {
   readJSON<T>(): Promise<T>
   readable(): Promise<ReadableStream<Uint8Array>>
 
-  write(content: Buffer): Promise<void>
+  write(content: ArrayBufferView): Promise<void>
   writeText(content: string): Promise<void>
   writeJSON<T>(content: T): Promise<void>
+  writable(): Promise<WritableStream<Uint8Array>>
 
   appendText(content: string): Promise<void>
 
-  props(): VirtualFileProps
-
-  sha256(): Promise<string>
+  delete(): Promise<void>
 
   isExists(): Promise<boolean>
-  isDirectory(): Promise<boolean>
+
+  hash(algorithm: string): Promise<string>
 }

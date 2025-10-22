@@ -27,7 +27,7 @@ export class Chunker {
     }
   }
 
-  async *encode(file: VirtualFile): AsyncGenerator<Uint8Array> {
+  async *split(file: VirtualFile): AsyncGenerator<Uint8Array> {
     await this.initialize()
 
     let stream: ReadableStream<Uint8Array> | null = null
@@ -63,7 +63,7 @@ export class Chunker {
     }
   }
 
-  async decode(chunks: VirtualFile[]): Promise<ReadableStream<Uint8Array>> {
+  async merge(chunks: VirtualFile[]): Promise<ReadableStream<Uint8Array>> {
     return new ReadableStream<Uint8Array>({
       async start(controller) {
         for (const chunk of chunks) {

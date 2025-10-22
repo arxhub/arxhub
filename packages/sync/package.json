@@ -22,7 +22,8 @@
   "dependencies": {
     "rabin-rs": "catalog:shared",
     "async-lock": "catalog:shared",
-    "fflate": "catalog:shared"
+    "fflate": "catalog:shared",
+    "dayjs": "catalog:shared"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

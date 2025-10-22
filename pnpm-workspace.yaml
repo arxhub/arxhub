@@ -18,6 +18,7 @@ catalogs:
     ts-dedent: ^2.2.0
     rabin-rs: ^2.1.0
     fflate: ^0.8.2
+    dayjs: ^1.11.18
   toolchain:
     '@biomejs/biome': ^2.2.6
     '@types/async-lock': ^1.4.2
