@@ -14,10 +14,10 @@ export class LocalFileSystem implements VirtualFileSystem {
   constructor(rootDir: string) {
     this.rootDir = rootDir
   }
-  getFileReadable(id: string): Promise<ReadableStream> {
+  getFileReadableStream(id: string): Promise<ReadableStream> {
     throw new Error('Method not implemented.')
   }
-  getFileWritable(id: string): Promise<WritableStream> {
+  getFileWritableStream(id: string): Promise<WritableStream> {
     throw new Error('Method not implemented.')
   }
   readFile(id: string): Promise<Buffer> {
@@ -42,7 +42,7 @@ export class LocalFileSystem implements VirtualFileSystem {
     return new GenericFile(this, { ...meta, pathname })
   }
 
-  isFileExists(pathname: string): Promise<boolean> {
+  isEntryExists(pathname: string): Promise<boolean> {
     return isFileExists(`${this.rootDir}/${pathname}`)
   }
 
@@ -80,7 +80,7 @@ export class LocalFileSystem implements VirtualFileSystem {
 
     // biome-ignore lint/style/noParameterAssign: Meta files should always be with a .meta extension
     if (!pathname.endsWith('.meta')) pathname = `${pathname}.meta`
-    if (!(await this.isFileExists(pathname))) {
+    if (!(await this.isEntryExists(pathname))) {
       console.warn(`Meta file does not exists for: '${pathname}'`)
       return meta
     }

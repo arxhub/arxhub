@@ -46,7 +46,7 @@ export class GenericFile implements VirtualFile {
   readJSON<T>(): Promise<T> {
   }
   readable(): Promise<ReadableStream<Uint8Array>> {
-    return this.vfs.getFileReadable(this.pathname)
+    return this.vfs.getFileReadableStream(this.pathname)
   }
 
   // --- --- ---
@@ -59,7 +59,7 @@ export class GenericFile implements VirtualFile {
   writeJSON<T>(content: T): Promise<void> {
   }
   writable(): Promise<WritableStream<Uint8Array>> {
-    return this.vfs.getFileWritable(this.pathname)
+    return this.vfs.getFileWritableStream(this.pathname)
   }
 
   // --- --- ---
@@ -71,7 +71,7 @@ export class GenericFile implements VirtualFile {
   // --- --- ---
 
   isExists(): Promise<boolean> {
-    return this.vfs.isFileExists(this.pathname)
+    return this.vfs.isEntryExists(this.pathname)
   }
 
   // --- --- ---
