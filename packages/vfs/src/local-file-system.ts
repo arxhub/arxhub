@@ -1,10 +1,12 @@
+import crypto from 'node:crypto'
+import { createReadStream, createWriteStream } from 'node:fs'
 import fs from 'node:fs/promises'
-import path from 'node:path'
-import { isFileExists } from '@arxhub/stdlib/fs/is-file-exists'
+import { join } from 'node:path'
+import { Readable, Writable } from 'node:stream'
 import { listFiles } from '@arxhub/stdlib/fs/list-files'
-import { readTextFile } from '@arxhub/stdlib/fs/read-text-file'
-import { writeTextFile } from '@arxhub/stdlib/fs/write-text-file'
-import { GenericFile, type GenericFileOptions } from './generic-file'
+import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
+import { GenericFile } from './generic-file'
+import type { DeleteOptions } from './types/delete-options'
 import type { VirtualFile } from './virtual-file'
 import type { VirtualFileSystem } from './virtual-file-system'
 
@@ -14,82 +16,72 @@ export class LocalFileSystem implements VirtualFileSystem {
   constructor(rootDir: string) {
     this.rootDir = rootDir
   }
-  getFileReadableStream(id: string): Promise<ReadableStream> {
-    throw new Error('Method not implemented.')
-  }
-  getFileWritableStream(id: string): Promise<WritableStream> {
-    throw new Error('Method not implemented.')
-  }
-  readFile(id: string): Promise<Buffer> {
-    const absolute = path.join(this.rootDir, id)
-    return fs.readFile(absolute)
-  }
-  async writeFile(id: string, content: Buffer): Promise<void> {
-    const absolute = path.join(this.rootDir, id)
-    const dirname = path.dirname(absolute)
-    await fs.mkdir(dirname, { recursive: true })
-    await fs.writeFile(absolute, content)
-  }
-  appendTextFile(id: string, content: string): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
-  isDirectory(id: string): Promise<boolean> {
-    throw new Error('Method not implemented.')
-  }
 
-  async file(pathname: string): Promise<VirtualFile> {
-    const meta = await this.readMeta(pathname)
-    return new GenericFile(this, { ...meta, pathname })
-  }
-
-  isEntryExists(pathname: string): Promise<boolean> {
-    return isFileExists(`${this.rootDir}/${pathname}`)
-  }
-
-  // TODO: Add caching
-  async *listFiles(): AsyncGenerator<VirtualFile> {
-    for await (const realPathname of listFiles(this.rootDir)) {
-      if (realPathname.endsWith('.meta')) continue
+  async *list(prefix: string = ''): AsyncGenerator<VirtualFile> {
+    for await (const realPathname of listFiles(join(this.rootDir, prefix))) {
       const pathname = realPathname.replace(`${this.rootDir}/`, '')
-      const meta = await this.readMeta(pathname)
-      yield new GenericFile(this, { ...meta, pathname })
+      yield new GenericFile(this, pathname)
     }
   }
 
-  readTextFile(pathname: string): Promise<string> {
-    return readTextFile(`${this.rootDir}/${pathname}`)
+  async file(filename: string): Promise<VirtualFile> {
+    return new GenericFile(this, filename)
   }
 
-  writeTextFile(pathname: string, content: string): Promise<void> {
-    return writeTextFile(`${this.rootDir}/${pathname}`, content)
+  async read(filename: string): Promise<Buffer> {
+    return fs.readFile(join(this.rootDir, filename))
   }
 
-  refresh(): Promise<void> {
-    // no-op for now
-    // TODO: Add caching to listFiles
-    return Promise.resolve()
+  async readableStream(filename: string): Promise<ReadableStream> {
+    // See details here:
+    // https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/65542
+    return Readable.toWeb(createReadStream(join(this.rootDir, filename))) as ReadableStream
   }
 
-  private async readMeta(pathname: string): Promise<Omit<GenericFileOptions, 'pathname'>> {
-    const meta: Omit<GenericFileOptions, 'pathname'> = {
-      contentType: 'application/octet-stream',
-      moduleType: 'unknown',
-      fields: {},
-      metadata: {},
+  async write(filename: string, content: Buffer): Promise<void> {
+    const path = join(this.rootDir, filename)
+
+    await fs.mkdir(splitPathname(path).path, { recursive: true })
+    return fs.writeFile(path, content)
+  }
+
+  async writableStream(filename: string): Promise<WritableStream> {
+    const path = join(this.rootDir, filename)
+    await fs.mkdir(splitPathname(path).path, { recursive: true })
+    return Writable.toWeb(createWriteStream(path))
+  }
+
+  async delete(filename: string, options?: DeleteOptions): Promise<void> {
+    return fs.rm(join(this.rootDir, filename), options)
+  }
+
+  async head(filename: string): Promise<unknown> {
+    return fs.stat(join(this.rootDir, filename))
+  }
+
+  async isExists(filename: string): Promise<boolean> {
+    try {
+      await fs.access(join(this.rootDir, filename))
+      return true
+    } catch {
+      return false
     }
+  }
 
-    // biome-ignore lint/style/noParameterAssign: Meta files should always be with a .meta extension
-    if (!pathname.endsWith('.meta')) pathname = `${pathname}.meta`
-    if (!(await this.isEntryExists(pathname))) {
-      console.warn(`Meta file does not exists for: '${pathname}'`)
-      return meta
-    }
+  async hash(filename: string, algorithm: string): Promise<string> {
+    const hash = crypto.createHash(algorithm)
+    const stream = await this.readableStream(filename)
+    const reader = stream.getReader()
 
     try {
-      return { ...meta, ...JSON.parse(await this.readTextFile(pathname)) }
-    } catch (e) {
-      console.error(`Error reading meta file: '${pathname}'`, e)
-      return meta
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) return hash.digest('hex')
+        hash.update(value)
+      }
+    } finally {
+      reader.releaseLock()
+      await stream.cancel()
     }
   }
 }

@@ -1,7 +1,8 @@
+import type { DeleteOptions } from './types/delete-options'
+import type { VirtualFileSystem } from './virtual-file-system'
 
-export interface VirtualFileProps {
-  readonly id: string
-  readonly version: number
+export interface VirtualFile {
+  readonly vfs: VirtualFileSystem
 
   // /home/user/file.txt
   readonly pathname: string
@@ -15,30 +16,21 @@ export interface VirtualFileProps {
   // .txt
   readonly extension: string
 
-  // biome-ignore lint/suspicious/noExplicitAny: We want allow to use any in fields
-  readonly fields: Record<string, any>
-  // biome-ignore lint/suspicious/noExplicitAny: We want allow to use any in metadata
-  readonly metadata: Record<string, any>
-  readonly contentType: string
-  readonly moduleType: string
-}
-
-export interface VirtualFile extends VirtualFileProps {
   read(): Promise<Buffer>
   readText(): Promise<string>
   readJSON<T>(): Promise<T>
   readable(): Promise<ReadableStream<Uint8Array>>
 
-  write(content: ArrayBufferView): Promise<void>
+  write(content: Buffer): Promise<void>
   writeText(content: string): Promise<void>
   writeJSON<T>(content: T): Promise<void>
   writable(): Promise<WritableStream<Uint8Array>>
 
-  appendText(content: string): Promise<void>
-
-  delete(): Promise<void>
+  delete(options?: DeleteOptions): Promise<void>
 
   isExists(): Promise<boolean>
 
   hash(algorithm: string): Promise<string>
+
+  head(): Promise<unknown>
 }

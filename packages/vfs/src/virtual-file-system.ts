@@ -1,23 +1,21 @@
+import type { DeleteOptions } from './types/delete-options'
 import type { VirtualFile } from './virtual-file'
 
 export interface VirtualFileSystem {
-  listEntries(path: string, opts?: { recursive?: boolean }): AsyncGenerator<VirtualFile>
+  list(prefix: string): AsyncGenerator<VirtualFile>
 
-  getEntry(path: string): Promise<VirtualFile>
+  file(filename: string): Promise<VirtualFile>
 
-  readFile(filename: string): Promise<Buffer>
-  getFileReadableStream(filename: string): Promise<ReadableStream>
+  read(filename: string): Promise<Buffer>
+  readableStream(filename: string): Promise<ReadableStream>
 
-  writeFile(filename: string, content: Buffer): Promise<void>
-  getFileWritableStream(filename: string): Promise<WritableStream>
+  write(filename: string, content: Buffer): Promise<void>
+  writableStream(filename: string): Promise<WritableStream>
 
-  deleteFile(filename: string): Promise<void>
-  deletePath(path: string): Promise<void>
+  delete(path: string, options?: DeleteOptions): Promise<void>
 
-  isFile(filename: string): Promise<boolean>
-  isDirectory(path: string): Promise<boolean>
+  head(filename: string): Promise<unknown>
+  isExists(filename: string): Promise<boolean>
 
-  isEntryExists(path: string): Promise<boolean>
-
-  getFileHash(algorithm: string): Promise<string>
+  hash(filename: string, algorithm: string): Promise<string>
 }
