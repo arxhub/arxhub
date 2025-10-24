@@ -8,24 +8,15 @@ describe('chunker', async () => {
   const original = await vfs.file('original')
 
   beforeAll(async () => {
-    const randomData = Buffer.alloc(10 * 1024 * 1024)
+    await vfs.delete('./', { force: true, recursive: true })
+    const randomData = Buffer.alloc(8 * 1024 * 1024)
     for (let i = 0; i < randomData.length; i++) {
       randomData[i] = Math.floor(Math.random() * 256)
     }
     await original.write(randomData)
   })
 
-  async function deleteChunks() {
-    await vfs.delete('chunks', { force: true, recursive: true })
-  }
-
-  async function deleteMerged() {
-    await vfs.delete('merged', { force: true })
-  }
-
   test('split', async () => {
-    await deleteChunks()
-
     let i = 0
     for await (const chunk of chunker.split(original)) {
       const file = await vfs.file(`/chunks/${i++}`)
@@ -34,8 +25,6 @@ describe('chunker', async () => {
   })
 
   test('merge', async () => {
-    await deleteMerged()
-
     const chunks = await Array.fromAsync(vfs.list('chunks'))
     const file = await vfs.file('merged')
     const writable = await file.writable()

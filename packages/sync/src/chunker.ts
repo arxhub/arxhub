@@ -5,7 +5,7 @@ import { create, cut, type Rabin } from 'rabin-rs'
 const KB = 1024
 const MB = 1024 * KB
 
-const bits = 20
+const bits = 21
 const minSize = 512 * KB
 const maxSize = 8 * MB
 const windowSize = 64
