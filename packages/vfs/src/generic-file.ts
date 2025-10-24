@@ -30,7 +30,11 @@ export class GenericFile implements VirtualFile {
     return buffer.toString('utf-8')
   }
 
-  async readJSON<T>(): Promise<T> {
+  async readJSON<T>(defaultValue?: T): Promise<T> {
+    if (defaultValue != null && !(await this.isExists())) {
+      return defaultValue
+    }
+
     const text = await this.readText()
     return JSON.parse(text) as T
   }

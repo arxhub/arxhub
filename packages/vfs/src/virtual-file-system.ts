@@ -4,7 +4,7 @@ import type { VirtualFile } from './virtual-file'
 export interface VirtualFileSystem {
   list(prefix: string): AsyncGenerator<VirtualFile>
 
-  file(filename: string): Promise<VirtualFile>
+  file(filename: string): VirtualFile
 
   read(filename: string): Promise<Buffer>
   readableStream(filename: string): Promise<ReadableStream>

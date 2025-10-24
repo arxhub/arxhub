@@ -18,7 +18,7 @@ export interface VirtualFile {
 
   read(): Promise<Buffer>
   readText(): Promise<string>
-  readJSON<T>(): Promise<T>
+  readJSON<T>(defaultValue?: T): Promise<T>
   readable(): Promise<ReadableStream<Uint8Array>>
 
   write(content: Buffer): Promise<void>

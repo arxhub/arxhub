@@ -1,58 +1,59 @@
-import type { VirtualFile } from '@arxhub/vfs'
+import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
+import AsyncLock from 'async-lock'
 import { Repo } from './repo'
 import type { ConflictResolver, Snapshot } from './types'
 import type { FileStatus } from './types/file-status'
 
 export class Local extends Repo {
-  async add(path: string): Promise<void> {
-    const changes = await this.vfs.file(`/repo/changes`, { create: true })
-    await changes.appendText(`${path}\n`)
+  private readonly lock: AsyncLock
+  private readonly changes: VirtualFile
+
+  constructor(vfs: VirtualFileSystem) {
+    super(vfs)
+    this.lock = new AsyncLock()
+    this.changes = vfs.file('/repo/changes.json')
   }
 
+  add(path: string): Promise<void> {
+    return this.lock.acquire('path', async () => {
+      const paths = await this.changes.readJSON<string[]>([])
+      paths.push(path)
+      await this.changes.writeJSON(paths)
+    })
+  }
+
+  // TODO: Maybe convert to async iterator
   async status(): Promise<FileStatus[]> {
     const head = await this.head()
     const result: FileStatus[] = []
     const processed = new Set<string>()
 
-    // Collect statuses for already tracked files
     for (const path in head.files) {
-      const file = await this.vfs.file(path)
+      const file = this.vfs.file(path)
       const status = await this.fileStatus(file, head)
       result.push(status)
       processed.add(file.pathname)
     }
 
-    // Collect statuses for added files
-    const changesFile = await this.vfs.file(`/repo/changes`, { create: true })
-    const changesFileText = await changesFile.readText()
-    const changes = changesFileText.split('\n').filter(Boolean)
+    const paths = await this.changes.readJSON([])
 
-    for (const change of changes) {
-      const pathname = `/data/${change}`
+    for (const path of paths) {
+      const pathname = `/data/${path}`
       if (processed.has(pathname)) continue
 
-      const file = await this.vfs.file(pathname)
-      if (await file.isDirectory()) {
-        for await (const child of this.vfs.listFiles(pathname, { recursive: true })) {
-          if (processed.has(child.pathname)) continue
-          const status = await this.fileStatus(child, head)
-          result.push(status)
-          processed.add(child.pathname)
-        }
-      } else {
-        const status = await this.fileStatus(file, head)
-        result.push(status)
-        processed.add(file.pathname)
-      }
+      const file = this.vfs.file(pathname)
+      const status = await this.fileStatus(file, head)
+      result.push(status)
+      processed.add(file.pathname)
     }
 
     return result
   }
 
-  private async fileStatus(file: VirtualFile, head: Snapshot): Promise<FileStatus> {
+  private async fileStatus(file: VirtualFile, snapshot: Snapshot): Promise<FileStatus> {
     if (await file.isExists()) {
-      const hash = await file.sha256()
-      const local = head.files[file.pathname]
+      const hash = await file.hash('sha256')
+      const local = snapshot.files[file.pathname]
 
       if (local == null) {
         return { pathname: file.pathname, type: 'created' }
@@ -61,7 +62,7 @@ export class Local extends Repo {
       } else {
         return { pathname: file.pathname, type: 'unmodified' }
       }
-    } else if (head.files[file.pathname] != null) {
+    } else if (snapshot.files[file.pathname] != null) {
       return { pathname: file.pathname, type: 'deleted' }
     }
 
@@ -69,7 +70,7 @@ export class Local extends Repo {
     return { pathname: file.pathname, type: 'unmodified' }
   }
 
-  async unpack(hash: string, resolver: ConflictResolver): Promise<void> {}
-
-  async pack(hash: string): Promise<void> {}
+  async commit(): Promise<Snapshot> {
+    const status = await this.status()
+  }
 }

@@ -24,7 +24,7 @@ export class LocalFileSystem implements VirtualFileSystem {
     }
   }
 
-  async file(filename: string): Promise<VirtualFile> {
+  file(filename: string): VirtualFile {
     return new GenericFile(this, filename)
   }
 
