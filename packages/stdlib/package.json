@@ -11,7 +11,8 @@
     "./collections/*": "./src/collections/*.ts",
     "./errors/*": "./src/errors/*.ts",
     "./fs/*": "./src/fs/*.ts",
-    "./record/*": "./src/record/*.ts"
+    "./record/*": "./src/record/*.ts",
+    "./crypto/*": "./src/crypto/*.ts"
   },
   "files": ["dist"],
   "scripts": {

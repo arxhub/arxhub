@@ -1,9 +1,10 @@
 export type SnapshotFileChunk = {
+  // Hash of chunk data, ignoring all metadata: pathname, etc
   hash: string
-  pathname: string
 }
 
 export type SnapshotFile = {
+  // Hash of whole file, ignoring all metadata: pathname, timestamp, etc
   hash: string
   pathname: string
   chunks: SnapshotFileChunk[]
@@ -11,7 +12,8 @@ export type SnapshotFile = {
 
 export type Snapshot = {
   hash: string
-  pathname: string
+  
+  // unix seconds
   timestamp: number
 
   // pathname -> file
