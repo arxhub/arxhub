@@ -1,23 +1,24 @@
-import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
+import type { VirtualFileSystem } from '@arxhub/vfs'
 import type { Snapshot } from 'src/types'
+import { RepoFileSystem } from 'src/vfs/repo-file-system'
 
-export class Repo<VFS extends VirtualFileSystem = VirtualFileSystem> {
-  protected readonly vfs: VFS
+export class Repo {
+  protected readonly vfs: RepoFileSystem
 
-  constructor(vfs: VFS) {
-    this.vfs = vfs
+  constructor(vfs: VirtualFileSystem) {
+    this.vfs = new RepoFileSystem(vfs)
   }
 
   async download(from: Repo, hash: string): Promise<void> {
-    const snapshot = await from.getSnapshotFile(hash).readJSON<Snapshot>()
+    const snapshot = await from.vfs.getSnapshotFile(hash).readJSON<Snapshot>()
 
     for (const pathname in snapshot.files) {
       const file = snapshot.files[pathname]
 
       for (const chunk of file.chunks) {
-        const toChunkFile = this.getChunkFile(chunk.hash)
+        const toChunkFile = this.vfs.getChunkFile(chunk.hash)
         if (!(await toChunkFile.isExists())) {
-          const fromChunkFile = from.getChunkFile(chunk.hash)
+          const fromChunkFile = from.vfs.getChunkFile(chunk.hash)
           const readable = await fromChunkFile.readable()
           const writable = await toChunkFile.writable()
           await readable.pipeTo(writable)
@@ -25,19 +26,19 @@ export class Repo<VFS extends VirtualFileSystem = VirtualFileSystem> {
       }
     }
 
-    await this.getSnapshotFile(hash).writeJSON(snapshot)
+    await this.vfs.getSnapshotFile(hash).writeJSON(snapshot)
   }
 
   async upload(to: Repo, hash: string): Promise<void> {
-    const snapshot = await this.getSnapshotFile(hash).readJSON<Snapshot>()
+    const snapshot = await this.vfs.getSnapshotFile(hash).readJSON<Snapshot>()
 
     for (const pathname in snapshot.files) {
       const file = snapshot.files[pathname]
 
       for (const chunk of file.chunks) {
-        const toChunkFile = to.getChunkFile(chunk.hash)
+        const toChunkFile = to.vfs.getChunkFile(chunk.hash)
         if (!(await toChunkFile.isExists())) {
-          const fromChunkFile = this.getChunkFile(chunk.hash)
+          const fromChunkFile = this.vfs.getChunkFile(chunk.hash)
           const readable = await fromChunkFile.readable()
           const writable = await toChunkFile.writable()
           await readable.pipeTo(writable)
@@ -45,14 +46,6 @@ export class Repo<VFS extends VirtualFileSystem = VirtualFileSystem> {
       }
     }
 
-    await to.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
-  }
-
-  getSnapshotFile(hash: string): VirtualFile {
-    return this.vfs.file(`/repo/snapshots/${hash}`)
-  }
-
-  getChunkFile(hash: string): VirtualFile {
-    return this.vfs.file(`/repo/chunks/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash}`)
+    await to.vfs.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
   }
 }
