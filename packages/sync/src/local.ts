@@ -3,7 +3,7 @@ import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
 import { Chunker } from './chunker'
-import { Repo } from './repo'
+import { EMPTY_SNAPSHOT, Repo } from './repo'
 import type { Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 import type { FileStatus } from './types/file-status'
 
@@ -28,26 +28,29 @@ export class Local extends Repo {
   }
 
   // TODO: Maybe convert to async iterator
-  async status(): Promise<FileStatus[]> {
-    const head = await this.head()
+  async status(snapshot?: Snapshot): Promise<FileStatus[]> {
+    if (snapshot == null) {
+      const head = this.vfs.getHeadFile()
+      snapshot = await head.readJSON(EMPTY_SNAPSHOT)
+    }
+
     const result: FileStatus[] = []
     const processed = new Set<string>()
 
-    for (const path in head.files) {
+    for (const path in snapshot.files) {
       const file = this.vfs.file(path)
-      const status = await this.fileStatus(file, head)
+      const status = await this.fileStatus(file, snapshot)
       result.push(status)
       processed.add(file.pathname)
     }
 
     const paths = await this.changes.readJSON([])
 
-    for (const path of paths) {
-      const pathname = `/data/${path}`
+    for (const pathname of paths) {
       if (processed.has(pathname)) continue
 
       const file = this.vfs.file(pathname)
-      const status = await this.fileStatus(file, head)
+      const status = await this.fileStatus(file, snapshot)
       result.push(status)
       processed.add(file.pathname)
     }
@@ -79,14 +82,17 @@ export class Local extends Repo {
 
   private async pull(): Promise<void> {}
 
-  private async commit(allowConflicts: boolean = false): Promise<string> {
-    // Validate current state - check if we're on the last remote snapshot
-    // For now, we'll skip this validation and implement it later
+  // TODO:
+  // Validate current state - check if we're on the last remote snapshot
+  // For now, we'll skip this validation and implement it later
+  private async commit(snapshot?: Snapshot): Promise<string> {
+    if (snapshot == null) {
+      const head = this.vfs.getHeadFile()
+      snapshot = await head.readJSON(EMPTY_SNAPSHOT)
+    }
 
-    const changes = await this.status()
-    const head = await this.head()
-
-    const files: Record<string, SnapshotFile> = { ...head.files }
+    const changes = await this.status(snapshot)
+    const files: Record<string, SnapshotFile> = { ...snapshot.files }
 
     for (const change of changes) {
       const { pathname, type } = change
@@ -103,9 +109,7 @@ export class Local extends Repo {
       // else created || modified
 
       const file = this.vfs.file(pathname)
-
       const chunks: SnapshotFileChunk[] = []
-      const chunkHashes: string[] = []
 
       for await (const chunk of this.chunker.split(file)) {
         const chunkHash = sha256(chunk)
@@ -116,12 +120,7 @@ export class Local extends Repo {
           await chunkFile.write(Buffer.from(chunk))
         }
 
-        chunks.push({
-          hash: chunkHash,
-          pathname: chunkPathname,
-        })
-
-        chunkHashes.push(chunkHash)
+        chunks.push({ hash: chunkHash })
       }
 
       const fileHash = await file.hash('sha256')
@@ -133,19 +132,18 @@ export class Local extends Repo {
       }
     }
 
-    const snapshot: Snapshot = {
+    const latest: Snapshot = {
       hash: sha256(JSON.stringify(files)),
-      pathname: '/repo/head',
       timestamp: dayjs().unix(),
       files,
     }
 
-    const snapshotFile = this.vfs.file(`/repo/snapshots/${snapshot.hash}`)
-    await snapshotFile.writeJSON(snapshot)
-    await this.updateHead(snapshot.hash)
+    const snapshotFile = this.vfs.file(`/repo/snapshots/${latest.hash}`)
+    await snapshotFile.writeJSON(latest)
+    await this.updateHead(latest.hash)
 
     await this.changes.writeJSON([])
-    return snapshot.hash
+    return latest.hash
   }
 
   private async push(): Promise<void> {}

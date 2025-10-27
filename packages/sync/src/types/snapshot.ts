@@ -1,3 +1,5 @@
+import { timeStamp } from 'node:console'
+
 export type SnapshotFileChunk = {
   // Hash of chunk data, ignoring all metadata: pathname, etc
   hash: string
@@ -12,7 +14,7 @@ export type SnapshotFile = {
 
 export type Snapshot = {
   hash: string
-  
+
   // unix seconds
   timestamp: number
 
