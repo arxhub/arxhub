@@ -34,6 +34,17 @@ export class SyncEngine {
       const baseSnapshot = await this.local.findBaseSnapshot(localSnapshot.hash, remoteSnapshot.hash)
 
       await this.local.merge(baseSnapshot?.files ?? {}, localSnapshot.files, remoteSnapshot.files)
+
+      // Create rebase like, where we move all local changes over remote
+      await this.local.getHeadFile().writeText(remoteSnapshot.hash)
+      const latest = await this.local.commit()
+
+      for await (const snapshot of this.local.listSnapshots()) {
+        await this.local.upload(this.remote, snapshot.name)
+      }
+
+      await this.local.getHeadFile().writeText(latest.hash)
+      await this.remote.getHeadFile().writeText(latest.hash)
     })
   }
 

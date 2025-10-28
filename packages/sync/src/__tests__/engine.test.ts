@@ -89,7 +89,24 @@ describe('SyncEngine', () => {
       await engine.sync()
 
       // Assert
-      expect(await remoteVfs.file('local.txt').readText()).toEqual('local content')
+      const head = await remote.getHeadSnapshot()
+      expect(head).toEqual({
+        hash: '5357bece6f5c405b7c089065f4de42ebe5d32dacd057747ba50b34eec7e7338e',
+        parent: '44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a',
+        timestamp: expect.any(Number),
+        files: {
+          'local.txt': {
+            hash: 'a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48',
+            pathname: 'local.txt',
+            chunks: [
+              {
+                hash: 'a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48',
+              },
+            ],
+          },
+        },
+      })
+      expect(await remote.getChunkFile('a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48').isExists()).toBe(true)
     })
 
     test('given both sides with changes should merge', async () => {
@@ -106,7 +123,34 @@ describe('SyncEngine', () => {
 
       // Assert
       expect(await localVfs.file('remote.txt').readText()).toEqual('remote content')
-      expect(await remoteVfs.file('local.txt').readText()).toEqual('local content')
+      const head = await remote.getHeadSnapshot()
+      expect(head).toEqual({
+        hash: 'a88e220e6a730e9610cd3e552fa767cc62415b6327cd3af7320f7ffa08372c0a',
+        parent: 'a0f5ae89c6048c17c30c2d8cee9abfebee14d86dccf3071ca95128ade77f0544',
+        timestamp: expect.any(Number),
+        files: {
+          'remote.txt': {
+            hash: '0709e9b00585ba4764fd4d89bdefec5b1a20b3735c50d8e33a27f740023ceca2',
+            pathname: 'remote.txt',
+            chunks: [
+              {
+                hash: '0709e9b00585ba4764fd4d89bdefec5b1a20b3735c50d8e33a27f740023ceca2',
+              },
+            ],
+          },
+          'local.txt': {
+            hash: 'a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48',
+            pathname: 'local.txt',
+            chunks: [
+              {
+                hash: 'a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48',
+              },
+            ],
+          },
+        },
+      })
+      expect(await remote.getChunkFile('0709e9b00585ba4764fd4d89bdefec5b1a20b3735c50d8e33a27f740023ceca2').isExists()).toBe(true)
+      expect(await remote.getChunkFile('a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48').isExists()).toBe(true)
     })
 
     test('given both sides modify same file should create conflict', async () => {
@@ -128,7 +172,7 @@ describe('SyncEngine', () => {
 
       // Assert
       expect(await localVfs.file('shared.txt').readText()).toEqual('local modified')
-      expect(await localVfs.file('b6804447-shared.txt').readText()).toEqual('remote modified')
+      expect(await localVfs.file('af216312-shared.txt').readText()).toEqual('remote modified')
     })
   })
 

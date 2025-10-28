@@ -206,6 +206,7 @@ export class Repo {
     const stream = this.chunker.merge(file.chunks.map((it) => this.getChunkFile(it.hash)))
     const writable = await this.vfs.file(file.pathname).writable()
     await stream.pipeTo(writable)
+    await this.add(file.pathname)
   }
 
   private async writeConflictFile(remote: SnapshotFile): Promise<void> {
@@ -215,6 +216,7 @@ export class Repo {
     const writable = await file.writable()
     const readable = this.chunker.merge(remote.chunks.map((it) => this.getChunkFile(it.hash)))
     await readable.pipeTo(writable)
+    await this.add(file.pathname)
   }
 
   async prepare(): Promise<void> {
