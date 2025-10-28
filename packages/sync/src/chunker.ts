@@ -63,7 +63,7 @@ export class Chunker {
     }
   }
 
-  async merge(chunks: VirtualFile[]): Promise<ReadableStream<Uint8Array>> {
+  merge(chunks: VirtualFile[]): ReadableStream<Uint8Array> {
     return new ReadableStream<Uint8Array>({
       async start(controller) {
         for (const chunk of chunks) {

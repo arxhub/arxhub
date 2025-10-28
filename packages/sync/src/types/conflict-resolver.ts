@@ -1,3 +1,3 @@
-import type { VirtualFile } from '@arxhub/vfs'
+import type { VirtualFileSystem } from '@arxhub/vfs'
 
-export type ConflictResolver = (curent: VirtualFile, incoming: VirtualFile) => VirtualFile | Promise<VirtualFile>
+export type ConflictResolver = (vfs: VirtualFileSystem, pathname: string, current: ReadableStream<Uint8Array>, incoming: ReadableStream<Uint8Array>) => Promise<void>

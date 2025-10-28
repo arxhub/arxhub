@@ -1,0 +1,1 @@
+export const recordKeys = <K extends PropertyKey, T>(object: Record<K, T>) => Object.keys(object) as K[]

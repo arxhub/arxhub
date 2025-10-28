@@ -1,3 +1,1 @@
-export function recordValues<K extends PropertyKey, T>(object: Record<K, T>) {
-  return Object.values(object) as T[]
-}
+export const recordValues = <K extends PropertyKey, T>(object: Record<K, T>) => Object.values(object) as T[]

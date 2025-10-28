@@ -1,4 +1,4 @@
 export type FileStatus = {
   pathname: string
-  type: 'created' | 'modified' | 'deleted' | 'unmodified'
+  type: 'created' | 'modified' | 'deleted'
 }
