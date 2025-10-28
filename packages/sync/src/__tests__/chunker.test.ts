@@ -4,7 +4,7 @@ import { Chunker } from '../chunker'
 
 describe('chunker', async () => {
   const chunker = new Chunker()
-  const vfs: VirtualFileSystem = new LocalFileSystem(`${__dirname}/testdata`)
+  const vfs: VirtualFileSystem = new LocalFileSystem(`${__dirname}/testdata/chunker`)
   const original = vfs.file('original')
 
   beforeAll(async () => {

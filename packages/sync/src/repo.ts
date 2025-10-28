@@ -1,9 +1,9 @@
+import { join } from 'node:path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
 import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
-import { join } from 'node:path'
 import { Chunker } from './chunker'
 import type { FileStatus, Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 
@@ -33,8 +33,8 @@ export class Repo {
     const result: FileStatus[] = []
     const processed = new Set<string>()
 
-    for (const path in snapshot.files) {
-      const file = this.vfs.file(path)
+    for (const pathname in snapshot.files) {
+      const file = this.vfs.file(pathname)
       const status = await this.fileStatus(file, snapshot)
       if (status != null) {
         result.push(status)
@@ -44,15 +44,16 @@ export class Repo {
 
     const paths = await this.changes.readJSON([])
 
-    for (const pathname of paths) {
-      if (processed.has(pathname)) continue
+    for (const path of paths) {
+      if (processed.has(path)) continue
 
-      const file = this.vfs.file(pathname)
-      const status = await this.fileStatus(file, snapshot)
-      if (status != null) {
-        result.push(status)
+      for await (const file of this.vfs.list(path)) {
+        const status = await this.fileStatus(file, snapshot)
+        if (status != null) {
+          result.push(status)
+        }
+        processed.add(file.pathname)
       }
-      processed.add(file.pathname)
     }
 
     return result
