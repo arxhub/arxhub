@@ -1,16 +1,15 @@
 import AsyncLock from 'async-lock'
-import type { Local } from './local'
-import type { Remote } from './remote'
+import type { Repo } from './repo'
 
 export type SyncEngineOptions = {
-  local: Local
-  remote: Remote
+  local: Repo
+  remote: Repo
 }
 
 export class SyncEngine {
   private readonly lock: AsyncLock
-  private readonly local: Local
-  private readonly remote: Remote
+  private readonly local: Repo
+  private readonly remote: Repo
 
   constructor(opts: SyncEngineOptions) {
     this.lock = new AsyncLock()
