@@ -15,12 +15,12 @@ export class Local extends Repo {
   constructor(vfs: VirtualFileSystem) {
     super(vfs)
     this.lock = new AsyncLock()
-    this.changes = vfs.file('/repo/changes.json')
+    this.changes = this.vfs.getChangesFile()
     this.chunker = new Chunker()
   }
 
   add(path: string): Promise<void> {
-    return this.lock.acquire('path', async () => {
+    return this.lock.acquire('changes', async () => {
       const paths = await this.changes.readJSON<string[]>([])
       paths.push(path)
       await this.changes.writeJSON(paths)
@@ -80,7 +80,9 @@ export class Local extends Repo {
 
   async sync(): Promise<void> {}
 
-  private async pull(): Promise<void> {}
+  private async pull(): Promise<void> {
+    
+  }
 
   // TODO:
   // Validate current state - check if we're on the last remote snapshot
@@ -112,15 +114,14 @@ export class Local extends Repo {
       const chunks: SnapshotFileChunk[] = []
 
       for await (const chunk of this.chunker.split(file)) {
-        const chunkHash = sha256(chunk)
-        const chunkPathname = `/repo/chunks/${chunkHash}`
-        const chunkFile = this.vfs.file(chunkPathname)
+        const hash = sha256(chunk)
+        const chunkFile = this.vfs.getChunkFile(hash)
 
         if (!(await chunkFile.isExists())) {
           await chunkFile.write(Buffer.from(chunk))
         }
 
-        chunks.push({ hash: chunkHash })
+        chunks.push({ hash })
       }
 
       const fileHash = await file.hash('sha256')
@@ -132,18 +133,17 @@ export class Local extends Repo {
       }
     }
 
-    const latest: Snapshot = {
+    snapshot = {
       hash: sha256(JSON.stringify(files)),
       timestamp: dayjs().unix(),
       files,
     }
 
-    const snapshotFile = this.vfs.file(`/repo/snapshots/${latest.hash}`)
-    await snapshotFile.writeJSON(latest)
-    await this.updateHead(latest.hash)
+    await this.vfs.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
+    await this.vfs.getHeadFile().writeText(snapshot.hash)
 
     await this.changes.writeJSON([])
-    return latest.hash
+    return snapshot.hash
   }
 
   private async push(): Promise<void> {}
