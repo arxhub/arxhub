@@ -10,10 +10,10 @@ export interface VirtualFile {
   // /home/user
   readonly path: string
 
-  // file.txt
+  // file
   readonly name: string
 
-  // .txt
+  // txt
   readonly extension: string
 
   read(): Promise<Buffer>

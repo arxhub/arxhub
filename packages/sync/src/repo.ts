@@ -18,7 +18,7 @@ export class Repo {
         hash: hash,
         parent: null,
         timestamp: 0,
-        files: {},.ge
+        files: {},
       } satisfies Snapshot)
     }
 

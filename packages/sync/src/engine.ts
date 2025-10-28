@@ -1,5 +1,4 @@
 import AsyncLock from 'async-lock'
-import { keepBothConflictResolver } from 'src/keep-both-conflict-resolver'
 import type { Local } from './local'
 import type { Remote } from './remote'
 
@@ -35,7 +34,7 @@ export class SyncEngine {
       const remoteSnapshot = await this.remote.getHeadSnapshot()
       const baseSnapshot = await this.local.findBaseSnapshot(localSnapshot.hash, remoteSnapshot.hash)
 
-      await this.local.merge(baseSnapshot?.files ?? {}, localSnapshot.files, remoteSnapshot.files, keepBothConflictResolver)
+      await this.local.merge(baseSnapshot?.files ?? {}, localSnapshot.files, remoteSnapshot.files)
     })
   }
 

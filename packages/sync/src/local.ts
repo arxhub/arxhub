@@ -1,11 +1,12 @@
+import { join } from 'node:path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
-import { recordKeys } from '@arxhub/stdlib/record/keys'
+import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
 import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
 import { Chunker } from './chunker'
 import { Repo } from './repo'
-import type { ConflictResolver, Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
+import type { Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 import type { FileStatus } from './types/file-status'
 
 export class Local extends Repo {
@@ -154,77 +155,65 @@ export class Local extends Repo {
     return null
   }
 
-  /**
-   * Performs a 3-way merge of file states from base, local, and remote snapshots.
-   *
-   * For each file path, the merge decision is based on whether the file existed in the common
-   * ancestor (`base`) and how `local` and `remote` have changed relative to it.
-   *
-   * To prevent data loss, **deletions are only applied when safe** (i.e., the other side did not modify the file).
-   * When both sides modify a file (or one modifies while the other deletes), **both versions are preserved**.
-   *
-   * Full decision matrix:
-   *
-   * | Base     | Local    | Remote   | Interpretation                              | Action                                                                 |
-   * |----------|----------|----------|---------------------------------------------|------------------------------------------------------------------------|
-   * | ❌        | ❌        | ❌     | Never existed                               | → Skip (no-op)                                                         |
-   * | ❌        | ✅        | ❌     | Added locally                               | → Write local file                                                     |
-   * | ❌        | ❌        | ✅     | Added remotely                              | → Write remote file                                                    |
-   * | ❌        | ✅        | ✅     | Added independently on both sides           | → If content hashes match: write once.                                 |
-   * |           |           |        |                                             | → Else: resolve conflict (keep both)                                   |
-   * | ✅        | ❌        | ❌     | Deleted on both sides                       | → Skip (delete)                                                        |
-   * | ✅        | ✅        | ❌     | Modified locally, deleted remotely          | → **Keep local** (remote deletion ignored to prevent data loss)        |
-   * | ✅        | ❌        | ✅     | Deleted locally, modified remotely          | → **Keep remote** (local deletion ignored to prevent data loss)        |
-   * | ✅        | ✅        | ✅     | Modified on both sides                      | → If hashes match: write once.<br>→ Else: resolve conflict (keep both) |
-   *
-   * Notes:
-   * - "✅" = file present; "❌" = file absent.
-   * - A file is considered "modified" if its content hash differs from the base.
-   * - **Deletions are never honored if the other side modified the file**, ensuring no data loss.
-   * - Conflict resolution (via `resolver`) is only triggered when both sides have different content.
-   *
-   * @param {Record<string, SnapshotFile>} base - Common ancestor snapshot (may be empty).
-   * @param {Record<string, SnapshotFile>} local - Current local file state.
-   * @param {Record<string, SnapshotFile>} remote - Current remote file state.
-   * @param {ConflictResolver} resolver - Function to handle content conflicts (typically preserves both versions).
-   * @returns {Promise<void>}
-   */
   async merge(
-    base: Record<string, SnapshotFile>,
-    local: Record<string, SnapshotFile>,
-    remote: Record<string, SnapshotFile>,
-    resolver: ConflictResolver,
+    baseFiles: Record<string, SnapshotFile>,
+    localFiles: Record<string, SnapshotFile>,
+    remoteFiles: Record<string, SnapshotFile>,
   ): Promise<void> {
-    const files = new Set<string>([...recordKeys(base), ...recordKeys(local), ...recordKeys(remote)])
+    const pathnames = new Set([...Object.keys(baseFiles), ...Object.keys(localFiles), ...Object.keys(remoteFiles)])
 
-    for (const pathname of files.values()) {
-      const baseFile = base[pathname]
-      const localFile = local[pathname]
-      const remoteFile = remote[pathname]
+    for (const pathname of pathnames) {
+      const baseFile = baseFiles[pathname]
+      const localFile = localFiles[pathname]
+      const remoteFile = remoteFiles[pathname]
 
-      if (localFile == null && remoteFile == null) {
-        continue
-      }
+      const base = baseFile != null
+      const local = localFile != null
+      const remote = remoteFile != null
 
-      if (localFile == null && remoteFile != null) {
-        if (baseFile.hash !== remoteFile.hash) {
-          await this.writeSnapshotFile(remoteFile)
+      // Only local exists
+      if (local && !remote) {
+        if (!base) {
+          await this.writeFile(localFile)
+        } else if (localFile.hash === baseFile.hash) {
+          await this.vfs.delete(pathname)
         }
+        // else: local modified, remote deleted -> silently keep local (no conflict)
         continue
       }
 
-      await this.resolveSnapshotFileConflict(localFile, remoteFile, resolver)
+      // Only remote exists
+      if (!local && remote) {
+        if (!base) {
+          await this.writeFile(remoteFile)
+        } else if (remoteFile.hash === baseFile.hash) {
+          await this.vfs.delete(pathname)
+        }
+        // else: remote modified, local deleted -> silently keep remote (no conflict)
+        continue
+      }
+
+      // Both exist
+      if (localFile.hash !== remoteFile.hash) {
+        await this.writeConflictFile(remoteFile)
+      }
+
+      // else: same content -> no-op
     }
   }
 
-  private async writeSnapshotFile(file: SnapshotFile): Promise<void> {}
+  private async writeFile(file: SnapshotFile): Promise<void> {
+    const stream = this.chunker.merge(file.chunks.map((it) => this.getChunkFile(it.hash)))
+    const writable = await this.vfs.file(file.pathname).writable()
+    await stream.pipeTo(writable)
+  }
 
-  private async resolveSnapshotFileConflict(local: SnapshotFile, remote: SnapshotFile, resolver: ConflictResolver): Promise<void> {
-    return resolver(
-      this.vfs,
-      local.pathname,
-      this.chunker.merge(local.chunks.map((it) => this.getChunkFile(it.hash))),
-      this.chunker.merge(remote.chunks.map((it) => this.getChunkFile(it.hash))),
-    )
+  private async writeConflictFile(remote: SnapshotFile): Promise<void> {
+    const { path, name, ext } = splitPathname(remote.pathname)
+    const file = this.vfs.file(join(path, `${remote.hash.slice(0, 8)}-${name}.${ext}`))
+
+    const writable = await file.writable()
+    const readable = this.chunker.merge(remote.chunks.map((it) => this.getChunkFile(it.hash)))
+    await readable.pipeTo(writable)
   }
 }
