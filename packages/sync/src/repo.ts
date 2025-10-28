@@ -161,7 +161,6 @@ export class Repo {
     remoteFiles: Record<string, SnapshotFile>,
   ): Promise<void> {
     const pathnames = new Set([...Object.keys(baseFiles), ...Object.keys(localFiles), ...Object.keys(remoteFiles)])
-
     for (const pathname of pathnames) {
       const baseFile = baseFiles[pathname]
       const localFile = localFiles[pathname]
@@ -211,7 +210,7 @@ export class Repo {
 
   private async writeConflictFile(remote: SnapshotFile): Promise<void> {
     const { path, name, ext } = splitPathname(remote.pathname)
-    const file = this.vfs.file(join(path, `${remote.hash.slice(0, 8)}-${name}.${ext}`))
+    const file = this.vfs.file(join(path, `conflict-${remote.hash.slice(0, 8)}-${name}.${ext}`))
 
     const writable = await file.writable()
     const readable = this.chunker.merge(remote.chunks.map((it) => this.getChunkFile(it.hash)))

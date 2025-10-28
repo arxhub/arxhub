@@ -29,7 +29,10 @@ export class SyncEngine {
         await this.local.download(this.remote, snapshot.name)
       }
 
-      const localSnapshot = await this.local.commit()
+      // Create new snapshot, to calculate new local changes into hashes
+      await this.local.commit()
+
+      const localSnapshot = await this.local.getHeadSnapshot()
       const remoteSnapshot = await this.remote.getHeadSnapshot()
       const baseSnapshot = await this.local.findBaseSnapshot(localSnapshot.hash, remoteSnapshot.hash)
 

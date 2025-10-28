@@ -27,6 +27,15 @@ describe('SyncEngine', () => {
     await remote.prepare()
   })
 
+  describe('add', () => {
+    test('should add path to changes', async () => {
+      await engine.add('change.txt')
+
+      const changes = await local.getChangesFile().readJSON<string[]>([])
+      expect(changes).toEqual(['change.txt'])
+    })
+  })
+
   describe('sync', () => {
     test('given empty repo should commit', async () => {
       // Arrange
@@ -172,16 +181,10 @@ describe('SyncEngine', () => {
 
       // Assert
       expect(await localVfs.file('shared.txt').readText()).toEqual('local modified')
-      expect(await localVfs.file('af216312-shared.txt').readText()).toEqual('remote modified')
+      expect(await localVfs.file('conflict-af216312-shared.txt').readText()).toEqual('remote modified')
     })
   })
 
-  describe('add', () => {
-    test('should add path to changes', async () => {
-      await engine.add('change.txt')
-
-      const changes = await local.getChangesFile().readJSON<string[]>([])
-      expect(changes).toEqual(['change.txt'])
-    })
-  })
+  // TODO: Add test where local == base, and remote has update
+  // TODO: Add all matrix tests
 })
