@@ -44,7 +44,7 @@ describe('SyncEngine', () => {
       await local.add('/data')
 
       // Act
-      await local.commit()
+      await local.snapshot()
 
       // Assert
       expect(await local.getHeadFile().readText()).toEqual('3bdec02bb21d82f532e08b53531e21f2a36f4fc267cbe1e5cfd1f41e03355893')
@@ -80,7 +80,7 @@ describe('SyncEngine', () => {
       // Arrange
       await remoteVfs.file('remote.txt').writeText('remote content')
       await remote.add('remote.txt')
-      await remote.commit()
+      await remote.snapshot()
 
       // Act
       await engine.sync()
@@ -125,7 +125,7 @@ describe('SyncEngine', () => {
 
       await remoteVfs.file('remote.txt').writeText('remote content')
       await remote.add('remote.txt')
-      await remote.commit()
+      await remote.snapshot()
 
       // Act
       await engine.sync()
@@ -172,7 +172,8 @@ describe('SyncEngine', () => {
       await localVfs.file('shared.txt').writeText('local modified')
 
       await remoteVfs.file('shared.txt').writeText('remote modified')
-      await remote.commit()
+      await remote.add('shared.txt')
+      await remote.snapshot()
 
       await engine.add('shared.txt')
 
@@ -183,8 +184,23 @@ describe('SyncEngine', () => {
       expect(await localVfs.file('shared.txt').readText()).toEqual('local modified')
       expect(await localVfs.file('conflict-af216312-shared.txt').readText()).toEqual('remote modified')
     })
-  })
 
-  // TODO: Add test where local == base, and remote has update
-  // TODO: Add all matrix tests
+    test('given remote side modify same file should override', async () => {
+      // Arrange
+      await localVfs.file('shared.txt').writeText('original')
+      await engine.add('shared.txt')
+      await engine.sync()
+
+      // Modify on remote side
+      await remoteVfs.file('shared.txt').writeText('remote modified')
+      await remote.add('shared.txt')
+      await remote.snapshot()
+
+      // Act
+      await engine.sync()
+
+      // Assert
+      expect(await localVfs.file('shared.txt').readText()).toEqual('remote modified')
+    })
+  })
 })

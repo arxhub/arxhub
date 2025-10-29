@@ -78,7 +78,7 @@ export class Repo {
     return null
   }
 
-  async commit(): Promise<Snapshot> {
+  async snapshot(): Promise<Snapshot> {
     const head = await this.getHeadSnapshot()
     const changes = await this.status(head)
     if (changes.length === 0) {
@@ -189,6 +189,12 @@ export class Repo {
           await this.vfs.delete(pathname)
         }
         // else: remote modified, local deleted -> silently keep remote (no conflict)
+        continue
+      }
+
+      // Prevent conflict
+      if (base && local && remote && baseFile.hash === localFile.hash) {
+        await this.writeFile(remoteFile)
         continue
       }
 

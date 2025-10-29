@@ -30,9 +30,7 @@ export class SyncEngine {
       }
 
       // Create new snapshot, to calculate new local changes into hashes
-      await this.local.commit()
-
-      const localSnapshot = await this.local.getHeadSnapshot()
+      const localSnapshot = await this.local.snapshot()
       const remoteSnapshot = await this.remote.getHeadSnapshot()
       const baseSnapshot = await this.local.findBaseSnapshot(localSnapshot.hash, remoteSnapshot.hash)
 
@@ -40,7 +38,7 @@ export class SyncEngine {
 
       // Create rebase like, where we move all local changes over remote
       await this.local.getHeadFile().writeText(remoteSnapshot.hash)
-      const latest = await this.local.commit()
+      const latest = await this.local.snapshot()
 
       for await (const snapshot of this.local.listSnapshots()) {
         await this.local.upload(this.remote, snapshot.name)
