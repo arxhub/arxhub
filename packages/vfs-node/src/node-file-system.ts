@@ -1,11 +1,11 @@
-import crypto from 'node:crypto'
-import { createReadStream, createWriteStream } from 'node:fs'
-import fs from 'node:fs/promises'
-import { join } from 'node:path'
-import { Readable, Writable } from 'node:stream'
+import { join } from '@arxhub/path'
 import { listFiles } from '@arxhub/stdlib/fs/list-files'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
 import { type DeleteOptions, GenericFile, type VirtualFile, type VirtualFileSystem } from '@arxhub/vfs'
+import crypto from 'node:crypto'
+import { createReadStream, createWriteStream } from 'node:fs'
+import fs from 'node:fs/promises'
+import { Readable, Writable } from 'node:stream'
 
 export class NodeFileSystem implements VirtualFileSystem {
   private readonly rootDir: string
