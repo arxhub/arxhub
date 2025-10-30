@@ -1,10 +1,11 @@
-import { LocalFileSystem, type VirtualFileSystem } from '@arxhub/vfs'
+import type { VirtualFileSystem } from '@arxhub/vfs'
+import { NodeFileSystem } from '@arxhub/vfs-node'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { Chunker } from '../chunker'
 
 describe('chunker', async () => {
   const chunker = new Chunker()
-  const vfs: VirtualFileSystem = new LocalFileSystem(`${__dirname}/testdata/chunker`)
+  const vfs: VirtualFileSystem = new NodeFileSystem(`${__dirname}/testdata/chunker`)
   const original = vfs.file('original')
 
   beforeAll(async () => {

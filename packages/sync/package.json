@@ -25,6 +25,7 @@
     "dayjs": "catalog:shared"
   },
   "devDependencies": {
+    "@arxhub/vfs-node": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
     "@types/async-lock": "catalog:toolchain",
