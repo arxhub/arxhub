@@ -1,6 +1,6 @@
-export * from './errors/file-not-found'
-export * from './errors/mount-not-found'
+export * from './errors'
 export * from './generic-file'
-export * from './local-file-system'
+export * from './types'
 export * from './virtual-file'
 export * from './virtual-file-system'
+

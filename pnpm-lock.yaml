@@ -378,6 +378,40 @@ importers:
         specifier: catalog:toolchain
         version: 4.40.0
 
+  packages/vfs-node:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arxhub/stdlib':
+        specifier: workspace:*
+        version: link:../stdlib
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../vfs
+      async-lock:
+        specifier: catalog:shared
+        version: 1.4.1
+      ts-dedent:
+        specifier: catalog:shared
+        version: 2.2.0
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/async-lock':
+        specifier: catalog:toolchain
+        version: 1.4.2
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 22.14.1
+      type-fest:
+        specifier: catalog:toolchain
+        version: 4.40.0
+
   toolchains/biome: {}
 
   toolchains/tsconfig: {}

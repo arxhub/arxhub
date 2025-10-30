@@ -5,12 +5,9 @@ import { join } from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import { listFiles } from '@arxhub/stdlib/fs/list-files'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
-import { GenericFile } from './generic-file'
-import type { DeleteOptions } from './types/delete-options'
-import type { VirtualFile } from './virtual-file'
-import type { VirtualFileSystem } from './virtual-file-system'
+import { type DeleteOptions, GenericFile, type VirtualFile, type VirtualFileSystem } from '@arxhub/vfs'
 
-export class LocalFileSystem implements VirtualFileSystem {
+export class NodeFileSystem implements VirtualFileSystem {
   private readonly rootDir: string
 
   constructor(rootDir: string) {
