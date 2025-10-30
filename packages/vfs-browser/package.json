@@ -1,5 +1,5 @@
 {
-  "name": "@arxhub/vfs-node",
+  "name": "@arxhub/vfs-browser",
   "sideEffects": false,
   "version": "0.1.0",
   "description": "",
@@ -8,7 +8,7 @@
     "fs",
     "vfs",
     "virtual",
-    "node"
+    "browser"
   ],
   "license": "AGPL-3.0-or-later",
   "author": "",
@@ -36,7 +36,9 @@
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/stdlib": "workspace:*",
-    "@arxhub/vfs": "workspace:*"
+    "@arxhub/vfs": "workspace:*",
+    "@arxhub/path": "workspace:*",
+    "@arxhub/crypto": "workspace:*"
   },
   "publishConfig": {
     "exports": {

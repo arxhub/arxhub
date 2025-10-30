@@ -1,11 +1,11 @@
 {
-  "name": "@arxhub/path",
+  "name": "@arxhub/crypto",
   "sideEffects": false,
   "version": "0.1.0",
   "description": "",
   "keywords": [
     "arxhub",
-    "path"
+    "crypto"
   ],
   "license": "AGPL-3.0-or-later",
   "author": "",
@@ -13,7 +13,7 @@
   "main": "index.js",
   "types": "index.d.ts",
   "dependencies": {
-    "path-browserify": "catalog:shared"
+    "crypto-browserify": "catalog:shared"
   },
   "devDependencies": {
     "@types/node": "catalog:toolchain"

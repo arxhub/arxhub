@@ -213,16 +213,7 @@ importers:
       crypto-browserify:
         specifier: catalog:shared
         version: 3.12.1
-      ts-dedent:
-        specifier: catalog:shared
-        version: 2.2.0
     devDependencies:
-      '@arxhub/toolchain-tsconfig':
-        specifier: workspace:*
-        version: link:../../toolchains/tsconfig
-      '@arxhub/toolchain-vite':
-        specifier: workspace:*
-        version: link:../../toolchains/vite
       '@types/node':
         specifier: catalog:toolchain
         version: 22.14.1
@@ -232,6 +223,10 @@ importers:
       path-browserify:
         specifier: catalog:shared
         version: 1.0.1
+    devDependencies:
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 22.14.1
 
   packages/plugin-gateway:
     dependencies:
@@ -417,6 +412,12 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../core
+      '@arxhub/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@arxhub/path':
+        specifier: workspace:*
+        version: link:../path
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
@@ -464,9 +465,6 @@ importers:
         specifier: catalog:shared
         version: 2.2.0
     devDependencies:
-      '@arxhub/path':
-        specifier: workspace:*
-        version: link:../path
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig
