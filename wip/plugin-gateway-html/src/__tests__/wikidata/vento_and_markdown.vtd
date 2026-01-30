@@ -1,9 +1,0 @@
-# H1 Header
-
-* Foo: "{{ foo }}"
-* Bar: "{{ bar }}"
-* Foo + Bar: "{{ foo + bar }}"
-
----
-
-## H2 Header
