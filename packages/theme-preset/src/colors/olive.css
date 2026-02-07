@@ -1,0 +1,66 @@
+/**
+ * Color tokens adapted from Radix Colors (https://www.radix-ui.com/colors)
+ * Copyright (c) 2021-2022 Modulz
+ * Copyright (c) 2022-Present WorkOS
+ * Licensed under MIT License
+ */
+
+/* Light Theme (Default) */
+:root {
+  --olive-1: #fcfdfc;
+  --olive-2: #f8faf8;
+  --olive-3: #eff1ef;
+  --olive-4: #e7e9e7;
+  --olive-5: #dfe2df;
+  --olive-6: #d7dad7;
+  --olive-7: #cccfcc;
+  --olive-8: #b9bcb8;
+  --olive-9: #898e87;
+  --olive-10: #7f847d;
+  --olive-11: #60655f;
+  --olive-12: #1d211c;
+
+  /* Alpha Variants */
+  --olive-a1: #00550003;
+  --olive-a2: #00490007;
+  --olive-a3: #00200010;
+  --olive-a4: #00160018;
+  --olive-a5: #00180020;
+  --olive-a6: #00140028;
+  --olive-a7: #000f0033;
+  --olive-a8: #040f0047;
+  --olive-a9: #050f0078;
+  --olive-a10: #040e0082;
+  --olive-a11: #020a00a0;
+  --olive-a12: #010600e3;
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  --olive-1: #111210;
+  --olive-2: #181917;
+  --olive-3: #212220;
+  --olive-4: #282a27;
+  --olive-5: #2f312e;
+  --olive-6: #383a36;
+  --olive-7: #454843;
+  --olive-8: #5c625b;
+  --olive-9: #687066;
+  --olive-10: #767d74;
+  --olive-11: #afb5ad;
+  --olive-12: #eceeec;
+
+  /* Alpha Variants */
+  --olive-a1: #00000000;
+  --olive-a2: #f1f2f008;
+  --olive-a3: #f4f5f312;
+  --olive-a4: #f3fef21a;
+  --olive-a5: #f2fbf122;
+  --olive-a6: #f4faed2c;
+  --olive-a7: #f2fced3b;
+  --olive-a8: #edfdeb57;
+  --olive-a9: #ebfde766;
+  --olive-a10: #f0fdec74;
+  --olive-a11: #f6fef4b0;
+  --olive-a12: #fdfffded;
+}

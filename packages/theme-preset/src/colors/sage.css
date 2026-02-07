@@ -1,0 +1,66 @@
+/**
+ * Color tokens adapted from Radix Colors (https://www.radix-ui.com/colors)
+ * Copyright (c) 2021-2022 Modulz
+ * Copyright (c) 2022-Present WorkOS
+ * Licensed under MIT License
+ */
+
+/* Light Theme (Default) */
+:root {
+  --sage-1: #fbfdfc;
+  --sage-2: #f7f9f8;
+  --sage-3: #eef1f0;
+  --sage-4: #e6e9e8;
+  --sage-5: #dfe2e0;
+  --sage-6: #d7dad9;
+  --sage-7: #cbcfcd;
+  --sage-8: #b8bcba;
+  --sage-9: #868e8b;
+  --sage-10: #7c8481;
+  --sage-11: #5f6563;
+  --sage-12: #1a211e;
+
+  /* Alpha Variants */
+  --sage-a1: #00804004;
+  --sage-a2: #00402008;
+  --sage-a3: #002d1e11;
+  --sage-a4: #001f1519;
+  --sage-a5: #00180820;
+  --sage-a6: #00140d28;
+  --sage-a7: #00140a34;
+  --sage-a8: #000f0847;
+  --sage-a9: #00110b79;
+  --sage-a10: #00100a83;
+  --sage-a11: #000a07a0;
+  --sage-a12: #000805e5;
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  --sage-1: #101211;
+  --sage-2: #171918;
+  --sage-3: #202221;
+  --sage-4: #272a29;
+  --sage-5: #2e3130;
+  --sage-6: #373b39;
+  --sage-7: #444947;
+  --sage-8: #5b625f;
+  --sage-9: #63706b;
+  --sage-10: #717d79;
+  --sage-11: #adb5b2;
+  --sage-12: #eceeed;
+
+  /* Alpha Variants */
+  --sage-a1: #00000000;
+  --sage-a2: #f0f2f108;
+  --sage-a3: #f3f5f412;
+  --sage-a4: #f2fefd1a;
+  --sage-a5: #f1fbfa22;
+  --sage-a6: #edfbf42d;
+  --sage-a7: #edfcf73c;
+  --sage-a8: #ebfdf657;
+  --sage-a9: #dffdf266;
+  --sage-a10: #e5fdf674;
+  --sage-a11: #f4fefbb0;
+  --sage-a12: #fdfffeed;
+}
