@@ -1,0 +1,15 @@
+/**
+ * Design tokens adapted from Panda CSS (https://github.com/chakra-ui/panda)
+ * Copyright (c) 2023 Segun Adebayo
+ * Licensed under MIT License
+ */
+
+:root {
+  --duration-fastest: 50ms;
+  --duration-faster: 100ms;
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 400ms;
+  --duration-slowest: 500ms;
+}

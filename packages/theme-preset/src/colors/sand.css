@@ -1,0 +1,66 @@
+/**
+ * Color tokens adapted from Radix Colors (https://www.radix-ui.com/colors)
+ * Copyright (c) 2021-2022 Modulz
+ * Copyright (c) 2022-Present WorkOS
+ * Licensed under MIT License
+ */
+
+/* Light Theme (Default) */
+:root {
+  --sand-1: #fdfdfc;
+  --sand-2: #f9f9f8;
+  --sand-3: #f1f0ef;
+  --sand-4: #e9e8e6;
+  --sand-5: #e2e1de;
+  --sand-6: #dad9d6;
+  --sand-7: #cfceca;
+  --sand-8: #bcbbb5;
+  --sand-9: #8d8d86;
+  --sand-10: #82827c;
+  --sand-11: #63635e;
+  --sand-12: #21201c;
+
+  /* Alpha Variants */
+  --sand-a1: #55550003;
+  --sand-a2: #25250007;
+  --sand-a3: #20100010;
+  --sand-a4: #1f150019;
+  --sand-a5: #1f180021;
+  --sand-a6: #19130029;
+  --sand-a7: #19140035;
+  --sand-a8: #1915014a;
+  --sand-a9: #0f0f0079;
+  --sand-a10: #0c0c0083;
+  --sand-a11: #080800a1;
+  --sand-a12: #060500e3;
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  --sand-1: #111110;
+  --sand-2: #191918;
+  --sand-3: #222221;
+  --sand-4: #2a2a28;
+  --sand-5: #31312e;
+  --sand-6: #3b3a37;
+  --sand-7: #494844;
+  --sand-8: #62605b;
+  --sand-9: #6f6d66;
+  --sand-10: #7c7b74;
+  --sand-11: #b5b3ad;
+  --sand-12: #eeeeec;
+
+  /* Alpha Variants */
+  --sand-a1: #00000000;
+  --sand-a2: #f4f4f309;
+  --sand-a3: #f6f6f513;
+  --sand-a4: #fefef31b;
+  --sand-a5: #fbfbeb23;
+  --sand-a6: #fffaed2d;
+  --sand-a7: #fffbed3c;
+  --sand-a8: #fff9eb57;
+  --sand-a9: #fffae965;
+  --sand-a10: #fffdee73;
+  --sand-a11: #fffcf4b0;
+  --sand-a12: #fffffded;
+}

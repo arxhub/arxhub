@@ -1,0 +1,66 @@
+/**
+ * Color tokens adapted from Radix Colors (https://www.radix-ui.com/colors)
+ * Copyright (c) 2021-2022 Modulz
+ * Copyright (c) 2022-Present WorkOS
+ * Licensed under MIT License
+ */
+
+/* Light Theme (Default) */
+:root {
+  --iris-1: #fdfdff;
+  --iris-2: #f8f8ff;
+  --iris-3: #f0f1fe;
+  --iris-4: #e6e7ff;
+  --iris-5: #dadcff;
+  --iris-6: #cbcdff;
+  --iris-7: #b8baf8;
+  --iris-8: #9b9ef0;
+  --iris-9: #5b5bd6;
+  --iris-10: #5151cd;
+  --iris-11: #5753c6;
+  --iris-12: #272962;
+
+  /* Alpha Variants */
+  --iris-a1: #0000ff02;
+  --iris-a2: #0000ff07;
+  --iris-a3: #0011ee0f;
+  --iris-a4: #000bff19;
+  --iris-a5: #000eff25;
+  --iris-a6: #000aff34;
+  --iris-a7: #0008e647;
+  --iris-a8: #0008d964;
+  --iris-a9: #0000c0a4;
+  --iris-a10: #0000b6ae;
+  --iris-a11: #0600abac;
+  --iris-a12: #000246d8;
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  --iris-1: #13131e;
+  --iris-2: #171625;
+  --iris-3: #202248;
+  --iris-4: #262a65;
+  --iris-5: #303374;
+  --iris-6: #3d3e82;
+  --iris-7: #4a4a95;
+  --iris-8: #5958b1;
+  --iris-9: #5b5bd6;
+  --iris-10: #6e6ade;
+  --iris-11: #b1a9ff;
+  --iris-12: #e0dffe;
+
+  /* Alpha Variants */
+  --iris-a1: #3636fe0e;
+  --iris-a2: #564bf916;
+  --iris-a3: #525bff3b;
+  --iris-a4: #4d58ff5a;
+  --iris-a5: #5b62fd6b;
+  --iris-a6: #6d6ffd7a;
+  --iris-a7: #7777fe8e;
+  --iris-a8: #7b7afeac;
+  --iris-a9: #6a6afed4;
+  --iris-a10: #7d79ffdc;
+  --iris-a11: #b1a9ff;
+  --iris-a12: #e1e0fffe;
+}

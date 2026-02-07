@@ -1,0 +1,12 @@
+{
+  "name": "@arxhub/theme",
+  "version": "0.1.0",
+  "description": "Default theme preset for Arxhub (Cyan & Slate)",
+  "main": "index.css",
+  "scripts": {
+    "build": "vite build"
+  },
+  "peerDependencies": {
+    "@arxhub/theme-preset": "*"
+  }
+}

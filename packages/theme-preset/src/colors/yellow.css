@@ -1,0 +1,66 @@
+/**
+ * Color tokens adapted from Radix Colors (https://www.radix-ui.com/colors)
+ * Copyright (c) 2021-2022 Modulz
+ * Copyright (c) 2022-Present WorkOS
+ * Licensed under MIT License
+ */
+
+/* Light Theme (Default) */
+:root {
+  --yellow-1: #fdfdf9;
+  --yellow-2: #fefce9;
+  --yellow-3: #fffab8;
+  --yellow-4: #fff394;
+  --yellow-5: #ffe770;
+  --yellow-6: #f3d768;
+  --yellow-7: #e4c767;
+  --yellow-8: #d5ae39;
+  --yellow-9: #ffe629;
+  --yellow-10: #ffdc00;
+  --yellow-11: #9e6c00;
+  --yellow-12: #473b1f;
+
+  /* Alpha Variants */
+  --yellow-a1: #aaaa0006;
+  --yellow-a2: #f4dd0016;
+  --yellow-a3: #ffee0047;
+  --yellow-a4: #ffe3016b;
+  --yellow-a5: #ffd5008f;
+  --yellow-a6: #ebbc0097;
+  --yellow-a7: #d2a10098;
+  --yellow-a8: #c99700c6;
+  --yellow-a9: #ffe100d6;
+  --yellow-a10: #ffdc00;
+  --yellow-a11: #9e6c00;
+  --yellow-a12: #2e2000e0;
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  --yellow-1: #14120b;
+  --yellow-2: #1b180f;
+  --yellow-3: #2d2305;
+  --yellow-4: #362b00;
+  --yellow-5: #433500;
+  --yellow-6: #524202;
+  --yellow-7: #665417;
+  --yellow-8: #836a21;
+  --yellow-9: #ffe629;
+  --yellow-10: #ffff57;
+  --yellow-11: #f5e147;
+  --yellow-12: #f6eeb4;
+
+  /* Alpha Variants */
+  --yellow-a1: #d1510004;
+  --yellow-a2: #f9b4000b;
+  --yellow-a3: #ffaa001e;
+  --yellow-a4: #fdb70028;
+  --yellow-a5: #febb0036;
+  --yellow-a6: #fec40046;
+  --yellow-a7: #fdcb225c;
+  --yellow-a8: #fdca327b;
+  --yellow-a9: #ffe629;
+  --yellow-a10: #ffff57;
+  --yellow-a11: #fee949f5;
+  --yellow-a12: #fef6baf6;
+}

@@ -8,20 +8,19 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write ."
   },
-  "keywords": [
-    "wiki",
-    "arxhub"
-  ],
+  "keywords": ["wiki", "arxhub"],
   "author": "",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "@arxhub/toolchain-biome": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/toolchain-biome": "workspace:*",
     "@biomejs/biome": "catalog:toolchain",
     "glob": "catalog:toolchain",
     "typescript": "catalog:toolchain",
     "vite": "catalog:toolchain",
     "vite-node": "catalog:toolchain",
-    "vitest": "catalog:toolchain"
+    "vitest": "catalog:toolchain",
+    "type-fest": "catalog:toolchain"
   }
 }

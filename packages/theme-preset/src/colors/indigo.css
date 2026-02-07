@@ -1,0 +1,66 @@
+/**
+ * Color tokens adapted from Radix Colors (https://www.radix-ui.com/colors)
+ * Copyright (c) 2021-2022 Modulz
+ * Copyright (c) 2022-Present WorkOS
+ * Licensed under MIT License
+ */
+
+/* Light Theme (Default) */
+:root {
+  --indigo-1: #fdfdfe;
+  --indigo-2: #f7f9ff;
+  --indigo-3: #edf2fe;
+  --indigo-4: #e1e9ff;
+  --indigo-5: #d2deff;
+  --indigo-6: #c1d0ff;
+  --indigo-7: #abbdf9;
+  --indigo-8: #8da4ef;
+  --indigo-9: #3e63dd;
+  --indigo-10: #3358d4;
+  --indigo-11: #3a5bc7;
+  --indigo-12: #1f2d5c;
+
+  /* Alpha Variants */
+  --indigo-a1: #00008002;
+  --indigo-a2: #0040ff08;
+  --indigo-a3: #0047f112;
+  --indigo-a4: #0044ff1e;
+  --indigo-a5: #0044ff2d;
+  --indigo-a6: #003eff3e;
+  --indigo-a7: #0037ed54;
+  --indigo-a8: #0034dc72;
+  --indigo-a9: #0031d2c1;
+  --indigo-a10: #002ec9cc;
+  --indigo-a11: #002bb7c5;
+  --indigo-a12: #001046e0;
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  --indigo-1: #11131f;
+  --indigo-2: #141726;
+  --indigo-3: #182449;
+  --indigo-4: #1d2e62;
+  --indigo-5: #253974;
+  --indigo-6: #304384;
+  --indigo-7: #3a4f97;
+  --indigo-8: #435db1;
+  --indigo-9: #3e63dd;
+  --indigo-10: #5472e4;
+  --indigo-11: #9eb1ff;
+  --indigo-12: #d6e1ff;
+
+  /* Alpha Variants */
+  --indigo-a1: #1133ff0f;
+  --indigo-a2: #3354fa17;
+  --indigo-a3: #2f62ff3c;
+  --indigo-a4: #3566ff57;
+  --indigo-a5: #4171fd6b;
+  --indigo-a6: #5178fd7c;
+  --indigo-a7: #5a7fff90;
+  --indigo-a8: #5b81feac;
+  --indigo-a9: #4671ffdb;
+  --indigo-a10: #5c7efee3;
+  --indigo-a11: #9eb1ff;
+  --indigo-a12: #d6e1ff;
+}

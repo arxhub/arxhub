@@ -1,0 +1,39 @@
+{
+  "name": "@arxhub/theme-preset",
+  "sideEffects": [
+    "**/*.css",
+    "**/*.scss"
+  ],
+  "version": "0.1.0",
+  "description": "Arxhub design system tokens and styles",
+  "keywords": [
+    "arxhub",
+    "theme",
+    "preset",
+    "design-system",
+    "radix-colors",
+    "tokens"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.css",
+    "./reset": "./src/reset.css",
+    "./colors/*": "./src/colors/*.css",
+    "./styles/*": "./src/styles/*.css"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "peerDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
+}

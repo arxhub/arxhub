@@ -1,0 +1,66 @@
+/**
+ * Color tokens adapted from Radix Colors (https://www.radix-ui.com/colors)
+ * Copyright (c) 2021-2022 Modulz
+ * Copyright (c) 2022-Present WorkOS
+ * Licensed under MIT License
+ */
+
+/* Light Theme (Default) */
+:root {
+  --gold-1: #fdfdfc;
+  --gold-2: #faf9f2;
+  --gold-3: #f2f0e7;
+  --gold-4: #eae6db;
+  --gold-5: #e1dccf;
+  --gold-6: #d8d0bf;
+  --gold-7: #cbc0aa;
+  --gold-8: #b9a88d;
+  --gold-9: #978365;
+  --gold-10: #8c7a5e;
+  --gold-11: #71624b;
+  --gold-12: #3b352b;
+
+  /* Alpha Variants */
+  --gold-a1: #55550003;
+  --gold-a2: #9d8a000d;
+  --gold-a3: #75600018;
+  --gold-a4: #6b4e0024;
+  --gold-a5: #60460030;
+  --gold-a6: #64440040;
+  --gold-a7: #63420055;
+  --gold-a8: #633d0072;
+  --gold-a9: #5332009a;
+  --gold-a10: #492d00a1;
+  --gold-a11: #362100b4;
+  --gold-a12: #130c00d4;
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  --gold-1: #121211;
+  --gold-2: #1b1a17;
+  --gold-3: #24231f;
+  --gold-4: #2d2b26;
+  --gold-5: #38352e;
+  --gold-6: #444039;
+  --gold-7: #544f46;
+  --gold-8: #696256;
+  --gold-9: #978365;
+  --gold-10: #a39073;
+  --gold-11: #cbb99f;
+  --gold-12: #e8e2d9;
+
+  /* Alpha Variants */
+  --gold-a1: #91110002;
+  --gold-a2: #f9e29d0b;
+  --gold-a3: #f8ecbb15;
+  --gold-a4: #ffeec41e;
+  --gold-a5: #feecc22a;
+  --gold-a6: #feebcb37;
+  --gold-a7: #ffedcd48;
+  --gold-a8: #fdeaca5f;
+  --gold-a9: #ffdba690;
+  --gold-a10: #fedfb09d;
+  --gold-a11: #fee7c6c8;
+  --gold-a12: #fef7ede7;
+}
