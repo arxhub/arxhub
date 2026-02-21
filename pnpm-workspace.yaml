@@ -1,8 +1,8 @@
 packages:
-  - boot
   - toolchains/*
   - packages/*
-  - plugins/*
+  - themes/*
+  - apps/*
 
 catalogs:
   client:

@@ -4,7 +4,6 @@
  * Licensed under MIT License
  */
 
-/* Light Theme (Default) */
 :root {
   --shadow-xs: 0px 1px 2px var(--gray-a6), 0px 0px 1px var(--gray-a7);
   --shadow-sm: 0px 2px 4px var(--gray-a4), 0px 0px 1px var(--gray-a4);
@@ -15,7 +14,6 @@
   --shadow-inset: inset 8px 0 12px -8px var(--gray-a4);
 }
 
-/* Dark Theme */
 [data-theme='dark'] {
   --shadow-xs: 0px 1px 1px var(--black-a8), 0px 0px 1px inset var(--gray-a8);
   --shadow-sm: 0px 2px 4px var(--black-a8), 0px 0px 1px inset var(--gray-a8);
