@@ -5,7 +5,6 @@
  */
 
 :root {
-  /* Primary Heights */
   --size-xs: 32px;
   --size-sm: 36px;
   --size-md: 40px;
@@ -13,7 +12,6 @@
   --size-xl: 48px;
   --size-2xl: 64px;
 
-  /* Secondary "Half" Sizes */
   --size-xs-half: 16px;
   --size-sm-half: 18px;
   --size-md-half: 20px;
