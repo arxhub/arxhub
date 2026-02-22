@@ -2,7 +2,7 @@ packages:
   - toolchains/*
   - packages/*
   - themes/*
-  - apps/*
+  - instances/*
 
 catalogs:
   client:

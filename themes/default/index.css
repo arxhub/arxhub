@@ -1,6 +1,3 @@
-@import "@arxhub/theme-preset/colors/slate.css";
-@import "@arxhub/theme-preset/colors/cyan.css";
-
 :root {
   --gray-1: var(--slate-1);
   --gray-2: var(--slate-2);
