@@ -1,0 +1,61 @@
+:root {
+  /* Colors */
+  --radix-gray-1: #111111;
+  --radix-gray-2: #191919;
+  --radix-gray-3: #232323;
+  --radix-gray-6: #313131;
+  --radix-gray-11: #B4B4B4;
+  --radix-gray-12: #EEEEEE;
+  
+  --radix-cyan-3: #072A33;
+  --radix-cyan-4: #0B3845;
+  --radix-cyan-9: #00A2C7;
+  --radix-cyan-10: #23B8DE;
+  
+  --primary: #359EFF;
+  --primary-dim: #072A33;
+  
+  --bg-app: #111111;
+  --bg-panel: #191919;
+  --border-cold: #313131;
+  
+  --text-main: #EEEEEE;
+  --text-muted: #B4B4B4;
+  
+  /* Fonts */
+  --font-display: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Border Radius */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-full: 0.75rem;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: var(--font-display);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 20px;
+  user-select: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #313131;
+  border-radius: 3px;
+}
