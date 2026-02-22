@@ -1,2 +1,4 @@
+@import url(./reset.css);
 @import url(./semantic.css);
+@import url(./colors/index.css);
 @import url(./styles/index.css);
