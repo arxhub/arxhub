@@ -14,29 +14,29 @@ defineProps<{
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.125rem 0.5rem; /* px-2 py-0.5 */
-  border-radius: 9999px;
-  font-size: 0.625rem; /* text-[10px] */
-  font-weight: 700;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   border: 1px solid transparent;
 }
 
 .success {
-  background-color: rgba(53, 158, 255, 0.1); /* primary/10 */
-  border-color: rgba(53, 158, 255, 0.2); /* primary/20 */
-  color: var(--primary);
+  background-color: var(--success-a4);
+  border-color: var(--success-9);
+  color: var(--success-9);
 }
 
 .alert {
-  background-color: rgba(229, 72, 77, 0.1); /* #E5484D1A */
-  border-color: rgba(229, 72, 77, 0.2); /* #E5484D33 */
-  color: #E5484D;
+  background-color: var(--warning-a4);
+  border-color: var(--warning-9);
+  color: var(--warning-9);
 }
 
 .neutral {
-  background-color: var(--radix-gray-3);
-  border-color: var(--border-cold);
-  color: var(--text-muted);
+  background-color: var(--gray-3);
+  border-color: var(--gray-6);
+  color: var(--gray-11);
 }
 </style>

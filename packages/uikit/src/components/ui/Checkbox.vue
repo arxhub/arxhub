@@ -1,84 +1,76 @@
 <script setup lang="ts">
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { Checkbox } from '@ark-ui/vue'
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import Icon from './Icon.vue'
+
 defineProps<{
   modelValue?: boolean
   label?: string
+  disabled?: boolean
 }>()
 
-defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
-}>()
+defineEmits<(e: 'update:modelValue', value: boolean) => void>()
 </script>
 
 <template>
-  <label class="checkbox-wrapper">
-    <input 
-      type="checkbox" 
-      class="sr-only"
-      :checked="modelValue"
-      @change="$emit('update:modelValue', ($event.target as HTMLInputElement).checked)"
-    />
-    <div 
-      class="checkbox" 
-      :class="{ checked: modelValue }"
-      aria-hidden="true"
-    >
-      <span v-if="modelValue" class="material-symbols-outlined check-icon">check</span>
-    </div>
-    <span v-if="label" class="label-text">{{ label }}</span>
-  </label>
+  <Checkbox.Root
+    class="root"
+    :checked="modelValue"
+    :disabled="disabled"
+    @checked-change="$emit('update:modelValue', $event.checked)"
+  >
+    <Checkbox.Control class="control">
+      <Checkbox.Indicator class="indicator">
+        <Icon name="check" :size="12" />
+      </Checkbox.Indicator>
+    </Checkbox.Control>
+    <Checkbox.Label v-if="label" class="label">{{ label }}</Checkbox.Label>
+    <Checkbox.HiddenInput />
+  </Checkbox.Root>
 </template>
 
 <style scoped>
-.checkbox-wrapper {
-  display: flex;
+.root {
+  display: inline-flex;
   align-items: center;
-  gap: 0.75rem; /* gap-3 */
+  gap: 0.75rem;
   cursor: pointer;
   user-select: none;
-  position: relative;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+.root[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.checkbox {
-  width: 1rem; /* size-4 */
-  height: 1rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--primary);
-  background-color: rgba(53, 158, 255, 0.2); /* primary/20 */
+.control {
+  width: var(--size-xs-half);
+  height: var(--size-xs-half);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent-9);
+  background-color: var(--accent-a4);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
-  transition: all 0.2s;
+  flex-shrink: 0;
+  transition: all var(--duration-normal);
 }
 
-.checkbox-wrapper:focus-within .checkbox {
-  box-shadow: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--primary);
+.control[data-focus-visible] {
+  box-shadow: 0 0 0 2px var(--gray-1), 0 0 0 4px var(--accent-9);
 }
 
-.checkbox.checked {
-  background-color: rgba(53, 158, 255, 0.2);
+.indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-9);
 }
 
-.check-icon {
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.label-text {
-  font-size: 0.75rem; /* text-xs */
-  color: var(--text-main);
-  font-family: var(--font-display);
+.label {
+  font-size: var(--font-size-xs);
+  color: var(--gray-12);
+  font-family: var(--font-sans);
 }
 </style>

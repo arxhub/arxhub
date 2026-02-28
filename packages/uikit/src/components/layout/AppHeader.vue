@@ -32,17 +32,17 @@ import Icon from '../ui/Icon.vue'
 
 <style scoped>
 .app-header {
-  height: 2.5rem; /* h-10 */
-  background-color: var(--radix-gray-1);
-  border-bottom: 1px solid var(--border-cold);
+  height: var(--size-md);
+  background-color: var(--gray-1);
+  border-bottom: 1px solid var(--gray-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1rem; /* px-4 */
+  padding: 0 1rem;
   flex-shrink: 0;
-  z-index: 30;
+  z-index: var(--z-index-docked);
   user-select: none;
-  font-size: 0.75rem; /* text-xs */
+  font-size: var(--font-size-xs);
 }
 
 .left-section, .center-section, .right-section {
@@ -52,31 +52,31 @@ import Icon from '../ui/Icon.vue'
 }
 
 .left-section {
-  gap: 0.75rem; /* gap-3 */
+  gap: 0.75rem;
 }
 
 .center-section {
   justify-content: center;
-  gap: 0.5rem; /* gap-2 */
-  color: var(--text-muted);
+  gap: 0.5rem;
+  color: var(--gray-11);
   font-family: var(--font-mono);
 }
 
 .right-section {
   justify-content: flex-end;
-  gap: 0.25rem; /* gap-1 */
+  gap: 0.25rem;
 }
 
 .traffic-lights {
   display: flex;
-  gap: 0.5rem; /* gap-2 */
+  gap: 0.5rem;
   opacity: 0.8;
 }
 
 .light {
-  width: 0.75rem; /* size-3 */
+  width: 0.75rem;
   height: 0.75rem;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
@@ -85,48 +85,48 @@ import Icon from '../ui/Icon.vue'
 .light.green { background-color: #30A46C; }
 
 .breadcrumb {
-  letter-spacing: -0.025em; /* tracking-tight */
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 .icon-btn {
-  width: 2rem; /* size-8 */
-  height: 2rem;
+  width: var(--size-xs);
+  height: var(--size-xs);
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  color: var(--text-muted);
+  color: var(--gray-11);
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--duration-normal);
 }
 
 .icon-btn:hover {
-  background-color: var(--radix-gray-3);
+  background-color: var(--gray-2);
 }
 
 .divider {
-  height: 0.75rem; /* h-3 */
+  height: 0.75rem;
   width: 1px;
-  background-color: var(--border-cold);
-  margin: 0 0.25rem; /* mx-1 */
+  background-color: var(--gray-6);
+  margin: 0 0.25rem;
 }
 
 .publish-btn {
-  padding: 0 0.5rem; /* px-2 */
-  height: 1.5rem; /* h-6 */
+  padding: 0 0.5rem;
+  height: 1.5rem;
   display: flex;
   align-items: center;
-  gap: 0.375rem; /* gap-1.5 */
+  gap: 0.375rem;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(53, 158, 255, 0.3); /* primary/30 */
-  background-color: rgba(53, 158, 255, 0.1); /* primary/10 */
-  color: var(--primary);
-  font-size: 0.625rem; /* text-[10px] */
+  border: 1px solid var(--accent-a3);
+  background-color: var(--accent-a2);
+  color: var(--accent-9);
+  font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em; /* tracking-wider */
+  letter-spacing: var(--letter-spacing-wider);
   cursor: pointer;
 }
 </style>

@@ -25,62 +25,62 @@ defineProps<{
 
 <style scoped>
 .card {
-  background-color: var(--radix-gray-2);
+  background-color: var(--gray-2);
   display: flex;
   flex-direction: column;
   min-height: 350px;
 }
 
 .card-header {
-  height: 2.25rem; /* h-9 */
-  padding: 0 0.75rem; /* px-3 */
+  height: var(--size-sm);
+  padding: 0 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-cold);
-  background-color: var(--radix-gray-1);
+  border-bottom: 1px solid var(--gray-6);
+  background-color: var(--gray-1);
   flex-shrink: 0;
 }
 
 .title-wrapper {
-  font-size: 0.625rem; /* text-[10px] */
+  font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em; /* tracking-widest */
-  color: var(--text-muted);
+  letter-spacing: var(--letter-spacing-widest);
+  color: var(--gray-11);
   display: flex;
   align-items: center;
-  gap: 0.5rem; /* gap-2 */
+  gap: 0.5rem;
 }
 
 .title {
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .copy-btn {
-  width: 1.5rem; /* size-6 */
+  width: 1.5rem;
   height: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  color: var(--text-muted);
+  color: var(--gray-11);
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-normal);
 }
 
 .copy-btn:hover {
-  background-color: var(--radix-gray-3);
-  color: var(--primary);
+  background-color: var(--gray-3);
+  color: var(--accent-9);
 }
 
 .card-content {
-  padding: 1.5rem; /* p-6 */
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem; /* space-y-4 */
+  gap: 1rem;
   flex: 1;
 }
 </style>

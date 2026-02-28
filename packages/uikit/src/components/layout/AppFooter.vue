@@ -37,21 +37,21 @@ import Icon from '../ui/Icon.vue'
 
 <style scoped>
 .app-footer {
-  height: 1.75rem; /* h-7 */
+  height: 1.75rem;
   width: 100%;
-  background-color: var(--radix-gray-1);
-  border-top: 1px solid rgba(53, 158, 255, 0.2); /* primary/20 */
+  background-color: var(--gray-1);
+  border-top: 1px solid var(--accent-a2);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-right: 1rem; /* pr-4 */
-  font-size: 0.625rem; /* text-[10px] */
-  color: var(--text-muted);
+  padding-right: 1rem;
+  font-size: 0.625rem;
+  color: var(--gray-11);
   font-family: var(--font-mono);
   flex-shrink: 0;
-  z-index: 40;
+  z-index: var(--z-index-docked);
   user-select: none;
-  box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .left-section {
@@ -64,89 +64,89 @@ import Icon from '../ui/Icon.vue'
   display: flex;
   align-items: center;
   height: 100%;
-  border-right: 1px solid var(--border-cold);
-  background-color: var(--radix-gray-1);
-  margin-right: 1rem; /* mr-4 */
+  border-right: 1px solid var(--gray-6);
+  background-color: var(--gray-1);
+  margin-right: 1rem;
 }
 
 .mode-btn {
   height: 100%;
-  padding: 0 0.75rem; /* px-3 */
+  padding: 0 0.75rem;
   display: flex;
   align-items: center;
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: var(--gray-11);
   text-transform: uppercase;
   font-weight: 700;
-  letter-spacing: 0.05em; /* tracking-wider */
+  letter-spacing: var(--letter-spacing-wider);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-normal);
   position: relative;
 }
 
 .mode-btn:hover {
-  background-color: var(--radix-gray-3);
-  color: white;
+  background-color: var(--gray-3);
+  color: var(--gray-12);
 }
 
 .mode-btn.active {
-  background-color: var(--primary-dim);
-  color: var(--primary);
-  border-bottom: 2px solid var(--primary);
+  background-color: var(--accent-a3);
+  color: var(--accent-9);
+  border-bottom: 2px solid var(--accent-9);
 }
 
 .active-bg {
   position: absolute;
   inset: 0;
-  background-color: rgba(53, 158, 255, 0.05); /* primary/5 */
+  background-color: var(--accent-a1);
 }
 
 .status-group {
   display: flex;
   align-items: center;
-  gap: 1.25rem; /* gap-5 */
+  gap: 1.25rem;
 }
 
 .status-item {
   display: flex;
   align-items: center;
-  gap: 0.375rem; /* gap-1.5 */
+  gap: 0.375rem;
 }
 
 .status-item.online {
-  color: var(--primary);
+  color: var(--accent-9);
 }
 
 .status-dot {
-  width: 0.375rem; /* size-1.5 */
+  width: 0.375rem;
   height: 0.375rem;
-  border-radius: 50%;
-  background-color: #46A758;
-  box-shadow: 0 0 6px #46A758;
+  border-radius: var(--radius-full);
+  background-color: var(--success-9);
+  box-shadow: 0 0 6px var(--success-9);
 }
 
 .right-section {
   display: flex;
   align-items: center;
-  gap: 1.25rem; /* gap-5 */
+  gap: 1.25rem;
 }
 
 .footer-link {
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color var(--duration-normal);
 }
 
 .footer-link:hover {
-  color: var(--text-main);
+  color: var(--gray-12);
 }
 
 .footer-icon {
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color var(--duration-normal);
 }
 
 .footer-icon:hover {
-  color: var(--primary);
+  color: var(--accent-9);
 }
 </style>
