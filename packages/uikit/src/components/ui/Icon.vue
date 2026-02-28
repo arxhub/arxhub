@@ -25,5 +25,7 @@ defineProps<{
 <style scoped>
 .material-symbols-outlined {
   user-select: none;
+  display: inline-block;
+  vertical-align: middle;
 }
 </style>

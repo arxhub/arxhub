@@ -1,32 +1,37 @@
 <script setup lang="ts">
-defineProps<{
-  value: number
-  max?: number
-}>()
+import { Progress } from '@ark-ui/vue'
+
+withDefaults(
+  defineProps<{
+    value: number
+    max?: number
+  }>(),
+  { max: 100 },
+)
 </script>
 
 <template>
-  <div class="progress-bar">
-    <div 
-      class="progress-fill" 
-      :style="{ width: `${(value / (max || 100)) * 100}%` }"
-    ></div>
-  </div>
+  <Progress.Root class="root" :value="value" :max="max ?? 100">
+    <Progress.Track class="track">
+      <Progress.Range class="range" />
+    </Progress.Track>
+  </Progress.Root>
 </template>
 
 <style scoped>
-.progress-bar {
+.track {
   width: 100%;
-  height: 0.375rem; /* h-1.5 */
-  background-color: var(--radix-gray-3);
-  border-radius: 9999px;
+  height: 0.375rem;
+  background-color: var(--gray-3);
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 
-.progress-fill {
+.range {
   height: 100%;
-  background-color: var(--primary);
-  border-radius: 9999px;
-  transition: width 0.3s ease;
+  background-color: var(--accent-9);
+  border-radius: var(--radius-full);
+  width: var(--percent);
+  transition: width var(--duration-slow) ease;
 }
 </style>

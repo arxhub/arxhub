@@ -20,27 +20,27 @@ defineProps<{
 
 <style scoped>
 .nav-item {
-  width: 2.5rem; /* size-10 */
-  height: 2.5rem;
+  width: var(--size-md);
+  height: var(--size-md);
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
   background-color: transparent;
-  color: var(--text-muted);
+  color: var(--gray-11);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-normal);
 }
 
 .nav-item:hover {
-  background-color: var(--radix-gray-3);
-  color: var(--text-main);
+  background-color: var(--gray-3);
+  color: var(--gray-12);
 }
 
 .nav-item.active {
-  background-color: var(--primary-dim);
-  color: var(--primary);
-  border-color: rgba(53, 158, 255, 0.2); /* primary/20 */
+  background-color: var(--accent-3);
+  color: var(--accent-9);
+  border-color: var(--accent-a2);
 }
 </style>

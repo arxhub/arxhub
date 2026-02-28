@@ -24,23 +24,23 @@ import AppFooter from './components/layout/AppFooter.vue'
   height: 100vh;
   width: 100%;
   overflow: hidden;
-  background-color: var(--bg-app);
-  color: var(--text-main);
-  font-family: var(--font-display);
-  font-size: 0.875rem; /* text-sm */
+  background-color: var(--gray-1);
+  color: var(--gray-12);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
 }
 
 .main-container {
   flex: 1;
   display: flex;
   min-height: 0;
-  background-color: var(--bg-app);
+  background-color: var(--gray-1);
 }
 
 .content-area {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--radix-gray-1);
+  background-color: var(--gray-1);
 }
 
 /* Custom Scrollbar for content area */
@@ -52,7 +52,7 @@ import AppFooter from './components/layout/AppFooter.vue'
   background: transparent;
 }
 .content-area::-webkit-scrollbar-thumb {
-  background: #313131;
+  background: var(--gray-6);
   border-radius: 3px;
 }
 </style>

@@ -29,52 +29,52 @@ import NavItem from './NavItem.vue'
 
 <style scoped>
 .app-sidebar {
-  width: 3.5rem; /* w-14 */
+  width: 3.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0.75rem 0; /* py-3 */
-  background-color: var(--radix-gray-1);
-  border-right: 1px solid var(--border-cold);
+  padding: 0.75rem 0;
+  background-color: var(--gray-1);
+  border-right: 1px solid var(--gray-6);
   flex-shrink: 0;
-  z-index: 20;
+  z-index: var(--z-index-docked);
 }
 
 .logo-section {
-  margin-bottom: 1rem; /* mb-4 */
+  margin-bottom: 1rem;
 }
 
 .logo-box {
-  width: 2.25rem; /* size-9 */
-  height: 2.25rem;
+  width: var(--size-sm);
+  height: var(--size-sm);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(53, 158, 255, 0.3); /* primary/30 */
-  background-color: rgba(53, 158, 255, 0.1); /* primary/10 */
+  border: 1px solid var(--accent-a3);
+  background-color: var(--accent-a1);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
+  color: var(--accent-9);
 }
 
 .nav-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem; /* gap-3 */
+  gap: 0.75rem;
   width: 100%;
-  padding: 0 0.5rem; /* px-2 */
+  padding: 0 0.5rem;
 }
 
 .bottom-section {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem; /* gap-3 */
+  gap: 0.75rem;
   width: 100%;
-  padding: 0 0.5rem 0.5rem; /* px-2 pb-2 */
+  padding: 0 0.5rem 0.5rem;
 }
 
 .avatar-wrapper {
-  width: 2rem; /* size-8 */
+  width: var(--size-xs);
   margin: 0 auto;
 }
 </style>

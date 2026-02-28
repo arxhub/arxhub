@@ -19,24 +19,24 @@ defineProps<{
 <style scoped>
 .input {
   width: 100%;
-  height: 2.25rem; /* h-9 */
-  background-color: var(--radix-gray-1);
+  height: var(--size-sm);
+  background-color: var(--gray-1);
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  padding: 0 0.75rem; /* px-3 */
-  font-size: 0.75rem; /* text-xs */
+  border-radius: var(--radius-sm);
+  padding: 0 0.75rem;
+  font-size: var(--font-size-xs);
   color: white;
   outline: none;
-  font-family: var(--font-display);
-  transition: all 0.2s;
+  font-family: var(--font-sans);
+  transition: all var(--duration-normal);
 }
 
 .input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1px rgba(53, 158, 255, 0.2); /* ring-1 ring-primary/20 */
+  border-color: var(--accent-9);
+  box-shadow: 0 0 0 1px var(--accent-a2);
 }
 
 .input::placeholder {
-  color: var(--text-muted);
+  color: var(--gray-11);
 }
 </style>
