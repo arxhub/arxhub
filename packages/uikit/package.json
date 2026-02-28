@@ -1,0 +1,47 @@
+{
+  "name": "@arxhub/uikit",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "version": "0.1.0",
+  "description": "Vue 3 component library with Ark UI headless primitives",
+  "keywords": [
+    "arxhub",
+    "ui",
+    "components",
+    "vue3",
+    "ark-ui"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "@ark-ui/vue": "^3.2.0",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@arxhub/theme-preset": "workspace:*",
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain",
+    "type-fest": "catalog:toolchain"
+  },
+  "peerDependencies": {},
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
+    }
+  }
+}
