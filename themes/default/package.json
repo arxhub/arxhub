@@ -7,6 +7,6 @@
     "build": "vite build"
   },
   "peerDependencies": {
-    "@arxhub/theme-preset": "*"
+    "@arxhub/theme-preset": "workspace:*"
   }
 }
