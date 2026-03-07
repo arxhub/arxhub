@@ -30,9 +30,7 @@ arxhub/
 ├── themes/
 │   └── default/      # Default theme CSS (Cyan + Slate, imports theme-preset)
 ├── instances/
-│   ├── web/          # Browser SPA — boots ArxHub, renders desktop or mobile layout
-│   ├── desktop/      # Desktop instance (empty scaffold)
-│   └── mobile/       # Mobile instance (empty scaffold)
+│   └── app/          # Single app — web (Vite), desktop + mobile (Tauri 2.x)
 └── docs/
     ├── adr/          # Architecture Decision Records
     └── concepts/     # Architecture narratives (plugin-system.md)
@@ -51,13 +49,14 @@ arxhub/
 | Snapshot/chunk data models | `packages/sync/src/types/` |
 | Error base classes | `packages/stdlib/src/errors/app-error.ts` |
 | Generic collections | `packages/stdlib/src/collections/` |
-| Vite config factories | `toolchains/vite/src/` |
+| Vite config factories | `toolchains/vite/src/` (`createVueConfig`, `createNodeConfig`, `createTauriConfig`) |
 | Design tokens (CSS vars) | `packages/theme-preset/src/` |
 | UI primitives (`@arxhub/uikit/core`) | `packages/uikit/src/core/` |
 | Desktop layout shell (`@arxhub/uikit/desktop`) | `packages/uikit/src/desktop/` |
 | Mobile layout shell (`@arxhub/uikit/mobile`) | `packages/uikit/src/mobile/` |
 | UI hooks (`@arxhub/uikit/hooks`) | `packages/uikit/src/hooks/` |
-| Web instance entry | `instances/web/src/main.ts` |
+| App instance entry | `instances/app/src/main.ts` |
+| Tauri config (src-tauri/) | `instances/app/src-tauri/` |
 | Architecture decisions | `docs/adr/`, `docs/concepts/plugin-system.md` |
 
 ## ARCHITECTURE
@@ -108,8 +107,17 @@ pnpm install
 pnpm --filter @arxhub/core build
 pnpm --filter @arxhub/uikit build
 
-# Run web instance dev server
-pnpm --filter @arxhub/web dev
+# Run app (web browser)
+pnpm --filter @arxhub/app dev:web
+
+# Run app (Tauri desktop)
+pnpm --filter @arxhub/app dev
+
+# Build for web / desktop / mobile
+pnpm --filter @arxhub/app build:web
+pnpm --filter @arxhub/app build
+pnpm --filter @arxhub/app build:android
+pnpm --filter @arxhub/app build:ios
 
 # Test
 pnpm --filter @arxhub/sync test
@@ -124,12 +132,11 @@ pnpm --filter @arxhub/sync add some-pkg
 
 ## CATALOG VERSIONS
 
-Shared dependency versions are pinned in `pnpm-workspace.yaml` under `catalogs:`. Reference via `catalog:client`, `catalog:server`, `catalog:shared`, `catalog:toolchain`. Don't pin versions manually in package.json when a catalog entry exists.
+Shared dependency versions are pinned in `pnpm-workspace.yaml` under `catalogs:`. Reference via `catalog:client`, `catalog:server`, `catalog:shared`, `catalog:toolchain`, `catalog:tauri`. Don't pin versions manually in package.json when a catalog entry exists.
 
 ## NOTES
 
-- `instances/web` is a working Vite SPA that boots ArxHub and renders desktop or mobile layout based on viewport width (768px breakpoint).
-- `instances/desktop` and `instances/mobile` are empty scaffolds.
+- `instances/app` is the single app instance — runs as a Vite SPA (`dev:web`/`build:web`) or Tauri native app (`dev`/`build`/`build:android`/`build:ios`). Boots ArxHub and renders desktop or mobile layout based on viewport width (768px breakpoint).
 - `packages/crypto` and `packages/path` are thin browser shims (pre-compiled JS), not TypeScript.
 - `useDefineForClassFields: false` in tsconfig — required for the Plugin/Extension class pattern to work correctly.
 - The `biome-ignore format: Hand formatting` pattern in `core/` is intentional for method overload readability — keep it when adding new overloads.

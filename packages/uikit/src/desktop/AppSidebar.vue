@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Avatar from '../../core/ui/Avatar.vue'
-import Icon from '../../core/ui/Icon.vue'
-import NavItem from '../../core/layout/NavItem.vue'
+import Avatar from '../core/Avatar.vue'
+import Icon from '../core/Icon.vue'
+import NavItem from '../core/NavItem.vue'
 </script>
 
 <template>

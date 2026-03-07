@@ -24,11 +24,12 @@ Base `biome.json`. Key settings:
 All packages extend with `"extends": ["@arxhub/toolchain-biome"]`.
 
 ### toolchains/vite
-Four config factory functions in `src/`:
+Five config factory functions in `src/`:
 - `createGenericConfig(dirname, env)` — base: outDir=dist, esnext target, Vitest config (watch:false, `src/**/*.test.ts?(x)`)
 - `createNodeConfig(dirname, env, entries?)` — Node library: ES format, preserveModules, nodeExternals, treeshake:false
 - `createBrowserConfig(dirname, env)` — Browser bundle (same as generic, no lib output)
 - `createVueConfig(dirname, env, options?)` — Vue library or SPA: adds `@vitejs/plugin-vue`, optional lib mode
+- `createTauriConfig(dirname, env)` — Tauri app: wraps `createVueConfig({lib:false})` + port 1420, `clearScreen:false`, `TAURI_` env prefix
 
 #### createVueConfig options
 
@@ -58,6 +59,9 @@ export default defineConfig((env) => createVueConfig(__dirname, env, { lib: fals
 
 // Node library
 export default defineConfig((env) => createNodeConfig(__dirname, env))
+
+// Tauri app (desktop + mobile)
+export default defineConfig((env) => createTauriConfig(__dirname, env))
 ```
 
 ## ANTI-PATTERNS
@@ -66,3 +70,4 @@ export default defineConfig((env) => createNodeConfig(__dirname, env))
 - Do NOT set `useDefineForClassFields: true` — breaks Plugin/Extension constructor semantics.
 - Do NOT add non-external deps inside `createNodeConfig` — `nodeExternalsPlugin` externalizes everything including devDeps.
 - Do NOT use `createNodeConfig` for Vue packages — use `createVueConfig` instead.
+- Do NOT use `createVueConfig` for Tauri apps — use `createTauriConfig` (required port/env settings).

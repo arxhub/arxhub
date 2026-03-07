@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import NavItem from '../../core/layout/NavItem.vue'
+import NavItem from '../core/NavItem.vue'
 
 interface NavItemConfig {
   icon: string
