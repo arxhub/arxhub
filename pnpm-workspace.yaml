@@ -24,6 +24,7 @@ catalogs:
     crypto-browserify: ^3.12.1
   toolchain:
     '@biomejs/biome': ^2.2.6
+    '@vitejs/plugin-vue': ^6.0.4
     '@types/async-lock': ^1.4.2
     '@types/node': ^22.14.1
     '@types/pouchdb-adapter-memory': ^6.1.6

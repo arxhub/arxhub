@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import AppHeader from './components/layout/AppHeader.vue'
-import AppSidebar from './components/layout/AppSidebar.vue'
-import AppFooter from './components/layout/AppFooter.vue'
+import AppHeader from './components/AppHeader.vue'
+import AppSidebar from './components/AppSidebar.vue'
+import AppFooter from './components/AppFooter.vue'
 </script>
 
 <template>
@@ -43,14 +43,15 @@ import AppFooter from './components/layout/AppFooter.vue'
   background-color: var(--gray-1);
 }
 
-/* Custom Scrollbar for content area */
 .content-area::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 .content-area::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .content-area::-webkit-scrollbar-thumb {
   background: var(--gray-6);
   border-radius: 3px;

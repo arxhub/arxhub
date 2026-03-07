@@ -1,7 +1,6 @@
 # ARXHUB — PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-02-28
-**Commit:** 34e30f6
+**Updated:** 2026-03-07
 **Branch:** main
 
 ## OVERVIEW
@@ -18,19 +17,22 @@ arxhub/
 │   ├── vfs/          # Virtual file system abstraction (interface + GenericFile)
 │   ├── vfs-node/     # Node.js VFS implementation
 │   ├── sync/         # Offline-first sync engine (Rabin chunking + snapshots)
-│   ├── uikit/        # Vue 3 component library (AppLayout, Button, etc.)
+│   ├── uikit/        # Vue 3 UI library — multi-entry: core / desktop / mobile
 │   ├── theme-preset/ # Radix Colors CSS variables (design tokens)
 │   ├── crypto/       # Browser crypto shim (crypto-browserify)
 │   └── path/         # Browser path shim (path-browserify)
 ├── plugins/
 │   └── gateway/      # HTTP server plugin (Elysia/ElysiaJS, Node adapter)
 ├── toolchains/
-│   ├── vite/         # Shared vite.config factories (createNodeConfig, createBrowserConfig)
+│   ├── vite/         # Shared vite.config factories (createNodeConfig, createBrowserConfig, createVueConfig)
 │   ├── tsconfig/     # Shared tsconfig base (strict, esnext, bundler resolution)
 │   └── biome/        # Shared Biome config (single quotes, 144 line width, no semicolons)
 ├── themes/
-│   └── default/      # Default theme CSS (imports theme-preset)
-├── instances/        # Deployment targets (desktop, mobile, web) — currently empty scaffolds
+│   └── default/      # Default theme CSS (Cyan + Slate, imports theme-preset)
+├── instances/
+│   ├── web/          # Browser SPA — boots ArxHub, renders desktop or mobile layout
+│   ├── desktop/      # Desktop instance (empty scaffold)
+│   └── mobile/       # Mobile instance (empty scaffold)
 └── docs/
     ├── adr/          # Architecture Decision Records
     └── concepts/     # Architecture narratives (plugin-system.md)
@@ -50,7 +52,12 @@ arxhub/
 | Error base classes | `packages/stdlib/src/errors/app-error.ts` |
 | Generic collections | `packages/stdlib/src/collections/` |
 | Vite config factories | `toolchains/vite/src/` |
-| Design tokens (CSS vars) | `packages/uikit/src/styles/variables.css` |
+| Design tokens (CSS vars) | `packages/theme-preset/src/` |
+| UI primitives (`@arxhub/uikit/core`) | `packages/uikit/src/core/` |
+| Desktop layout shell (`@arxhub/uikit/desktop`) | `packages/uikit/src/desktop/` |
+| Mobile layout shell (`@arxhub/uikit/mobile`) | `packages/uikit/src/mobile/` |
+| UI hooks (`@arxhub/uikit/hooks`) | `packages/uikit/src/hooks/` |
+| Web instance entry | `instances/web/src/main.ts` |
 | Architecture decisions | `docs/adr/`, `docs/concepts/plugin-system.md` |
 
 ## ARCHITECTURE
@@ -60,6 +67,14 @@ Plugin-based hexagonal architecture. Plugins register Extensions during `create(
 **Lifecycle order**: `create` → `configure` → `start` → `stop`
 
 **Key invariant**: Extensions are the _only_ inter-plugin communication channel. Plugins never import each other directly.
+
+## UIKIT ENTRY POINTS
+
+`@arxhub/uikit` has no root export — always import from a sub-path:
+- `@arxhub/uikit/core` — UI primitives (Button, Input, Switch, …) + layout blocks (Card, NavItem)
+- `@arxhub/uikit/hooks` — composables (useMediaQuery, toaster)
+- `@arxhub/uikit/desktop` — DesktopLayout + AppHeader / AppSidebar / AppFooter
+- `@arxhub/uikit/mobile` — MobileLayout + MobileHeader / BottomNav
 
 ## CONVENTIONS
 
@@ -91,7 +106,10 @@ pnpm install
 
 # Build a package
 pnpm --filter @arxhub/core build
-pnpm --filter @arxhub/plugin-gateway build
+pnpm --filter @arxhub/uikit build
+
+# Run web instance dev server
+pnpm --filter @arxhub/web dev
 
 # Test
 pnpm --filter @arxhub/sync test
@@ -110,7 +128,8 @@ Shared dependency versions are pinned in `pnpm-workspace.yaml` under `catalogs:`
 
 ## NOTES
 
-- `instances/` (desktop, mobile, web) are empty deployment scaffolds — no code yet.
+- `instances/web` is a working Vite SPA that boots ArxHub and renders desktop or mobile layout based on viewport width (768px breakpoint).
+- `instances/desktop` and `instances/mobile` are empty scaffolds.
 - `packages/crypto` and `packages/path` are thin browser shims (pre-compiled JS), not TypeScript.
 - `useDefineForClassFields: false` in tsconfig — required for the Plugin/Extension class pattern to work correctly.
 - The `biome-ignore format: Hand formatting` pattern in `core/` is intentional for method overload readability — keep it when adding new overloads.

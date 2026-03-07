@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Icon from '../ui/Icon.vue'
+import Icon from '../../core/ui/Icon.vue'
 </script>
 
 <template>
@@ -11,12 +11,12 @@ import Icon from '../ui/Icon.vue'
         <div class="light green"></div>
       </div>
     </div>
-    
+
     <div class="center-section">
       <Icon name="extension" :size="14" aria-hidden="true" />
       <span class="breadcrumb">System / Library / UI Components</span>
     </div>
-    
+
     <div class="right-section">
       <button class="icon-btn" aria-label="Search">
         <Icon name="search" :size="16" />

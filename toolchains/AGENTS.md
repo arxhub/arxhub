@@ -24,16 +24,40 @@ Base `biome.json`. Key settings:
 All packages extend with `"extends": ["@arxhub/toolchain-biome"]`.
 
 ### toolchains/vite
-Three config factory functions in `src/`:
+Four config factory functions in `src/`:
 - `createGenericConfig(dirname, env)` — base: outDir=dist, esnext target, Vitest config (watch:false, `src/**/*.test.ts?(x)`)
 - `createNodeConfig(dirname, env, entries?)` — Node library: ES format, preserveModules, nodeExternals, treeshake:false
-- `createBrowserConfig(dirname, env)` — Browser bundle (currently same as generic)
+- `createBrowserConfig(dirname, env)` — Browser bundle (same as generic, no lib output)
+- `createVueConfig(dirname, env, options?)` — Vue library or SPA: adds `@vitejs/plugin-vue`, optional lib mode
 
-Usage in package:
+#### createVueConfig options
+
 ```ts
-// vite.config.ts
-import { createNodeConfig } from '@arxhub/toolchain-vite'
-export default defineConfig((env) => createNodeConfig(import.meta.dirname, env))
+interface VueConfigOptions {
+  lib?: boolean       // false for SPA (no lib output). Default: true
+  external?: string[] // extra packages to mark external (vue always external)
+  entries?: string[]  // multiple entry points. Default: ['src/index.ts']
+}
+```
+
+#### Usage examples
+
+```ts
+// Vue component library (single entry)
+export default defineConfig((env) => createVueConfig(__dirname, env))
+
+// Vue library with multiple entry points
+export default defineConfig((env) =>
+  createVueConfig(__dirname, env, {
+    entries: ['src/index.ts', 'src/desktop/index.ts', 'src/mobile/index.ts'],
+  }),
+)
+
+// SPA (no lib output)
+export default defineConfig((env) => createVueConfig(__dirname, env, { lib: false }))
+
+// Node library
+export default defineConfig((env) => createNodeConfig(__dirname, env))
 ```
 
 ## ANTI-PATTERNS
@@ -41,3 +65,4 @@ export default defineConfig((env) => createNodeConfig(import.meta.dirname, env))
 - Do NOT override `lineWidth`, `quoteStyle`, or `indentStyle` in leaf package `biome.json`.
 - Do NOT set `useDefineForClassFields: true` — breaks Plugin/Extension constructor semantics.
 - Do NOT add non-external deps inside `createNodeConfig` — `nodeExternalsPlugin` externalizes everything including devDeps.
+- Do NOT use `createNodeConfig` for Vue packages — use `createVueConfig` instead.

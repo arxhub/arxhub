@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Icon from '../ui/Icon.vue'
-import Avatar from '../ui/Avatar.vue'
-import NavItem from './NavItem.vue'
+import Avatar from '../../core/ui/Avatar.vue'
+import Icon from '../../core/ui/Icon.vue'
+import NavItem from '../../core/layout/NavItem.vue'
 </script>
 
 <template>
@@ -11,13 +11,13 @@ import NavItem from './NavItem.vue'
         <Icon name="widgets" :size="20" />
       </div>
     </div>
-    
+
     <nav class="nav-section">
-      <NavItem icon="book" title="Library" active />
+      <NavItem icon="book" title="Library" :active="true" />
       <NavItem icon="image" title="Assets" />
       <NavItem icon="palette" title="Tokens" />
     </nav>
-    
+
     <div class="bottom-section">
       <NavItem icon="settings" title="Settings" />
       <div class="avatar-wrapper">
