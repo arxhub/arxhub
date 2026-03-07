@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import MobileHeader from './components/MobileHeader.vue'
-import BottomNav from './components/BottomNav.vue'
+import MobileHeader from './MobileHeader.vue'
+import BottomNav from './BottomNav.vue'
 </script>
 
 <template>

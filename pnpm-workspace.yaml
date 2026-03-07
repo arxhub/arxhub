@@ -6,7 +6,9 @@ packages:
 
 catalogs:
   client:
+    '@ark-ui/vue': ^3.2.0
     '@radix-ui/colors': ^3.0.0
+    vue: ^3.4.0
   server:
     '@elysiajs/node': ^1.2.6
     elysia: ^1.2.25
@@ -39,6 +41,10 @@ catalogs:
     vite-plugin-dts: ^4.5.3
     vite-tsconfig-paths: ^5.1.4
     vitest: ^3.2.4
+
+  tauri:
+    '@tauri-apps/api': ^2.5.0
+    '@tauri-apps/cli': ^2.5.0
 
 onlyBuiltDependencies:
   - '@biomejs/biome'

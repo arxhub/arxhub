@@ -1,25 +1,30 @@
 {
-  "name": "@arxhub/web",
+  "name": "@arxhub/app",
   "private": true,
   "version": "0.1.0",
-  "description": "ArxHub web instance",
+  "description": "ArxHub app (web, desktop, mobile)",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "WEBKIT_DISABLE_COMPOSITING_MODE=1 tauri dev",
+    "dev:web": "vite",
+    "build": "tauri build",
+    "build:web": "vite build",
+    "build:android": "tauri android build",
+    "build:ios": "tauri ios build"
   },
   "dependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/theme": "workspace:*",
     "@arxhub/theme-preset": "workspace:*",
     "@arxhub/uikit": "workspace:*",
-    "vue": "^3.4.0"
+    "@tauri-apps/api": "catalog:tauri",
+    "vue": "catalog:client"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
+    "@tauri-apps/cli": "catalog:tauri",
     "@types/node": "catalog:toolchain",
     "vite": "catalog:toolchain"
   }

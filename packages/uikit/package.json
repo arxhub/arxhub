@@ -28,8 +28,8 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "@ark-ui/vue": "^3.2.0",
-    "vue": "^3.4.0"
+    "@ark-ui/vue": "catalog:client",
+    "vue": "catalog:client"
   },
   "devDependencies": {
     "@arxhub/theme-preset": "workspace:*",
