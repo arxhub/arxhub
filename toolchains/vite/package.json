@@ -8,11 +8,14 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build"
   },
   "dependencies": {
+    "@vitejs/plugin-vue": "catalog:toolchain",
     "rollup-plugin-node-externals": "catalog:toolchain",
     "vite-plugin-dts": "catalog:toolchain",
     "vite-tsconfig-paths": "catalog:toolchain"

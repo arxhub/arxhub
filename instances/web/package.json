@@ -1,0 +1,26 @@
+{
+  "name": "@arxhub/web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ArxHub web instance",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/theme": "workspace:*",
+    "@arxhub/theme-preset": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain",
+    "vite": "catalog:toolchain"
+  }
+}

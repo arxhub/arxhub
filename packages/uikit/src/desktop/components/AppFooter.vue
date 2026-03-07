@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Icon from '../ui/Icon.vue'
+import Icon from '../../core/ui/Icon.vue'
 </script>
 
 <template>
@@ -14,7 +14,7 @@ import Icon from '../ui/Icon.vue'
         <button class="mode-btn">Blueprint</button>
         <button class="mode-btn">System</button>
       </div>
-      
+
       <div class="status-group">
         <div class="status-item online">
           <span class="status-dot"></span>
@@ -26,7 +26,7 @@ import Icon from '../ui/Icon.vue'
         </div>
       </div>
     </div>
-    
+
     <div class="right-section">
       <span class="footer-link">Radix Gray / Cyan</span>
       <span class="footer-link">STORYBOOK</span>

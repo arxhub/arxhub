@@ -16,7 +16,10 @@
   "author": "",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    "./core": "./src/core/index.ts",
+    "./hooks": "./src/hooks/index.ts",
+    "./desktop": "./src/desktop/index.ts",
+    "./mobile": "./src/mobile/index.ts"
   },
   "files": [
     "dist"
@@ -38,9 +41,21 @@
   "peerDependencies": {},
   "publishConfig": {
     "exports": {
-      ".": {
-        "import": "./dist/index.js",
-        "types": "./dist/index.d.ts"
+      "./core": {
+        "import": "./dist/core/index.js",
+        "types": "./dist/core/index.d.ts"
+      },
+      "./hooks": {
+        "import": "./dist/hooks/index.js",
+        "types": "./dist/hooks/index.d.ts"
+      },
+      "./desktop": {
+        "import": "./dist/desktop/index.js",
+        "types": "./dist/desktop/index.d.ts"
+      },
+      "./mobile": {
+        "import": "./dist/mobile/index.js",
+        "types": "./dist/mobile/index.d.ts"
       }
     }
   }
