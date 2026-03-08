@@ -1,8 +1,5 @@
 # ARXHUB — PROJECT KNOWLEDGE BASE
 
-**Updated:** 2026-03-07
-**Branch:** main
-
 ## OVERVIEW
 
 ArxHub is a modular personal knowledge management system — a pnpm TypeScript monorepo structured around a plugin/extension lifecycle system (Core), virtual file abstraction (VFS), offline-first sync with Rabin chunking (Sync), and an HTTP gateway (Elysia). UI is Vue 3 + Radix Colors CSS.
@@ -133,6 +130,18 @@ pnpm --filter @arxhub/sync add some-pkg
 ## CATALOG VERSIONS
 
 Shared dependency versions are pinned in `pnpm-workspace.yaml` under `catalogs:`. Reference via `catalog:client`, `catalog:server`, `catalog:shared`, `catalog:toolchain`, `catalog:tauri`. Don't pin versions manually in package.json when a catalog entry exists.
+
+## CATALOG VERSIONS
+
+Shared dependency versions are pinned in `pnpm-workspace.yaml` under `catalogs:`. Reference via `catalog:client`, `catalog:server`, `catalog:shared`, `catalog:toolchain`, `catalog:tauri`. Don't pin versions manually in package.json when a catalog entry exists.
+
+| Catalog | Key Packages |
+|---------|--------------|
+| client | vue@3.4, @ark-ui/vue@3.2, @radix-ui/colors@3.0 |
+| server | elysia@1.2.25, @elysiajs/node@1.2.6, esbuild@0.25.2 |
+| shared | @signaldb/core@1.6, rabin-rs@2.1 |
+| toolchain | typescript@5.9.3, vite@7.1.10, @biomejs/biome@2.2.6, vitest@3.2.4 |
+| tauri | @tauri-apps/api@2.5.0, @tauri-apps/cli@2.5.0 |
 
 ## NOTES
 
