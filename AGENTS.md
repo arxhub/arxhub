@@ -13,6 +13,8 @@ arxhub/
 │   ├── stdlib/       # Cross-cutting utilities (errors, collections, fs, crypto)
 │   ├── vfs/          # Virtual file system abstraction (interface + GenericFile)
 │   ├── vfs-node/     # Node.js VFS implementation
+│   ├── vfs-browser/  # Browser VFS (IndexedDB)
+│   ├── vfs-tauri/    # Tauri VFS (native filesystem)
 │   ├── sync/         # Offline-first sync engine (Rabin chunking + snapshots)
 │   ├── uikit/        # Vue 3 UI library — multi-entry: core / desktop / mobile
 │   ├── theme-preset/ # Radix Colors CSS variables (design tokens)
