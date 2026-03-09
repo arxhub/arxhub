@@ -27,7 +27,8 @@ arxhub/
 ├── themes/
 │   └── default/      # Default theme CSS (Cyan + Slate, imports theme-preset)
 ├── instances/
-│   └── app/          # Single app — web (Vite), desktop + mobile (Tauri 2.x)
+│   ├── app/          # Client app — Vue SPA, desktop + mobile (Tauri 2.x)
+│   └── server/       # Headless server — Node.js + Gateway plugin (Elysia)
 └── docs/
     ├── adr/          # Architecture Decision Records
     └── concepts/     # Architecture narratives (plugin-system.md)
@@ -54,6 +55,7 @@ arxhub/
 | UI hooks (`@arxhub/uikit/hooks`) | `packages/uikit/src/hooks/` |
 | App instance entry | `instances/app/src/main.ts` |
 | Tauri config (src-tauri/) | `instances/app/src-tauri/` |
+| Server instance entry | `instances/server/src/main.ts` |
 | Architecture decisions | `docs/adr/`, `docs/concepts/plugin-system.md` |
 
 ## ARCHITECTURE

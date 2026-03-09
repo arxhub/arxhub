@@ -1,6 +1,8 @@
 # instances/app
 
-Single runnable ArxHub application. Vue 3 SPA with responsive layout switching (desktop ↔ mobile at 768px). Packaged as Tauri native app (desktop + mobile) or Vite SPA (web).
+Client ArxHub application. Vue 3 SPA with responsive layout switching (desktop ↔ mobile at 768px). Packaged as Tauri native app (desktop + mobile) or Vite SPA (web).
+
+This is the **client** instance — for the server instance, see `instances/server/`.
 
 ## STRUCTURE
 
