@@ -1,0 +1,45 @@
+{
+  "name": "@arxhub/vfs-tauri",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Tauri VFS implementation using native filesystem access",
+  "keywords": [
+    "arxhub",
+    "vfs",
+    "tauri",
+    "filesystem"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "catalog:tauri",
+    "@tauri-apps/plugin-fs": "catalog:tauri"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/stdlib": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
+    }
+  }
+}

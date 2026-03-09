@@ -45,6 +45,9 @@ catalogs:
     '@tauri-apps/cli':
       specifier: ^2.5.0
       version: 2.10.1
+    '@tauri-apps/plugin-fs':
+      specifier: ^2.4.5
+      version: 2.4.5
   toolchain:
     '@biomejs/biome':
       specifier: ^2.2.6
@@ -344,6 +347,28 @@ importers:
         specifier: catalog:toolchain
         version: 4.40.0
 
+  packages/vfs-browser:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arxhub/stdlib':
+        specifier: workspace:*
+        version: link:../stdlib
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../vfs
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 22.14.1
+
   packages/vfs-node:
     dependencies:
       '@arxhub/core':
@@ -377,6 +402,34 @@ importers:
       type-fest:
         specifier: catalog:toolchain
         version: 4.40.0
+
+  packages/vfs-tauri:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arxhub/stdlib':
+        specifier: workspace:*
+        version: link:../stdlib
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../vfs
+      '@tauri-apps/api':
+        specifier: catalog:tauri
+        version: 2.10.1
+      '@tauri-apps/plugin-fs':
+        specifier: catalog:tauri
+        version: 2.4.5
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 22.14.1
 
   plugins/gateway:
     dependencies:
@@ -1095,6 +1148,9 @@ packages:
     resolution: {integrity: sha512-jQNGF/5quwORdZSSLtTluyKQ+o6SMa/AUICfhf4egCGFdMHqWssApVgYSbg+jmrZoc8e1DscNvjTnXtlHLS11g==}
     engines: {node: '>= 10'}
     hasBin: true
+
+  '@tauri-apps/plugin-fs@2.4.5':
+    resolution: {integrity: sha512-dVxWWGE6VrOxC7/jlhyE+ON/Cc2REJlM35R3PJX3UvFw2XwYhLGQVAIyrehenDdKjotipjYEVc4YjOl3qq90fA==}
 
   '@tokenizer/inflate@0.4.1':
     resolution: {integrity: sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA==}
@@ -2980,6 +3036,10 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.10.1
       '@tauri-apps/cli-win32-ia32-msvc': 2.10.1
       '@tauri-apps/cli-win32-x64-msvc': 2.10.1
+
+  '@tauri-apps/plugin-fs@2.4.5':
+    dependencies:
+      '@tauri-apps/api': 2.10.1
 
   '@tokenizer/inflate@0.4.1':
     dependencies:
