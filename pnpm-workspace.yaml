@@ -1,6 +1,7 @@
 packages:
   - toolchains/*
   - packages/*
+  - plugins/*
   - themes/*
   - instances/*
 
@@ -32,6 +33,7 @@ catalogs:
     '@types/pouchdb-adapter-memory': ^6.1.6
     '@types/pouchdb-core': ^7.0.15
     '@types/pouchdb-find': ^7.3.3
+    tsx: ^4.21.0
     glob: ^11.0.3
     rollup-plugin-node-externals: ^8.0.0
     type-fest: ^4.40.0
