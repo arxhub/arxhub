@@ -100,3 +100,5 @@ _dist
 
 # Generic build output
 dist
+
+.omc
