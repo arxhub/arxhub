@@ -1,17 +1,21 @@
+import AsyncLock from 'async-lock'
 import {
   type DeleteOptions,
-  type FileFields,
-  type FileMetadata,
+  type FileHead,
   FileNotFound,
-  GenericFile,
+  type VfsListCursor,
   type VirtualFile,
   type VirtualFileSystem,
+  VirtualFileImpl,
+  deserializeCursor,
+  serializeCursor,
 } from '@arxhub/vfs'
-import { BaseDirectory, exists, readDir, readFile, remove, writeFile } from '@tauri-apps/plugin-fs'
+import { BaseDirectory, readDir, readFile, remove, stat, writeFile } from '@tauri-apps/plugin-fs'
 
 export class TauriFileSystem implements VirtualFileSystem {
   private readonly baseDir: BaseDirectory
   private readonly basePath: string
+  private readonly _lock = new AsyncLock()
 
   constructor(basePath: string = '', baseDir: BaseDirectory = BaseDirectory.AppData) {
     this.basePath = basePath
@@ -22,54 +26,69 @@ export class TauriFileSystem implements VirtualFileSystem {
     return this.basePath ? `${this.basePath}/${pathname}` : pathname
   }
 
-  private relativePath(fullPath: string): string {
-    return this.basePath ? fullPath.replace(`${this.basePath}/`, '') : fullPath
+  file<T extends Record<string, unknown>>(pathname: string): VirtualFile<T> {
+    return new VirtualFileImpl<T>(this, pathname)
   }
 
-  private metaPath(pathname: string): string {
-    return `${this.fullPath(pathname)}.arxhub-meta.json`
-  }
+  list(prefix: string, cursor?: string): VfsListCursor {
+    const self = this
 
-  async *list(prefix: string = ''): AsyncGenerator<VirtualFile> {
-    const fullPrefix = this.fullPath(prefix)
+    let currentQueue: string[]
+    let currentPending: string[]
 
-    async function* walk(dirPath: string, basePath: string): AsyncGenerator<string> {
-      try {
-        const entries = await readDir(dirPath, { baseDir: BaseDirectory.AppData })
-        for (const entry of entries) {
-          if (entry.name.endsWith('.arxhub-meta.json')) {
+    if (cursor) {
+      const state = deserializeCursor(cursor)
+      currentQueue = [...state.queue]
+      currentPending = [...state.pending]
+    } else {
+      currentQueue = [prefix]
+      currentPending = []
+    }
+
+    return {
+      cursor(): string {
+        return serializeCursor({ queue: currentQueue, pending: currentPending })
+      },
+      async *[Symbol.asyncIterator](): AsyncGenerator<VirtualFile> {
+        while (true) {
+          if (currentPending.length > 0) {
+            const pathname = currentPending.shift() as string
+            yield new VirtualFileImpl(self, pathname)
             continue
           }
-          const entryPath = dirPath ? `${dirPath}/${entry.name}` : entry.name
-          if (entry.isDirectory) {
-            yield* walk(entryPath, basePath)
-          } else {
-            yield entryPath
+
+          if (currentQueue.length === 0) break
+
+          const relDir = currentQueue.shift() as string
+
+          try {
+            const entries = await readDir(self.fullPath(relDir), { baseDir: self.baseDir })
+            for (const entry of entries) {
+              const relPath = `${relDir}/${entry.name}`
+              if (entry.isDirectory) {
+                currentQueue.push(relPath)
+              } else if (!entry.name.endsWith('.info')) {
+                currentPending.push(relPath)
+              }
+            }
+          } catch {
+            // skip inaccessible dirs
           }
         }
-      } catch {}
-    }
-
-    for await (const filePath of walk(fullPrefix, this.basePath)) {
-      yield new GenericFile(this, this.relativePath(filePath))
+      },
     }
   }
 
-  file(filename: string): VirtualFile {
-    return new GenericFile(this, filename)
-  }
-
-  async read(filename: string): Promise<Buffer> {
+  async read(pathname: string): Promise<Uint8Array> {
     try {
-      const content = await readFile(this.fullPath(filename), { baseDir: this.baseDir })
-      return Buffer.from(content)
+      return await readFile(this.fullPath(pathname), { baseDir: this.baseDir })
     } catch {
-      throw new FileNotFound(filename)
+      throw new FileNotFound(pathname)
     }
   }
 
-  async readableStream(filename: string): Promise<ReadableStream> {
-    const content = await this.read(filename)
+  async readable(pathname: string): Promise<ReadableStream<Uint8Array>> {
+    const content = await this.read(pathname)
     return new ReadableStream({
       start(controller) {
         controller.enqueue(content)
@@ -78,121 +97,79 @@ export class TauriFileSystem implements VirtualFileSystem {
     })
   }
 
-  async write(filename: string, content: Buffer): Promise<void> {
-    const path = this.fullPath(filename)
-
-    await writeFile(path, content, { baseDir: this.baseDir })
-
-    const now = Date.now()
-
-    const meta = await this.loadMeta(filename)
-
-    await this.saveMeta(filename, meta.fields, {
-      ...meta.metadata,
-      createdAt: meta.metadata?.createdAt ?? now,
-      updatedAt: now,
-      size: content.byteLength,
-    })
+  async write(pathname: string, content: Uint8Array): Promise<void> {
+    await writeFile(this.fullPath(pathname), content, { baseDir: this.baseDir })
   }
 
-  async writableStream(filename: string): Promise<WritableStream> {
+  async writable(pathname: string): Promise<WritableStream<Uint8Array>> {
+    const self = this
     const chunks: Uint8Array[] = []
-
     return new WritableStream({
-      write: (chunk) => {
+      write(chunk) {
         chunks.push(chunk)
       },
-      close: async () => {
-        const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
-        const combined = new Uint8Array(totalLength)
+      async close() {
+        const total = chunks.reduce((n, c) => n + c.length, 0)
+        const all = new Uint8Array(total)
         let offset = 0
-        for (const chunk of chunks) {
-          combined.set(chunk, offset)
-          offset += chunk.length
+        for (const c of chunks) {
+          all.set(c, offset)
+          offset += c.length
         }
-        await this.write(filename, Buffer.from(combined))
+        await self.write(pathname, all)
       },
     })
   }
 
-  async delete(filename: string, options?: DeleteOptions): Promise<void> {
+  async delete(pathname: string, options?: DeleteOptions): Promise<void> {
     try {
-      await remove(this.fullPath(filename), {
+      await remove(this.fullPath(pathname), {
         baseDir: this.baseDir,
         recursive: options?.recursive ?? false,
       })
-      try {
-        await remove(this.metaPath(filename), {
-          baseDir: this.baseDir,
-          recursive: false,
-        })
-      } catch {}
     } catch {
-      if (!options?.force) {
-        throw new FileNotFound(filename)
-      }
+      if (!options?.force) throw new FileNotFound(pathname)
     }
   }
 
-  async head(filename: string): Promise<unknown> {
-    const content = await this.read(filename)
-    const meta = await this.loadMeta(filename)
-
-    return {
-      fields: meta.fields ?? {},
-      metadata: {
-        ...meta.metadata,
-        size: content.byteLength,
-      },
-    }
-  }
-
-  async isExists(filename: string): Promise<boolean> {
+  async exists(pathname: string): Promise<boolean> {
     try {
-      await this.read(filename)
+      await stat(this.fullPath(pathname), { baseDir: this.baseDir })
       return true
     } catch {
       return false
     }
   }
 
-  async hash(filename: string, algorithm: string): Promise<string> {
-    const content = await this.read(filename)
-    const crypto = globalThis.crypto
-    const arrayBuffer = content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength) as ArrayBuffer
-    const hashBuffer = await crypto.subtle.digest(algorithm, arrayBuffer)
-    const hashArray = new Uint8Array(hashBuffer)
-    return Array.from(hashArray)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
-  }
-
-  async saveFieldsAndMetadata(filename: string, fields: FileFields, metadata: FileMetadata): Promise<void> {
-    await this.saveMeta(filename, fields, metadata)
-  }
-
-  private async loadMeta(filename: string): Promise<{ fields: FileFields; metadata: Partial<FileMetadata> }> {
-    const metaPath = this.metaPath(filename)
-
+  async head(pathname: string): Promise<FileHead> {
     try {
-      const content = await readFile(metaPath, { baseDir: this.baseDir })
-      const json = JSON.parse(Buffer.from(content).toString('utf-8'))
+      const info = await stat(this.fullPath(pathname), { baseDir: this.baseDir })
       return {
-        fields: json.fields ?? {},
-        metadata: json.metadata ?? {},
+        size: info.size,
+        modifiedAt: info.mtime?.getTime() ?? Date.now(),
+        createdAt: info.birthtime?.getTime() ?? Date.now(),
       }
     } catch {
-      return {
-        fields: {},
-        metadata: {},
-      }
+      throw new FileNotFound(pathname)
     }
   }
 
-  private async saveMeta(filename: string, fields: FileFields, metadata: Partial<FileMetadata>): Promise<void> {
-    const metaPath = this.metaPath(filename)
-    const metaContent = JSON.stringify({ fields, metadata }, null, 2)
+  async lock<T>(pathname: string, fn: () => Promise<T>): Promise<T> {
+    return this._lock.acquire(pathname, fn)
+  }
 
-    await writeFile(metaPath, Buffer.from(metaContent, 'utf-8'), { baseDir: this.baseDir })
+  async acquireLock(pathname: string): Promise<() => void> {
+    let release!: () => void
+    await new Promise<void>((outer) => {
+      this._lock.acquire(
+        pathname,
+        () =>
+          new Promise<void>((inner) => {
+            release = inner
+            outer()
+          }),
+      )
+    })
+    return release
   }
 }

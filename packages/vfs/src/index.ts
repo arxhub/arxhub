@@ -1,6 +1,7 @@
 export * from './errors'
-export * from './generic-file'
-export * from './types'
+export * from './info-namespace'
+export * from './vfs-list-cursor'
 export * from './virtual-file'
 export * from './virtual-file-system'
-
+export { InfoNamespaceImpl } from './info-namespace-impl'
+export { VirtualFileImpl } from './virtual-file-impl'

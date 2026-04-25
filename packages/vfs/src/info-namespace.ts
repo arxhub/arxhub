@@ -1,22 +1,19 @@
-import type { Get, PartialDeep, Paths, WritableKeysOf } from 'type-fest'
-import type { VirtualFileFields   } from './types/file-fields'
-import type { VirtualFileMetadata   } from './types/file-metadata'
+import type { Get, PartialDeep, Paths } from 'type-fest'
 
-type VirtualFileInfo = {
-  fields: VirtualFileFields
-  metadata: VirtualFileMetadata
+export interface BaseInfoFields {
+  hash?: string
+  [key: string]: unknown
 }
 
-export interface InfoNamespace {
-  get<K extends Paths<VirtualFileInfo>>(key: K): Promise<Get<VirtualFileInfo, K>>
-  getAll(): Promise<VirtualFileInfo>
+export interface InfoFlushOptions {
+  flush?: boolean
+}
 
-  set<K extends Paths<VirtualFileInfo>>(key: K, value: Get<VirtualFileInfo, K>): Promise<void>
-  set(fields: PartialDeep<VirtualFileInfo>): Promise<void>
-
-  delete<K extends Paths<VirtualFileInfo>>(key: K): Promise<void>
-
+export interface InfoNamespace<T extends Record<string, unknown> = BaseInfoFields> {
+  get<K extends Paths<T>>(key: K): Promise<Get<T, K>>
+  getAll(): Promise<Readonly<T>>
+  set<K extends Paths<T>>(key: K, value: Get<T, K>, options?: InfoFlushOptions): Promise<void>
+  set(fields: PartialDeep<T>, options?: InfoFlushOptions): Promise<void>
   isDirty(): boolean
-
   flush(): Promise<void>
 }

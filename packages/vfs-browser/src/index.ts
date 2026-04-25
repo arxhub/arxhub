@@ -1,1 +1,1 @@
-export { IndexedDBFileSystem } from './indexeddb-file-system'
+export { OPFSFileSystem } from './opfs-file-system'

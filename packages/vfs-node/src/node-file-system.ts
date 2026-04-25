@@ -1,137 +1,175 @@
-import crypto from 'node:crypto'
 import { createReadStream, createWriteStream } from 'node:fs'
 import fs from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { Readable, Writable } from 'node:stream'
-import { listFiles } from '@arxhub/stdlib/fs/list-files'
-import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
-import type { FileFields, FileMetadata } from '@arxhub/vfs'
-import { type DeleteOptions, GenericFile, type VirtualFile, type VirtualFileSystem } from '@arxhub/vfs'
-
-interface NodeFileRecord {
-  fields: FileFields
-  metadata: FileMetadata
-}
+import AsyncLock from 'async-lock'
+import {
+  type DeleteOptions,
+  type FileHead,
+  FileNotFound,
+  type VfsListCursor,
+  type VirtualFile,
+  type VirtualFileSystem,
+  VirtualFileImpl,
+  deserializeCursor,
+  serializeCursor,
+} from '@arxhub/vfs'
 
 export class NodeFileSystem implements VirtualFileSystem {
   private readonly rootDir: string
+  private readonly _lock = new AsyncLock()
 
   constructor(rootDir: string) {
     this.rootDir = rootDir
   }
 
-  private metaPath(filename: string): string {
-    return join(this.rootDir, `${filename}.arxhub-meta.json`)
+  file<T extends Record<string, unknown>>(pathname: string): VirtualFile<T> {
+    return new VirtualFileImpl<T>(this, pathname)
   }
 
-  async *list(prefix: string = ''): AsyncGenerator<VirtualFile> {
-    for await (const realPathname of listFiles(join(this.rootDir, prefix))) {
-      if (realPathname.endsWith('.arxhub-meta.json')) {
-        continue
-      }
-      const pathname = realPathname.replace(`${this.rootDir}/`, '')
-      const file = new GenericFile(this, pathname)
-      await file.load()
-      yield file
+  list(prefix: string, cursor?: string): VfsListCursor {
+    const rootDir = this.rootDir
+    const self = this
+
+    let currentQueue: string[]
+    let currentPending: string[]
+
+    const normalizedPrefix = prefix.replace(/^\/+/, '')
+
+    if (cursor) {
+      const state = deserializeCursor(cursor)
+      currentQueue = [...state.queue]
+      currentPending = [...state.pending]
+    } else {
+      currentQueue = [normalizedPrefix]
+      currentPending = []
     }
-  }
 
-  file(filename: string): VirtualFile {
-    return new GenericFile(this, filename)
-  }
+    return {
+      cursor(): string {
+        return serializeCursor({ queue: currentQueue, pending: currentPending })
+      },
+      async *[Symbol.asyncIterator](): AsyncGenerator<VirtualFile> {
+        while (true) {
+          if (currentPending.length > 0) {
+            const pathname = currentPending.shift() as string
+            yield new VirtualFileImpl(self, pathname)
+            continue
+          }
 
-  async read(filename: string): Promise<Buffer> {
-    return fs.readFile(join(this.rootDir, filename))
-  }
+          if (currentQueue.length === 0) break
 
-  async readableStream(filename: string): Promise<ReadableStream> {
-    return Readable.toWeb(createReadStream(join(this.rootDir, filename))) as ReadableStream
-  }
+          const relDir = currentQueue.shift() as string
+          const absDir = join(rootDir, relDir)
 
-  async write(filename: string, content: Buffer): Promise<void> {
-    const path = join(this.rootDir, filename)
-    await fs.mkdir(splitPathname(path).path, { recursive: true })
-    await fs.writeFile(path, content)
-
-    const metaPath = this.metaPath(filename)
-    const meta: NodeFileRecord = {
-      fields: {},
-      metadata: {
-        hash: '',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        size: content.length,
+          let entries: Awaited<ReturnType<typeof fs.readdir>> | null = null
+          try {
+            entries = await fs.readdir(absDir, { withFileTypes: true })
+          } catch {
+            // not a directory — check if it's a plain file
+            try {
+              const stat = await fs.stat(absDir)
+              if (stat.isFile() && relDir && !relDir.endsWith('.info')) {
+                currentPending.push(relDir)
+              }
+            } catch {
+              // skip inaccessible paths
+            }
+          }
+          if (entries) {
+            for (const entry of entries) {
+              const absEntry = join(absDir, entry.name)
+              const relPath = absEntry.slice(rootDir.length).replace(/^\/+/, '')
+              if (entry.isDirectory()) {
+                currentQueue.push(relPath)
+              } else if (!entry.name.endsWith('.info')) {
+                currentPending.push(relPath)
+              }
+            }
+          }
+        }
       },
     }
-    await fs.writeFile(metaPath, JSON.stringify(meta))
   }
 
-  async writableStream(filename: string): Promise<WritableStream> {
-    const path = join(this.rootDir, filename)
-    await fs.mkdir(splitPathname(path).path, { recursive: true })
-    return Writable.toWeb(createWriteStream(path))
-  }
-
-  async delete(filename: string, options?: DeleteOptions): Promise<void> {
-    await fs.rm(join(this.rootDir, filename), options)
+  async read(pathname: string): Promise<Uint8Array> {
     try {
-      await fs.rm(this.metaPath(filename))
-    } catch {}
-  }
-
-  async head(filename: string): Promise<unknown> {
-    const stats = await fs.stat(join(this.rootDir, filename))
-    let fields: FileFields = {}
-    let metadata: FileMetadata = {
-      hash: '',
-      createdAt: stats.birthtime.getTime(),
-      updatedAt: stats.mtime.getTime(),
-      size: stats.size,
+      const buf = await fs.readFile(join(this.rootDir, pathname))
+      return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
+    } catch {
+      throw new FileNotFound(pathname)
     }
-
-    try {
-      const metaContent = await fs.readFile(this.metaPath(filename), 'utf-8')
-      const meta = JSON.parse(metaContent) as NodeFileRecord
-      fields = meta.fields ?? {}
-      metadata = {
-        ...metadata,
-        ...meta.metadata,
-      }
-    } catch {}
-
-    return { fields, metadata, stats }
   }
 
-  async isExists(filename: string): Promise<boolean> {
+  async readable(pathname: string): Promise<ReadableStream<Uint8Array>> {
+    return Readable.toWeb(createReadStream(join(this.rootDir, pathname))) as ReadableStream<Uint8Array>
+  }
+
+  async write(pathname: string, content: Uint8Array): Promise<void> {
+    const filePath = join(this.rootDir, pathname)
+    await fs.mkdir(dirname(filePath), { recursive: true })
+    await fs.writeFile(filePath, content)
+  }
+
+  async writable(pathname: string): Promise<WritableStream<Uint8Array>> {
+    const filePath = join(this.rootDir, pathname)
+    await fs.mkdir(dirname(filePath), { recursive: true })
+    return Writable.toWeb(createWriteStream(filePath)) as unknown as WritableStream<Uint8Array>
+  }
+
+  async delete(pathname: string, options?: DeleteOptions): Promise<void> {
     try {
-      await fs.access(join(this.rootDir, filename))
+      await fs.rm(join(this.rootDir, pathname), {
+        force: options?.force ?? false,
+        recursive: options?.recursive ?? false,
+      })
+    } catch (err) {
+      if (!options?.force) {
+        const code = (err as NodeJS.ErrnoException).code
+        if (code === 'ENOENT') throw new FileNotFound(pathname)
+        throw err
+      }
+    }
+  }
+
+  async exists(pathname: string): Promise<boolean> {
+    try {
+      await fs.access(join(this.rootDir, pathname))
       return true
     } catch {
       return false
     }
   }
 
-  async hash(filename: string, algorithm: string): Promise<string> {
-    const hash = crypto.createHash(algorithm)
-    const stream = await this.readableStream(filename)
-    const reader = stream.getReader()
-
+  async head(pathname: string): Promise<FileHead> {
     try {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) return hash.digest('hex')
-        hash.update(value)
+      const stats = await fs.stat(join(this.rootDir, pathname))
+      return {
+        size: stats.size,
+        modifiedAt: stats.mtime.getTime(),
+        createdAt: stats.birthtime.getTime(),
       }
-    } finally {
-      reader.releaseLock()
-      await stream.cancel()
+    } catch {
+      throw new FileNotFound(pathname)
     }
   }
 
-  async saveFieldsAndMetadata(filename: string, fields: FileFields, metadata: FileMetadata): Promise<void> {
-    const metaPath = this.metaPath(filename)
-    const meta: NodeFileRecord = { fields, metadata }
-    await fs.mkdir(splitPathname(metaPath).path, { recursive: true })
-    await fs.writeFile(metaPath, JSON.stringify(meta))
+  async lock<T>(pathname: string, fn: () => Promise<T>): Promise<T> {
+    return this._lock.acquire(pathname, fn)
+  }
+
+  async acquireLock(pathname: string): Promise<() => void> {
+    let release!: () => void
+    await new Promise<void>((outer) => {
+      this._lock.acquire(
+        pathname,
+        () =>
+          new Promise<void>((inner) => {
+            release = inner
+            outer()
+          }),
+      )
+    })
+    return release
   }
 }
