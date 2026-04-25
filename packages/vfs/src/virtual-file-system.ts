@@ -1,6 +1,8 @@
 import type { BaseInfoFields } from './info-namespace'
-import type { VfsListCursor } from './vfs-list-cursor'
+import type { VirtualDir } from './virtual-dir'
+import type { VirtualEntry } from './virtual-entry'
 import type { VirtualFile } from './virtual-file'
+import type { VirtualWalker } from './virtual-walker'
 
 export interface DeleteOptions {
   force?: boolean
@@ -15,7 +17,10 @@ export interface FileHead {
 
 export interface VirtualFileSystem {
   file<T extends Record<string, unknown> = BaseInfoFields>(pathname: string): VirtualFile<T>
-  list(prefix: string, cursor?: string): VfsListCursor
+  dir(pathname: string): VirtualDir
+
+  list(prefix: string): Promise<VirtualEntry[]>
+  walk(prefix: string, cursor?: string): VirtualWalker
 
   read(pathname: string): Promise<Uint8Array>
   readable(pathname: string): Promise<ReadableStream<Uint8Array>>

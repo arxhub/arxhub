@@ -1,21 +1,20 @@
-import AsyncLock from 'async-lock'
 import {
   type DeleteOptions,
   type FileHead,
   FileNotFound,
-  type VfsListCursor,
+  normalizePath,
+  type VirtualDir,
+  VirtualDirImpl,
+  type VirtualEntry,
   type VirtualFile,
-  type VirtualFileSystem,
   VirtualFileImpl,
-  deserializeCursor,
-  serializeCursor,
+  type VirtualFileSystem,
+  type VirtualWalker,
+  VirtualWalkerImpl,
 } from '@arxhub/vfs'
+import AsyncLock from 'async-lock'
 
-async function resolveFile(
-  root: FileSystemDirectoryHandle,
-  pathname: string,
-  create: boolean,
-): Promise<FileSystemFileHandle> {
+async function resolveFile(root: FileSystemDirectoryHandle, pathname: string, create: boolean): Promise<FileSystemFileHandle> {
   const parts = pathname.replace(/^\//, '').split('/').filter(Boolean)
   const filename = parts.pop()!
   let dir = root
@@ -39,10 +38,7 @@ async function resolveParent(
   return { dir, name }
 }
 
-async function resolveDir(
-  root: FileSystemDirectoryHandle,
-  pathname: string,
-): Promise<FileSystemDirectoryHandle> {
+async function resolveDir(root: FileSystemDirectoryHandle, pathname: string): Promise<FileSystemDirectoryHandle> {
   const normalized = pathname.replace(/^\//, '')
   if (!normalized) return root
   const parts = normalized.split('/').filter(Boolean)
@@ -60,56 +56,29 @@ export class OPFSFileSystem implements VirtualFileSystem {
     return new VirtualFileImpl<T>(this, pathname)
   }
 
-  list(prefix: string, cursor?: string): VfsListCursor {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const self = this
+  dir(pathname: string): VirtualDir {
+    return new VirtualDirImpl(this, pathname)
+  }
 
-    let currentQueue: string[]
-    let currentPending: string[]
-
-    if (cursor) {
-      const state = deserializeCursor(cursor)
-      currentQueue = [...state.queue]
-      currentPending = [...state.pending]
-    } else {
-      currentQueue = [prefix]
-      currentPending = []
+  async list(prefix: string): Promise<VirtualEntry[]> {
+    const norm = normalizePath(prefix)
+    const result: VirtualEntry[] = []
+    try {
+      const root = await navigator.storage.getDirectory()
+      const dirHandle = await resolveDir(root, norm)
+      for await (const [name, handle] of dirHandle.entries()) {
+        const entryPath = norm === '' ? name : `${norm}/${name}`
+        if (handle.kind === 'directory') result.push(this.dir(entryPath))
+        else if (!name.endsWith('.info')) result.push(this.file(entryPath))
+      }
+    } catch {
+      /* skip inaccessible dirs */
     }
+    return result
+  }
 
-    return {
-      cursor(): string {
-        return serializeCursor({ queue: currentQueue, pending: currentPending })
-      },
-      async *[Symbol.asyncIterator](): AsyncGenerator<VirtualFile> {
-        const root = await navigator.storage.getDirectory()
-
-        while (true) {
-          if (currentPending.length > 0) {
-            const pathname = currentPending.shift()!
-            yield new VirtualFileImpl(self, pathname)
-            continue
-          }
-
-          if (currentQueue.length === 0) break
-
-          const dirPath = currentQueue.shift()!
-
-          try {
-            const dirHandle = await resolveDir(root, dirPath)
-            for await (const [name, handle] of dirHandle.entries()) {
-              const entryPath = dirPath === '' ? name : `${dirPath}/${name}`
-              if (handle.kind === 'directory') {
-                currentQueue.push(entryPath)
-              } else if (!name.endsWith('.info')) {
-                currentPending.push(entryPath)
-              }
-            }
-          } catch {
-            // skip inaccessible dirs
-          }
-        }
-      },
-    }
+  walk(prefix: string, cursor?: string): VirtualWalker {
+    return new VirtualWalkerImpl(this, normalizePath(prefix), cursor)
   }
 
   async read(pathname: string): Promise<Uint8Array> {
@@ -145,7 +114,7 @@ export class OPFSFileSystem implements VirtualFileSystem {
   async writable(pathname: string): Promise<WritableStream<Uint8Array>> {
     const root = await navigator.storage.getDirectory()
     const handle = await resolveFile(root, pathname, true)
-    return handle.createWritable() as unknown as Promise<WritableStream<Uint8Array>>
+    return (await handle.createWritable()) as unknown as WritableStream<Uint8Array>
   }
 
   async delete(pathname: string, options?: DeleteOptions): Promise<void> {
@@ -153,7 +122,7 @@ export class OPFSFileSystem implements VirtualFileSystem {
       const root = await navigator.storage.getDirectory()
       const { dir, name } = await resolveParent(root, pathname, false)
       await dir.removeEntry(name, { recursive: options?.recursive ?? false })
-    } catch (err) {
+    } catch {
       if (options?.force) return
       throw new FileNotFound(pathname)
     }

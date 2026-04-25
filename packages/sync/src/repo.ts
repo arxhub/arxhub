@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
-import type { VfsListCursor, VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
+import type { VirtualFile, VirtualFileSystem, VirtualWalker } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
 import { Chunker } from './chunker'
@@ -47,7 +47,7 @@ export class Repo {
     for (const path of paths) {
       if (processed.has(path)) continue
 
-      for await (const file of this.vfs.list(path)) {
+      for await (const file of this.vfs.walk(path)) {
         const status = await this.fileStatus(file, snapshot)
         if (status != null) {
           result.push(status)
@@ -294,8 +294,8 @@ export class Repo {
     await to.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
   }
 
-  listSnapshots(): VfsListCursor {
-    return this.vfs.list('/repo/snapshots')
+  listSnapshots(): VirtualWalker {
+    return this.vfs.walk('/repo/snapshots')
   }
 
   getChangesFile(): VirtualFile {

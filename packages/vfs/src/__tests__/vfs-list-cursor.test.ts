@@ -2,7 +2,7 @@ import { NodeFileSystem } from '@arxhub/vfs-node'
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { VirtualFileSystem } from '../virtual-file-system'
 
-describe('VfsListCursor', () => {
+describe('VirtualWalker (walk)', () => {
   let vfs: VirtualFileSystem
 
   beforeEach(async () => {
@@ -12,7 +12,7 @@ describe('VfsListCursor', () => {
 
   async function collect(prefix: string, cursor?: string): Promise<string[]> {
     const items: string[] = []
-    for await (const file of vfs.list(prefix, cursor)) {
+    for await (const file of vfs.walk(prefix, cursor)) {
       items.push(file.pathname)
     }
     return items
@@ -36,7 +36,7 @@ describe('VfsListCursor', () => {
     expect(result.sort()).toEqual(['c.txt', 'dir/a.txt', 'dir/sub/b.txt'])
   })
 
-  test('list with prefix filters to subtree', async () => {
+  test('walk with prefix filters to subtree', async () => {
     await vfs.write('repo/snapshots/abc', new Uint8Array([1]))
     await vfs.write('repo/snapshots/def', new Uint8Array([2]))
     await vfs.write('repo/chunks/xy/zz/hash', new Uint8Array([3]))
@@ -51,21 +51,21 @@ describe('VfsListCursor', () => {
     }
 
     const seen: string[] = []
-    const cursor = vfs.list('/')
+    const walker = vfs.walk('/')
     let snapshotCursor: string | undefined
 
     let i = 0
-    for await (const file of cursor) {
+    for await (const file of walker) {
       seen.push(file.pathname)
       i++
       if (i === 2) {
-        snapshotCursor = cursor.cursor()
+        snapshotCursor = walker.cursor()
         break
       }
     }
 
     // Resume from cursor
-    for await (const file of vfs.list('/', snapshotCursor)) {
+    for await (const file of vfs.walk('/', snapshotCursor)) {
       seen.push(file.pathname)
     }
 
@@ -82,5 +82,48 @@ describe('VfsListCursor', () => {
     await vfs.write('solo.txt', new Uint8Array([42]))
     const result = await collect('solo.txt')
     expect(result).toEqual(['solo.txt'])
+  })
+})
+
+describe('list (flat)', () => {
+  let vfs: VirtualFileSystem
+
+  beforeEach(async () => {
+    vfs = new NodeFileSystem(`${__dirname}/testdata/vfs-list-cursor`)
+    await vfs.delete('/', { force: true, recursive: true })
+  })
+
+  test('returns immediate children only, not recursive', async () => {
+    await vfs.write('a.txt', new Uint8Array([1]))
+    await vfs.write('dir/b.txt', new Uint8Array([2]))
+
+    const entries = await vfs.list('/')
+    const pathnames = entries.map((e) => e.pathname).sort()
+    expect(pathnames).toEqual(['a.txt', 'dir'])
+  })
+
+  test('returns VirtualFile with kind=file and VirtualDir with kind=dir', async () => {
+    await vfs.write('file.txt', new Uint8Array([1]))
+    await vfs.write('subdir/nested.txt', new Uint8Array([2]))
+
+    const entries = await vfs.list('/')
+    const file = entries.find((e) => e.pathname === 'file.txt')
+    const dir = entries.find((e) => e.pathname === 'subdir')
+
+    expect(file?.kind).toBe('file')
+    expect(dir?.kind).toBe('dir')
+  })
+
+  test('excludes .info files', async () => {
+    await vfs.write('a.txt', new Uint8Array([1]))
+    await vfs.write('a.txt.info', new Uint8Array([2]))
+
+    const entries = await vfs.list('/')
+    expect(entries.map((e) => e.pathname)).toEqual(['a.txt'])
+  })
+
+  test('empty directory returns empty array', async () => {
+    const entries = await vfs.list('nonexistent')
+    expect(entries).toEqual([])
   })
 })

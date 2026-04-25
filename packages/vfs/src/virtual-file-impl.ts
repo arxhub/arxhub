@@ -1,10 +1,11 @@
 import { hash } from '@arxhub/crypto/hash'
 import type { BaseInfoFields, InfoNamespace } from './info-namespace'
 import { InfoNamespaceImpl } from './info-namespace-impl'
-import type { DeleteOptions, VirtualFileSystem } from './virtual-file-system'
 import type { VirtualFile } from './virtual-file'
+import type { DeleteOptions, VirtualFileSystem } from './virtual-file-system'
 
 export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields> implements VirtualFile<T> {
+  readonly kind = 'file' as const
   readonly pathname: string
   readonly vfs: VirtualFileSystem
   readonly info: InfoNamespace<T>

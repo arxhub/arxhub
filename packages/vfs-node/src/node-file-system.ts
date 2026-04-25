@@ -2,18 +2,21 @@ import { createReadStream, createWriteStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { Readable, Writable } from 'node:stream'
-import AsyncLock from 'async-lock'
 import {
   type DeleteOptions,
   type FileHead,
   FileNotFound,
-  type VfsListCursor,
+  normalizePath,
+  type VirtualDir,
+  VirtualDirImpl,
+  type VirtualEntry,
   type VirtualFile,
-  type VirtualFileSystem,
   VirtualFileImpl,
-  deserializeCursor,
-  serializeCursor,
+  type VirtualFileSystem,
+  type VirtualWalker,
+  VirtualWalkerImpl,
 } from '@arxhub/vfs'
+import AsyncLock from 'async-lock'
 
 export class NodeFileSystem implements VirtualFileSystem {
   private readonly rootDir: string
@@ -27,69 +30,37 @@ export class NodeFileSystem implements VirtualFileSystem {
     return new VirtualFileImpl<T>(this, pathname)
   }
 
-  list(prefix: string, cursor?: string): VfsListCursor {
-    const rootDir = this.rootDir
-    const self = this
+  dir(pathname: string): VirtualDir {
+    return new VirtualDirImpl(this, pathname)
+  }
 
-    let currentQueue: string[]
-    let currentPending: string[]
-
-    const normalizedPrefix = prefix.replace(/^\/+/, '')
-
-    if (cursor) {
-      const state = deserializeCursor(cursor)
-      currentQueue = [...state.queue]
-      currentPending = [...state.pending]
-    } else {
-      currentQueue = [normalizedPrefix]
-      currentPending = []
+  async list(prefix: string): Promise<VirtualEntry[]> {
+    const norm = normalizePath(prefix)
+    const absDir = join(this.rootDir, norm)
+    const result: VirtualEntry[] = []
+    let entries: Awaited<ReturnType<typeof fs.readdir>> | null = null
+    try {
+      entries = await fs.readdir(absDir, { withFileTypes: true })
+    } catch {
+      try {
+        const stat = await fs.stat(absDir)
+        if (stat.isFile() && norm && !norm.endsWith('.info')) result.push(this.file(norm))
+      } catch {
+        /* skip inaccessible paths */
+      }
+      return result
     }
-
-    return {
-      cursor(): string {
-        return serializeCursor({ queue: currentQueue, pending: currentPending })
-      },
-      async *[Symbol.asyncIterator](): AsyncGenerator<VirtualFile> {
-        while (true) {
-          if (currentPending.length > 0) {
-            const pathname = currentPending.shift() as string
-            yield new VirtualFileImpl(self, pathname)
-            continue
-          }
-
-          if (currentQueue.length === 0) break
-
-          const relDir = currentQueue.shift() as string
-          const absDir = join(rootDir, relDir)
-
-          let entries: Awaited<ReturnType<typeof fs.readdir>> | null = null
-          try {
-            entries = await fs.readdir(absDir, { withFileTypes: true })
-          } catch {
-            // not a directory — check if it's a plain file
-            try {
-              const stat = await fs.stat(absDir)
-              if (stat.isFile() && relDir && !relDir.endsWith('.info')) {
-                currentPending.push(relDir)
-              }
-            } catch {
-              // skip inaccessible paths
-            }
-          }
-          if (entries) {
-            for (const entry of entries) {
-              const absEntry = join(absDir, entry.name)
-              const relPath = absEntry.slice(rootDir.length).replace(/^\/+/, '')
-              if (entry.isDirectory()) {
-                currentQueue.push(relPath)
-              } else if (!entry.name.endsWith('.info')) {
-                currentPending.push(relPath)
-              }
-            }
-          }
-        }
-      },
+    for (const entry of entries) {
+      const absEntry = join(absDir, entry.name)
+      const relPath = absEntry.slice(this.rootDir.length).replace(/^\/+/, '')
+      if (entry.isDirectory()) result.push(this.dir(relPath))
+      else if (!entry.name.endsWith('.info')) result.push(this.file(relPath))
     }
+    return result
+  }
+
+  walk(prefix: string, cursor?: string): VirtualWalker {
+    return new VirtualWalkerImpl(this, normalizePath(prefix), cursor)
   }
 
   async read(pathname: string): Promise<Uint8Array> {
@@ -102,7 +73,13 @@ export class NodeFileSystem implements VirtualFileSystem {
   }
 
   async readable(pathname: string): Promise<ReadableStream<Uint8Array>> {
-    return Readable.toWeb(createReadStream(join(this.rootDir, pathname))) as ReadableStream<Uint8Array>
+    const filePath = join(this.rootDir, pathname)
+    try {
+      await fs.access(filePath)
+    } catch {
+      throw new FileNotFound(pathname)
+    }
+    return Readable.toWeb(createReadStream(filePath)) as ReadableStream<Uint8Array>
   }
 
   async write(pathname: string, content: Uint8Array): Promise<void> {
