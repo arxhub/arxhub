@@ -26,7 +26,8 @@ export class SyncEngine {
       await this.prepare()
 
       for await (const snapshot of this.remote.listSnapshots()) {
-        await this.local.download(this.remote, snapshot.name)
+        const hash = snapshot.pathname.split('/').at(-1) ?? ''
+        await this.local.download(this.remote, hash)
       }
 
       // Create new snapshot, to calculate new local changes into hashes
@@ -41,7 +42,8 @@ export class SyncEngine {
       const latest = await this.local.snapshot()
 
       for await (const snapshot of this.local.listSnapshots()) {
-        await this.local.upload(this.remote, snapshot.name)
+        const hash = snapshot.pathname.split('/').at(-1) ?? ''
+        await this.local.upload(this.remote, hash)
       }
 
       await this.local.getHeadFile().writeText(latest.hash)

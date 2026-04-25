@@ -1,21 +1,33 @@
-import type { DeleteOptions } from './types/delete-options'
+import type { BaseInfoFields } from './info-namespace'
+import type { VfsListCursor } from './vfs-list-cursor'
 import type { VirtualFile } from './virtual-file'
 
+export interface DeleteOptions {
+  force?: boolean
+  recursive?: boolean
+}
+
+export interface FileHead {
+  size: number
+  modifiedAt: number
+  createdAt: number
+}
+
 export interface VirtualFileSystem {
-  list(prefix: string): AsyncGenerator<VirtualFile>
+  file<T extends Record<string, unknown> = BaseInfoFields>(pathname: string): VirtualFile<T>
+  list(prefix: string, cursor?: string): VfsListCursor
 
-  file(filename: string): VirtualFile
+  read(pathname: string): Promise<Uint8Array>
+  readable(pathname: string): Promise<ReadableStream<Uint8Array>>
 
-  read(filename: string): Promise<Buffer>
-  readableStream(filename: string): Promise<ReadableStream>
+  write(pathname: string, content: Uint8Array): Promise<void>
+  writable(pathname: string): Promise<WritableStream<Uint8Array>>
 
-  write(filename: string, content: Buffer): Promise<void>
-  writableStream(filename: string): Promise<WritableStream>
+  delete(pathname: string, options?: DeleteOptions): Promise<void>
 
-  delete(path: string, options?: DeleteOptions): Promise<void>
+  exists(pathname: string): Promise<boolean>
+  head(pathname: string): Promise<FileHead>
 
-  head(filename: string): Promise<unknown>
-  isExists(filename: string): Promise<boolean>
-
-  hash(filename: string, algorithm: string): Promise<string>
+  lock<T>(pathname: string, fn: () => Promise<T>): Promise<T>
+  acquireLock(pathname: string): Promise<() => void>
 }

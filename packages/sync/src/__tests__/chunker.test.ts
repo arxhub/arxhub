@@ -33,6 +33,6 @@ describe('chunker', async () => {
     const merged = chunker.merge(chunks)
     await merged.pipeTo(writable)
 
-    expect(await original.hash('sha256')).toEqual(await file.hash('sha256'))
+    expect(await original.info.get('hash')).toEqual(await file.info.get('hash'))
   })
 })

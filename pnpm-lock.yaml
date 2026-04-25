@@ -321,6 +321,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../core
+      '@arxhub/crypto':
+        specifier: workspace:*
+        version: link:../crypto
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
@@ -337,6 +340,9 @@ importers:
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      '@arxhub/vfs-node':
+        specifier: workspace:*
+        version: link:../vfs-node
       '@types/async-lock':
         specifier: catalog:toolchain
         version: 1.4.2
@@ -358,6 +364,9 @@ importers:
       '@arxhub/vfs':
         specifier: workspace:*
         version: link:../vfs
+      async-lock:
+        specifier: catalog:shared
+        version: 1.4.1
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -365,6 +374,9 @@ importers:
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      '@types/async-lock':
+        specifier: catalog:toolchain
+        version: 1.4.2
       '@types/node':
         specifier: catalog:toolchain
         version: 22.14.1
@@ -420,6 +432,9 @@ importers:
       '@tauri-apps/plugin-fs':
         specifier: catalog:tauri
         version: 2.4.5
+      async-lock:
+        specifier: catalog:shared
+        version: 1.4.1
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -427,6 +442,9 @@ importers:
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      '@types/async-lock':
+        specifier: catalog:toolchain
+        version: 1.4.2
       '@types/node':
         specifier: catalog:toolchain
         version: 22.14.1

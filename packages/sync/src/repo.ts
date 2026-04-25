@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
-import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
+import type { VfsListCursor, VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
 import { Chunker } from './chunker'
@@ -60,8 +60,8 @@ export class Repo {
   }
 
   private async fileStatus(file: VirtualFile, snapshot: Snapshot): Promise<FileStatus | null> {
-    if (await file.isExists()) {
-      const hash = await file.hash('sha256')
+    if (await file.exists()) {
+      const hash = await file.info.get('hash')
       const local = snapshot.files[file.pathname]
 
       if (local == null) {
@@ -104,14 +104,14 @@ export class Repo {
         const hash = sha256(chunk)
         const chunkFile = this.getChunkFile(hash)
 
-        if (!(await chunkFile.isExists())) {
-          await chunkFile.write(Buffer.from(chunk))
+        if (!(await chunkFile.exists())) {
+          await chunkFile.write(chunk)
         }
 
         chunks.push({ hash })
       }
 
-      const fileHash = await file.hash('sha256')
+      const fileHash = (await file.info.get('hash')) ?? ''
 
       files[pathname] = {
         hash: fileHash,
@@ -227,7 +227,7 @@ export class Repo {
   async prepare(): Promise<void> {
     const hash = sha256('{}')
     const snapshot = this.getSnapshotFile(hash)
-    const isSnapshotExists = await snapshot.isExists()
+    const isSnapshotExists = await snapshot.exists()
     if (!isSnapshotExists) {
       await snapshot.writeJSON({
         hash: hash,
@@ -238,7 +238,7 @@ export class Repo {
     }
 
     const head = this.getHeadFile()
-    const isHeadExists = await head.isExists()
+    const isHeadExists = await head.exists()
     if (!isHeadExists) {
       await head.writeText(hash)
     }
@@ -258,7 +258,7 @@ export class Repo {
 
       for (const chunk of file.chunks) {
         const toChunkFile = this.getChunkFile(chunk.hash)
-        if (!(await toChunkFile.isExists())) {
+        if (!(await toChunkFile.exists())) {
           const fromChunkFile = from.getChunkFile(chunk.hash)
           const readable = await fromChunkFile.readable()
           const writable = await toChunkFile.writable()
@@ -271,7 +271,7 @@ export class Repo {
   }
 
   async upload(to: Repo, hash: string): Promise<void> {
-    if (await to.getSnapshotFile(hash).isExists()) {
+    if (await to.getSnapshotFile(hash).exists()) {
       return
     }
 
@@ -282,7 +282,7 @@ export class Repo {
 
       for (const chunk of file.chunks) {
         const toChunkFile = to.getChunkFile(chunk.hash)
-        if (!(await toChunkFile.isExists())) {
+        if (!(await toChunkFile.exists())) {
           const fromChunkFile = this.getChunkFile(chunk.hash)
           const readable = await fromChunkFile.readable()
           const writable = await toChunkFile.writable()
@@ -294,7 +294,7 @@ export class Repo {
     await to.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
   }
 
-  listSnapshots(): AsyncGenerator<VirtualFile> {
+  listSnapshots(): VfsListCursor {
     return this.vfs.list('/repo/snapshots')
   }
 

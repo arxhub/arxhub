@@ -1,7 +1,7 @@
 # ADR 002: VFS Architecture Redesign
 
 ## Status
-Proposed
+Superseded by [ADR 003: VFS Stateless Architecture](003-vfs-stateless-architecture.md)
 
 ## Context
 

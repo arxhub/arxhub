@@ -116,7 +116,7 @@ describe('SyncEngine', () => {
           },
         },
       })
-      expect(await remote.getChunkFile('a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48').isExists()).toBe(true)
+      expect(await remote.getChunkFile('a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48').exists()).toBe(true)
     })
 
     test('given both sides with changes should merge', async () => {
@@ -159,8 +159,8 @@ describe('SyncEngine', () => {
           },
         },
       })
-      expect(await remote.getChunkFile('0709e9b00585ba4764fd4d89bdefec5b1a20b3735c50d8e33a27f740023ceca2').isExists()).toBe(true)
-      expect(await remote.getChunkFile('a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48').isExists()).toBe(true)
+      expect(await remote.getChunkFile('0709e9b00585ba4764fd4d89bdefec5b1a20b3735c50d8e33a27f740023ceca2').exists()).toBe(true)
+      expect(await remote.getChunkFile('a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48').exists()).toBe(true)
     })
 
     test('given both sides modify same file should create conflict', async () => {

@@ -12,6 +12,10 @@
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",
+  "exports": {
+    ".": "./index.js",
+    "./hash": "./hash.js"
+  },
   "dependencies": {
     "crypto-browserify": "catalog:shared"
   },
