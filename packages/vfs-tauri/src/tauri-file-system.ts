@@ -1,16 +1,19 @@
-import AsyncLock from 'async-lock'
 import {
   type DeleteOptions,
   type FileHead,
   FileNotFound,
-  type VfsListCursor,
+  normalizePath,
+  type VirtualDir,
+  VirtualDirImpl,
+  type VirtualEntry,
   type VirtualFile,
-  type VirtualFileSystem,
   VirtualFileImpl,
-  deserializeCursor,
-  serializeCursor,
+  type VirtualFileSystem,
+  type VirtualWalker,
+  VirtualWalkerImpl,
 } from '@arxhub/vfs'
 import { BaseDirectory, readDir, readFile, remove, stat, writeFile } from '@tauri-apps/plugin-fs'
+import AsyncLock from 'async-lock'
 
 export class TauriFileSystem implements VirtualFileSystem {
   private readonly baseDir: BaseDirectory
@@ -30,53 +33,28 @@ export class TauriFileSystem implements VirtualFileSystem {
     return new VirtualFileImpl<T>(this, pathname)
   }
 
-  list(prefix: string, cursor?: string): VfsListCursor {
-    const self = this
+  dir(pathname: string): VirtualDir {
+    return new VirtualDirImpl(this, pathname)
+  }
 
-    let currentQueue: string[]
-    let currentPending: string[]
-
-    if (cursor) {
-      const state = deserializeCursor(cursor)
-      currentQueue = [...state.queue]
-      currentPending = [...state.pending]
-    } else {
-      currentQueue = [prefix]
-      currentPending = []
+  async list(prefix: string): Promise<VirtualEntry[]> {
+    const norm = normalizePath(prefix)
+    const result: VirtualEntry[] = []
+    try {
+      const entries = await readDir(this.fullPath(norm), { baseDir: this.baseDir })
+      for (const entry of entries) {
+        const relPath = norm ? `${norm}/${entry.name}` : entry.name
+        if (entry.isDirectory) result.push(this.dir(relPath))
+        else if (!entry.name.endsWith('.info')) result.push(this.file(relPath))
+      }
+    } catch {
+      /* skip inaccessible dirs */
     }
+    return result
+  }
 
-    return {
-      cursor(): string {
-        return serializeCursor({ queue: currentQueue, pending: currentPending })
-      },
-      async *[Symbol.asyncIterator](): AsyncGenerator<VirtualFile> {
-        while (true) {
-          if (currentPending.length > 0) {
-            const pathname = currentPending.shift() as string
-            yield new VirtualFileImpl(self, pathname)
-            continue
-          }
-
-          if (currentQueue.length === 0) break
-
-          const relDir = currentQueue.shift() as string
-
-          try {
-            const entries = await readDir(self.fullPath(relDir), { baseDir: self.baseDir })
-            for (const entry of entries) {
-              const relPath = `${relDir}/${entry.name}`
-              if (entry.isDirectory) {
-                currentQueue.push(relPath)
-              } else if (!entry.name.endsWith('.info')) {
-                currentPending.push(relPath)
-              }
-            }
-          } catch {
-            // skip inaccessible dirs
-          }
-        }
-      },
-    }
+  walk(prefix: string, cursor?: string): VirtualWalker {
+    return new VirtualWalkerImpl(this, normalizePath(prefix), cursor)
   }
 
   async read(pathname: string): Promise<Uint8Array> {
