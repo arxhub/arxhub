@@ -9,6 +9,9 @@ catalogs:
     '@ark-ui/vue':
       specifier: ^3.2.0
       version: 3.14.0
+    lucide-vue-next:
+      specifier: ^0.400.0
+      version: 0.400.0
     vue:
       specifier: ^3.4.0
       version: 3.5.29
@@ -26,6 +29,12 @@ catalogs:
     dayjs:
       specifier: ^1.11.18
       version: 1.11.18
+    eventemitter3:
+      specifier: ^5.0.1
+      version: 5.0.4
+    nanoid:
+      specifier: ^5.1.5
+      version: 5.1.11
     path-browserify:
       specifier: ^1.0.1
       version: 1.0.1
@@ -132,6 +141,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/panels':
+        specifier: workspace:*
+        version: link:../../packages/panels
       '@arxhub/theme':
         specifier: workspace:*
         version: link:../../themes/default
@@ -197,9 +209,15 @@ importers:
 
   packages/core:
     dependencies:
+      '@arxhub/events':
+        specifier: workspace:*
+        version: link:../events
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
+      eventemitter3:
+        specifier: catalog:shared
+        version: 5.0.4
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -225,6 +243,56 @@ importers:
       '@types/node':
         specifier: catalog:toolchain
         version: 22.14.1
+
+  packages/events:
+    dependencies:
+      eventemitter3:
+        specifier: catalog:shared
+        version: 5.0.4
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 22.14.1
+      type-fest:
+        specifier: catalog:toolchain
+        version: 5.6.0
+
+  packages/panels:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arxhub/events':
+        specifier: workspace:*
+        version: link:../events
+      lucide-vue-next:
+        specifier: catalog:client
+        version: 0.400.0(vue@3.5.29(typescript@6.0.3))
+      nanoid:
+        specifier: catalog:shared
+        version: 5.1.11
+      vue:
+        specifier: catalog:client
+        version: 3.5.29(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 22.14.1
+      type-fest:
+        specifier: catalog:toolchain
+        version: 5.6.0
 
   packages/path:
     dependencies:
@@ -360,37 +428,6 @@ importers:
       type-fest:
         specifier: catalog:toolchain
         version: 5.6.0
-
-  packages/vfs-browser:
-    dependencies:
-      '@arxhub/core':
-        specifier: workspace:*
-        version: link:../core
-      '@arxhub/path':
-        specifier: workspace:*
-        version: link:../path
-      '@arxhub/stdlib':
-        specifier: workspace:*
-        version: link:../stdlib
-      '@arxhub/vfs':
-        specifier: workspace:*
-        version: link:../vfs
-      async-lock:
-        specifier: catalog:shared
-        version: 1.4.1
-    devDependencies:
-      '@arxhub/toolchain-tsconfig':
-        specifier: workspace:*
-        version: link:../../toolchains/tsconfig
-      '@arxhub/toolchain-vite':
-        specifier: workspace:*
-        version: link:../../toolchains/vite
-      '@types/async-lock':
-        specifier: catalog:toolchain
-        version: 1.4.2
-      '@types/node':
-        specifier: catalog:toolchain
-        version: 22.14.1
 
   packages/vfs-node:
     dependencies:
@@ -1647,6 +1684,9 @@ packages:
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
 
+  eventemitter3@5.0.4:
+    resolution: {integrity: sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==}
+
   exact-mirror@0.2.7:
     resolution: {integrity: sha512-+MeEmDcLA4o/vjK2zujgk+1VTxPR4hdp23qLqkWfStbECtAq9gmsvQa3LW6z/0GXZyHJobrCnmy1cdeE7BjsYg==}
     peerDependencies:
@@ -1837,6 +1877,11 @@ packages:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
 
+  lucide-vue-next@0.400.0:
+    resolution: {integrity: sha512-JQMby6HuSr/ALLL3IAjpca/hP499vWy4+zqzCrTsAzdg0BHM0Lge84bMMxvpqqXnU24uRQkmOZCi5ksecTogfw==}
+    peerDependencies:
+      vue: '>=3.0.1'
+
   magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
 
@@ -1873,6 +1918,11 @@ packages:
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
+
+  nanoid@5.1.11:
+    resolution: {integrity: sha512-v+KEsUv2ps74PaSKv0gHTxTCgMXOIfBEbaqa6w6ISIGC7ZsvHN4N9oJ8d4cmf0n5oTzQz2SLmThbQWhjd/8eKg==}
+    engines: {node: ^18 || >=20}
     hasBin: true
 
   obug@2.1.1:
@@ -3520,6 +3570,8 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.8
 
+  eventemitter3@5.0.4: {}
+
   exact-mirror@0.2.7(@sinclair/typebox@0.34.48):
     optionalDependencies:
       '@sinclair/typebox': 0.34.48
@@ -3671,6 +3723,10 @@ snapshots:
     dependencies:
       yallist: 4.0.0
 
+  lucide-vue-next@0.400.0(vue@3.5.29(typescript@6.0.3)):
+    dependencies:
+      vue: 3.5.29(typescript@6.0.3)
+
   magic-string@0.30.17:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.0
@@ -3707,6 +3763,8 @@ snapshots:
   muggle-string@0.4.1: {}
 
   nanoid@3.3.11: {}
+
+  nanoid@5.1.11: {}
 
   obug@2.1.1: {}
 
