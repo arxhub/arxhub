@@ -39,21 +39,9 @@ import AppFooter from './AppFooter.vue'
 
 .content-area {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
+  height: 100%;
   background-color: var(--gray-1);
 }
 
-.content-area::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.content-area::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.content-area::-webkit-scrollbar-thumb {
-  background: var(--gray-6);
-  border-radius: 3px;
-}
 </style>
