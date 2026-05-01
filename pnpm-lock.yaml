@@ -324,15 +324,15 @@ importers:
       '@arxhub/crypto':
         specifier: workspace:*
         version: link:../crypto
+      '@arxhub/path':
+        specifier: workspace:*
+        version: link:../path
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
       async-lock:
         specifier: catalog:shared
         version: 1.4.1
-      ts-dedent:
-        specifier: catalog:shared
-        version: 2.2.0
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -340,9 +340,6 @@ importers:
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
-      '@arxhub/vfs-node':
-        specifier: workspace:*
-        version: link:../vfs-node
       '@types/async-lock':
         specifier: catalog:toolchain
         version: 1.4.2
@@ -389,9 +386,6 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
-      '@arxhub/vfs':
-        specifier: workspace:*
-        version: link:../vfs
       async-lock:
         specifier: catalog:shared
         version: 1.4.1
@@ -399,12 +393,18 @@ importers:
         specifier: catalog:shared
         version: 2.2.0
     devDependencies:
+      '@arxhub/crypto':
+        specifier: workspace:*
+        version: link:../crypto
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../vfs
       '@types/async-lock':
         specifier: catalog:toolchain
         version: 1.4.2

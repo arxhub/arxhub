@@ -1,5 +1,5 @@
-import type { VirtualEntry } from './virtual-entry'
-import type { VirtualWalker } from './virtual-walker'
+import type { VirtualEntry } from '../virtual-entry'
+import type { VirtualWalker } from '../virtual-walker'
 
 export interface VirtualDir extends VirtualEntry {
   readonly kind: 'dir'

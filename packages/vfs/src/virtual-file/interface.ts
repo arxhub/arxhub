@@ -1,6 +1,6 @@
-import type { BaseInfoFields, InfoNamespace } from './info-namespace'
-import type { VirtualEntry } from './virtual-entry'
-import type { DeleteOptions, VirtualFileSystem } from './virtual-file-system'
+import type { BaseInfoFields, InfoNamespace } from '../info-namespace'
+import type { VirtualEntry } from '../virtual-entry'
+import type { DeleteOptions, VirtualFileSystem } from '../virtual-file-system'
 
 export interface VirtualFile<T extends Record<string, unknown> = BaseInfoFields> extends VirtualEntry {
   readonly kind: 'file'

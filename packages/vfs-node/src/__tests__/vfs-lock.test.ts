@@ -1,6 +1,6 @@
-import { NodeFileSystem } from '@arxhub/vfs-node'
 import { beforeEach, describe, expect, test } from 'vitest'
-import type { VirtualFileSystem } from '../virtual-file-system'
+import type { VirtualFileSystem } from '@arxhub/vfs'
+import { NodeFileSystem } from '../index'
 
 describe('VFS locking', () => {
   let vfs: VirtualFileSystem

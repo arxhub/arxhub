@@ -1,29 +1,6 @@
-import type { VirtualEntry } from './virtual-entry'
-import type { VirtualFile } from './virtual-file'
-import type { VirtualFileSystem } from './virtual-file-system'
-
-export interface VirtualWalker extends AsyncIterable<VirtualFile> {
-  cursor(): string
-  hasNext(): Promise<boolean>
-  next(): Promise<VirtualFile | null>
-}
-
-export interface VfsBFSState {
-  queue: string[]
-  pending: string[]
-}
-
-export function serializeCursor(state: VfsBFSState): string {
-  return btoa(JSON.stringify(state))
-}
-
-export function deserializeCursor(token: string): VfsBFSState {
-  try {
-    return JSON.parse(atob(token)) as VfsBFSState
-  } catch {
-    return { queue: [], pending: [] }
-  }
-}
+import type { VirtualFile } from '../virtual-file'
+import type { VirtualFileSystem } from '../virtual-file-system'
+import { deserializeCursor, serializeCursor, type VirtualWalker } from './interface'
 
 export class VirtualWalkerImpl implements VirtualWalker {
   private readonly _vfs: VirtualFileSystem
