@@ -1,0 +1,43 @@
+{
+  "name": "@arxhub/panels",
+  "sideEffects": ["**/*.css"],
+  "version": "0.1.0",
+  "description": "Tiling panel system for ArxHub",
+  "keywords": ["arxhub"],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.ts"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/events": "workspace:*",
+    "lucide-vue-next": "catalog:client",
+    "nanoid": "catalog:shared",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain",
+    "type-fest": "catalog:toolchain"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./ui": {
+        "import": "./dist/ui/index.js",
+        "types": "./dist/ui/index.d.ts"
+      }
+    }
+  }
+}

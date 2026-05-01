@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@arxhub/core": "workspace:*",
+    "@arxhub/panels": "workspace:*",
     "@arxhub/theme": "workspace:*",
     "@arxhub/theme-preset": "workspace:*",
     "@arxhub/uikit": "workspace:*",
