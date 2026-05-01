@@ -1,8 +1,8 @@
+import { normalizePath } from '@arxhub/path'
 import {
   type DeleteOptions,
   type FileHead,
   FileNotFound,
-  normalizePath,
   type VirtualDir,
   VirtualDirImpl,
   type VirtualEntry,

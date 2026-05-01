@@ -79,10 +79,10 @@ describe('VirtualFileImpl', () => {
   })
 
   test('write() hash matches manual sha256', async () => {
-    const { hash } = await import('@arxhub/crypto/hash')
+    const { hash } = await import('@arxhub/crypto')
     const file = vfs.file('hash-match.txt')
     const content = new TextEncoder().encode('verify me')
     await file.write(content)
-    expect(await file.info.get('hash')).toEqual(hash(content))
+    expect(await file.info.get('hash')).toEqual(await hash(content, 'sha256'))
   })
 })

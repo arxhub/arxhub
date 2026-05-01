@@ -21,6 +21,7 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
+    "@arxhub/path": "workspace:*",
     "@tauri-apps/api": "catalog:tauri",
     "@tauri-apps/plugin-fs": "catalog:tauri",
     "async-lock": "catalog:shared"

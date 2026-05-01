@@ -3,23 +3,31 @@
   "sideEffects": false,
   "version": "0.1.0",
   "description": "",
-  "keywords": [
-    "arxhub",
-    "crypto"
-  ],
+  "keywords": ["arxhub", "crypto"],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
-  "main": "index.js",
-  "types": "index.d.ts",
   "exports": {
-    ".": "./index.js",
-    "./hash": "./hash.js"
+    ".": {
+      "node": "./src/index.node.ts",
+      "default": "./src/index.ts"
+    }
   },
-  "dependencies": {
-    "crypto-browserify": "catalog:shared"
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
   },
   "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
     "@types/node": "catalog:toolchain"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "node": { "import": "./dist/index.node.js", "types": "./dist/index.node.d.ts" },
+        "default": { "import": "./dist/index.js", "types": "./dist/index.d.ts" }
+      }
+    }
   }
 }
