@@ -21,6 +21,7 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
+    "@arxhub/path": "workspace:*",
     "async-lock": "catalog:shared"
   },
   "devDependencies": {

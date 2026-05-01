@@ -1,4 +1,4 @@
-import { createHasher, hash } from '@arxhub/crypto/hash'
+import { createHasher, hash } from '@arxhub/crypto'
 import type { BaseInfoFields, InfoNamespace } from '../info-namespace'
 import { InfoNamespaceImpl } from '../info-namespace/impl'
 import type { VirtualFile } from './interface'
@@ -36,7 +36,7 @@ export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields>
   async write(content: Uint8Array): Promise<void> {
     await this.vfs.lock(this.pathname, async () => {
       await this.vfs.write(this.pathname, content)
-      await this.info.set('hash' as never, hash(content) as never, { flush: true })
+      await this.info.set('hash' as never, await hash(content, 'sha256') as never, { flush: true })
     })
   }
 
@@ -72,7 +72,7 @@ function wrapWritableWithHash(
   release: () => void,
   onHash: (h: string) => Promise<void>,
 ): WritableStream<Uint8Array> {
-  const hasher = createHasher()
+  const hasher = createHasher('sha256')
   const writer = inner.getWriter()
   return new WritableStream({
     write(chunk) {
@@ -81,7 +81,7 @@ function wrapWritableWithHash(
     },
     async close() {
       await writer.close()
-      const hex = hasher.digest('hex')
+      const hex = await hasher.digest('hex')
       try {
         await onHash(hex)
       } finally {

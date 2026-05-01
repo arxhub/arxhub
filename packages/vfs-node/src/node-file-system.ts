@@ -2,11 +2,11 @@ import { createReadStream, createWriteStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { Readable, Writable } from 'node:stream'
+import { normalizePath } from '@arxhub/path'
 import {
   type DeleteOptions,
   type FileHead,
   FileNotFound,
-  normalizePath,
   type VirtualDir,
   VirtualDirImpl,
   type VirtualEntry,
