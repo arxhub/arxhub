@@ -1,5 +1,6 @@
 import '@arxhub/theme-preset'
 import '@arxhub/theme'
+
 import { ArxHub } from '@arxhub/core'
 import { PanelsPlugin, panelStore } from '@arxhub/panels'
 import { createApp } from 'vue'
