@@ -1,8 +1,8 @@
-import { hash } from '@arxhub/crypto/hash'
-import type { BaseInfoFields, InfoNamespace } from './info-namespace'
-import { InfoNamespaceImpl } from './info-namespace-impl'
-import type { VirtualFile } from './virtual-file'
-import type { DeleteOptions, VirtualFileSystem } from './virtual-file-system'
+import { createHasher, hash } from '@arxhub/crypto/hash'
+import type { BaseInfoFields, InfoNamespace } from '../info-namespace'
+import { InfoNamespaceImpl } from '../info-namespace/impl'
+import type { VirtualFile } from './interface'
+import type { DeleteOptions, VirtualFileSystem } from '../virtual-file-system'
 
 export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields> implements VirtualFile<T> {
   readonly kind = 'file' as const
@@ -72,24 +72,21 @@ function wrapWritableWithHash(
   release: () => void,
   onHash: (h: string) => Promise<void>,
 ): WritableStream<Uint8Array> {
-  const chunks: Uint8Array[] = []
+  const hasher = createHasher()
   const writer = inner.getWriter()
   return new WritableStream({
     write(chunk) {
-      chunks.push(chunk)
+      hasher.update(chunk)
       return writer.write(chunk)
     },
     async close() {
       await writer.close()
-      const total = chunks.reduce((n, c) => n + c.length, 0)
-      const all = new Uint8Array(total)
-      let offset = 0
-      for (const c of chunks) {
-        all.set(c, offset)
-        offset += c.length
+      const hex = hasher.digest('hex')
+      try {
+        await onHash(hex)
+      } finally {
+        release()
       }
-      await onHash(hash(all))
-      release()
     },
     async abort(reason) {
       await writer.abort(reason)

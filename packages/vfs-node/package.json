@@ -20,15 +20,18 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "async-lock": "catalog:shared",
     "ts-dedent": "catalog:shared"
   },
   "devDependencies": {
+    "@arxhub/crypto": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
     "@types/async-lock": "catalog:toolchain",
     "@types/node": "catalog:toolchain",
     "type-fest": "catalog:toolchain"

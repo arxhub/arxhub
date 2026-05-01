@@ -1,4 +1,4 @@
-import type { BaseInfoFields } from './info-namespace'
+import type { BaseInfoFields, InfoNamespace } from './info-namespace'
 import type { VirtualDir } from './virtual-dir'
 import type { VirtualEntry } from './virtual-entry'
 import type { VirtualFile } from './virtual-file'
@@ -7,12 +7,6 @@ import type { VirtualWalker } from './virtual-walker'
 export interface DeleteOptions {
   force?: boolean
   recursive?: boolean
-}
-
-export interface FileHead {
-  size: number
-  modifiedAt: number
-  createdAt: number
 }
 
 export interface VirtualFileSystem {
@@ -31,7 +25,7 @@ export interface VirtualFileSystem {
   delete(pathname: string, options?: DeleteOptions): Promise<void>
 
   exists(pathname: string): Promise<boolean>
-  head(pathname: string): Promise<FileHead>
+  head(pathname: string): Promise<InfoNamespace>
 
   lock<T>(pathname: string, fn: () => Promise<T>): Promise<T>
   acquireLock(pathname: string): Promise<() => void>

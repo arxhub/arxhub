@@ -1,6 +1,5 @@
-import type { Get, PartialDeep, Paths } from 'type-fest'
-import type { BaseInfoFields, InfoFlushOptions, InfoNamespace } from './info-namespace'
-import type { VirtualFile } from './virtual-file'
+import type { BaseInfoFields, InfoFlushOptions, InfoNamespace } from './interface'
+import type { VirtualFile } from '../virtual-file'
 
 export class InfoNamespaceImpl<T extends Record<string, unknown> = BaseInfoFields> implements InfoNamespace<T> {
   private readonly file: VirtualFile<T>
@@ -22,16 +21,16 @@ export class InfoNamespaceImpl<T extends Record<string, unknown> = BaseInfoField
     return this._cache
   }
 
-  async get<K extends Paths<T>>(key: K): Promise<Get<T, K>> {
+  async get<K extends keyof T & string>(key: K): Promise<T[K]> {
     const data = await this.load()
-    return (data as Record<string, unknown>)[key as string] as Get<T, K>
+    return (data as Record<string, unknown>)[key] as T[K]
   }
 
   async getAll(): Promise<Readonly<T>> {
     return this.load()
   }
 
-  async set(keyOrFields: Paths<T> | PartialDeep<T>, valueOrOptions?: unknown, options?: InfoFlushOptions): Promise<void> {
+  async set(keyOrFields: (keyof T & string) | Partial<T>, valueOrOptions?: unknown, options?: InfoFlushOptions): Promise<void> {
     const data = await this.load()
 
     if (typeof keyOrFields === 'string') {

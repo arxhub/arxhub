@@ -1,7 +1,7 @@
-import { NodeFileSystem } from '@arxhub/vfs-node'
 import { beforeEach, describe, expect, test } from 'vitest'
-import { InfoNamespaceImpl } from '../info-namespace-impl'
-import type { VirtualFileSystem } from '../virtual-file-system'
+import { InfoNamespaceImpl } from '@arxhub/vfs'
+import type { VirtualFileSystem } from '@arxhub/vfs'
+import { NodeFileSystem } from '../index'
 
 describe('InfoNamespaceImpl', () => {
   let vfs: VirtualFileSystem

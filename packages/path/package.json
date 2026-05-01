@@ -12,6 +12,10 @@
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",
+  "exports": {
+    ".": "./index.js",
+    "./normalize": "./normalize.js"
+  },
   "dependencies": {
     "path-browserify": "catalog:shared"
   },
