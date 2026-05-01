@@ -26,6 +26,9 @@ catalogs:
     dayjs:
       specifier: ^1.11.18
       version: 1.11.18
+    path-browserify:
+      specifier: ^1.0.1
+      version: 1.0.1
     rabin-rs:
       specifier: ^2.1.0
       version: 2.1.0
@@ -52,6 +55,9 @@ catalogs:
     '@types/node':
       specifier: ^22.14.1
       version: 22.14.1
+    '@types/path-browserify':
+      specifier: ^1.0.3
+      version: 1.0.3
     '@vitejs/plugin-vue':
       specifier: ^6.0.4
       version: 6.0.4
@@ -221,6 +227,10 @@ importers:
         version: 22.14.1
 
   packages/path:
+    dependencies:
+      path-browserify:
+        specifier: catalog:shared
+        version: 1.0.1
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -231,6 +241,9 @@ importers:
       '@types/node':
         specifier: catalog:toolchain
         version: 22.14.1
+      '@types/path-browserify':
+        specifier: catalog:toolchain
+        version: 1.0.3
 
   packages/stdlib:
     devDependencies:
@@ -1184,6 +1197,9 @@ packages:
 
   '@types/node@22.14.1':
     resolution: {integrity: sha512-u0HuPQwe/dHrItgHHpmw3N2fYCR6x4ivMNbPHRkBVP4CvN+kiRrKHWk3i8tXiO/joPwXLMYvF9TTF0eqgHIuOw==}
+
+  '@types/path-browserify@1.0.3':
+    resolution: {integrity: sha512-ZmHivEbNCBtAfcrFeBCiTjdIc2dey0l7oCGNGpSuRTy8jP6UVND7oUowlvDujBy8r2Hoa8bfFUOCiPWfmtkfxw==}
 
   '@vitejs/plugin-vue@6.0.4':
     resolution: {integrity: sha512-uM5iXipgYIn13UUQCZNdWkYk+sysBeA97d5mHsAoAt1u/wpN3+zxOmsVJWosuzX+IMGRzeYUNytztrYznboIkQ==}
@@ -2737,6 +2753,8 @@ snapshots:
   '@types/node@22.14.1':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/path-browserify@1.0.3': {}
 
   '@vitejs/plugin-vue@6.0.4(vite@8.0.10(@types/node@22.14.1)(esbuild@0.27.3)(tsx@4.21.0))(vue@3.5.29(typescript@6.0.3))':
     dependencies:
