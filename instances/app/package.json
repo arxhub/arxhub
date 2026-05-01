@@ -1,32 +1,30 @@
 {
-  "name": "@arxhub/app",
+  "name": "app",
   "private": true,
   "version": "0.1.0",
-  "description": "ArxHub app (web, desktop, mobile)",
-  "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "dev": "WEBKIT_DISABLE_COMPOSITING_MODE=1 tauri dev",
-    "dev:web": "vite",
-    "build": "tauri build",
-    "build:web": "vite build",
-    "build:android": "tauri android build",
-    "build:ios": "tauri ios build"
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "cross-env WEBKIT_DISABLE_DMABUF_RENDERER=1 tauri"
   },
   "dependencies": {
+    "vue": "catalog:client",
+    "@tauri-apps/api": "catalog:tauri",
+    "@tauri-apps/plugin-opener": "catalog:tauri",
     "@arxhub/core": "workspace:*",
     "@arxhub/panels": "workspace:*",
     "@arxhub/theme": "workspace:*",
     "@arxhub/theme-preset": "workspace:*",
-    "@arxhub/uikit": "workspace:*",
-    "@tauri-apps/api": "catalog:tauri",
-    "vue": "catalog:client"
+    "@arxhub/uikit": "workspace:*"
   },
   "devDependencies": {
-    "@arxhub/toolchain-tsconfig": "workspace:*",
-    "@arxhub/toolchain-vite": "workspace:*",
+    "@vitejs/plugin-vue": "catalog:toolchain",
+    "typescript": "catalog:toolchain",
+    "vite": "catalog:toolchain",
+    "vue-tsc": "catalog:toolchain",
     "@tauri-apps/cli": "catalog:tauri",
-    "@types/node": "catalog:toolchain",
-    "vite": "catalog:toolchain"
+    "cross-env": "catalog:toolchain"
   }
 }

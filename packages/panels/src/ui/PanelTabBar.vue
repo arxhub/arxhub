@@ -41,9 +41,9 @@ function onSplit(direction: 'horizontal' | 'vertical') {
         @click="onTabClick(instance.instanceId)"
       >
         <span class="tab-title">{{ instance.title }}</span>
-        <button class="tab-close" @click.stop="onCloseTab(instance.instanceId)">
+        <span class="tab-close" role="button" @click.stop="onCloseTab(instance.instanceId)">
           <X :size="12" />
-        </button>
+        </span>
       </button>
     </div>
     <div class="actions">
