@@ -30,6 +30,7 @@ catalogs:
     '@vitejs/plugin-vue': ^6.0.4
     '@types/async-lock': ^1.4.2
     '@types/node': ^22.14.1
+    '@types/path-browserify': ^1.0.3
     '@types/pouchdb-adapter-memory': ^6.1.6
     '@types/pouchdb-core': ^7.0.15
     '@types/pouchdb-find': ^7.3.3
