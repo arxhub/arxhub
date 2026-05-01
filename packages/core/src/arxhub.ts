@@ -1,21 +1,22 @@
+import type { EventMap } from '@arxhub/events'
+import EventEmitter from 'eventemitter3'
 import { ExtensionContainer } from './extension'
 import { ConsoleLogger, type Logger } from './logger'
 import { PluginContainer } from './plugin'
 
-type ConfigureCallback = (params: {
-  plugins: PluginContainer<ArxHub>
-  extensions: ExtensionContainer
-}) => Promise<void> | void
+type ConfigureCallback = (params: { plugins: PluginContainer<ArxHub>; extensions: ExtensionContainer }) => Promise<void> | void
 
 export class ArxHub {
   readonly plugins: PluginContainer<ArxHub>
   readonly extensions: ExtensionContainer
   readonly logger: Logger
+  readonly events: EventEmitter<EventMap>
 
   constructor() {
     this.logger = new ConsoleLogger()
     this.plugins = new PluginContainer({ logger: this.logger })
     this.extensions = new ExtensionContainer({ logger: this.logger })
+    this.events = new EventEmitter<EventMap>()
   }
 
   async start(configure?: ConfigureCallback): Promise<void> {

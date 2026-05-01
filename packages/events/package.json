@@ -1,25 +1,20 @@
 {
-  "name": "@arxhub/core",
+  "name": "@arxhub/events",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "",
-  "keywords": [
-    "arxhub"
-  ],
+  "description": "Global typed event bus",
+  "keywords": ["arxhub"],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "@arxhub/events": "workspace:*",
     "eventemitter3": "catalog:shared"
   },
   "devDependencies": {
@@ -27,9 +22,6 @@
     "@arxhub/toolchain-vite": "workspace:*",
     "@types/node": "catalog:toolchain",
     "type-fest": "catalog:toolchain"
-  },
-  "peerDependencies": {
-    "@arxhub/stdlib": "workspace:*"
   },
   "publishConfig": {
     "exports": {
