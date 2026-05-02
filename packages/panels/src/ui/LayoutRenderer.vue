@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { panelStore } from '../panel-store'
+import { usePanels } from '../use-panels'
 import type { LayoutNode } from '../types'
 import PanelGroupView from './PanelGroupView.vue'
 import ResizeHandle from './ResizeHandle.vue'
@@ -10,6 +10,8 @@ const props = defineProps<{
   node: LayoutNode
 }>()
 
+const store = usePanels()
+
 function sizeStyle(ratio: number, direction: 'horizontal' | 'vertical') {
   return direction === 'horizontal'
     ? { width: `${ratio * 100}%`, height: '100%' }
@@ -18,7 +20,7 @@ function sizeStyle(ratio: number, direction: 'horizontal' | 'vertical') {
 
 function onResize(ratio: number) {
   if (props.node.type !== 'split') return
-  panelStore.setRatio(props.node.splitId, ratio)
+  store.setRatio(props.node.splitId, ratio)
 }
 </script>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { panelStore } from '../panel-store'
+import { usePanels } from '../use-panels'
 import type { PanelInstance } from '../types'
 
 const props = defineProps<{
@@ -8,7 +8,8 @@ const props = defineProps<{
   isActive: boolean
 }>()
 
-const def = computed(() => panelStore.getDefinition(props.instance.definitionId))
+const store = usePanels()
+const def = computed(() => store.getDefinition(props.instance.definitionId))
 </script>
 
 <template>

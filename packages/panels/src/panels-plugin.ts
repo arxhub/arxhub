@@ -1,6 +1,6 @@
 import { Plugin, type PluginArgs, type PluginManifest } from '@arxhub/core'
 import type { ArxHub } from '@arxhub/core'
-import { _setPanelEventBus } from './panel-store'
+import { PanelStoreExtension } from './panel-store-extension'
 
 const manifest: PluginManifest = {
   name: 'Panels',
@@ -16,6 +16,6 @@ export class PanelsPlugin extends Plugin<ArxHub> {
 
   override create(arxhub: ArxHub): void {
     super.create(arxhub)
-    _setPanelEventBus(arxhub.events)
+    arxhub.extensions.register(PanelStoreExtension, () => ({ bus: arxhub.events }))
   }
 }

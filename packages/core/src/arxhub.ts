@@ -1,4 +1,4 @@
-import type { EventMap } from '@arxhub/events'
+import type { EventBus, EventMap } from '@arxhub/events'
 import EventEmitter from 'eventemitter3'
 import { ExtensionContainer } from './extension'
 import { ConsoleLogger, type Logger } from './logger'
@@ -10,7 +10,7 @@ export class ArxHub {
   readonly plugins: PluginContainer<ArxHub>
   readonly extensions: ExtensionContainer
   readonly logger: Logger
-  readonly events: EventEmitter<EventMap>
+  readonly events: EventBus
 
   constructor() {
     this.logger = new ConsoleLogger()

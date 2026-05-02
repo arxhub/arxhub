@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { panelStore } from '../panel-store'
+import { usePanels } from '../use-panels'
 import LayoutRenderer from './LayoutRenderer.vue'
 
-const layout = computed(() => panelStore.layout.value)
+const store = usePanels()
+const layout = computed(() => store.layout.value)
 </script>
 
 <template>

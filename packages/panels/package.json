@@ -18,6 +18,7 @@
   "dependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/events": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
     "lucide-vue-next": "catalog:client",
     "nanoid": "catalog:shared",
     "vue": "catalog:client"

@@ -3,17 +3,7 @@ import { nanoid } from 'nanoid'
 import { readonly, ref } from 'vue'
 import type { ArxHub } from '@arxhub/core'
 import type { LayoutLeaf, LayoutNode, LayoutSplit, PanelDefinition, PanelGroup, PanelInstance, PanelStore } from './types'
-
-const definitions = ref<PanelDefinition[]>([])
-const groups = ref<Record<string, PanelGroup>>({})
-const layout = ref<LayoutNode | null>(null)
-const activeGroupId = ref<string | null>(null)
-
-let _bus: ArxHub['events'] | undefined
-
-export function _setPanelEventBus(bus: ArxHub['events']): void {
-  _bus = bus
-}
+import { EventBus } from '@arxhub/events'
 
 function findAndReplace(node: LayoutNode, target: LayoutNode, replacement: LayoutNode): LayoutNode {
   if (node === target) return replacement
@@ -51,167 +41,176 @@ function getAllGroupIds(node: LayoutNode): string[] {
   return [...getAllGroupIds(node.first), ...getAllGroupIds(node.second)]
 }
 
-export const panelStore: PanelStore = {
-  definitions: readonly(definitions),
-  groups: readonly(groups),
-  layout: readonly(layout),
-  activeGroupId: readonly(activeGroupId),
+export function createPanelStore(bus: EventBus): PanelStore {
+  const definitions = ref<PanelDefinition[]>([])
+  const groups = ref<Record<string, PanelGroup>>({})
+  const layout = ref<LayoutNode | null>(null)
+  const activeGroupId = ref<string | null>(null)
 
-  registerPanel(def: PanelDefinition): void {
-    if (definitions.value.some((d) => d.id === def.id)) {
-      console.warn(`Panel already registered: ${def.id}`)
-      return
-    }
-    definitions.value = [...definitions.value, def]
-  },
+  const store: PanelStore = {
+    definitions: readonly(definitions),
+    groups: readonly(groups),
+    layout: readonly(layout),
+    activeGroupId: readonly(activeGroupId),
 
-  getDefinition(id: string): PanelDefinition | undefined {
-    return definitions.value.find((d) => d.id === id)
-  },
-
-  getPanelsForFile(ext: string): PanelDefinition[] {
-    return definitions.value.filter((d) => d.handles?.includes(ext))
-  },
-
-  openPanel(
-    definitionId: string,
-    props?: Record<string, unknown>,
-    title?: string,
-    targetGroupId?: string,
-  ): string {
-    const def = definitions.value.find((d) => d.id === definitionId)
-    if (!def) throw new Error(`Panel definition not found: ${definitionId}`)
-
-    const instanceId = nanoid()
-    const instance: PanelInstance = {
-      instanceId,
-      definitionId,
-      title: title ?? def.title,
-      props,
-    }
-
-    let groupId = targetGroupId ?? activeGroupId.value
-
-    if (!groupId || !groups.value[groupId]) {
-      groupId = nanoid()
-      const newGroup: PanelGroup = { id: groupId, instances: [instance], activeInstanceId: instanceId }
-      groups.value[groupId] = newGroup
-      layout.value = { type: 'leaf', groupId }
-      activeGroupId.value = groupId
-      _bus?.emit('group:created', { groupId })
-      _bus?.emit('group:activated', { groupId })
-      _bus?.emit('panel:opened', { instanceId, groupId, definitionId })
-      _bus?.emit('panel:activated', { instanceId, groupId })
-    } else {
-      const group = groups.value[groupId]
-      const prevActiveId = group.activeInstanceId
-      groups.value[groupId] = {
-        ...group,
-        instances: [...group.instances, instance],
-        activeInstanceId: instanceId,
+    registerPanel(def: PanelDefinition): void {
+      if (definitions.value.some((d) => d.id === def.id)) {
+        console.warn(`Panel already registered: ${def.id}`)
+        return
       }
-      if (prevActiveId) _bus?.emit('panel:deactivated', { instanceId: prevActiveId, groupId })
-      _bus?.emit('panel:opened', { instanceId, groupId, definitionId })
-      _bus?.emit('panel:activated', { instanceId, groupId })
-    }
+      definitions.value = [...definitions.value, def]
+    },
 
-    return instanceId
-  },
+    getDefinition(id: string): PanelDefinition | undefined {
+      return definitions.value.find((d) => d.id === id)
+    },
 
-  activatePanel(instanceId: string, groupId: string): void {
-    const group = groups.value[groupId]
-    if (!group) return
-    const prevActiveId = group.activeInstanceId
-    if (prevActiveId === instanceId) return
-    if (prevActiveId) _bus?.emit('panel:deactivated', { instanceId: prevActiveId, groupId })
-    groups.value[groupId] = { ...group, activeInstanceId: instanceId }
-    _bus?.emit('panel:activated', { instanceId, groupId })
-  },
+    getPanelsForFile(ext: string): PanelDefinition[] {
+      return definitions.value.filter((d) => d.handles?.includes(ext))
+    },
 
-  closePanel(instanceId: string, groupId: string): void {
-    const group = groups.value[groupId]
-    if (!group) return
+    openPanel(
+      definitionId: string,
+      props?: Record<string, unknown>,
+      title?: string,
+      targetGroupId?: string,
+    ): string {
+      const def = definitions.value.find((d) => d.id === definitionId)
+      if (!def) throw new Error(`Panel definition not found: ${definitionId}`)
 
-    const remaining = group.instances.filter((i) => i.instanceId !== instanceId)
-    const wasActive = group.activeInstanceId === instanceId
+      const instanceId = nanoid()
+      const instance: PanelInstance = {
+        instanceId,
+        definitionId,
+        title: title ?? def.title,
+        props,
+      }
 
-    if (wasActive) _bus?.emit('panel:deactivated', { instanceId, groupId })
+      let groupId = targetGroupId ?? activeGroupId.value
 
-    if (remaining.length === 0) {
-      panelStore.closeGroup(groupId)
-      _bus?.emit('panel:closed', { instanceId, groupId })
-      return
-    }
+      if (!groupId || !groups.value[groupId]) {
+        groupId = nanoid()
+        const newGroup: PanelGroup = { id: groupId, instances: [instance], activeInstanceId: instanceId }
+        groups.value[groupId] = newGroup
+        layout.value = { type: 'leaf', groupId }
+        activeGroupId.value = groupId
+        bus?.emit('group:created', { groupId })
+        bus?.emit('group:activated', { groupId })
+        bus?.emit('panel:opened', { instanceId, groupId, definitionId })
+        bus?.emit('panel:activated', { instanceId, groupId })
+      } else {
+        const group = groups.value[groupId]
+        const prevActiveId = group.activeInstanceId
+        groups.value[groupId] = {
+          ...group,
+          instances: [...group.instances, instance],
+          activeInstanceId: instanceId,
+        }
+        if (prevActiveId) bus?.emit('panel:deactivated', { instanceId: prevActiveId, groupId })
+        bus?.emit('panel:opened', { instanceId, groupId, definitionId })
+        bus?.emit('panel:activated', { instanceId, groupId })
+      }
 
-    let nextActiveId = group.activeInstanceId
-    if (wasActive) {
-      const idx = group.instances.findIndex((i) => i.instanceId === instanceId)
-      nextActiveId = (remaining[idx - 1] ?? remaining[0]).instanceId
-    }
+      return instanceId
+    },
 
-    groups.value[groupId] = { ...group, instances: remaining, activeInstanceId: nextActiveId }
-    _bus?.emit('panel:closed', { instanceId, groupId })
-    if (wasActive && nextActiveId) _bus?.emit('panel:activated', { instanceId: nextActiveId, groupId })
-  },
+    activatePanel(instanceId: string, groupId: string): void {
+      const group = groups.value[groupId]
+      if (!group) return
+      const prevActiveId = group.activeInstanceId
+      if (prevActiveId === instanceId) return
+      if (prevActiveId) bus?.emit('panel:deactivated', { instanceId: prevActiveId, groupId })
+      groups.value[groupId] = { ...group, activeInstanceId: instanceId }
+      bus?.emit('panel:activated', { instanceId, groupId })
+    },
 
-  activateGroup(groupId: string): void {
-    if (activeGroupId.value === groupId) return
-    activeGroupId.value = groupId
-    _bus?.emit('group:activated', { groupId })
-  },
+    closePanel(instanceId: string, groupId: string): void {
+      const group = groups.value[groupId]
+      if (!group) return
 
-  splitGroup(groupId: string, direction: 'horizontal' | 'vertical'): string {
-    if (!layout.value) return groupId
-    const leaf = findLeaf(layout.value, groupId)
-    if (!leaf) return groupId
+      const remaining = group.instances.filter((i) => i.instanceId !== instanceId)
+      const wasActive = group.activeInstanceId === instanceId
 
-    const newGroupId = nanoid()
-    const newGroup: PanelGroup = { id: newGroupId, instances: [], activeInstanceId: null }
-    groups.value[newGroupId] = newGroup
+      if (wasActive) bus?.emit('panel:deactivated', { instanceId, groupId })
 
-    const newLeaf: LayoutLeaf = { type: 'leaf', groupId: newGroupId }
-    const newSplit: LayoutSplit = { type: 'split', splitId: nanoid(), direction, ratio: 0.5, first: leaf, second: newLeaf }
-    layout.value = findAndReplace(layout.value, leaf, newSplit)
+      if (remaining.length === 0) {
+        store.closeGroup(groupId)
+        bus?.emit('panel:closed', { instanceId, groupId })
+        return
+      }
 
-    activeGroupId.value = newGroupId
-    _bus?.emit('group:created', { groupId: newGroupId })
-    _bus?.emit('group:activated', { groupId: newGroupId })
+      let nextActiveId = group.activeInstanceId
+      if (wasActive) {
+        const idx = group.instances.findIndex((i) => i.instanceId === instanceId)
+        nextActiveId = (remaining[idx - 1] ?? remaining[0]).instanceId
+      }
 
-    return newGroupId
-  },
+      groups.value[groupId] = { ...group, instances: remaining, activeInstanceId: nextActiveId }
+      bus?.emit('panel:closed', { instanceId, groupId })
+      if (wasActive && nextActiveId) bus?.emit('panel:activated', { instanceId: nextActiveId, groupId })
+    },
 
-  closeGroup(groupId: string): void {
-    if (!layout.value) return
+    activateGroup(groupId: string): void {
+      if (activeGroupId.value === groupId) return
+      activeGroupId.value = groupId
+      bus?.emit('group:activated', { groupId })
+    },
 
-    delete groups.value[groupId]
+    splitGroup(groupId: string, direction: 'horizontal' | 'vertical'): string {
+      if (!layout.value) return groupId
+      const leaf = findLeaf(layout.value, groupId)
+      if (!leaf) return groupId
 
-    if (layout.value.type === 'leaf') {
-      layout.value = null
-      activeGroupId.value = null
-      _bus?.emit('group:closed', { groupId })
-      return
-    }
+      const newGroupId = nanoid()
+      const newGroup: PanelGroup = { id: newGroupId, instances: [], activeInstanceId: null }
+      groups.value[newGroupId] = newGroup
 
-    const parentInfo = findParentSplit(layout.value, groupId)
-    if (!parentInfo) return
+      const newLeaf: LayoutLeaf = { type: 'leaf', groupId: newGroupId }
+      const newSplit: LayoutSplit = { type: 'split', splitId: nanoid(), direction, ratio: 0.5, first: leaf, second: newLeaf }
+      layout.value = findAndReplace(layout.value, leaf, newSplit)
 
-    const { split, isFirst } = parentInfo
-    const sibling = isFirst ? split.second : split.first
-    layout.value = findAndReplace(layout.value, split, sibling)
+      activeGroupId.value = newGroupId
+      bus?.emit('group:created', { groupId: newGroupId })
+      bus?.emit('group:activated', { groupId: newGroupId })
 
-    if (activeGroupId.value === groupId) {
-      const remaining = getAllGroupIds(layout.value)
-      activeGroupId.value = remaining[0] ?? null
-    }
+      return newGroupId
+    },
 
-    _bus?.emit('group:closed', { groupId })
-  },
+    closeGroup(groupId: string): void {
+      if (!layout.value) return
 
-  setRatio(splitId: string, ratio: number): void {
-    if (!layout.value) return
-    const split = findSplitById(layout.value, splitId)
-    if (!split) return
-    const newSplit: LayoutSplit = { ...split, ratio: Math.max(0.1, Math.min(0.9, ratio)) }
-    layout.value = findAndReplace(layout.value, split, newSplit)
-  },
+      delete groups.value[groupId]
+
+      if (layout.value.type === 'leaf') {
+        layout.value = null
+        activeGroupId.value = null
+        bus?.emit('group:closed', { groupId })
+        return
+      }
+
+      const parentInfo = findParentSplit(layout.value, groupId)
+      if (!parentInfo) return
+
+      const { split, isFirst } = parentInfo
+      const sibling = isFirst ? split.second : split.first
+      layout.value = findAndReplace(layout.value, split, sibling)
+
+      if (activeGroupId.value === groupId) {
+        const remaining = getAllGroupIds(layout.value)
+        activeGroupId.value = remaining[0] ?? null
+      }
+
+      bus?.emit('group:closed', { groupId })
+    },
+
+    setRatio(splitId: string, ratio: number): void {
+      if (!layout.value) return
+      const split = findSplitById(layout.value, splitId)
+      if (!split) return
+      const newSplit: LayoutSplit = { ...split, ratio: Math.max(0.1, Math.min(0.9, ratio)) }
+      layout.value = findAndReplace(layout.value, split, newSplit)
+    },
+  }
+
+  return store
 }

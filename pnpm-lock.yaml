@@ -286,6 +286,9 @@ importers:
       '@arxhub/events':
         specifier: workspace:*
         version: link:../events
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../uikit
       lucide-vue-next:
         specifier: catalog:client
         version: 1.0.0(vue@3.5.33(typescript@6.0.3))
@@ -390,6 +393,9 @@ importers:
       '@ark-ui/vue':
         specifier: catalog:client
         version: 5.36.2(vue@3.5.33(typescript@6.0.3))
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../core
       vue:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)

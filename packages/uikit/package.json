@@ -28,6 +28,7 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
+    "@arxhub/core": "workspace:*",
     "@ark-ui/vue": "catalog:client",
     "vue": "catalog:client"
   },
