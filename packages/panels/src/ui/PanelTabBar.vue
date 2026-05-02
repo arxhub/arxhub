@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Columns2, Rows2, X } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { Columns2, Rows2 } from 'lucide-vue-next'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { usePanels } from '../use-panels'
+import DraggableTab from './DraggableTab.vue'
 
 const props = defineProps<{
   groupId: string
@@ -10,6 +12,20 @@ const props = defineProps<{
 const store = usePanels()
 const group = computed(() => store.groups.value[props.groupId])
 const isActiveGroup = computed(() => store.activeGroupId.value === props.groupId)
+
+const tabsEl = ref<HTMLElement | null>(null)
+let cleanup: (() => void) | null = null
+
+onMounted(() => {
+  if (!tabsEl.value) return
+  cleanup = dropTargetForElements({
+    element: tabsEl.value,
+    canDrop: ({ source }) => source.data.type === 'panel-tab',
+    getData: () => ({ type: 'tab-bar', groupId: props.groupId }),
+  })
+})
+
+onUnmounted(() => { cleanup?.() })
 
 function onTabClick(instanceId: string) {
   store.activateGroup(props.groupId)
@@ -33,19 +49,18 @@ function onSplit(direction: 'horizontal' | 'vertical') {
 
 <template>
   <div class="panel-tab-bar" :class="{ 'is-active-group': isActiveGroup }">
-    <div class="tabs">
-      <button
-        v-for="instance in group?.instances"
+    <div ref="tabsEl" class="tabs">
+      <DraggableTab
+        v-for="(instance, index) in group?.instances"
         :key="instance.instanceId"
-        class="tab"
-        :class="{ active: instance.instanceId === group?.activeInstanceId }"
+        :instance-id="instance.instanceId"
+        :group-id="groupId"
+        :index="index"
+        :title="instance.title"
+        :is-active="instance.instanceId === group?.activeInstanceId"
         @click="onTabClick(instance.instanceId)"
-      >
-        <span class="tab-title">{{ instance.title }}</span>
-        <span class="tab-close" role="button" @click.stop="onCloseTab(instance.instanceId)">
-          <X :size="12" />
-        </span>
-      </button>
+        @close="onCloseTab(instance.instanceId)"
+      />
     </div>
     <div class="actions">
       <button class="action-btn" aria-label="Split right" title="Split right" @click="onSplit('horizontal')">
@@ -79,53 +94,6 @@ function onSplit(direction: 'horizontal' | 'vertical') {
 
 .tabs::-webkit-scrollbar {
   display: none;
-}
-
-.tab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  height: 36px;
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--gray-4);
-  color: var(--gray-10);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.tab:hover {
-  background-color: var(--gray-3);
-  color: var(--gray-12);
-}
-
-.tab.active {
-  background-color: var(--gray-1);
-  color: var(--gray-12);
-  border-bottom: 2px solid var(--accent-9);
-}
-
-.tab-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  background: transparent;
-  border: none;
-  border-radius: 3px;
-  color: inherit;
-  cursor: pointer;
-  padding: 0;
-  opacity: 0.5;
-}
-
-.tab-close:hover {
-  background-color: var(--gray-5);
-  opacity: 1;
 }
 
 .actions {
