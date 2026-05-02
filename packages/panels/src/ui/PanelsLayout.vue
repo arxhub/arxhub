@@ -2,7 +2,7 @@
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
 import { computed, onMounted, onUnmounted } from 'vue'
-import { isPanelTabDragData } from '../composables/drag-types'
+import { isPanelTabDragData, type DropZone } from '../composables/drag-types'
 import { usePanels } from '../use-panels'
 import LayoutRenderer from './LayoutRenderer.vue'
 
@@ -32,10 +32,14 @@ onMounted(() => {
         const edge = extractClosestEdge(dest.data)
         const insertIndex = edge === 'left' ? destIndex : destIndex + 1
         store.movePanel(instanceId, fromGroupId, destGroupId, insertIndex)
-      } else if (dest.data.type === 'tab-bar' || dest.data.type === 'panel-group-body') {
+      } else if (dest.data.type === 'tab-bar') {
         const destGroupId = dest.data.groupId as string
         const destGroup = store.groups.value[destGroupId]
         store.movePanel(instanceId, fromGroupId, destGroupId, destGroup?.instances.length ?? 0)
+      } else if (dest.data.type === 'panel-group-body') {
+        const destGroupId = dest.data.groupId as string
+        const zone = (dest.data.zone as DropZone) ?? 'center'
+        store.movePanelToZone(instanceId, fromGroupId, destGroupId, zone)
       }
     },
   })

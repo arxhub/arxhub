@@ -1,4 +1,5 @@
 import type { Component, DeepReadonly, Ref } from 'vue'
+import type { DropZone } from './composables/drag-types'
 
 export type PanelComponent = Component
 
@@ -50,4 +51,5 @@ export interface PanelStore {
   closeGroup(groupId: string): void
   setRatio(splitId: string, ratio: number): void
   movePanel(instanceId: string, fromGroupId: string, toGroupId: string, toIndex: number): void
+  movePanelToZone(instanceId: string, fromGroupId: string, targetGroupId: string, zone: DropZone): void
 }

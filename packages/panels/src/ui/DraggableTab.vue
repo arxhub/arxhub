@@ -70,7 +70,16 @@ const { isDragging, closestEdge } = useDraggableTab({
 }
 
 .tab.is-dragging {
-  opacity: 0.4;
+  background-color: transparent;
+  color: transparent;
+  border-color: var(--accent-7);
+  border-bottom-style: dashed;
+  border-right-style: dashed;
+  opacity: 1;
+}
+
+.tab.is-dragging .tab-close {
+  visibility: hidden;
 }
 
 .tab-close {
