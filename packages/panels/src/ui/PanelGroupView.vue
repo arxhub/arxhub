@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { calculateDropZone, type DropZone, type PanelGroupBodyDropData } from '../composables/drag-types'
 import { usePanels } from '../use-panels'
 import PanelTabBar from './PanelTabBar.vue'
 import PanelView from './PanelView.vue'
+import SplitDropOverlay from './SplitDropOverlay.vue'
 
 const props = defineProps<{
   groupId: string
@@ -14,19 +16,36 @@ const group = computed(() => store.groups.value[props.groupId])
 const isActiveGroup = computed(() => store.activeGroupId.value === props.groupId)
 
 const panelContentEl = ref<HTMLElement | null>(null)
-const isDragOver = ref(false)
+const activeZone = ref<DropZone | null>(null)
 let cleanup: (() => void) | null = null
 
 onMounted(() => {
   if (!panelContentEl.value) return
+  const el = panelContentEl.value
   cleanup = dropTargetForElements({
-    element: panelContentEl.value,
-    canDrop: ({ source }) =>
-      source.data.type === 'panel-tab' && source.data.groupId !== props.groupId,
-    getData: () => ({ type: 'panel-group-body', groupId: props.groupId }),
-    onDragEnter: () => { isDragOver.value = true },
-    onDragLeave: () => { isDragOver.value = false },
-    onDrop: () => { isDragOver.value = false },
+    element: el,
+    canDrop: ({ source }) => {
+      if (source.data.type !== 'panel-tab') return false
+      if (source.data.groupId !== props.groupId) return true
+      // Same group: only allow split zones if there are 2+ tabs
+      return (store.groups.value[props.groupId]?.instances.length ?? 0) > 1
+    },
+    getData: ({ input, element }): PanelGroupBodyDropData => ({
+      type: 'panel-group-body',
+      groupId: props.groupId,
+      zone: calculateDropZone(input, element),
+    }),
+    onDrag: ({ location, source }) => {
+      const zone = calculateDropZone(location.current.input, el)
+      // Center zone from same group would be a no-op — don't show overlay
+      if (source.data.groupId === props.groupId && zone === 'center') {
+        activeZone.value = null
+        return
+      }
+      activeZone.value = zone
+    },
+    onDragLeave: () => { activeZone.value = null },
+    onDrop: () => { activeZone.value = null },
   })
 })
 
@@ -47,7 +66,6 @@ function onClick() {
     <div
       ref="panelContentEl"
       class="panel-content"
-      :class="{ 'is-drag-over': isDragOver }"
     >
       <PanelView
         v-for="instance in group?.instances"
@@ -55,6 +73,7 @@ function onClick() {
         :instance="instance"
         :is-active="instance.instanceId === group?.activeInstanceId"
       />
+      <SplitDropOverlay :zone="activeZone" />
     </div>
   </div>
 </template>
@@ -77,10 +96,5 @@ function onClick() {
   flex: 1;
   position: relative;
   overflow: hidden;
-}
-
-.panel-content.is-drag-over {
-  outline: 2px dashed var(--accent-7);
-  outline-offset: -2px;
 }
 </style>

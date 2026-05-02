@@ -2,6 +2,7 @@ import './events'
 import type { EventBus } from '@arxhub/events'
 import { nanoid } from 'nanoid'
 import { readonly, ref } from 'vue'
+import type { DropZone } from './composables/drag-types'
 import type { LayoutLeaf, LayoutNode, LayoutSplit, PanelDefinition, PanelGroup, PanelInstance, PanelStore } from './types'
 
 function findAndReplace(node: LayoutNode, target: LayoutNode, replacement: LayoutNode): LayoutNode {
@@ -262,6 +263,38 @@ export function createPanelStore(bus: EventBus): PanelStore {
 
       // Close empty fromGroup last so group:closed fires after all panel lifecycle events.
       if (shouldCloseFromGroup) store.closeGroup(fromGroupId)
+    },
+
+    movePanelToZone(instanceId: string, fromGroupId: string, targetGroupId: string, zone: DropZone): void {
+      if (zone === 'center') {
+        const targetGroup = groups.value[targetGroupId]
+        if (!targetGroup) return
+        store.movePanel(instanceId, fromGroupId, targetGroupId, targetGroup.instances.length)
+        return
+      }
+
+      if (!layout.value) return
+      const targetLeaf = findLeaf(layout.value, targetGroupId)
+      if (!targetLeaf) return
+
+      const newGroupId = nanoid()
+      groups.value[newGroupId] = { id: newGroupId, instances: [], activeInstanceId: null }
+
+      const isAfter = zone === 'right' || zone === 'bottom'
+      const direction: 'horizontal' | 'vertical' = (zone === 'left' || zone === 'right') ? 'horizontal' : 'vertical'
+      const newLeaf: LayoutLeaf = { type: 'leaf', groupId: newGroupId }
+      const newSplit: LayoutSplit = {
+        type: 'split',
+        splitId: nanoid(),
+        direction,
+        ratio: 0.5,
+        first: isAfter ? targetLeaf : newLeaf,
+        second: isAfter ? newLeaf : targetLeaf,
+      }
+      layout.value = findAndReplace(layout.value, targetLeaf, newSplit)
+      bus.emit('group:created', { groupId: newGroupId })
+
+      store.movePanel(instanceId, fromGroupId, newGroupId, 0)
     },
   }
 

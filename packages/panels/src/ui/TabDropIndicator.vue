@@ -14,13 +14,14 @@ defineProps<{
 <style scoped>
 .drop-indicator {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  top: 2px;
+  bottom: 2px;
   width: 2px;
   background-color: var(--accent-9);
-  border-radius: 1px;
+  border-radius: 2px;
   pointer-events: none;
   z-index: 10;
+  box-shadow: 0 0 4px var(--accent-7);
 }
 
 .drop-indicator--left {

@@ -30,6 +30,9 @@ export function useDraggableTab({ el, getData }: UseDraggableTabOptions): UseDra
         draggable({
           element: newEl,
           getInitialData: () => ({ type: 'panel-tab' as const, ...getData() }),
+          onGenerateDragPreview: ({ nativeSetDragImage }) => {
+            nativeSetDragImage?.(newEl, 0, 0)
+          },
           onDragStart: () => {
             isDragging.value = true
           },
