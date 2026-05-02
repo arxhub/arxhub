@@ -26,18 +26,22 @@ const { isDragging, closestEdge } = useDraggableTab({
 </script>
 
 <template>
-  <button
+  <div
     ref="tabEl"
+    role="button"
+    tabindex="0"
     class="tab"
     :class="{ active: isActive, 'is-dragging': isDragging }"
     @click="emit('click')"
+    @keydown.enter.prevent="emit('click')"
+    @keydown.space.prevent="emit('click')"
   >
     <span class="tab-title">{{ title }}</span>
     <button class="tab-close" aria-label="Close tab" @click.stop="emit('close')">
       <X :size="12" />
     </button>
     <TabDropIndicator :edge="closestEdge" />
-  </button>
+  </div>
 </template>
 
 <style scoped>

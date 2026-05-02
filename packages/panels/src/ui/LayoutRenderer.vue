@@ -23,7 +23,7 @@ function onResize(ratio: number) {
 </script>
 
 <template>
-  <PanelGroupView v-if="node.type === 'leaf'" :group-id="node.groupId" />
+  <PanelGroupView v-if="node.type === 'leaf'" :key="node.groupId" :group-id="node.groupId" />
   <div v-else class="split-container" :class="node.direction">
     <div class="split-pane" :style="sizeStyle(node.ratio, node.direction)">
       <LayoutRenderer :node="node.first" />

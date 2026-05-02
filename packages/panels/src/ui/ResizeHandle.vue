@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onUnmounted } from 'vue'
+
 const props = defineProps<{
   direction: 'horizontal' | 'vertical'
 }>()
@@ -7,29 +9,38 @@ const emit = defineEmits<{
   resize: [ratio: number]
 }>()
 
+let cleanupDrag: (() => void) | null = null
+
+onUnmounted(() => { cleanupDrag?.() })
+
 // TODO: add touch support (touchstart / touchmove / touchend)
 function onMouseDown(e: MouseEvent) {
   e.preventDefault()
-  const container = (e.target as HTMLElement).parentElement
+  const container: HTMLElement | null = (e.target as HTMLElement).parentElement
   if (!container) return
 
-  const rect = container.getBoundingClientRect()
+  const el: HTMLElement = container
   const isHorizontal = props.direction === 'horizontal'
 
   function onMouseMove(me: MouseEvent) {
+    const rect = el.getBoundingClientRect()
     const ratio = isHorizontal
       ? (me.clientX - rect.left) / rect.width
       : (me.clientY - rect.top) / rect.height
     emit('resize', Math.max(0.1, Math.min(0.9, ratio)))
   }
 
-  function onMouseUp() {
+  function cleanup() {
     window.removeEventListener('mousemove', onMouseMove)
     window.removeEventListener('mouseup', onMouseUp)
+    cleanupDrag = null
   }
+
+  function onMouseUp() { cleanup() }
 
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', onMouseUp)
+  cleanupDrag = cleanup
 }
 </script>
 

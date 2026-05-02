@@ -134,7 +134,7 @@ export function createPanelStore(bus: EventBus): PanelStore {
       let nextActiveId = group.activeInstanceId
       if (wasActive) {
         const idx = group.instances.findIndex((i) => i.instanceId === instanceId)
-        nextActiveId = (remaining[idx - 1] ?? remaining[0]).instanceId
+        nextActiveId = (group.instances[idx + 1] ?? group.instances[idx - 1])?.instanceId ?? null
       }
 
       groups.value[groupId] = { ...group, instances: remaining, activeInstanceId: nextActiveId }
@@ -233,7 +233,7 @@ export function createPanelStore(bus: EventBus): PanelStore {
 
       let nextActiveFromId = fromGroup.activeInstanceId
       if (wasActive && !shouldCloseFromGroup) {
-        nextActiveFromId = (remainingInstances[srcIndex - 1] ?? remainingInstances[0]).instanceId
+        nextActiveFromId = (remainingInstances[srcIndex] ?? remainingInstances[srcIndex - 1] ?? remainingInstances[0]).instanceId
       }
 
       const prevActiveToId = toGroup.activeInstanceId
