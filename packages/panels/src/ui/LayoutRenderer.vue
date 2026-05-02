@@ -13,9 +13,7 @@ const props = defineProps<{
 const store = usePanels()
 
 function sizeStyle(ratio: number, direction: 'horizontal' | 'vertical') {
-  return direction === 'horizontal'
-    ? { width: `${ratio * 100}%`, height: '100%' }
-    : { width: '100%', height: `${ratio * 100}%` }
+  return direction === 'horizontal' ? { width: `${ratio * 100}%`, height: '100%' } : { width: '100%', height: `${ratio * 100}%` }
 }
 
 function onResize(ratio: number) {
