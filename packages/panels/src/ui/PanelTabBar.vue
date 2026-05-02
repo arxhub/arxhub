@@ -1,31 +1,32 @@
 <script setup lang="ts">
 import { Columns2, Rows2, X } from 'lucide-vue-next'
 import { computed } from 'vue'
-import { panelStore } from '../panel-store'
+import { usePanels } from '../use-panels'
 
 const props = defineProps<{
   groupId: string
 }>()
 
-const group = computed(() => panelStore.groups.value[props.groupId])
-const isActiveGroup = computed(() => panelStore.activeGroupId.value === props.groupId)
+const store = usePanels()
+const group = computed(() => store.groups.value[props.groupId])
+const isActiveGroup = computed(() => store.activeGroupId.value === props.groupId)
 
 function onTabClick(instanceId: string) {
-  panelStore.activateGroup(props.groupId)
-  panelStore.activatePanel(instanceId, props.groupId)
+  store.activateGroup(props.groupId)
+  store.activatePanel(instanceId, props.groupId)
 }
 
 function onCloseTab(instanceId: string) {
-  panelStore.closePanel(instanceId, props.groupId)
+  store.closePanel(instanceId, props.groupId)
 }
 
 function onSplit(direction: 'horizontal' | 'vertical') {
-  const newGroupId = panelStore.splitGroup(props.groupId, direction)
+  const newGroupId = store.splitGroup(props.groupId, direction)
   const activeInstance = group.value?.instances.find(
     (i) => i.instanceId === group.value?.activeInstanceId,
   )
   if (activeInstance) {
-    panelStore.openPanel(activeInstance.definitionId, activeInstance.props, activeInstance.title, newGroupId)
+    store.openPanel(activeInstance.definitionId, activeInstance.props, activeInstance.title, newGroupId)
   }
 }
 </script>

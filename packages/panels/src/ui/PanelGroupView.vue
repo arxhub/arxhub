@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { panelStore } from '../panel-store'
+import { usePanels } from '../use-panels'
 import PanelTabBar from './PanelTabBar.vue'
 import PanelView from './PanelView.vue'
 
@@ -8,11 +8,12 @@ const props = defineProps<{
   groupId: string
 }>()
 
-const group = computed(() => panelStore.groups.value[props.groupId])
-const isActiveGroup = computed(() => panelStore.activeGroupId.value === props.groupId)
+const store = usePanels()
+const group = computed(() => store.groups.value[props.groupId])
+const isActiveGroup = computed(() => store.activeGroupId.value === props.groupId)
 
 function onClick() {
-  panelStore.activateGroup(props.groupId)
+  store.activateGroup(props.groupId)
 }
 </script>
 
