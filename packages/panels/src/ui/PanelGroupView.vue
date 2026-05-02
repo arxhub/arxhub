@@ -17,6 +17,7 @@ const isActiveGroup = computed(() => store.activeGroupId.value === props.groupId
 
 const panelContentEl = ref<HTMLElement | null>(null)
 const activeZone = ref<DropZone | null>(null)
+let lastZone: DropZone = 'center'
 let cleanup: (() => void) | null = null
 
 onMounted(() => {
@@ -30,13 +31,15 @@ onMounted(() => {
       // Same group: only allow split zones if there are 2+ tabs
       return (store.groups.value[props.groupId]?.instances.length ?? 0) > 1
     },
-    getData: ({ input, element }): PanelGroupBodyDropData => ({
+    getData: (): PanelGroupBodyDropData => ({
       type: 'panel-group-body',
       groupId: props.groupId,
-      zone: calculateDropZone(input, element),
+      // Read the zone last recorded by onDrag so the overlay and committed data are always in sync
+      zone: lastZone,
     }),
     onDrag: ({ location, source }) => {
       const zone = calculateDropZone(location.current.input, el)
+      lastZone = zone
       // Center zone from same group would be a no-op — don't show overlay
       if (source.data.groupId === props.groupId && zone === 'center') {
         activeZone.value = null
