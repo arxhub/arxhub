@@ -8,6 +8,8 @@ packages:
 catalogs:
   client:
     '@ark-ui/vue': ^5.36.2
+    '@atlaskit/pragmatic-drag-and-drop': ^1.4.0
+    '@atlaskit/pragmatic-drag-and-drop-hitbox': ^1.0.3
     '@radix-ui/colors': ^3.0.0
     lucide-vue-next: ^1.0.0
     vue: ^3.5.33

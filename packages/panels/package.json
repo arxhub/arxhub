@@ -19,6 +19,8 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/events": "workspace:*",
     "@arxhub/uikit": "workspace:*",
+    "@atlaskit/pragmatic-drag-and-drop": "catalog:client",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "catalog:client",
     "lucide-vue-next": "catalog:client",
     "nanoid": "catalog:shared",
     "vue": "catalog:client"

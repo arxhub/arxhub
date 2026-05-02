@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { usePanels } from '../use-panels'
 import PanelTabBar from './PanelTabBar.vue'
 import PanelView from './PanelView.vue'
@@ -11,6 +12,25 @@ const props = defineProps<{
 const store = usePanels()
 const group = computed(() => store.groups.value[props.groupId])
 const isActiveGroup = computed(() => store.activeGroupId.value === props.groupId)
+
+const panelContentEl = ref<HTMLElement | null>(null)
+const isDragOver = ref(false)
+let cleanup: (() => void) | null = null
+
+onMounted(() => {
+  if (!panelContentEl.value) return
+  cleanup = dropTargetForElements({
+    element: panelContentEl.value,
+    canDrop: ({ source }) =>
+      source.data.type === 'panel-tab' && source.data.groupId !== props.groupId,
+    getData: () => ({ type: 'panel-group-body', groupId: props.groupId }),
+    onDragEnter: () => { isDragOver.value = true },
+    onDragLeave: () => { isDragOver.value = false },
+    onDrop: () => { isDragOver.value = false },
+  })
+})
+
+onUnmounted(() => { cleanup?.() })
 
 function onClick() {
   store.activateGroup(props.groupId)
@@ -24,7 +44,11 @@ function onClick() {
     @click="onClick"
   >
     <PanelTabBar :group-id="groupId" />
-    <div class="panel-content">
+    <div
+      ref="panelContentEl"
+      class="panel-content"
+      :class="{ 'is-drag-over': isDragOver }"
+    >
       <PanelView
         v-for="instance in group?.instances"
         :key="instance.instanceId"
@@ -53,5 +77,10 @@ function onClick() {
   flex: 1;
   position: relative;
   overflow: hidden;
+}
+
+.panel-content.is-drag-over {
+  outline: 2px dashed var(--accent-7);
+  outline-offset: -2px;
 }
 </style>

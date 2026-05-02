@@ -9,5 +9,6 @@ declare module '@arxhub/events' {
     'group:created': { groupId: string }
     'group:closed': { groupId: string }
     'group:activated': { groupId: string }
+    'panel:moved': { instanceId: string; fromGroupId: string; toGroupId: string; toIndex: number }
   }
 }

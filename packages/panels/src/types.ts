@@ -49,4 +49,5 @@ export interface PanelStore {
   splitGroup(groupId: string, direction: 'horizontal' | 'vertical'): string
   closeGroup(groupId: string): void
   setRatio(splitId: string, ratio: number): void
+  movePanel(instanceId: string, fromGroupId: string, toGroupId: string, toIndex: number): void
 }
