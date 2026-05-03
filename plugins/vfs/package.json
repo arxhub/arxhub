@@ -1,8 +1,8 @@
 {
-  "name": "@arxhub/plugin-explorer",
+  "name": "@arxhub/plugin-vfs",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "File explorer plugin for ArxHub",
+  "description": "Virtual file system provider plugin for ArxHub",
   "keywords": ["arxhub"],
   "license": "AGPL-3.0-or-later",
   "author": "",
@@ -14,11 +14,7 @@
   "scripts": {
     "build": "tsc && vite build"
   },
-  "dependencies": {
-    "@arxhub/path": "workspace:*",
-    "lucide-vue-next": "catalog:client",
-    "vue": "catalog:client"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
@@ -26,11 +22,7 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/plugin-panels": "workspace:*",
-    "@arxhub/plugin-shell": "workspace:*",
-    "@arxhub/uikit": "workspace:*",
-    "@arxhub/vfs": "workspace:*",
-    "@arxhub/plugin-vfs": "workspace:*"
+    "@arxhub/vfs": "workspace:*"
   },
   "publishConfig": {
     "exports": {

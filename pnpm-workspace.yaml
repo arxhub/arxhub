@@ -11,6 +11,10 @@ catalogs:
     '@atlaskit/pragmatic-drag-and-drop': ^1.4.0
     '@atlaskit/pragmatic-drag-and-drop-hitbox': ^1.0.3
     '@radix-ui/colors': ^3.0.0
+    codemirror: ^6.0.1
+    '@codemirror/language': ^6.12.3
+    '@codemirror/language-data': ^6.5.1
+    '@codemirror/state': ^6.6.0
     lucide-vue-next: ^1.0.0
     vue: ^3.5.33
   server:
