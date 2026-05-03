@@ -1,0 +1,5 @@
+export { ExplorerPlugin } from './explorer-plugin'
+export { ExplorerExtension } from './explorer-extension'
+export type { TreeNode } from './explorer-extension'
+export { default as FileTreeView } from './ui/FileTreeView.vue'
+export { default as FileTreeNode } from './ui/FileTreeNode.vue'

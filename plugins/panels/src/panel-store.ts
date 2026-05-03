@@ -1,7 +1,7 @@
 import './events'
 import type { EventBus } from '@arxhub/events'
 import { nanoid } from 'nanoid'
-import { readonly, ref } from 'vue'
+import { markRaw, readonly, ref } from 'vue'
 import type { DropZone } from './composables/drag-types'
 import type { LayoutLeaf, LayoutNode, LayoutSplit, PanelDefinition, PanelGroup, PanelInstance, PanelStore } from './types'
 
@@ -55,7 +55,7 @@ export function createPanelStore(bus: EventBus): PanelStore {
         console.warn(`Panel already registered: ${def.id}`)
         return
       }
-      definitions.value = [...definitions.value, def]
+      definitions.value = [...definitions.value, { ...def, component: markRaw(def.component) }]
     },
 
     getDefinition(id: string): PanelDefinition | undefined {

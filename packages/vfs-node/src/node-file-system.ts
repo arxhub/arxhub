@@ -2,6 +2,7 @@ import { createReadStream, createWriteStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { Readable, Writable } from 'node:stream'
+import type { Logger } from '@arxhub/core'
 import { normalizePath } from '@arxhub/path'
 import {
   type DeleteOptions,
@@ -21,9 +22,11 @@ import AsyncLock from 'async-lock'
 export class NodeFileSystem implements VirtualFileSystem {
   private readonly rootDir: string
   private readonly _lock = new AsyncLock()
+  private readonly logger: Logger
 
-  constructor(rootDir: string) {
+  constructor(rootDir: string, logger: Logger) {
     this.rootDir = rootDir
+    this.logger = logger.child('[NodeFileSystem] ')
   }
 
   file<T extends Record<string, unknown>>(pathname: string): VirtualFile<T> {
@@ -41,12 +44,13 @@ export class NodeFileSystem implements VirtualFileSystem {
     let entries: Awaited<ReturnType<typeof fs.readdir>> | null = null
     try {
       entries = await fs.readdir(absDir, { withFileTypes: true })
-    } catch {
+    } catch (e) {
+      this.logger.warn(`list(${prefix}) readdir failed:`, e)
       try {
         const stat = await fs.stat(absDir)
         if (stat.isFile() && norm && !norm.endsWith('.info')) result.push(this.file(norm))
-      } catch {
-        /* skip inaccessible paths */
+      } catch (e2) {
+        this.logger.warn(`list(${prefix}) stat fallback failed:`, e2)
       }
       return result
     }
@@ -67,7 +71,8 @@ export class NodeFileSystem implements VirtualFileSystem {
     try {
       const buf = await fs.readFile(join(this.rootDir, pathname))
       return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
-    } catch {
+    } catch (e) {
+      this.logger.warn(`read(${pathname}) failed:`, e)
       throw new FileNotFound(pathname)
     }
   }
@@ -76,7 +81,8 @@ export class NodeFileSystem implements VirtualFileSystem {
     const filePath = join(this.rootDir, pathname)
     try {
       await fs.access(filePath)
-    } catch {
+    } catch (e) {
+      this.logger.warn(`readable(${pathname}) failed:`, e)
       throw new FileNotFound(pathname)
     }
     return Readable.toWeb(createReadStream(filePath)) as ReadableStream<Uint8Array>
@@ -101,6 +107,7 @@ export class NodeFileSystem implements VirtualFileSystem {
         recursive: options?.recursive ?? false,
       })
     } catch (err) {
+      this.logger.warn(`delete(${pathname}) failed:`, err)
       if (!options?.force) {
         const code = (err as NodeJS.ErrnoException).code
         if (code === 'ENOENT') throw new FileNotFound(pathname)
@@ -113,7 +120,8 @@ export class NodeFileSystem implements VirtualFileSystem {
     try {
       await fs.access(join(this.rootDir, pathname))
       return true
-    } catch {
+    } catch (e) {
+      this.logger.warn(`exists(${pathname}) failed:`, e)
       return false
     }
   }
@@ -126,7 +134,8 @@ export class NodeFileSystem implements VirtualFileSystem {
         modifiedAt: stats.mtime.getTime(),
         createdAt: stats.birthtime.getTime(),
       }
-    } catch {
+    } catch (e) {
+      this.logger.warn(`head(${pathname}) failed:`, e)
       throw new FileNotFound(pathname)
     }
   }

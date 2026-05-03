@@ -44,7 +44,7 @@ const sidebarItems = computed((): SidebarItem[] =>
   <DesktopLayout v-else>
     <template #sidebar>
       <AppSidebar
-        :content="shell.content ?? undefined"
+        :content="shell.content.value ?? undefined"
         :items="sidebarItems"
         :active-id="shell.sidebar.activeId"
         @item-select="shell.sidebar.setActive($event)"

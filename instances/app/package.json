@@ -12,10 +12,13 @@
   "dependencies": {
     "vue": "catalog:client",
     "@tauri-apps/api": "catalog:tauri",
+    "@tauri-apps/plugin-fs": "catalog:tauri",
     "@tauri-apps/plugin-opener": "catalog:tauri",
     "@arxhub/core": "workspace:*",
+    "@arxhub/plugin-explorer": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/vfs-tauri": "workspace:*",
     "lucide-vue-next": "catalog:client",
     "@arxhub/theme": "workspace:*",
     "@arxhub/theme-preset": "workspace:*",

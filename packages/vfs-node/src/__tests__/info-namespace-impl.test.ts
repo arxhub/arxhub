@@ -1,3 +1,4 @@
+import { ConsoleLogger } from '@arxhub/core'
 import { beforeEach, describe, expect, test } from 'vitest'
 import { InfoNamespaceImpl } from '@arxhub/vfs'
 import type { VirtualFileSystem } from '@arxhub/vfs'
@@ -7,7 +8,7 @@ describe('InfoNamespaceImpl', () => {
   let vfs: VirtualFileSystem
 
   beforeEach(async () => {
-    vfs = new NodeFileSystem(`${__dirname}/testdata/info-namespace-impl`)
+    vfs = new NodeFileSystem(`${__dirname}/testdata/info-namespace-impl`, new ConsoleLogger())
     await vfs.delete('/', { force: true, recursive: true })
   })
 

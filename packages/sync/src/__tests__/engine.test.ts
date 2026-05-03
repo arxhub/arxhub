@@ -1,3 +1,4 @@
+import { ConsoleLogger } from '@arxhub/core'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 import { beforeEach, describe, expect, test } from 'vitest'
@@ -13,8 +14,8 @@ describe('SyncEngine', () => {
 
   beforeEach(async () => {
     // Create separate VFS instances for local and remote
-    localVfs = new NodeFileSystem(`${__dirname}/testdata/engine/local`)
-    remoteVfs = new NodeFileSystem(`${__dirname}/testdata/engine/remote`)
+    localVfs = new NodeFileSystem(`${__dirname}/testdata/engine/local`, new ConsoleLogger())
+    remoteVfs = new NodeFileSystem(`${__dirname}/testdata/engine/remote`, new ConsoleLogger())
 
     // Clean up any existing test data
     await localVfs.delete('/', { force: true, recursive: true })

@@ -1,3 +1,4 @@
+import { ConsoleLogger } from '@arxhub/core'
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { NodeFileSystem } from '../index'
@@ -6,7 +7,7 @@ describe('VirtualFileImpl', () => {
   let vfs: VirtualFileSystem
 
   beforeEach(async () => {
-    vfs = new NodeFileSystem(`${__dirname}/testdata/virtual-file-impl`)
+    vfs = new NodeFileSystem(`${__dirname}/testdata/virtual-file-impl`, new ConsoleLogger())
     await vfs.delete('/', { force: true, recursive: true })
   })
 
