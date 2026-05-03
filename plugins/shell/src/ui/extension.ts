@@ -1,4 +1,4 @@
-import { ref, reactive, type Component } from 'vue'
+import { shallowRef, reactive, markRaw, type Component } from 'vue'
 import { Extension } from '@arxhub/core'
 import type { SidebarItem } from './desktop/types'
 
@@ -15,13 +15,13 @@ export type HeaderItem = ShellItem & { region: 'left' | 'center' | 'right' }
 export type FooterItem = ShellItem & { region: 'left' | 'right' }
 
 export class ShellExtension extends Extension {
-  readonly content = ref<Component | null>(null)
+  readonly content = shallowRef<Component | null>(null)
 
   readonly sidebar = reactive({
     items: [] as SidebarItem[],
     activeId: '',
     register(item: SidebarItem): void {
-      this.items = [...this.items, item]
+      this.items = [...this.items, { ...item, icon: markRaw(item.icon), layout: item.layout ? markRaw(item.layout) : undefined }]
       if (!this.activeId && item.region !== 'bottom') {
         this.activeId = item.id
       }

@@ -156,6 +156,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/plugin-explorer':
+        specifier: workspace:*
+        version: link:../../plugins/explorer
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
@@ -171,9 +174,15 @@ importers:
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
+      '@arxhub/vfs-tauri':
+        specifier: workspace:*
+        version: link:../../packages/vfs-tauri
       '@tauri-apps/api':
         specifier: catalog:tauri
         version: 2.11.0
+      '@tauri-apps/plugin-fs':
+        specifier: catalog:tauri
+        version: 2.5.0
       '@tauri-apps/plugin-opener':
         specifier: catalog:tauri
         version: 2.5.3
@@ -501,6 +510,43 @@ importers:
       '@types/async-lock':
         specifier: catalog:toolchain
         version: 1.4.2
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+
+  plugins/explorer:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/path':
+        specifier: workspace:*
+        version: link:../../packages/path
+      '@arxhub/plugin-panels':
+        specifier: workspace:*
+        version: link:../panels
+      '@arxhub/plugin-shell':
+        specifier: workspace:*
+        version: link:../shell
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
+      lucide-vue-next:
+        specifier: catalog:client
+        version: 1.0.0(vue@3.5.33(typescript@6.0.3))
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
       '@types/node':
         specifier: catalog:toolchain
         version: 25.6.0

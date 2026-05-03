@@ -1,3 +1,4 @@
+import type { Logger } from '@arxhub/core'
 import { normalizePath } from '@arxhub/path'
 import {
   type DeleteOptions,
@@ -19,10 +20,12 @@ export class TauriFileSystem implements VirtualFileSystem {
   private readonly baseDir: BaseDirectory
   private readonly basePath: string
   private readonly _lock = new AsyncLock()
+  private readonly logger: Logger
 
-  constructor(basePath: string = '', baseDir: BaseDirectory = BaseDirectory.AppData) {
+  constructor(basePath: string = '', baseDir: BaseDirectory = BaseDirectory.AppData, logger: Logger) {
     this.basePath = basePath
     this.baseDir = baseDir
+    this.logger = logger.child('[TauriFileSystem] ')
   }
 
   private fullPath(pathname: string): string {
@@ -47,8 +50,8 @@ export class TauriFileSystem implements VirtualFileSystem {
         if (entry.isDirectory) result.push(this.dir(relPath))
         else if (!entry.name.endsWith('.info')) result.push(this.file(relPath))
       }
-    } catch {
-      /* skip inaccessible dirs */
+    } catch (e) {
+      this.logger.warn(`list(${prefix}) failed:`, e)
     }
     return result
   }
@@ -60,7 +63,8 @@ export class TauriFileSystem implements VirtualFileSystem {
   async read(pathname: string): Promise<Uint8Array> {
     try {
       return await readFile(this.fullPath(pathname), { baseDir: this.baseDir })
-    } catch {
+    } catch (e) {
+      this.logger.warn(`read(${pathname}) failed:`, e)
       throw new FileNotFound(pathname)
     }
   }
@@ -105,7 +109,8 @@ export class TauriFileSystem implements VirtualFileSystem {
         baseDir: this.baseDir,
         recursive: options?.recursive ?? false,
       })
-    } catch {
+    } catch (e) {
+      this.logger.warn(`delete(${pathname}) failed:`, e)
       if (!options?.force) throw new FileNotFound(pathname)
     }
   }
@@ -114,7 +119,8 @@ export class TauriFileSystem implements VirtualFileSystem {
     try {
       await stat(this.fullPath(pathname), { baseDir: this.baseDir })
       return true
-    } catch {
+    } catch (e) {
+      this.logger.warn(`exists(${pathname}) failed:`, e)
       return false
     }
   }
@@ -127,7 +133,8 @@ export class TauriFileSystem implements VirtualFileSystem {
         modifiedAt: info.mtime?.getTime() ?? Date.now(),
         createdAt: info.birthtime?.getTime() ?? Date.now(),
       }
-    } catch {
+    } catch (e) {
+      this.logger.warn(`head(${pathname}) failed:`, e)
       throw new FileNotFound(pathname)
     }
   }
