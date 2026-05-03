@@ -2,14 +2,13 @@ import '@arxhub/theme-preset'
 import '@arxhub/theme'
 
 import { ArxHub } from '@arxhub/core'
-import { PanelsPlugin, PanelStoreExtension } from '@arxhub/panels'
+import { PanelsPlugin, PanelStoreExtension, PanelsLayout } from '@arxhub/plugin-panels/ui'
 import { ShellPlugin, ShellExtension } from '@arxhub/plugin-shell/ui'
 import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
 import { Library } from 'lucide-vue-next'
 import { createApp } from 'vue'
 import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
-import { PanelsLayout } from '@arxhub/panels/ui'
 
 const arxhub = new ArxHub()
 arxhub.plugins.register(ShellPlugin)

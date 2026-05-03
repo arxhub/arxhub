@@ -156,9 +156,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@arxhub/panels':
+      '@arxhub/plugin-panels':
         specifier: workspace:*
-        version: link:../../packages/panels
+        version: link:../../plugins/panels
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../../plugins/shell
@@ -276,46 +276,6 @@ importers:
       eventemitter3:
         specifier: catalog:shared
         version: 5.0.4
-    devDependencies:
-      '@arxhub/toolchain-tsconfig':
-        specifier: workspace:*
-        version: link:../../toolchains/tsconfig
-      '@arxhub/toolchain-vite':
-        specifier: workspace:*
-        version: link:../../toolchains/vite
-      '@types/node':
-        specifier: catalog:toolchain
-        version: 25.6.0
-      type-fest:
-        specifier: catalog:toolchain
-        version: 5.6.0
-
-  packages/panels:
-    dependencies:
-      '@arxhub/core':
-        specifier: workspace:*
-        version: link:../core
-      '@arxhub/events':
-        specifier: workspace:*
-        version: link:../events
-      '@arxhub/uikit':
-        specifier: workspace:*
-        version: link:../uikit
-      '@atlaskit/pragmatic-drag-and-drop':
-        specifier: catalog:client
-        version: 1.8.1
-      '@atlaskit/pragmatic-drag-and-drop-hitbox':
-        specifier: catalog:client
-        version: 1.1.0
-      lucide-vue-next:
-        specifier: catalog:client
-        version: 1.0.0(vue@3.5.33(typescript@6.0.3))
-      nanoid:
-        specifier: catalog:shared
-        version: 5.1.11
-      vue:
-        specifier: catalog:client
-        version: 3.5.33(typescript@6.0.3)
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -569,6 +529,46 @@ importers:
       '@types/node':
         specifier: catalog:toolchain
         version: 25.6.0
+
+  plugins/panels:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/events':
+        specifier: workspace:*
+        version: link:../../packages/events
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
+      '@atlaskit/pragmatic-drag-and-drop':
+        specifier: catalog:client
+        version: 1.8.1
+      '@atlaskit/pragmatic-drag-and-drop-hitbox':
+        specifier: catalog:client
+        version: 1.1.0
+      lucide-vue-next:
+        specifier: catalog:client
+        version: 1.0.0(vue@3.5.33(typescript@6.0.3))
+      nanoid:
+        specifier: catalog:shared
+        version: 5.1.11
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+      type-fest:
+        specifier: catalog:toolchain
+        version: 5.6.0
 
   plugins/shell:
     dependencies:
