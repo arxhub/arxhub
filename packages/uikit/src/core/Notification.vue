@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Icon from '../ui/Icon.vue'
+import Icon from './Icon.vue'
 
 defineProps<{
   title: string

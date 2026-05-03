@@ -3,16 +3,29 @@ import '@arxhub/theme'
 
 import { ArxHub } from '@arxhub/core'
 import { PanelsPlugin, PanelStoreExtension } from '@arxhub/panels'
+import { ShellPlugin, ShellExtension } from '@arxhub/plugin-shell/ui'
 import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
+import { Library } from 'lucide-vue-next'
 import { createApp } from 'vue'
 import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
+import { PanelsLayout } from '@arxhub/panels/ui'
 
 const arxhub = new ArxHub()
+arxhub.plugins.register(ShellPlugin)
 arxhub.plugins.register(PanelsPlugin)
 await arxhub.start()
 
+const shell = arxhub.extensions.get(ShellExtension)
 const { store } = arxhub.extensions.get(PanelStoreExtension)
+
+shell.sidebar.register({
+  id: 'library',
+  icon: Library,
+  title: 'Library',
+  layout: PanelsLayout,
+})
+
 store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
 store.openPanel('arxhub.welcome')
 
