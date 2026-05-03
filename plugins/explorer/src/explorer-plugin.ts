@@ -1,32 +1,30 @@
 import { Plugin, type PluginArgs } from '@arxhub/core'
 import type { ArxHub } from '@arxhub/core'
-import type { VirtualFileSystem } from '@arxhub/vfs'
 import { PanelStoreExtension, PanelsLayout, type LayoutLeaf, type LayoutSplit } from '@arxhub/plugin-panels/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { VfsExtension } from '@arxhub/plugin-vfs/ui'
 import { FolderOpen } from 'lucide-vue-next'
 import { ExplorerExtension } from './explorer-extension'
 import { manifest } from './manifest'
 import FileTreeView from './ui/FileTreeView.vue'
 
 type ExplorerPluginArgs = PluginArgs & {
-  vfs: VirtualFileSystem
   root?: string
 }
 
 export class ExplorerPlugin extends Plugin<ArxHub> {
-  private readonly vfs: VirtualFileSystem
   private readonly root: string
 
   constructor(args: ExplorerPluginArgs) {
     super(args, manifest)
-    this.vfs = args.vfs
     this.root = args.root ?? '/'
   }
 
   override create(arxhub: ArxHub): void {
     super.create(arxhub)
+    const { vfs } = arxhub.extensions.get(VfsExtension)
     arxhub.extensions.register(ExplorerExtension, () => ({
-      vfs: this.vfs,
+      vfs,
       root: this.root,
     }))
   }

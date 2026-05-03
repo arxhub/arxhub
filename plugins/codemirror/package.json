@@ -1,8 +1,8 @@
 {
-  "name": "@arxhub/plugin-explorer",
+  "name": "@arxhub/plugin-codemirror",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "File explorer plugin for ArxHub",
+  "description": "CodeMirror text editor plugin for ArxHub",
   "keywords": ["arxhub"],
   "license": "AGPL-3.0-or-later",
   "author": "",
@@ -15,8 +15,10 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "@arxhub/path": "workspace:*",
-    "lucide-vue-next": "catalog:client",
+    "codemirror": "catalog:client",
+    "@codemirror/language": "catalog:client",
+    "@codemirror/language-data": "catalog:client",
+    "@codemirror/state": "catalog:client",
     "vue": "catalog:client"
   },
   "devDependencies": {
@@ -27,10 +29,8 @@
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
-    "@arxhub/plugin-shell": "workspace:*",
-    "@arxhub/uikit": "workspace:*",
-    "@arxhub/vfs": "workspace:*",
-    "@arxhub/plugin-vfs": "workspace:*"
+    "@arxhub/plugin-vfs": "workspace:*",
+    "@arxhub/uikit": "workspace:*"
   },
   "publishConfig": {
     "exports": {
