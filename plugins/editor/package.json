@@ -1,0 +1,48 @@
+{
+  "name": "@arxhub/plugin-editor",
+  "sideEffects": ["**/*.css"],
+  "version": "0.1.0",
+  "description": "ProseMirror note editor plugin for ArxHub",
+  "keywords": ["arxhub"],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./ui": "./src/ui.ts"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "prosemirror-model": "catalog:client",
+    "prosemirror-state": "catalog:client",
+    "prosemirror-view": "catalog:client",
+    "prosemirror-commands": "catalog:client",
+    "prosemirror-history": "catalog:client",
+    "prosemirror-inputrules": "catalog:client",
+    "prosemirror-keymap": "catalog:client",
+    "prosemirror-schema-basic": "catalog:client",
+    "prosemirror-schema-list": "catalog:client",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/plugin-panels": "workspace:*",
+    "@arxhub/plugin-vfs": "workspace:*",
+    "@arxhub/uikit": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      }
+    }
+  }
+}

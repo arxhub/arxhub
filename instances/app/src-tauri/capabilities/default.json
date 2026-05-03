@@ -3,5 +3,22 @@
   "identifier": "default",
   "description": "Capability for the main window",
   "windows": ["main"],
-  "permissions": ["core:default", "opener:default", "fs:default", "fs:allow-read-dir", "fs:scope-home-recursive"]
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "fs:default",
+    "fs:allow-read-dir",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-stat",
+    "fs:allow-exists",
+    "fs:scope-home-recursive",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "$HOME/.arxhub" },
+        { "path": "$HOME/.arxhub/**" }
+      ]
+    }
+  ]
 }

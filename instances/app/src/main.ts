@@ -7,6 +7,7 @@ import { ShellPlugin, ShellExtension } from '@arxhub/plugin-shell/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
+import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { TauriFileSystem, BaseDirectory } from '@arxhub/vfs-tauri'
 import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
 import { createApp } from 'vue'
@@ -14,12 +15,13 @@ import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
 
 const arxhub = new ArxHub()
-const vfs = new TauriFileSystem('', BaseDirectory.Home, arxhub.logger)
+const vfs = new TauriFileSystem('.arxhub', BaseDirectory.Home, arxhub.logger)
 arxhub.plugins.register(VfsPlugin, () => ({ vfs }))
 arxhub.plugins.register(ShellPlugin)
 arxhub.plugins.register(PanelsPlugin)
 arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
+arxhub.plugins.register(EditorPlugin)
 await arxhub.start()
 
 const shell = arxhub.extensions.get(ShellExtension)
