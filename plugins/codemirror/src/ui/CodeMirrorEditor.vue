@@ -28,13 +28,18 @@ onMounted(async () => {
       doc,
       extensions: [
         basicSetup,
-        EditorState.readOnly.of(true),
         ...(langSupport ? [langSupport] : []),
       ],
     }),
     parent: editorEl.value,
   })
 })
+
+async function save() {
+  if (!view) return
+  const { vfs } = arxhub.extensions.get(VfsExtension)
+  await vfs.write(props.path, new TextEncoder().encode(view.state.doc.toString()))
+}
 
 onUnmounted(() => {
   view?.destroy()
@@ -43,14 +48,63 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="editorEl" class="codemirror-editor" />
+  <div class="codemirror-wrapper" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
+    <div class="codemirror-toolbar">
+      <span class="codemirror-path">{{ path }}</span>
+      <button class="save-btn" @click="save">Save</button>
+    </div>
+    <div ref="editorEl" class="codemirror-editor" />
+  </div>
 </template>
 
 <style scoped>
-.codemirror-editor {
+.codemirror-wrapper {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+}
+
+.codemirror-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--gray-4);
+  background: var(--gray-1);
+  flex-shrink: 0;
+}
+
+.codemirror-path {
+  font-size: 11px;
+  color: var(--gray-9);
+  font-family: var(--font-mono, monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.save-btn {
+  padding: 2px 10px;
+  font-size: 12px;
+  border: 1px solid var(--gray-5);
+  border-radius: 4px;
+  background: var(--gray-2);
+  color: var(--gray-11);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.save-btn:hover {
+  background: var(--gray-3);
+  color: var(--gray-12);
+}
+
+.codemirror-editor {
+  flex: 1;
   overflow: auto;
+  min-height: 0;
 }
 
 .codemirror-editor :deep(.cm-editor) {

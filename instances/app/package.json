@@ -16,6 +16,7 @@
     "@tauri-apps/plugin-opener": "catalog:tauri",
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
+    "@arxhub/plugin-editor": "workspace:*",
     "@arxhub/plugin-explorer": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
