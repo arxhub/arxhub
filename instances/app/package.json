@@ -14,7 +14,7 @@
     "@tauri-apps/api": "catalog:tauri",
     "@tauri-apps/plugin-opener": "catalog:tauri",
     "@arxhub/core": "workspace:*",
-    "@arxhub/panels": "workspace:*",
+    "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "lucide-vue-next": "catalog:client",
     "@arxhub/theme": "workspace:*",

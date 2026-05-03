@@ -1,5 +1,5 @@
 {
-  "name": "@arxhub/panels",
+  "name": "@arxhub/plugin-panels",
   "sideEffects": ["**/*.css"],
   "version": "0.1.0",
   "description": "Tiling panel system for ArxHub",
@@ -8,17 +8,14 @@
   "author": "",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./ui": "./src/ui/index.ts"
+    "./manifest": "./src/manifest.ts",
+    "./ui": "./src/ui.ts"
   },
   "files": ["dist"],
   "scripts": {
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "@arxhub/core": "workspace:*",
-    "@arxhub/events": "workspace:*",
-    "@arxhub/uikit": "workspace:*",
     "@atlaskit/pragmatic-drag-and-drop": "catalog:client",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "catalog:client",
     "lucide-vue-next": "catalog:client",
@@ -31,15 +28,20 @@
     "@types/node": "catalog:toolchain",
     "type-fest": "catalog:toolchain"
   },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/events": "workspace:*",
+    "@arxhub/uikit": "workspace:*"
+  },
   "publishConfig": {
     "exports": {
-      ".": {
-        "import": "./dist/index.js",
-        "types": "./dist/index.d.ts"
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
       },
       "./ui": {
-        "import": "./dist/ui/index.js",
-        "types": "./dist/ui/index.d.ts"
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
       }
     }
   }
