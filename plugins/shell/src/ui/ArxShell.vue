@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useArxHub, useMediaQuery } from '@arxhub/uikit/hooks'
+import { useArxHub } from '@arxhub/uikit/hooks'
 import DesktopLayout from './desktop/DesktopLayout.vue'
 import AppHeader from './desktop/AppHeader.vue'
 import AppSidebar from './desktop/AppSidebar.vue'
@@ -10,7 +10,6 @@ import { ShellExtension } from './extension'
 
 const arxhub = useArxHub()
 const shell = arxhub.extensions.get(ShellExtension)
-const isMobile = useMediaQuery('(max-width: 768px)')
 
 const activeItem = computed(() =>
   shell.sidebar.items.find(i => i.id === shell.sidebar.activeId)
@@ -38,10 +37,7 @@ const sidebarItems = computed((): SidebarItem[] =>
 </script>
 
 <template>
-  <div v-if="isMobile" class="mobile-todo">
-    <!-- TODO: MobileLayout integration -->
-  </div>
-  <DesktopLayout v-else>
+  <DesktopLayout>
     <template #sidebar>
       <AppSidebar
         :content="shell.content.value ?? undefined"
@@ -76,15 +72,3 @@ const sidebarItems = computed((): SidebarItem[] =>
     <component v-if="activeItem?.layout" :is="activeItem.layout" />
   </DesktopLayout>
 </template>
-
-<style scoped>
-.mobile-todo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100dvh;
-  color: var(--gray-11);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-}
-</style>

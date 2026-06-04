@@ -52,8 +52,7 @@ arxhub/
 | Vite config factories | `toolchains/vite/src/` (`createVueConfig`, `createNodeConfig`, `createTauriConfig`) |
 | Design tokens (CSS vars) | `packages/theme-preset/src/` |
 | UI primitives (`@arxhub/uikit/core`) | `packages/uikit/src/core/` |
-| Desktop layout shell (`@arxhub/uikit/desktop`) | `packages/uikit/src/desktop/` |
-| Mobile layout shell (`@arxhub/uikit/mobile`) | `packages/uikit/src/mobile/` |
+| Desktop layout shell | `plugins/shell/src/ui/desktop/` |
 | UI hooks (`@arxhub/uikit/hooks`) | `packages/uikit/src/hooks/` |
 | App instance entry | `instances/app/src/main.ts` |
 | Tauri config (src-tauri/) | `instances/app/src-tauri/` |
@@ -73,8 +72,6 @@ Plugin-based hexagonal architecture. Plugins register Extensions during `create(
 `@arxhub/uikit` has no root export — always import from a sub-path:
 - `@arxhub/uikit/core` — UI primitives (Button, Input, Switch, …) + layout blocks (Card, NavItem)
 - `@arxhub/uikit/hooks` — composables (useMediaQuery, toaster)
-- `@arxhub/uikit/desktop` — DesktopLayout + AppHeader / AppSidebar / AppFooter
-- `@arxhub/uikit/mobile` — MobileLayout + MobileHeader / BottomNav
 
 ## CONVENTIONS
 
@@ -149,7 +146,7 @@ Shared dependency versions are pinned in `pnpm-workspace.yaml` under `catalogs:`
 
 ## NOTES
 
-- `instances/app` is the single app instance — runs as a Vite SPA (`dev:web`/`build:web`) or Tauri native app (`dev`/`build`/`build:android`/`build:ios`). Boots ArxHub and renders desktop or mobile layout based on viewport width (768px breakpoint).
+- `instances/app` is the single app instance — runs as a Vite SPA (`dev:web`/`build:web`) or Tauri native app (`dev`/`build`/`build:android`/`build:ios`). Boots ArxHub and renders the desktop layout.
 - `packages/crypto` and `packages/path` are thin browser shims (pre-compiled JS), not TypeScript.
 - `useDefineForClassFields: false` in tsconfig — required for the Plugin/Extension class pattern to work correctly.
 - The `biome-ignore format: Hand formatting` pattern in `core/` is intentional for method overload readability — keep it when adding new overloads.
