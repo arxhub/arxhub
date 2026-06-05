@@ -68,10 +68,10 @@ describe('InfoNamespaceImpl', () => {
     expect(all.c).toEqual('gamma')
   })
 
-  test('missing .info file → getAll() returns {}', async () => {
+  test('missing .arxmeta file → getAll() returns {}', async () => {
     const file = vfs.file('no-sidecar.txt')
     await vfs.write('no-sidecar.txt', new TextEncoder().encode('data'))
-    // No .info written — should not throw
+    // No .arxmeta written — should not throw
     const all = await file.info.getAll()
     expect(all).toEqual({})
   })

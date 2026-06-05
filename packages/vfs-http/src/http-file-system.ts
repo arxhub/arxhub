@@ -5,14 +5,8 @@ import {
   type DeleteOptions,
   type FileHead,
   fileNotFound,
-  type VirtualDir,
-  VirtualDirImpl,
+  GenericVirtualFileSystem,
   type VirtualEntry,
-  type VirtualFile,
-  VirtualFileImpl,
-  type VirtualFileSystem,
-  type VirtualWalker,
-  VirtualWalkerImpl,
 } from '@arxhub/vfs'
 import { type ExistsResponse, type FileHeadResponse, type ListResponse, VFS_DEFAULT_BASE_URL, VFS_ROUTES } from './protocol'
 
@@ -31,22 +25,15 @@ export interface HttpFileSystemOptions {
 // Locking cannot span stateless HTTP requests from the browser, so `lock`/
 // `acquireLock` run the critical section locally and rely on the server's
 // per-request write atomicity.
-export class HttpFileSystem implements VirtualFileSystem {
+export class HttpFileSystem extends GenericVirtualFileSystem {
   private readonly http: HttpClient
   private readonly logger: Logger
 
   constructor(options: HttpFileSystemOptions, logger: Logger) {
+    super()
     const baseUrl = (options.baseUrl ?? VFS_DEFAULT_BASE_URL).replace(/\/+$/, '')
     this.http = createHttpClient(baseUrl, { fetch: options.fetch })
     this.logger = logger.child('[HttpFileSystem] ')
-  }
-
-  file<T extends Record<string, unknown>>(pathname: string): VirtualFile<T> {
-    return new VirtualFileImpl<T>(this, pathname)
-  }
-
-  dir(pathname: string): VirtualDir {
-    return new VirtualDirImpl(this, pathname)
   }
 
   async list(prefix: string): Promise<VirtualEntry[]> {
@@ -58,10 +45,6 @@ export class HttpFileSystem implements VirtualFileSystem {
       this.logger.warn(`list(${prefix}) failed:`, e)
       return []
     }
-  }
-
-  walk(prefix: string, cursor?: string): VirtualWalker {
-    return new VirtualWalkerImpl(this, normalizePath(prefix), cursor)
   }
 
   async read(pathname: string): Promise<Uint8Array> {

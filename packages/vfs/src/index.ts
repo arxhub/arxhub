@@ -1,4 +1,5 @@
 export * from './errors'
+export * from './generic-virtual-file-system'
 export * from './info-namespace'
 export * from './virtual-dir'
 export * from './virtual-entry'

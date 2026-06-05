@@ -1,5 +1,5 @@
-import type { BaseInfoFields, InfoFlushOptions, InfoNamespace } from './interface'
 import type { VirtualFile } from '../virtual-file'
+import type { BaseInfoFields, InfoFlushOptions, InfoNamespace } from './interface'
 
 export class InfoNamespaceImpl<T extends Record<string, unknown> = BaseInfoFields> implements InfoNamespace<T> {
   private readonly file: VirtualFile<T>
@@ -13,7 +13,7 @@ export class InfoNamespaceImpl<T extends Record<string, unknown> = BaseInfoField
   private async load(): Promise<T> {
     if (this._cache !== null) return this._cache
     try {
-      const raw = await this.file.vfs.read(`${this.file.pathname}.info`)
+      const raw = await this.file.vfs.read(`${this.file.pathname}.arxmeta`)
       this._cache = JSON.parse(new TextDecoder().decode(raw)) as T
     } catch {
       this._cache = {} as T
@@ -51,7 +51,7 @@ export class InfoNamespaceImpl<T extends Record<string, unknown> = BaseInfoField
   async flush(): Promise<void> {
     if (!this._dirty || this._cache === null) return
     const data = this._cache
-    const infoPathname = `${this.file.pathname}.info`
+    const infoPathname = `${this.file.pathname}.arxmeta`
     await this.file.vfs.lock(infoPathname, async () => {
       await this.file.vfs.write(infoPathname, new TextEncoder().encode(JSON.stringify(data)))
     })
