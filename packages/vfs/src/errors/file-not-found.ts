@@ -1,11 +1,9 @@
-import { AppError } from '@arxhub/stdlib/errors/app-error'
+import { AppError } from '@arxhub/errors'
 
-export class FileNotFound extends AppError {
-  constructor(pathname: string) {
-    super({
-      httpStatusCode: 404,
-      title: 'File Not Found',
-      message: `File not found: '${pathname}'`,
-    })
-  }
-}
+export const fileNotFound = (pathname: string) =>
+  new AppError({
+    code: 'FileNotFound',
+    statusCode: 404,
+    title: 'File Not Found',
+    message: `File not found: '${pathname}'`,
+  })

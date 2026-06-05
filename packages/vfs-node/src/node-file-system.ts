@@ -7,7 +7,7 @@ import { normalizePath } from '@arxhub/path'
 import {
   type DeleteOptions,
   type FileHead,
-  FileNotFound,
+  fileNotFound,
   type VirtualDir,
   VirtualDirImpl,
   type VirtualEntry,
@@ -73,7 +73,7 @@ export class NodeFileSystem implements VirtualFileSystem {
       return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
     } catch (e) {
       this.logger.warn(`read(${pathname}) failed:`, e)
-      throw new FileNotFound(pathname)
+      throw fileNotFound(pathname)
     }
   }
 
@@ -83,7 +83,7 @@ export class NodeFileSystem implements VirtualFileSystem {
       await fs.access(filePath)
     } catch (e) {
       this.logger.warn(`readable(${pathname}) failed:`, e)
-      throw new FileNotFound(pathname)
+      throw fileNotFound(pathname)
     }
     return Readable.toWeb(createReadStream(filePath)) as ReadableStream<Uint8Array>
   }
@@ -110,7 +110,7 @@ export class NodeFileSystem implements VirtualFileSystem {
       this.logger.warn(`delete(${pathname}) failed:`, err)
       if (!options?.force) {
         const code = (err as NodeJS.ErrnoException).code
-        if (code === 'ENOENT') throw new FileNotFound(pathname)
+        if (code === 'ENOENT') throw fileNotFound(pathname)
         throw err
       }
     }
@@ -136,7 +136,7 @@ export class NodeFileSystem implements VirtualFileSystem {
       }
     } catch (e) {
       this.logger.warn(`head(${pathname}) failed:`, e)
-      throw new FileNotFound(pathname)
+      throw fileNotFound(pathname)
     }
   }
 

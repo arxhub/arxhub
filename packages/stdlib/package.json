@@ -9,7 +9,6 @@
   "type": "module",
   "exports": {
     "./collections/*": "./src/collections/*.ts",
-    "./errors/*": "./src/errors/*.ts",
     "./fs/*": "./src/fs/*.ts",
     "./record/*": "./src/record/*.ts",
     "./crypto/*": "./src/crypto/*.ts"
@@ -19,7 +18,9 @@
     "build": "tsc && vite build",
     "test": "vitest"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@arxhub/errors": "workspace:*"
+  },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
@@ -32,10 +33,6 @@
       "./collections/*": {
         "import": "./dist/collections/*.js",
         "types": "./dist/collections/*.d.ts"
-      },
-      "./errors/*": {
-        "import": "./dist/errors/*.js",
-        "types": "./dist/errors/*.d.ts"
       },
       "./fs/*": {
         "import": "./dist/fs/*.js",

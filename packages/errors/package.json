@@ -1,0 +1,37 @@
+{
+  "name": "@arxhub/errors",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Schema-defined application errors for ArxHub (TypeBox + factory functions)",
+  "keywords": [
+    "arxhub",
+    "errors"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "catalog:shared"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
+    }
+  }
+}
