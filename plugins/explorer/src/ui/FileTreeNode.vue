@@ -5,10 +5,7 @@ import { useArxHub } from '@arxhub/uikit/hooks'
 import { nextTick, ref } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
 
-const props = withDefaults(
-  defineProps<{ node: TreeNode; depth?: number }>(),
-  { depth: 0 },
-)
+const props = withDefaults(defineProps<{ node: TreeNode; depth?: number }>(), { depth: 0 })
 
 const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
@@ -34,16 +31,21 @@ function closeMenu() {
 
 function openFile() {
   closeMenu()
-  const ext = extname(props.node.entry.pathname)
+  const path = props.node.entry.pathname
+  const ext = extname(path)
   const panels = store.getPanelsForFile(ext)
-  if (panels.length > 0) {
-    store.openPanel(
-      panels[0].id,
-      { path: props.node.entry.pathname },
-      basename(props.node.entry.pathname),
-      explorer.contentGroupId ?? undefined,
-    )
+  if (panels.length === 0) return
+
+  for (const [groupId, group] of Object.entries(store.groups.value)) {
+    const instance = group.instances.find((i) => i.props?.path === path)
+    if (instance) {
+      store.activateGroup(groupId)
+      store.activatePanel(instance.instanceId, groupId)
+      return
+    }
   }
+
+  store.openPanel(panels[0].id, { path }, basename(path), explorer.contentGroupId ?? undefined)
 }
 
 async function newFile() {
@@ -93,10 +95,7 @@ function cancelRename() {
 async function handleClick() {
   if (renaming.value) return
   // selectedPath always points to a directory so toolbar knows where to create
-  explorer.selectedPath.value =
-    props.node.entry.kind === 'dir'
-      ? props.node.entry.pathname
-      : dirname(props.node.entry.pathname)
+  explorer.selectedPath.value = props.node.entry.kind === 'dir' ? props.node.entry.pathname : dirname(props.node.entry.pathname)
   if (props.node.entry.kind === 'dir') {
     if (props.node.expanded) {
       explorer.collapse(props.node)
