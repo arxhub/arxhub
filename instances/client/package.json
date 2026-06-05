@@ -1,0 +1,33 @@
+{
+  "name": "@arxhub/client",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ArxHub web client — static Vue SPA, connects to a server via HTTP",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/plugin-codemirror": "workspace:*",
+    "@arxhub/plugin-editor": "workspace:*",
+    "@arxhub/plugin-explorer": "workspace:*",
+    "@arxhub/plugin-panels": "workspace:*",
+    "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/plugin-vfs": "workspace:*",
+    "@arxhub/theme": "workspace:*",
+    "@arxhub/theme-preset": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs-http": "workspace:*",
+    "lucide-vue-next": "catalog:client",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "catalog:toolchain",
+    "typescript": "catalog:toolchain",
+    "vite": "catalog:toolchain",
+    "vue-tsc": "catalog:toolchain"
+  }
+}
