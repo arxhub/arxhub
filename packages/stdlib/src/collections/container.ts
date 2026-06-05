@@ -1,4 +1,4 @@
-import { KeyError } from '../errors/key-error'
+import { keyError } from '@arxhub/errors'
 
 export class Container<T> {
   private readonly container: Map<string, T>
@@ -15,7 +15,7 @@ export class Container<T> {
 
   get(key: string): T {
     const value = this.container.get(key)
-    if (value == null) throw new KeyError(`${this.domain} '${key}' not found`)
+    if (value == null) throw keyError(`${this.domain} '${key}' not found`)
     return value
   }
 

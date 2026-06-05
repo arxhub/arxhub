@@ -1,11 +1,9 @@
-import { AppError } from '@arxhub/stdlib/errors/app-error'
+import { AppError } from '@arxhub/errors'
 
-export class MountNotFound extends AppError {
-  constructor(pathname: string) {
-    super({
-      httpStatusCode: 404,
-      title: 'Mount Not Found',
-      message: `Mount not found: '${pathname}'`,
-    })
-  }
-}
+export const mountNotFound = (pathname: string) =>
+  new AppError({
+    code: 'MountNotFound',
+    statusCode: 404,
+    title: 'Mount Not Found',
+    message: `Mount not found: '${pathname}'`,
+  })

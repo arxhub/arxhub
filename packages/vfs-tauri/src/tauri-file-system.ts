@@ -3,7 +3,7 @@ import { normalizePath } from '@arxhub/path'
 import {
   type DeleteOptions,
   type FileHead,
-  FileNotFound,
+  fileNotFound,
   type VirtualDir,
   VirtualDirImpl,
   type VirtualEntry,
@@ -65,7 +65,7 @@ export class TauriFileSystem implements VirtualFileSystem {
       return await readFile(this.fullPath(pathname), { baseDir: this.baseDir })
     } catch (e) {
       this.logger.warn(`read(${pathname}) failed:`, e)
-      throw new FileNotFound(pathname)
+      throw fileNotFound(pathname)
     }
   }
 
@@ -111,7 +111,7 @@ export class TauriFileSystem implements VirtualFileSystem {
       })
     } catch (e) {
       this.logger.warn(`delete(${pathname}) failed:`, e)
-      if (!options?.force) throw new FileNotFound(pathname)
+      if (!options?.force) throw fileNotFound(pathname)
     }
   }
 
@@ -135,7 +135,7 @@ export class TauriFileSystem implements VirtualFileSystem {
       }
     } catch (e) {
       this.logger.warn(`head(${pathname}) failed:`, e)
-      throw new FileNotFound(pathname)
+      throw fileNotFound(pathname)
     }
   }
 
