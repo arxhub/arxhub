@@ -10,10 +10,6 @@
     "tauri": "cross-env WEBKIT_DISABLE_DMABUF_RENDERER=1 tauri"
   },
   "dependencies": {
-    "vue": "catalog:client",
-    "@tauri-apps/api": "catalog:tauri",
-    "@tauri-apps/plugin-fs": "catalog:tauri",
-    "@tauri-apps/plugin-opener": "catalog:tauri",
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",
@@ -21,20 +17,24 @@
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
+    "@arxhub/theme": "workspace:*",
+    "@arxhub/theme-preset": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
     "@arxhub/vfs": "workspace:*",
     "@arxhub/vfs-http": "workspace:*",
     "@arxhub/vfs-tauri": "workspace:*",
+    "@tauri-apps/api": "catalog:tauri",
+    "@tauri-apps/plugin-fs": "catalog:tauri",
+    "@tauri-apps/plugin-opener": "catalog:tauri",
     "lucide-vue-next": "catalog:client",
-    "@arxhub/theme": "workspace:*",
-    "@arxhub/theme-preset": "workspace:*",
-    "@arxhub/uikit": "workspace:*"
+    "vue": "catalog:client"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "catalog:tauri",
     "@vitejs/plugin-vue": "catalog:toolchain",
+    "cross-env": "catalog:toolchain",
     "typescript": "catalog:toolchain",
     "vite": "catalog:toolchain",
-    "vue-tsc": "catalog:toolchain",
-    "@tauri-apps/cli": "catalog:tauri",
-    "cross-env": "catalog:toolchain"
+    "vue-tsc": "catalog:toolchain"
   }
 }
