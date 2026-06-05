@@ -1,0 +1,10 @@
+{
+  "extends": "@arxhub/toolchain-tsconfig",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"]
+  },
+  "include": ["src/**/*"]
+}
