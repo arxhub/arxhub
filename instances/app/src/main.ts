@@ -7,6 +7,7 @@ import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
+import { SyncPlugin } from '@arxhub/plugin-sync/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
 import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
 import type { VirtualFileSystem } from '@arxhub/vfs'
@@ -33,6 +34,7 @@ arxhub.plugins.register(PanelsPlugin)
 arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
 arxhub.plugins.register(EditorPlugin)
+arxhub.plugins.register(SyncPlugin)
 await arxhub.start()
 
 const shell = arxhub.extensions.get(ShellExtension)
