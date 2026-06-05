@@ -42,6 +42,8 @@ catalogs:
     dayjs: ^1.11.20
     path-browserify: ^1.0.1
     crypto-browserify: ^3.12.1
+    wretch: ^2.11.0
+    '@sinclair/typebox': ^0.34.48
   toolchain:
     '@biomejs/biome': ^2.4.14
     '@vitejs/plugin-vue': ^6.0.6
