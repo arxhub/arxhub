@@ -28,7 +28,7 @@ describe('chunker', async () => {
 
   test('merge', async () => {
     const chunks = []
-    for await (const chunk of vfs.list('chunks')) chunks.push(chunk)
+    for (const chunk of await vfs.list('chunks')) chunks.push(chunk)
     const file = vfs.file('merged')
     const writable = await file.writable()
     const merged = chunker.merge(chunks)
