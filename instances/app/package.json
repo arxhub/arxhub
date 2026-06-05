@@ -21,6 +21,8 @@
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
+    "@arxhub/vfs-http": "workspace:*",
     "@arxhub/vfs-tauri": "workspace:*",
     "lucide-vue-next": "catalog:client",
     "@arxhub/theme": "workspace:*",
