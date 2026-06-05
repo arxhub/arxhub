@@ -45,6 +45,7 @@ catalogs:
     crypto-browserify: ^3.12.1
     wretch: ^2.11.0
     '@sinclair/typebox': ^0.34.48
+    'smol-toml': ^1.3.4
   toolchain:
     '@biomejs/biome': ^2.4.14
     '@vitejs/plugin-vue': ^6.0.6
