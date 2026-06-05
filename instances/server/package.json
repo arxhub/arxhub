@@ -6,7 +6,7 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
+    "dev": "vite",
     "build": "tsc && vite build",
     "start": "node dist/main.js"
   },
@@ -19,9 +19,7 @@
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
-    "@arxhub/toolchain-vite": "workspace:*",
     "@types/node": "catalog:toolchain",
-    "tsx": "catalog:toolchain",
     "typescript": "catalog:toolchain",
     "vite": "catalog:toolchain"
   }
