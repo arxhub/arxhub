@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { basename, extname } from '@arxhub/path'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { basename, dirname, extname } from '@arxhub/path'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { useArxHub } from '@arxhub/uikit/hooks'
+import { nextTick, ref } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
 
 const props = withDefaults(
@@ -13,7 +14,89 @@ const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
 const { store } = arxhub.extensions.get(PanelStoreExtension)
 
+// ── context menu ──────────────────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+
+function onContextMenu(e: MouseEvent) {
+  e.preventDefault()
+  e.stopPropagation()
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  menuVisible.value = true
+  window.addEventListener('click', closeMenu, { once: true })
+}
+
+function closeMenu() {
+  menuVisible.value = false
+}
+
+function openFile() {
+  closeMenu()
+  const ext = extname(props.node.entry.pathname)
+  const panels = store.getPanelsForFile(ext)
+  if (panels.length > 0) {
+    store.openPanel(
+      panels[0].id,
+      { path: props.node.entry.pathname },
+      basename(props.node.entry.pathname),
+      explorer.contentGroupId ?? undefined,
+    )
+  }
+}
+
+async function newFile() {
+  closeMenu()
+  const parent = props.node.entry.kind === 'dir' ? props.node.entry.pathname : dirname(props.node.entry.pathname)
+  await explorer.createFile(parent, 'untitled.arx')
+}
+
+async function newFolder() {
+  closeMenu()
+  const parent = props.node.entry.kind === 'dir' ? props.node.entry.pathname : dirname(props.node.entry.pathname)
+  await explorer.createDir(parent, 'new-folder')
+}
+
+async function deleteEntry() {
+  closeMenu()
+  await explorer.deleteEntry(props.node.entry.pathname)
+}
+
+// ── inline rename ─────────────────────────────────────────────────────────────
+const renaming = ref(false)
+const renameValue = ref('')
+const renameInput = ref<HTMLInputElement | null>(null)
+
+async function startRename() {
+  closeMenu()
+  renameValue.value = basename(props.node.entry.pathname)
+  renaming.value = true
+  await nextTick()
+  renameInput.value?.select()
+}
+
+async function commitRename() {
+  if (!renaming.value) return
+  renaming.value = false
+  const newName = renameValue.value.trim()
+  if (newName && newName !== basename(props.node.entry.pathname)) {
+    await explorer.renameEntry(props.node.entry.pathname, newName)
+  }
+}
+
+function cancelRename() {
+  renaming.value = false
+}
+
+// ── click / expand ────────────────────────────────────────────────────────────
 async function handleClick() {
+  if (renaming.value) return
+  // selectedPath always points to a directory so toolbar knows where to create
+  explorer.selectedPath.value =
+    props.node.entry.kind === 'dir'
+      ? props.node.entry.pathname
+      : dirname(props.node.entry.pathname)
   if (props.node.entry.kind === 'dir') {
     if (props.node.expanded) {
       explorer.collapse(props.node)
@@ -21,16 +104,7 @@ async function handleClick() {
       await explorer.expand(props.node)
     }
   } else {
-    const ext = extname(props.node.entry.pathname)
-    const panels = store.getPanelsForFile(ext)
-    if (panels.length > 0) {
-      store.openPanel(
-        panels[0].id,
-        { path: props.node.entry.pathname },
-        basename(props.node.entry.pathname),
-        explorer.contentGroupId ?? undefined,
-      )
-    }
+    openFile()
   }
 }
 </script>
@@ -38,14 +112,29 @@ async function handleClick() {
 <template>
   <div
     class="tree-node"
+    :class="{ selected: explorer.selectedPath.value === node.entry.pathname }"
     :style="{ paddingLeft: `${depth * 16 + 8}px` }"
     @click="handleClick"
+    @contextmenu="onContextMenu"
+    @dblclick.prevent="startRename"
   >
     <span class="chevron">
       <template v-if="node.entry.kind === 'dir'">{{ node.expanded ? '▾' : '▸' }}</template>
     </span>
-    <span class="name">{{ basename(node.entry.pathname) || node.entry.pathname }}</span>
+
+    <input
+      v-if="renaming"
+      ref="renameInput"
+      v-model="renameValue"
+      class="rename-input"
+      @keydown.enter.prevent="commitRename"
+      @keydown.escape.prevent="cancelRename"
+      @blur="commitRename"
+      @click.stop
+    />
+    <span v-else class="name">{{ basename(node.entry.pathname) || node.entry.pathname }}</span>
   </div>
+
   <template v-if="node.expanded && node.children">
     <FileTreeNode
       v-for="child in node.children"
@@ -54,6 +143,28 @@ async function handleClick() {
       :depth="depth + 1"
     />
   </template>
+
+  <!-- context menu -->
+  <Teleport to="body">
+    <div
+      v-if="menuVisible"
+      class="ctx-menu"
+      :style="{ top: `${menuY}px`, left: `${menuX}px` }"
+      @click.stop
+    >
+      <template v-if="node.entry.kind === 'file'">
+        <button class="ctx-item" @click="openFile">Open</button>
+        <button class="ctx-item" @click="startRename">Rename</button>
+        <button class="ctx-item ctx-item--danger" @click="deleteEntry">Delete</button>
+      </template>
+      <template v-else>
+        <button class="ctx-item" @click="newFile">New File</button>
+        <button class="ctx-item" @click="newFolder">New Folder</button>
+        <button class="ctx-item" @click="startRename">Rename</button>
+        <button class="ctx-item ctx-item--danger" @click="deleteEntry">Delete</button>
+      </template>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -75,6 +186,10 @@ async function handleClick() {
   background-color: var(--gray-4);
 }
 
+.tree-node.selected {
+  background-color: var(--gray-5);
+}
+
 .chevron {
   width: 12px;
   flex-shrink: 0;
@@ -85,5 +200,54 @@ async function handleClick() {
 .name {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.rename-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--gray-2);
+  border: 1px solid var(--accent-9);
+  border-radius: 2px;
+  color: var(--gray-12);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  padding: 0 4px;
+  outline: none;
+}
+
+.ctx-menu {
+  position: fixed;
+  z-index: 9999;
+  background: var(--gray-2);
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-sm);
+  padding: 4px 0;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.ctx-item {
+  display: block;
+  width: 100%;
+  padding: 5px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--gray-12);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+
+.ctx-item:hover {
+  background: var(--gray-4);
+}
+
+.ctx-item--danger {
+  color: var(--red-9);
+}
+
+.ctx-item--danger:hover {
+  background: var(--red-a3);
 }
 </style>
