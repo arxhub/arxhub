@@ -5,9 +5,9 @@ import { Readable, Writable } from 'node:stream'
 import type { Logger } from '@arxhub/core'
 import { isNodeError } from '@arxhub/errors'
 import { normalizePath } from '@arxhub/path'
-import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type VirtualEntry } from '@arxhub/vfs'
+import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type RenameCapable, type VirtualEntry } from '@arxhub/vfs'
 
-export class NodeFileSystem extends GenericVirtualFileSystem {
+export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCapable {
   private readonly rootDir: string
   private readonly logger: Logger
 
@@ -114,6 +114,13 @@ export class NodeFileSystem extends GenericVirtualFileSystem {
       this.logger.warn(`head(${pathname}) failed:`, e)
       throw fileNotFound(pathname)
     }
+  }
+
+  async rename(src: string, dest: string): Promise<void> {
+    const absSrc = join(this.rootDir, src)
+    const absDest = join(this.rootDir, dest)
+    await fs.mkdir(dirname(absDest), { recursive: true })
+    await fs.rename(absSrc, absDest)
   }
 
 }
