@@ -1,12 +1,13 @@
-import { Plugin, type PluginArgs } from '@arxhub/core'
-import type { ArxHub } from '@arxhub/core'
 import { readConfig } from '@arxhub/config'
-import { Type } from '@sinclair/typebox'
+import type { ArxHub } from '@arxhub/core'
+import { Plugin, type PluginArgs } from '@arxhub/core'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { VfsExtension } from '@arxhub/plugin-vfs/ui'
 import { Repo, SyncEngine } from '@arxhub/sync'
 import { HttpFileSystem } from '@arxhub/vfs-http'
+import { Type } from '@sinclair/typebox'
+import { markRaw } from 'vue'
 import { manifest } from './manifest'
 import { SyncExtension } from './sync-extension'
 import SyncFooter from './ui/SyncFooter.vue'
@@ -33,11 +34,11 @@ export class SyncPlugin extends Plugin<ArxHub> {
     store.registerPanel({
       id: 'arxhub.sync.settings',
       title: 'Sync Settings',
-      component: SyncSettings,
+      component: markRaw(SyncSettings),
     })
 
     const shell = arxhub.extensions.get(ShellExtension)
-    shell.footer.register({ id: 'arxhub.sync', component: SyncFooter, region: 'right' })
+    shell.footer.register({ id: 'arxhub.sync', component: markRaw(SyncFooter), region: 'right' })
   }
 
   override async start(arxhub: ArxHub): Promise<void> {

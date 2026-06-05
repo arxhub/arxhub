@@ -10,6 +10,7 @@
   "exports": {
     ".": {
       "node": "./src/index.node.ts",
+      "browser": "./src/index.ts",
       "default": "./src/index.ts"
     }
   },

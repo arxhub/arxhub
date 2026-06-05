@@ -587,6 +587,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../core
+      '@arxhub/path':
+        specifier: workspace:*
+        version: link:../path
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib

@@ -20,9 +20,10 @@
     "test": "vitest"
   },
   "dependencies": {
-    "rabin-rs": "catalog:shared",
+    "@arxhub/path": "workspace:*",
     "async-lock": "catalog:shared",
-    "dayjs": "catalog:shared"
+    "dayjs": "catalog:shared",
+    "rabin-rs": "catalog:shared"
   },
   "devDependencies": {
     "@arxhub/vfs-node": "workspace:*",
