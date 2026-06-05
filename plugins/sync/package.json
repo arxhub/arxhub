@@ -1,0 +1,45 @@
+{
+  "name": "@arxhub/plugin-sync",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Manual sync plugin for ArxHub — syncs local VFS to a remote server",
+  "keywords": ["arxhub"],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./ui": "./src/ui.ts"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "@arxhub/config": "workspace:*",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@sinclair/typebox": "catalog:shared",
+    "@types/node": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/plugin-panels": "workspace:*",
+    "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/plugin-vfs": "workspace:*",
+    "@arxhub/sync": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
+    "@arxhub/vfs-http": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      }
+    }
+  }
+}
