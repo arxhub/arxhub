@@ -1,54 +1,35 @@
-import { createReadStream, createWriteStream } from 'node:fs'
+import { createReadStream, createWriteStream, Dirent } from 'node:fs'
 import fs from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import type { Logger } from '@arxhub/core'
+import { isNodeError } from '@arxhub/errors'
 import { normalizePath } from '@arxhub/path'
-import {
-  type DeleteOptions,
-  type FileHead,
-  fileNotFound,
-  type VirtualDir,
-  VirtualDirImpl,
-  type VirtualEntry,
-  type VirtualFile,
-  VirtualFileImpl,
-  type VirtualFileSystem,
-  type VirtualWalker,
-  VirtualWalkerImpl,
-} from '@arxhub/vfs'
-import AsyncLock from 'async-lock'
+import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type VirtualEntry } from '@arxhub/vfs'
 
-export class NodeFileSystem implements VirtualFileSystem {
+export class NodeFileSystem extends GenericVirtualFileSystem {
   private readonly rootDir: string
-  private readonly _lock = new AsyncLock()
   private readonly logger: Logger
 
   constructor(rootDir: string, logger: Logger) {
+    super()
     this.rootDir = rootDir
     this.logger = logger.child('[NodeFileSystem] ')
-  }
-
-  file<T extends Record<string, unknown>>(pathname: string): VirtualFile<T> {
-    return new VirtualFileImpl<T>(this, pathname)
-  }
-
-  dir(pathname: string): VirtualDir {
-    return new VirtualDirImpl(this, pathname)
+    fs.mkdir(rootDir, { recursive: true })
   }
 
   async list(prefix: string): Promise<VirtualEntry[]> {
     const norm = normalizePath(prefix)
     const absDir = join(this.rootDir, norm)
     const result: VirtualEntry[] = []
-    let entries: Awaited<ReturnType<typeof fs.readdir>> | null = null
+    let entries: Dirent[] | null = null
     try {
       entries = await fs.readdir(absDir, { withFileTypes: true })
     } catch (e) {
       this.logger.warn(`list(${prefix}) readdir failed:`, e)
       try {
         const stat = await fs.stat(absDir)
-        if (stat.isFile() && norm && !norm.endsWith('.info')) result.push(this.file(norm))
+        if (stat.isFile() && norm && !norm.endsWith('.arxmeta')) result.push(this.file(norm))
       } catch (e2) {
         this.logger.warn(`list(${prefix}) stat fallback failed:`, e2)
       }
@@ -58,13 +39,9 @@ export class NodeFileSystem implements VirtualFileSystem {
       const absEntry = join(absDir, entry.name)
       const relPath = absEntry.slice(this.rootDir.length).replace(/^\/+/, '')
       if (entry.isDirectory()) result.push(this.dir(relPath))
-      else if (!entry.name.endsWith('.info')) result.push(this.file(relPath))
+      else if (!entry.name.endsWith('.arxmeta')) result.push(this.file(relPath))
     }
     return result
-  }
-
-  walk(prefix: string, cursor?: string): VirtualWalker {
-    return new VirtualWalkerImpl(this, normalizePath(prefix), cursor)
   }
 
   async read(pathname: string): Promise<Uint8Array> {
@@ -97,7 +74,7 @@ export class NodeFileSystem implements VirtualFileSystem {
   async writable(pathname: string): Promise<WritableStream<Uint8Array>> {
     const filePath = join(this.rootDir, pathname)
     await fs.mkdir(dirname(filePath), { recursive: true })
-    return Writable.toWeb(createWriteStream(filePath)) as unknown as WritableStream<Uint8Array>
+    return Writable.toWeb(createWriteStream(filePath))
   }
 
   async delete(pathname: string, options?: DeleteOptions): Promise<void> {
@@ -109,8 +86,7 @@ export class NodeFileSystem implements VirtualFileSystem {
     } catch (err) {
       this.logger.warn(`delete(${pathname}) failed:`, err)
       if (!options?.force) {
-        const code = (err as NodeJS.ErrnoException).code
-        if (code === 'ENOENT') throw fileNotFound(pathname)
+        if (isNodeError(err, 'ENOENT')) throw fileNotFound(pathname)
         throw err
       }
     }
@@ -140,22 +116,4 @@ export class NodeFileSystem implements VirtualFileSystem {
     }
   }
 
-  async lock<T>(pathname: string, fn: () => Promise<T>): Promise<T> {
-    return this._lock.acquire(pathname, fn)
-  }
-
-  async acquireLock(pathname: string): Promise<() => void> {
-    let release!: () => void
-    await new Promise<void>((outer) => {
-      this._lock.acquire(
-        pathname,
-        () =>
-          new Promise<void>((inner) => {
-            release = inner
-            outer()
-          }),
-      )
-    })
-    return release
-  }
 }

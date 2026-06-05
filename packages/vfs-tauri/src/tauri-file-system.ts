@@ -1,28 +1,15 @@
 import type { Logger } from '@arxhub/core'
 import { normalizePath } from '@arxhub/path'
-import {
-  type DeleteOptions,
-  type FileHead,
-  fileNotFound,
-  type VirtualDir,
-  VirtualDirImpl,
-  type VirtualEntry,
-  type VirtualFile,
-  VirtualFileImpl,
-  type VirtualFileSystem,
-  type VirtualWalker,
-  VirtualWalkerImpl,
-} from '@arxhub/vfs'
+import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type VirtualEntry } from '@arxhub/vfs'
 import { BaseDirectory, readDir, readFile, remove, stat, writeFile } from '@tauri-apps/plugin-fs'
-import AsyncLock from 'async-lock'
 
-export class TauriFileSystem implements VirtualFileSystem {
+export class TauriFileSystem extends GenericVirtualFileSystem {
   private readonly baseDir: BaseDirectory
   private readonly basePath: string
-  private readonly _lock = new AsyncLock()
   private readonly logger: Logger
 
   constructor(basePath: string = '', baseDir: BaseDirectory = BaseDirectory.AppData, logger: Logger) {
+    super()
     this.basePath = basePath
     this.baseDir = baseDir
     this.logger = logger.child('[TauriFileSystem] ')
@@ -30,14 +17,6 @@ export class TauriFileSystem implements VirtualFileSystem {
 
   private fullPath(pathname: string): string {
     return this.basePath ? `${this.basePath}/${pathname}` : pathname
-  }
-
-  file<T extends Record<string, unknown>>(pathname: string): VirtualFile<T> {
-    return new VirtualFileImpl<T>(this, pathname)
-  }
-
-  dir(pathname: string): VirtualDir {
-    return new VirtualDirImpl(this, pathname)
   }
 
   async list(prefix: string): Promise<VirtualEntry[]> {
@@ -48,16 +27,12 @@ export class TauriFileSystem implements VirtualFileSystem {
       for (const entry of entries) {
         const relPath = norm ? `${norm}/${entry.name}` : entry.name
         if (entry.isDirectory) result.push(this.dir(relPath))
-        else if (!entry.name.endsWith('.info')) result.push(this.file(relPath))
+        else if (!entry.name.endsWith('.arxmeta')) result.push(this.file(relPath))
       }
     } catch (e) {
       this.logger.warn(`list(${prefix}) failed:`, e)
     }
     return result
-  }
-
-  walk(prefix: string, cursor?: string): VirtualWalker {
-    return new VirtualWalkerImpl(this, normalizePath(prefix), cursor)
   }
 
   async read(pathname: string): Promise<Uint8Array> {
@@ -139,22 +114,4 @@ export class TauriFileSystem implements VirtualFileSystem {
     }
   }
 
-  async lock<T>(pathname: string, fn: () => Promise<T>): Promise<T> {
-    return this._lock.acquire(pathname, fn)
-  }
-
-  async acquireLock(pathname: string): Promise<() => void> {
-    let release!: () => void
-    await new Promise<void>((outer) => {
-      this._lock.acquire(
-        pathname,
-        () =>
-          new Promise<void>((inner) => {
-            release = inner
-            outer()
-          }),
-      )
-    })
-    return release
-  }
 }

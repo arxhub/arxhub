@@ -1,6 +1,7 @@
 import { createHasher, hash } from '@arxhub/crypto'
 import type { BaseInfoFields, InfoNamespace } from '../info-namespace'
 import { InfoNamespaceImpl } from '../info-namespace/impl'
+import { infoFileAccess } from '../errors'
 import type { VirtualFile } from './interface'
 import type { DeleteOptions, VirtualFileSystem } from '../virtual-file-system'
 
@@ -11,6 +12,7 @@ export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields>
   readonly info: InfoNamespace<T>
 
   constructor(vfs: VirtualFileSystem, pathname: string) {
+    if (pathname.endsWith('.arxmeta')) throw infoFileAccess(pathname)
     this.pathname = pathname
     this.vfs = vfs
     this.info = new InfoNamespaceImpl<T>(this)
@@ -58,7 +60,7 @@ export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields>
   async delete(options?: DeleteOptions): Promise<void> {
     await this.vfs.lock(this.pathname, async () => {
       await this.vfs.delete(this.pathname, options)
-      await this.vfs.delete(`${this.pathname}.info`, { force: true })
+      await this.vfs.delete(`${this.pathname}.arxmeta`, { force: true })
     })
   }
 

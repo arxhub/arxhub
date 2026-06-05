@@ -48,17 +48,17 @@ describe('VirtualFileImpl', () => {
     expect(await file.exists()).toBe(true)
   })
 
-  test('delete() removes content and .info sidecar', async () => {
+  test('delete() removes content and .arxmeta sidecar', async () => {
     const file = vfs.file('sidecar.txt')
     await file.writeText('data')
     expect(await vfs.exists('sidecar.txt')).toBe(true)
-    expect(await vfs.exists('sidecar.txt.info')).toBe(true)
+    expect(await vfs.exists('sidecar.txt.arxmeta')).toBe(true)
     await file.delete()
     expect(await vfs.exists('sidecar.txt')).toBe(false)
-    expect(await vfs.exists('sidecar.txt.info')).toBe(false)
+    expect(await vfs.exists('sidecar.txt.arxmeta')).toBe(false)
   })
 
-  test('write() stores sha256 hash in .info', async () => {
+  test('write() stores sha256 hash in .arxmeta', async () => {
     const file = vfs.file('hashed.txt')
     await file.writeText('Lorem ipsum')
     const h = await file.info.get('hash')
