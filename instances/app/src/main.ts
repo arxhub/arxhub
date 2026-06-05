@@ -8,14 +8,28 @@ import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { EditorPlugin } from '@arxhub/plugin-editor/ui'
-import { TauriFileSystem, BaseDirectory } from '@arxhub/vfs-tauri'
+import type { VirtualFileSystem } from '@arxhub/vfs'
 import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
+import { isTauri } from '@tauri-apps/api/core'
 import { createApp } from 'vue'
 import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
 
 const arxhub = new ArxHub()
-const vfs = new TauriFileSystem('.arxhub', BaseDirectory.Home, arxhub.logger)
+
+// Tauri is just an OS bridge: use the native filesystem when running inside the
+// desktop shell, otherwise talk to the ArxHub server over HTTP (browser mode).
+// The Tauri impl is imported dynamically so its IPC code never loads in a browser.
+async function createVfs(): Promise<VirtualFileSystem> {
+  if (isTauri()) {
+    const { TauriFileSystem, BaseDirectory } = await import('@arxhub/vfs-tauri')
+    return new TauriFileSystem('.arxhub', BaseDirectory.Home, arxhub.logger)
+  }
+  const { HttpFileSystem } = await import('@arxhub/vfs-http')
+  return new HttpFileSystem({ baseUrl: '/vfs' }, arxhub.logger)
+}
+
+const vfs = await createVfs()
 arxhub.plugins.register(VfsPlugin, () => ({ vfs }))
 arxhub.plugins.register(ShellPlugin)
 arxhub.plugins.register(PanelsPlugin)

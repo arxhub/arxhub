@@ -1,0 +1,59 @@
+{
+  "name": "@arxhub/vfs-http",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "HTTP VFS implementation — talks to an ArxHub server over HTTP",
+  "keywords": [
+    "arxhub",
+    "vfs",
+    "virtual",
+    "http"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./protocol": "./src/protocol.ts",
+    "./server": "./src/server.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/http": "workspace:*",
+    "@arxhub/path": "workspace:*",
+    "@arxhub/plugin-gateway": "workspace:*",
+    "elysia": "catalog:server"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/stdlib": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./protocol": {
+        "import": "./dist/protocol.js",
+        "types": "./dist/protocol.d.ts"
+      },
+      "./server": {
+        "import": "./dist/server.js",
+        "types": "./dist/server.d.ts"
+      }
+    }
+  }
+}

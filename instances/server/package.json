@@ -13,7 +13,9 @@
   "dependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
-    "@arxhub/stdlib": "workspace:*"
+    "@arxhub/stdlib": "workspace:*",
+    "@arxhub/vfs-http": "workspace:*",
+    "@arxhub/vfs-node": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

@@ -28,5 +28,9 @@ export default defineConfig(async () => ({
       // 3. tell Vite to ignore watching `src-tauri`
       ignored: ['**/src-tauri/**'],
     },
+    // Browser dev: proxy VFS calls to the ArxHub server (instances/server, port 3000)
+    proxy: {
+      '/vfs': 'http://localhost:3000',
+    },
   },
 }))

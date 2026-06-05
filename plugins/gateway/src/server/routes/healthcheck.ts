@@ -1,5 +1,5 @@
-import Elysia from 'elysia'
+import Elysia, { type AnyElysia } from 'elysia'
 
-export function healthcheckRoute(): Elysia {
+export function healthcheckRoute(): AnyElysia {
   return new Elysia().get('/healthcheck', () => '200 OK')
 }
