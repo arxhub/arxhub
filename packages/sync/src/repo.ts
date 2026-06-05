@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { join } from '@arxhub/path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
 import type { VirtualFile, VirtualFileSystem, VirtualWalker } from '@arxhub/vfs'
