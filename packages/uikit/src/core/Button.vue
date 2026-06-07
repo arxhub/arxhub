@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  variant?: 'primary' | 'secondary' | 'ghost' | 'icon'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'icon' | 'danger'
   size?: 'sm' | 'md' | 'icon'
   active?: boolean
   type?: 'button' | 'submit' | 'reset'
@@ -57,6 +57,14 @@ defineProps<{
 }
 .btn-ghost:hover {
   background-color: var(--accent-a3);
+}
+
+.btn-danger {
+  background-color: var(--red-9);
+  color: white;
+}
+.btn-danger:hover {
+  background-color: var(--red-10);
 }
 
 .btn-icon {

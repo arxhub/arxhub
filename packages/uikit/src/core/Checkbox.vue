@@ -18,11 +18,11 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
     class="root"
     :checked="modelValue"
     :disabled="disabled"
-    @checked-change="$emit('update:modelValue', $event.checked)"
+    @checked-change="$emit('update:modelValue', $event.checked === true)"
   >
     <Checkbox.Control class="control">
       <Checkbox.Indicator class="indicator">
-        <Icon name="check" :size="12" />
+        <Icon name="lu:check" :size="12" />
       </Checkbox.Indicator>
     </Checkbox.Control>
     <Checkbox.Label v-if="label" class="label">{{ label }}</Checkbox.Label>

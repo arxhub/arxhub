@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Icon from './Icon.vue'
+import IconButton from './IconButton.vue'
 
 defineProps<{
   title: string
@@ -10,12 +11,10 @@ defineProps<{
   <div class="card">
     <div class="card-header">
       <div class="title-wrapper">
-        <Icon name="text_fields" :size="14" />
+        <Icon name="lu:type" :size="14" />
         <span class="title">{{ title }}</span>
       </div>
-      <button class="copy-btn">
-        <Icon name="content_copy" :size="14" />
-      </button>
+      <IconButton icon="lu:copy" size="xs" title="Copy" />
     </div>
     <div class="card-content">
       <slot />
@@ -55,25 +54,6 @@ defineProps<{
 
 .title {
   line-height: var(--line-height-none);
-}
-
-.copy-btn {
-  width: 1.5rem;
-  height: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  color: var(--gray-11);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all var(--duration-normal);
-}
-
-.copy-btn:hover {
-  background-color: var(--gray-3);
-  color: var(--accent-9);
 }
 
 .card-content {
