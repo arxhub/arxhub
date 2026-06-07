@@ -13,7 +13,7 @@ withDefaults(
 </script>
 
 <template>
-  <Menu.Root :positioning="{ placement }">
+  <Menu.Root :positioning="{ placement, strategy: 'fixed' }">
     <Menu.ContextTrigger v-if="trigger === 'context'" as-child>
       <slot name="trigger" />
     </Menu.ContextTrigger>
@@ -21,13 +21,11 @@ withDefaults(
       <slot name="trigger" />
     </Menu.Trigger>
 
-    <Teleport to="body">
-      <Menu.Positioner>
-        <Menu.Content class="menu-content">
-          <slot />
-        </Menu.Content>
-      </Menu.Positioner>
-    </Teleport>
+    <Menu.Positioner>
+      <Menu.Content class="menu-content">
+        <slot />
+      </Menu.Content>
+    </Menu.Positioner>
   </Menu.Root>
 </template>
 

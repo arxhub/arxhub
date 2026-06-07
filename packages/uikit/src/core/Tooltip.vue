@@ -15,17 +15,15 @@ withDefaults(
 </script>
 
 <template>
-  <Tooltip.Root :open-delay="openDelay" :close-delay="closeDelay" :positioning="{ placement }">
+  <Tooltip.Root :open-delay="openDelay" :close-delay="closeDelay" :positioning="{ placement, strategy: 'fixed' }">
     <Tooltip.Trigger as-child>
       <slot />
     </Tooltip.Trigger>
-    <Teleport to="body">
-      <Tooltip.Positioner>
-        <Tooltip.Content class="tooltip-content">
-          <slot name="content">{{ label }}</slot>
-        </Tooltip.Content>
-      </Tooltip.Positioner>
-    </Teleport>
+    <Tooltip.Positioner>
+      <Tooltip.Content class="tooltip-content">
+        <slot name="content">{{ label }}</slot>
+      </Tooltip.Content>
+    </Tooltip.Positioner>
   </Tooltip.Root>
 </template>
 
