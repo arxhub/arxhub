@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
-import AppFooter from './AppFooter.vue'
 </script>
 
 <template>

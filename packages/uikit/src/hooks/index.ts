@@ -1,3 +1,3 @@
-export { toaster } from './useToast'
+export { ARXHUB_KEY, useArxHub } from './useArxHub'
 export { useMediaQuery } from './useMediaQuery'
-export { useArxHub, ARXHUB_KEY } from './useArxHub'
+export { toaster } from './useToast'
