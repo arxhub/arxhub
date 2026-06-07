@@ -2,7 +2,7 @@
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
 import { computed, onMounted, onUnmounted } from 'vue'
-import { isPanelTabDragData, type DropZone } from '../composables/drag-types'
+import { type DropZone, isPanelTabDragData } from '../composables/drag-types'
 import { usePanels } from '../use-panels'
 import LayoutRenderer from './LayoutRenderer.vue'
 

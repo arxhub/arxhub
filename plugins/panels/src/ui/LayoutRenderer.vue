@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { usePanels } from '../use-panels'
 import type { LayoutNode } from '../types'
+import { usePanels } from '../use-panels'
 import PanelGroupView from './PanelGroupView.vue'
 import ResizeHandle from './ResizeHandle.vue'
 

@@ -12,20 +12,24 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block').
   task_item: {
     attrs: { checked: { default: false } },
     content: 'paragraph+',
-    parseDOM: [{
-      tag: 'li[data-type="task_item"]',
-      getAttrs: (dom: HTMLElement) => ({ checked: dom.dataset.checked === 'true' }),
-    }],
+    parseDOM: [
+      {
+        tag: 'li[data-type="task_item"]',
+        getAttrs: (dom: HTMLElement) => ({ checked: dom.dataset.checked === 'true' }),
+      },
+    ],
     toDOM: (node: any) => ['li', { 'data-type': 'task_item', 'data-checked': String(node.attrs.checked) }, 0] as const,
   },
   callout: {
     attrs: { type: { default: 'info' } },
     group: 'block',
     content: 'block+',
-    parseDOM: [{
-      tag: 'div.callout',
-      getAttrs: (dom: HTMLElement) => ({ type: dom.dataset.type ?? 'info' }),
-    }],
+    parseDOM: [
+      {
+        tag: 'div.callout',
+        getAttrs: (dom: HTMLElement) => ({ type: dom.dataset.type ?? 'info' }),
+      },
+    ],
     toDOM: (node: any) => ['div', { class: 'callout', 'data-type': node.attrs.type }, 0] as const,
   },
 })
@@ -46,13 +50,15 @@ const marks = basicSchema.spec.marks.append({
   link: {
     attrs: { href: {}, title: { default: null } },
     inclusive: false,
-    parseDOM: [{
-      tag: 'a[href]',
-      getAttrs: (dom: HTMLElement) => ({
-        href: dom.getAttribute('href'),
-        title: dom.getAttribute('title'),
-      }),
-    }],
+    parseDOM: [
+      {
+        tag: 'a[href]',
+        getAttrs: (dom: HTMLElement) => ({
+          href: dom.getAttribute('href'),
+          title: dom.getAttribute('title'),
+        }),
+      },
+    ],
     toDOM: (node: any) => ['a', { href: node.attrs.href, title: node.attrs.title }, 0] as const,
   },
 })

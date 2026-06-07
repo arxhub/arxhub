@@ -11,10 +11,7 @@ export function isPanelTabDragData(data: Record<string, unknown>): data is Panel
 
 export type DropZone = 'top' | 'right' | 'bottom' | 'left' | 'center'
 
-export function calculateDropZone(
-  input: { clientX: number; clientY: number },
-  el: Element,
-): DropZone {
+export function calculateDropZone(input: { clientX: number; clientY: number }, el: Element): DropZone {
   const rect = el.getBoundingClientRect()
   const x = (input.clientX - rect.left) / rect.width
   const y = (input.clientY - rect.top) / rect.height

@@ -1,6 +1,6 @@
-import { Plugin, type PluginArgs } from '@arxhub/core'
 import type { ArxHub } from '@arxhub/core'
-import { PanelStoreExtension, PanelsLayout, type LayoutLeaf, type LayoutSplit } from '@arxhub/plugin-panels/ui'
+import { Plugin, type PluginArgs } from '@arxhub/core'
+import { type LayoutLeaf, type LayoutSplit, PanelStoreExtension, PanelsLayout } from '@arxhub/plugin-panels/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { VfsExtension } from '@arxhub/plugin-vfs/ui'
 import { FolderOpen } from 'lucide-vue-next'
