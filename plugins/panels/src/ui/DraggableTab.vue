@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X } from 'lucide-vue-next'
+import { IconButton } from '@arxhub/uikit/core'
 import { ref } from 'vue'
 import { useDraggableTab } from '../composables/use-draggable-tab'
 import TabDropIndicator from './TabDropIndicator.vue'
@@ -40,9 +40,7 @@ const { isDragging, closestEdge } = useDraggableTab({
     @keydown.space.prevent="emit('click')"
   >
     <span class="tab-title">{{ title }}</span>
-    <button class="tab-close" aria-label="Close tab" @click.stop="emit('close')">
-      <X :size="12" />
-    </button>
+    <IconButton class="tab-close" icon="lu:x" size="xs" title="Close" @click.stop="emit('close')" />
     <TabDropIndicator :edge="closestEdge" />
   </div>
 </template>
@@ -91,25 +89,5 @@ const { isDragging, closestEdge } = useDraggableTab({
 
 .tab.is-dragging .tab-close {
   visibility: hidden;
-}
-
-.tab-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  background: transparent;
-  border: none;
-  border-radius: 3px;
-  color: inherit;
-  cursor: pointer;
-  padding: 0;
-  opacity: 0.5;
-}
-
-.tab-close:hover {
-  background-color: var(--gray-5);
-  opacity: 1;
 }
 </style>

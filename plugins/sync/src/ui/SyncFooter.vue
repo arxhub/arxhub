@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { Button, IconButton } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { SyncExtension } from '../sync-extension'
@@ -26,18 +27,19 @@ function openSettings() {
 
 <template>
   <div class="sync-footer">
-    <button class="gear-btn" title="Sync settings" @click="openSettings">⚙</button>
+    <IconButton icon="lu:settings" title="Sync settings" @click="openSettings" />
     <span class="status" :class="`status--${sync.status.value}`">
       <span class="dot" />
       {{ statusLabel }}
     </span>
-    <button
-      class="sync-btn"
+    <Button
+      variant="secondary"
+      size="sm"
       :disabled="sync.status.value === 'syncing' || !sync.engine"
       @click="sync.sync()"
     >
       Sync
-    </button>
+    </Button>
   </div>
 </template>
 
@@ -48,29 +50,6 @@ function openSettings() {
   gap: 8px;
   padding: 0 8px;
   height: 100%;
-}
-
-.gear-btn,
-.sync-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
-  color: var(--gray-11);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-}
-
-.gear-btn:hover,
-.sync-btn:hover:not(:disabled) {
-  background: var(--gray-4);
-  color: var(--gray-12);
-}
-
-.sync-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 .status {
