@@ -8,9 +8,7 @@ defineProps<{
   variant?: 'success' | 'error' | 'info'
 }>()
 
-defineEmits<{
-  (e: 'close'): void
-}>()
+defineEmits<(e: 'close') => void>()
 </script>
 
 <template>

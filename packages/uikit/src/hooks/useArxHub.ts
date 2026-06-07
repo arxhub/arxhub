@@ -1,5 +1,5 @@
 import type { ArxHub } from '@arxhub/core'
-import { inject, type InjectionKey } from 'vue'
+import { type InjectionKey, inject } from 'vue'
 
 export const ARXHUB_KEY: InjectionKey<ArxHub> = Symbol('arxhub')
 
