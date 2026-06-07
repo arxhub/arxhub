@@ -28,6 +28,7 @@
   "dependencies": {
     "@arxhub/core": "workspace:*",
     "@ark-ui/vue": "catalog:client",
+    "lucide-vue-next": "catalog:client",
     "vue": "catalog:client"
   },
   "devDependencies": {
