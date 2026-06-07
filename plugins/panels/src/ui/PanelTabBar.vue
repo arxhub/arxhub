@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { IconButton } from '@arxhub/uikit/core'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { Columns2, Rows2 } from 'lucide-vue-next'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { usePanels } from '../use-panels'
 import DraggableTab from './DraggableTab.vue'
@@ -69,12 +69,8 @@ function onSplit(direction: 'horizontal' | 'vertical') {
       />
     </div>
     <div class="actions">
-      <button class="action-btn" aria-label="Split right" title="Split right" @click="onSplit('horizontal')">
-        <Columns2 :size="14" />
-      </button>
-      <button class="action-btn" aria-label="Split down" title="Split down" @click="onSplit('vertical')">
-        <Rows2 :size="14" />
-      </button>
+      <IconButton icon="lu:columns-2" title="Split right" @click="onSplit('horizontal')" />
+      <IconButton icon="lu:rows-2" title="Split down" @click="onSplit('vertical')" />
     </div>
   </div>
 </template>
@@ -108,23 +104,5 @@ function onSplit(direction: 'horizontal' | 'vertical') {
   padding: 0 4px;
   gap: 2px;
   flex-shrink: 0;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  color: var(--gray-9);
-  cursor: pointer;
-}
-
-.action-btn:hover {
-  background-color: var(--gray-4);
-  color: var(--gray-12);
 }
 </style>

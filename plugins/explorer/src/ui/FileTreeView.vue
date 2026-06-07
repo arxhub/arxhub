@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button, Toolbar } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted } from 'vue'
 import { ExplorerExtension } from '../explorer-extension'
@@ -24,10 +25,10 @@ async function newFolder() {
 
 <template>
   <div class="file-tree-wrap">
-    <div class="toolbar">
-      <button class="tool-btn" title="New File" @click="newFile">＋ File</button>
-      <button class="tool-btn" title="New Folder" @click="newFolder">＋ Folder</button>
-    </div>
+    <Toolbar :gap="4">
+      <Button variant="icon" size="sm" title="New File" @click="newFile">＋ File</Button>
+      <Button variant="icon" size="sm" title="New Folder" @click="newFolder">＋ Folder</Button>
+    </Toolbar>
     <div class="file-tree">
       <FileTreeNode
         v-for="node in explorer.tree.value"
@@ -44,30 +45,6 @@ async function newFolder() {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-}
-
-.toolbar {
-  display: flex;
-  gap: 4px;
-  padding: 4px 8px;
-  border-bottom: 1px solid var(--gray-4);
-  flex-shrink: 0;
-}
-
-.tool-btn {
-  background: none;
-  border: none;
-  color: var(--gray-11);
-  font-size: var(--font-size-xs);
-  font-family: var(--font-sans);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.tool-btn:hover {
-  background: var(--gray-4);
-  color: var(--gray-12);
 }
 
 .file-tree {

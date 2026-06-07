@@ -3,7 +3,6 @@ import { Plugin, type PluginArgs } from '@arxhub/core'
 import { type LayoutLeaf, type LayoutSplit, PanelStoreExtension, PanelsLayout } from '@arxhub/plugin-panels/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { VfsExtension } from '@arxhub/plugin-vfs/ui'
-import { FolderOpen } from 'lucide-vue-next'
 import { ExplorerExtension } from './explorer-extension'
 import { manifest } from './manifest'
 import FileTreeView from './ui/FileTreeView.vue'
@@ -42,7 +41,7 @@ export class ExplorerPlugin extends Plugin<ArxHub> {
     const shell = arxhub.extensions.get(ShellExtension)
     shell.sidebar.register({
       id: 'arxhub.explorer',
-      icon: FolderOpen,
+      icon: 'lu:folder-open',
       title: 'Explorer',
       layout: PanelsLayout,
       order: 0,

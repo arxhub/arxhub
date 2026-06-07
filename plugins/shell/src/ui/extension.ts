@@ -1,5 +1,5 @@
-import { shallowRef, reactive, markRaw, type Component } from 'vue'
 import { Extension } from '@arxhub/core'
+import { type Component, markRaw, reactive, shallowRef } from 'vue'
 import type { SidebarItem } from './desktop/types'
 
 export type { SidebarItem }
@@ -21,13 +21,13 @@ export class ShellExtension extends Extension {
     items: [] as SidebarItem[],
     activeId: '',
     register(item: SidebarItem): void {
-      this.items = [...this.items, { ...item, icon: markRaw(item.icon), layout: item.layout ? markRaw(item.layout) : undefined }]
+      this.items = [...this.items, { ...item, layout: item.layout ? markRaw(item.layout) : undefined }]
       if (!this.activeId && item.region !== 'bottom') {
         this.activeId = item.id
       }
     },
     unregister(id: string): void {
-      this.items = this.items.filter(i => i.id !== id)
+      this.items = this.items.filter((i) => i.id !== id)
     },
     setActive(id: string): void {
       this.activeId = id
@@ -40,7 +40,7 @@ export class ShellExtension extends Extension {
       this.items = [...this.items, item]
     },
     unregister(id: string): void {
-      this.items = this.items.filter(i => i.id !== id)
+      this.items = this.items.filter((i) => i.id !== id)
     },
   })
 
@@ -50,7 +50,7 @@ export class ShellExtension extends Extension {
       this.items = [...this.items, item]
     },
     unregister(id: string): void {
-      this.items = this.items.filter(i => i.id !== id)
+      this.items = this.items.filter((i) => i.id !== id)
     },
   })
 

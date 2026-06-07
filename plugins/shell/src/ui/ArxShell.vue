@@ -1,38 +1,37 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ModalsProvider } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
-import DesktopLayout from './desktop/DesktopLayout.vue'
+import { computed } from 'vue'
+import AppFooter from './desktop/AppFooter.vue'
 import AppHeader from './desktop/AppHeader.vue'
 import AppSidebar from './desktop/AppSidebar.vue'
-import AppFooter from './desktop/AppFooter.vue'
+import DesktopLayout from './desktop/DesktopLayout.vue'
 import type { SidebarItem } from './desktop/types'
 import { ShellExtension } from './extension'
 
 const arxhub = useArxHub()
 const shell = arxhub.extensions.get(ShellExtension)
 
-const activeItem = computed(() =>
-  shell.sidebar.items.find(i => i.id === shell.sidebar.activeId)
-)
+const activeItem = computed(() => shell.sidebar.items.find((i) => i.id === shell.sidebar.activeId))
 
 function sortedByOrder<T extends { order?: number }>(items: T[]): T[] {
   return [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 }
 
-const headerLeft = computed(() => sortedByOrder(shell.header.items.filter(i => i.region === 'left')))
-const headerCenter = computed(() => sortedByOrder(shell.header.items.filter(i => i.region === 'center')))
-const headerRight = computed(() => sortedByOrder(shell.header.items.filter(i => i.region === 'right')))
-const footerLeft = computed(() => sortedByOrder(shell.footer.items.filter(i => i.region === 'left')))
-const footerRight = computed(() => sortedByOrder(shell.footer.items.filter(i => i.region === 'right')))
+const headerLeft = computed(() => sortedByOrder(shell.header.items.filter((i) => i.region === 'left')))
+const headerCenter = computed(() => sortedByOrder(shell.header.items.filter((i) => i.region === 'center')))
+const headerRight = computed(() => sortedByOrder(shell.header.items.filter((i) => i.region === 'right')))
+const footerLeft = computed(() => sortedByOrder(shell.footer.items.filter((i) => i.region === 'left')))
+const footerRight = computed(() => sortedByOrder(shell.footer.items.filter((i) => i.region === 'right')))
 
 const sidebarItems = computed((): SidebarItem[] =>
-  shell.sidebar.items.map(item => ({
+  shell.sidebar.items.map((item) => ({
     id: item.id,
     icon: item.icon,
     title: item.title,
     region: item.region,
     order: item.order,
-  }))
+  })),
 )
 </script>
 
@@ -71,4 +70,5 @@ const sidebarItems = computed((): SidebarItem[] =>
     </template>
     <component v-if="activeItem?.layout" :is="activeItem.layout" />
   </DesktopLayout>
+  <ModalsProvider />
 </template>
