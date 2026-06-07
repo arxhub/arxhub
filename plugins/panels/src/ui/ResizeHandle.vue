@@ -11,7 +11,9 @@ const emit = defineEmits<{
 
 let cleanupDrag: (() => void) | null = null
 
-onUnmounted(() => { cleanupDrag?.() })
+onUnmounted(() => {
+  cleanupDrag?.()
+})
 
 // TODO: add touch support (touchstart / touchmove / touchend)
 function onMouseDown(e: MouseEvent) {
@@ -24,9 +26,7 @@ function onMouseDown(e: MouseEvent) {
 
   function onMouseMove(me: MouseEvent) {
     const rect = el.getBoundingClientRect()
-    const ratio = isHorizontal
-      ? (me.clientX - rect.left) / rect.width
-      : (me.clientY - rect.top) / rect.height
+    const ratio = isHorizontal ? (me.clientX - rect.left) / rect.width : (me.clientY - rect.top) / rect.height
     emit('resize', Math.max(0.1, Math.min(0.9, ratio)))
   }
 
@@ -36,7 +36,9 @@ function onMouseDown(e: MouseEvent) {
     cleanupDrag = null
   }
 
-  function onMouseUp() { cleanup() }
+  function onMouseUp() {
+    cleanup()
+  }
 
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', onMouseUp)

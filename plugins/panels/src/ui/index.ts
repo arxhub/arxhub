@@ -1,6 +1,6 @@
 export { default as LayoutRenderer } from './LayoutRenderer.vue'
 export { default as PanelGroupView } from './PanelGroupView.vue'
+export { default as PanelsLayout } from './PanelsLayout.vue'
 export { default as PanelTabBar } from './PanelTabBar.vue'
 export { default as PanelView } from './PanelView.vue'
-export { default as PanelsLayout } from './PanelsLayout.vue'
 export { default as ResizeHandle } from './ResizeHandle.vue'

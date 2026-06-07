@@ -1,8 +1,8 @@
+import { baseKeymap, chainCommands, setBlockType, toggleMark } from 'prosemirror-commands'
+import { redo, undo } from 'prosemirror-history'
 import type { Schema } from 'prosemirror-model'
+import { liftListItem, sinkListItem, splitListItem } from 'prosemirror-schema-list'
 import type { Command } from 'prosemirror-state'
-import { toggleMark, baseKeymap, setBlockType, chainCommands } from 'prosemirror-commands'
-import { undo, redo } from 'prosemirror-history'
-import { splitListItem, liftListItem, sinkListItem } from 'prosemirror-schema-list'
 
 export function buildKeymap(schema: Schema): Record<string, Command> {
   const keys: Record<string, Command> = { ...baseKeymap }

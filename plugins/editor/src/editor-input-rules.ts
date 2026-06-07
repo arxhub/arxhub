@@ -1,5 +1,5 @@
+import { type InputRule, textblockTypeInputRule, wrappingInputRule } from 'prosemirror-inputrules'
 import type { Schema } from 'prosemirror-model'
-import { InputRule, textblockTypeInputRule, wrappingInputRule } from 'prosemirror-inputrules'
 
 export function buildInputRules(schema: Schema): InputRule[] {
   const rules: InputRule[] = []
@@ -17,9 +17,11 @@ export function buildInputRules(schema: Schema): InputRule[] {
   }
 
   if (schema.nodes.code_block) {
-    rules.push(textblockTypeInputRule(/^```(\w*)$/, schema.nodes.code_block, (match) => ({
-      language: match[1] || null,
-    })))
+    rules.push(
+      textblockTypeInputRule(/^```(\w*)$/, schema.nodes.code_block, (match) => ({
+        language: match[1] || null,
+      })),
+    )
   }
 
   if (schema.nodes.bullet_list) {

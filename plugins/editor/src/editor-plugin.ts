@@ -1,5 +1,5 @@
-import { Plugin, type PluginArgs } from '@arxhub/core'
 import type { ArxHub } from '@arxhub/core'
+import { Plugin, type PluginArgs } from '@arxhub/core'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { manifest } from './manifest'
 import EditorPanel from './ui/EditorPanel.vue'

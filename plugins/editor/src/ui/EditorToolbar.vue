@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { EditorView } from 'prosemirror-view'
-import type { Command } from 'prosemirror-state'
+import { setBlockType, toggleMark, wrapIn } from 'prosemirror-commands'
+import { redo, undo } from 'prosemirror-history'
 import type { MarkType } from 'prosemirror-model'
-import { toggleMark, setBlockType, wrapIn } from 'prosemirror-commands'
-import { undo, redo } from 'prosemirror-history'
 import { wrapInList } from 'prosemirror-schema-list'
+import type { Command } from 'prosemirror-state'
+import type { EditorView } from 'prosemirror-view'
 import { schema } from '../editor-schema'
 
 const props = defineProps<{ view: EditorView | null; onSave?: () => void }>()

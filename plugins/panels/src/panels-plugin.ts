@@ -1,5 +1,5 @@
-import { Plugin, type PluginArgs, type PluginManifest } from '@arxhub/core'
 import type { ArxHub } from '@arxhub/core'
+import { Plugin, type PluginArgs, type PluginManifest } from '@arxhub/core'
 import { PanelStoreExtension } from './panel-store-extension'
 
 const manifest: PluginManifest = {
