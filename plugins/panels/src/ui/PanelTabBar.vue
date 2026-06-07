@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { Columns2, Rows2 } from 'lucide-vue-next'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { usePanels } from '../use-panels'
 import DraggableTab from './DraggableTab.vue'
 
@@ -25,11 +25,17 @@ onMounted(() => {
   })
 })
 
-onUnmounted(() => { cleanup?.() })
+onUnmounted(() => {
+  cleanup?.()
+})
 
 function onTabClick(instanceId: string) {
   store.activateGroup(props.groupId)
   store.activatePanel(instanceId, props.groupId)
+}
+
+function onPromoteTab(instanceId: string) {
+  store.promotePanel(instanceId, props.groupId)
 }
 
 function onCloseTab(instanceId: string) {
@@ -38,11 +44,9 @@ function onCloseTab(instanceId: string) {
 
 function onSplit(direction: 'horizontal' | 'vertical') {
   const newGroupId = store.splitGroup(props.groupId, direction)
-  const activeInstance = group.value?.instances.find(
-    (i) => i.instanceId === group.value?.activeInstanceId,
-  )
+  const activeInstance = group.value?.instances.find((i) => i.instanceId === group.value?.activeInstanceId)
   if (activeInstance) {
-    store.openPanel(activeInstance.definitionId, activeInstance.props, activeInstance.title, newGroupId)
+    store.openPanel(activeInstance.definitionId, activeInstance.props, activeInstance.title, newGroupId, activeInstance.preview)
   }
 }
 </script>
@@ -58,7 +62,9 @@ function onSplit(direction: 'horizontal' | 'vertical') {
         :index="index"
         :title="instance.title"
         :is-active="instance.instanceId === group?.activeInstanceId"
+        :is-preview="!!instance.preview"
         @click="onTabClick(instance.instanceId)"
+        @promote="onPromoteTab(instance.instanceId)"
         @close="onCloseTab(instance.instanceId)"
       />
     </div>
