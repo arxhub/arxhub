@@ -21,6 +21,8 @@ export class ExplorerExtension extends Extension {
   readonly root: string
   readonly tree = ref<TreeNode[]>([])
   readonly selectedPath = ref<string | null>(null)
+  // Path of the node currently being inline-renamed (shared so only one renames at a time).
+  readonly renamingPath = ref<string | null>(null)
   contentGroupId: string | null = null
 
   constructor(args: ExplorerExtensionArgs) {
