@@ -47,12 +47,18 @@ onMounted(() => {
       }
       activeZone.value = zone
     },
-    onDragLeave: () => { activeZone.value = null },
-    onDrop: () => { activeZone.value = null },
+    onDragLeave: () => {
+      activeZone.value = null
+    },
+    onDrop: () => {
+      activeZone.value = null
+    },
   })
 })
 
-onUnmounted(() => { cleanup?.() })
+onUnmounted(() => {
+  cleanup?.()
+})
 
 function onClick() {
   store.activateGroup(props.groupId)
@@ -74,6 +80,7 @@ function onClick() {
         v-for="instance in group?.instances"
         :key="instance.instanceId"
         :instance="instance"
+        :group-id="groupId"
         :is-active="instance.instanceId === group?.activeInstanceId"
       />
       <SplitDropOverlay :zone="activeZone" />

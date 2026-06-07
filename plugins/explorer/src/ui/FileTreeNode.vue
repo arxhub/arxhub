@@ -29,23 +29,34 @@ function closeMenu() {
   menuVisible.value = false
 }
 
-function openFile() {
+function openFile(preview: boolean) {
   closeMenu()
   const path = props.node.entry.pathname
   const ext = extname(path)
   const panels = store.getPanelsForFile(ext)
   if (panels.length === 0) return
 
+  // Already open somewhere → focus it. A permanent open also promotes an existing preview tab.
   for (const [groupId, group] of Object.entries(store.groups.value)) {
     const instance = group.instances.find((i) => i.props?.path === path)
     if (instance) {
       store.activateGroup(groupId)
       store.activatePanel(instance.instanceId, groupId)
+      if (!preview && instance.preview) store.promotePanel(instance.instanceId, groupId)
       return
     }
   }
 
-  store.openPanel(panels[0].id, { path }, basename(path), explorer.contentGroupId ?? undefined)
+  store.openPanel(panels[0].id, { path }, basename(path), explorer.contentGroupId ?? undefined, preview)
+}
+
+// VSCode behavior: single-click previews (reusable italic tab), double-click opens permanently
+function openPreview() {
+  openFile(true)
+}
+
+function openPermanent() {
+  openFile(false)
 }
 
 async function newFile() {
@@ -103,8 +114,20 @@ async function handleClick() {
       await explorer.expand(props.node)
     }
   } else {
-    openFile()
+    openPreview()
   }
+}
+
+function handleDblClick() {
+  if (renaming.value) return
+  // Double-clicking a file promotes it to a permanent tab; folders are handled by the single click
+  if (props.node.entry.kind === 'file') openPermanent()
+}
+
+function handleEnter() {
+  if (renaming.value) return
+  if (props.node.entry.kind === 'file') openPermanent()
+  else handleClick()
 }
 </script>
 
@@ -113,9 +136,12 @@ async function handleClick() {
     class="tree-node"
     :class="{ selected: explorer.selectedPath.value === node.entry.pathname }"
     :style="{ paddingLeft: `${depth * 16 + 8}px` }"
+    tabindex="0"
     @click="handleClick"
+    @dblclick.prevent="handleDblClick"
     @contextmenu="onContextMenu"
-    @dblclick.prevent="startRename"
+    @keydown.f2.prevent.stop="startRename"
+    @keydown.enter.prevent="handleEnter"
   >
     <span class="chevron">
       <template v-if="node.entry.kind === 'dir'">{{ node.expanded ? '▾' : '▸' }}</template>
@@ -126,10 +152,11 @@ async function handleClick() {
       ref="renameInput"
       v-model="renameValue"
       class="rename-input"
-      @keydown.enter.prevent="commitRename"
-      @keydown.escape.prevent="cancelRename"
+      @keydown.enter.prevent.stop="commitRename"
+      @keydown.escape.prevent.stop="cancelRename"
       @blur="commitRename"
       @click.stop
+      @dblclick.stop
     />
     <span v-else class="name">{{ basename(node.entry.pathname) || node.entry.pathname }}</span>
   </div>
@@ -152,7 +179,7 @@ async function handleClick() {
       @click.stop
     >
       <template v-if="node.entry.kind === 'file'">
-        <button class="ctx-item" @click="openFile">Open</button>
+        <button class="ctx-item" @click="openPermanent">Open</button>
         <button class="ctx-item" @click="startRename">Rename</button>
         <button class="ctx-item ctx-item--danger" @click="deleteEntry">Delete</button>
       </template>
@@ -187,6 +214,11 @@ async function handleClick() {
 
 .tree-node.selected {
   background-color: var(--gray-5);
+}
+
+.tree-node:focus-visible {
+  outline: 1px solid var(--accent-9);
+  outline-offset: -1px;
 }
 
 .chevron {

@@ -1,31 +1,29 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
-import { EditorView } from 'prosemirror-view'
-import { EditorState } from 'prosemirror-state'
-import { history } from 'prosemirror-history'
-import { keymap } from 'prosemirror-keymap'
-import { inputRules } from 'prosemirror-inputrules'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { usePanelInstance } from '@arxhub/plugin-panels/ui'
 import { VfsExtension } from '@arxhub/plugin-vfs/ui'
-import { schema } from '../editor-schema'
-import { serialize, deserialize, emptyDoc } from '../editor-format'
-import { buildKeymap } from '../editor-keymap'
+import { useArxHub } from '@arxhub/uikit/hooks'
+import { history } from 'prosemirror-history'
+import { inputRules } from 'prosemirror-inputrules'
+import { keymap } from 'prosemirror-keymap'
+import { EditorState } from 'prosemirror-state'
+import { EditorView } from 'prosemirror-view'
+import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { deserialize, emptyDoc, serialize } from '../editor-format'
 import { buildInputRules } from '../editor-input-rules'
+import { buildKeymap } from '../editor-keymap'
+import { schema } from '../editor-schema'
 import EditorToolbar from './EditorToolbar.vue'
 import 'prosemirror-view/style/prosemirror.css'
 
 const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
+const panel = usePanelInstance()
 const editorEl = ref<HTMLDivElement>()
 const view = shallowRef<EditorView | null>(null)
 
 function buildPlugins() {
-  return [
-    history(),
-    keymap(buildKeymap(schema)),
-    inputRules({ rules: buildInputRules(schema) }),
-  ]
+  return [history(), keymap(buildKeymap(schema)), inputRules({ rules: buildInputRules(schema) })]
 }
 
 async function loadState(path: string): Promise<EditorState> {
@@ -56,15 +54,20 @@ onMounted(async () => {
     dispatchTransaction(tr) {
       if (!view.value) return
       view.value.updateState(view.value.state.apply(tr))
+      // First real edit promotes a VSCode-style preview tab to a permanent one (no-op otherwise)
+      if (tr.docChanged) panel?.promote()
     },
   })
 })
 
-watch(() => props.path, async (newPath) => {
-  if (!view.value) return
-  const state = await loadState(newPath)
-  view.value.updateState(state)
-})
+watch(
+  () => props.path,
+  async (newPath) => {
+    if (!view.value) return
+    const state = await loadState(newPath)
+    view.value.updateState(state)
+  },
+)
 
 onUnmounted(() => {
   view.value?.destroy()

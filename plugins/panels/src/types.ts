@@ -16,6 +16,8 @@ export interface PanelInstance {
   definitionId: string
   title: string
   props?: Record<string, unknown>
+  // VSCode-style preview (ephemeral) tab — reused on single-click, promoted to permanent on edit/double-click
+  preview?: boolean
 }
 
 export interface PanelGroup {
@@ -43,8 +45,9 @@ export interface PanelStore {
   registerPanel(def: PanelDefinition): void
   getDefinition(id: string): PanelDefinition | undefined
   getPanelsForFile(ext: string): PanelDefinition[]
-  openPanel(definitionId: string, props?: Record<string, unknown>, title?: string, targetGroupId?: string): string
+  openPanel(definitionId: string, props?: Record<string, unknown>, title?: string, targetGroupId?: string, preview?: boolean): string
   activatePanel(instanceId: string, groupId: string): void
+  promotePanel(instanceId: string, groupId: string): void
   closePanel(instanceId: string, groupId: string): void
   activateGroup(groupId: string): void
   splitGroup(groupId: string, direction: 'horizontal' | 'vertical'): string

@@ -10,11 +10,13 @@ const props = defineProps<{
   index: number
   title: string
   isActive: boolean
+  isPreview: boolean
 }>()
 
 const emit = defineEmits<{
   click: []
   close: []
+  promote: []
 }>()
 
 const tabEl = ref<HTMLElement | null>(null)
@@ -31,8 +33,9 @@ const { isDragging, closestEdge } = useDraggableTab({
     role="button"
     tabindex="0"
     class="tab"
-    :class="{ active: isActive, 'is-dragging': isDragging }"
+    :class="{ active: isActive, 'is-dragging': isDragging, preview: isPreview }"
     @click="emit('click')"
+    @dblclick="emit('promote')"
     @keydown.enter.prevent="emit('click')"
     @keydown.space.prevent="emit('click')"
   >
@@ -71,6 +74,10 @@ const { isDragging, closestEdge } = useDraggableTab({
   background-color: var(--gray-1);
   color: var(--gray-12);
   border-bottom: 2px solid var(--accent-9);
+}
+
+.tab.preview .tab-title {
+  font-style: italic;
 }
 
 .tab.is-dragging {
