@@ -1,11 +1,11 @@
 import './default-icons'
 
 export { default as Avatar } from './Avatar.vue'
+export * from './action-menu'
 export { default as Badge } from './Badge.vue'
 export { default as Button } from './Button.vue'
 export { default as Card } from './Card.vue'
 export { default as Checkbox } from './Checkbox.vue'
-export { default as ContextMenu } from './ContextMenu.vue'
 export { default as Dialog } from './Dialog.vue'
 export { default as Dropdown } from './Dropdown.vue'
 export { lucideIcons } from './default-icons'

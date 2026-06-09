@@ -1,28 +1,23 @@
 <script setup lang="ts">
-import { Button, ContextMenu, MenuItem, Toolbar } from '@arxhub/uikit/core'
+import { actionMenu, Button, Toolbar } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
-import { onMounted, provide, ref } from 'vue'
-import { ExplorerExtension, type TreeNode } from '../explorer-extension'
+import { onMounted } from 'vue'
+import { ExplorerExtension } from '../explorer-extension'
 import FileTreeNode from './FileTreeNode.vue'
-import { SetContextTargetKey, useFileActions } from './use-file-actions'
+import { useFileActions } from './use-file-actions'
 
 const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
 const actions = useFileActions()
 
-// A single shared context menu for the whole tree — the right-clicked row registers itself here.
-const contextTarget = ref<TreeNode | null>(null)
-provide(SetContextTargetKey, (node: TreeNode) => {
-  contextTarget.value = node
-})
-
-function clearContextTarget() {
-  contextTarget.value = null
-}
-
 onMounted(() => {
   explorer.loadRoot()
 })
+
+// Right-click on empty tree space → root actions (New File / New Folder).
+function onRootContextMenu(event: MouseEvent) {
+  actionMenu.open(actions.getRootActions(), { x: event.clientX, y: event.clientY })
+}
 
 async function newFile() {
   const parent = explorer.selectedPath.value ?? explorer.root
@@ -42,34 +37,13 @@ async function newFolder() {
       <Button variant="icon" size="sm" title="New Folder" @click="newFolder">＋ Folder</Button>
     </Toolbar>
 
-    <ContextMenu>
-      <template #trigger>
-        <!-- capture resets the target first; a row's bubble-phase handler then sets it -->
-        <div class="file-tree" @contextmenu.capture="clearContextTarget">
-          <FileTreeNode
-            v-for="node in explorer.tree.value"
-            :key="node.entry.pathname"
-            :node="node"
-          />
-        </div>
-      </template>
-
-      <template v-if="contextTarget?.entry.kind === 'file'">
-        <MenuItem value="open" @select="contextTarget && actions.openFile(contextTarget, false)">Open</MenuItem>
-        <MenuItem value="rename" @select="contextTarget && actions.startRename(contextTarget)">Rename</MenuItem>
-        <MenuItem value="delete" variant="danger" @select="contextTarget && actions.confirmDelete(contextTarget)">Delete</MenuItem>
-      </template>
-      <template v-else-if="contextTarget?.entry.kind === 'dir'">
-        <MenuItem value="new-file" @select="contextTarget && actions.newFile(contextTarget)">New File</MenuItem>
-        <MenuItem value="new-folder" @select="contextTarget && actions.newFolder(contextTarget)">New Folder</MenuItem>
-        <MenuItem value="rename" @select="contextTarget && actions.startRename(contextTarget)">Rename</MenuItem>
-        <MenuItem value="delete" variant="danger" @select="contextTarget && actions.confirmDelete(contextTarget)">Delete</MenuItem>
-      </template>
-      <template v-else>
-        <MenuItem value="new-file" @select="newFile">New File</MenuItem>
-        <MenuItem value="new-folder" @select="newFolder">New Folder</MenuItem>
-      </template>
-    </ContextMenu>
+    <div class="file-tree" @contextmenu.prevent="onRootContextMenu">
+      <FileTreeNode
+        v-for="node in explorer.tree.value"
+        :key="node.entry.pathname"
+        :node="node"
+      />
+    </div>
   </div>
 </template>
 

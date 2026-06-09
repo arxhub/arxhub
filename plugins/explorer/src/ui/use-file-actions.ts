@@ -1,13 +1,8 @@
 import { basename, dirname, extname } from '@arxhub/path'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
-import { modals } from '@arxhub/uikit/core'
+import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
-import type { InjectionKey } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
-
-// Provided by FileTreeView so a row can register itself as the target of the single shared
-// context menu on right-click.
-export const SetContextTargetKey: InjectionKey<(node: TreeNode) => void> = Symbol('explorer-context-target')
 
 export function useFileActions() {
   const arxhub = useArxHub()
@@ -58,5 +53,30 @@ export function useFileActions() {
     })
   }
 
-  return { openFile, newFile, newFolder, startRename, confirmDelete }
+  // Presentation-agnostic action descriptors — consumed by the desktop context menu now and a
+  // mobile bottom-sheet later (uikit's ActionMenuHost decides how to render them).
+  function getNodeActions(node: TreeNode): ActionItem[] {
+    if (node.entry.kind === 'file') {
+      return [
+        { id: 'open', label: 'Open', icon: 'lu:file-plus', onSelect: () => openFile(node, false) },
+        { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
+        { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
+      ]
+    }
+    return [
+      { id: 'new-file', label: 'New File', icon: 'lu:file-plus', onSelect: () => newFile(node) },
+      { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => newFolder(node) },
+      { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
+      { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
+    ]
+  }
+
+  function getRootActions(): ActionItem[] {
+    return [
+      { id: 'new-file', label: 'New File', icon: 'lu:file-plus', onSelect: () => explorer.createFile(explorer.root, 'untitled.arx') },
+      { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => explorer.createDir(explorer.root, 'new-folder') },
+    ]
+  }
+
+  return { openFile, newFile, newFolder, startRename, confirmDelete, getNodeActions, getRootActions }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ModalsProvider } from '@arxhub/uikit/core'
+import { ActionMenuHost, ModalsProvider } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import AppFooter from './desktop/AppFooter.vue'
@@ -71,4 +71,5 @@ const sidebarItems = computed((): SidebarItem[] =>
     <component v-if="activeItem?.layout" :is="activeItem.layout" />
   </DesktopLayout>
   <ModalsProvider />
+  <ActionMenuHost />
 </template>
