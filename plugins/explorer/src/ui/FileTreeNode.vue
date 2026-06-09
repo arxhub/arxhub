@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import { basename, dirname } from '@arxhub/path'
+import { actionMenu } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
-import { computed, inject, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
-import { SetContextTargetKey, useFileActions } from './use-file-actions'
+import { useFileActions } from './use-file-actions'
 
 const props = withDefaults(defineProps<{ node: TreeNode; depth?: number }>(), { depth: 0 })
 
 const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
 const actions = useFileActions()
-const setContextTarget = inject(SetContextTargetKey, null)
+
+function onContextMenu(event: MouseEvent) {
+  actionMenu.open(actions.getNodeActions(props.node), {
+    x: event.clientX,
+    y: event.clientY,
+    title: basename(props.node.entry.pathname),
+  })
+}
 
 // ── inline rename (shared state: only one node renames at a time) ───────────────
 const renaming = computed(() => explorer.renamingPath.value === props.node.entry.pathname)
@@ -75,7 +83,7 @@ function handleEnter() {
     tabindex="0"
     @click="handleClick"
     @dblclick.prevent="handleDblClick"
-    @contextmenu="setContextTarget?.(node)"
+    @contextmenu.prevent.stop="onContextMenu"
     @keydown.f2.prevent.stop="actions.startRename(node)"
     @keydown.enter.prevent="handleEnter"
   >
