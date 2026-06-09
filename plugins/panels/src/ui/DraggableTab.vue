@@ -40,7 +40,7 @@ const { isDragging, closestEdge } = useDraggableTab({
     @keydown.space.prevent="emit('click')"
   >
     <span class="tab-title">{{ title }}</span>
-    <IconButton class="tab-close" icon="lu:x" size="xs" title="Close" @click.stop="emit('close')" />
+    <IconButton class="tab-close" icon="lu:x" size="xs" tooltip="Close" @click.stop="emit('close')" />
     <TabDropIndicator :edge="closestEdge" />
   </div>
 </template>

@@ -14,7 +14,7 @@ defineProps<{
         <Icon name="lu:type" :size="14" />
         <span class="title">{{ title }}</span>
       </div>
-      <IconButton icon="lu:copy" size="xs" title="Copy" />
+      <IconButton icon="lu:copy" size="xs" tooltip="Copy" />
     </div>
     <div class="card-content">
       <slot />
