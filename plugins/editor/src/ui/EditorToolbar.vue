@@ -26,23 +26,23 @@ function isMarkActive(markType: MarkType): boolean {
 
 <template>
   <Toolbar :gap="2" wrap>
-    <IconButton :active="isMarkActive(schema.marks.bold)" title="Bold" @click="cmd(toggleMark(schema.marks.bold))"><strong>B</strong></IconButton>
-    <IconButton :active="isMarkActive(schema.marks.italic)" title="Italic" @click="cmd(toggleMark(schema.marks.italic))"><em>I</em></IconButton>
-    <IconButton :active="isMarkActive(schema.marks.strike)" title="Strikethrough" @click="cmd(toggleMark(schema.marks.strike))"><s>S</s></IconButton>
-    <IconButton :active="isMarkActive(schema.marks.underline)" title="Underline" @click="cmd(toggleMark(schema.marks.underline))"><u>U</u></IconButton>
-    <IconButton :active="isMarkActive(schema.marks.code)" title="Code" @click="cmd(toggleMark(schema.marks.code))">`</IconButton>
+    <IconButton :active="isMarkActive(schema.marks.bold)" tooltip="Bold" @click="cmd(toggleMark(schema.marks.bold))"><strong>B</strong></IconButton>
+    <IconButton :active="isMarkActive(schema.marks.italic)" tooltip="Italic" @click="cmd(toggleMark(schema.marks.italic))"><em>I</em></IconButton>
+    <IconButton :active="isMarkActive(schema.marks.strike)" tooltip="Strikethrough" @click="cmd(toggleMark(schema.marks.strike))"><s>S</s></IconButton>
+    <IconButton :active="isMarkActive(schema.marks.underline)" tooltip="Underline" @click="cmd(toggleMark(schema.marks.underline))"><u>U</u></IconButton>
+    <IconButton :active="isMarkActive(schema.marks.code)" tooltip="Code" @click="cmd(toggleMark(schema.marks.code))">`</IconButton>
     <Separator />
-    <IconButton title="Heading 1" @click="cmd(setBlockType(schema.nodes.heading, { level: 1 }))">H1</IconButton>
-    <IconButton title="Heading 2" @click="cmd(setBlockType(schema.nodes.heading, { level: 2 }))">H2</IconButton>
-    <IconButton title="Heading 3" @click="cmd(setBlockType(schema.nodes.heading, { level: 3 }))">H3</IconButton>
-    <IconButton title="Paragraph" @click="cmd(setBlockType(schema.nodes.paragraph))">¶</IconButton>
+    <IconButton tooltip="Heading 1" @click="cmd(setBlockType(schema.nodes.heading, { level: 1 }))">H1</IconButton>
+    <IconButton tooltip="Heading 2" @click="cmd(setBlockType(schema.nodes.heading, { level: 2 }))">H2</IconButton>
+    <IconButton tooltip="Heading 3" @click="cmd(setBlockType(schema.nodes.heading, { level: 3 }))">H3</IconButton>
+    <IconButton tooltip="Paragraph" @click="cmd(setBlockType(schema.nodes.paragraph))">¶</IconButton>
     <Separator />
-    <IconButton title="Bullet list" @click="cmd(wrapInList(schema.nodes.bullet_list))">•</IconButton>
-    <IconButton title="Ordered list" @click="cmd(wrapInList(schema.nodes.ordered_list))">1.</IconButton>
-    <IconButton title="Blockquote" @click="cmd(wrapIn(schema.nodes.blockquote))">❝</IconButton>
+    <IconButton tooltip="Bullet list" @click="cmd(wrapInList(schema.nodes.bullet_list))">•</IconButton>
+    <IconButton tooltip="Ordered list" @click="cmd(wrapInList(schema.nodes.ordered_list))">1.</IconButton>
+    <IconButton tooltip="Blockquote" @click="cmd(wrapIn(schema.nodes.blockquote))">❝</IconButton>
     <Separator />
-    <IconButton title="Undo" @click="cmd(undo)">↩</IconButton>
-    <IconButton title="Redo" @click="cmd(redo)">↪</IconButton>
+    <IconButton tooltip="Undo" @click="cmd(undo)">↩</IconButton>
+    <IconButton tooltip="Redo" @click="cmd(redo)">↪</IconButton>
     <Separator grow />
     <Button variant="secondary" size="sm" @click="onSave?.()">Save</Button>
   </Toolbar>

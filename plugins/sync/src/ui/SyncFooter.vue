@@ -27,7 +27,7 @@ function openSettings() {
 
 <template>
   <div class="sync-footer">
-    <IconButton icon="lu:settings" title="Sync settings" @click="openSettings" />
+    <IconButton icon="lu:settings" tooltip="Sync settings" @click="openSettings" />
     <span class="status" :class="`status--${sync.status.value}`">
       <span class="dot" />
       {{ statusLabel }}

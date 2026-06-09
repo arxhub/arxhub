@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import Icon from './Icon.vue'
+import Tooltip from './Tooltip.vue'
+
+defineOptions({ inheritAttrs: false })
 
 defineProps<{
   title: string
@@ -9,13 +12,16 @@ defineProps<{
 </script>
 
 <template>
-  <button 
-    class="nav-item" 
-    :class="{ active }"
-    :title="title"
-  >
-    <Icon :name="icon" :size="20" />
-  </button>
+  <Tooltip :label="title" placement="right">
+    <button
+      class="nav-item"
+      :class="{ active }"
+      :aria-label="title"
+      v-bind="$attrs"
+    >
+      <Icon :name="icon" :size="20" />
+    </button>
+  </Tooltip>
 </template>
 
 <style scoped>

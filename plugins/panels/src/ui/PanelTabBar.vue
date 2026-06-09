@@ -69,8 +69,8 @@ function onSplit(direction: 'horizontal' | 'vertical') {
       />
     </div>
     <div class="actions">
-      <IconButton icon="lu:columns-2" title="Split right" @click="onSplit('horizontal')" />
-      <IconButton icon="lu:rows-2" title="Split down" @click="onSplit('vertical')" />
+      <IconButton icon="lu:columns-2" tooltip="Split right" @click="onSplit('horizontal')" />
+      <IconButton icon="lu:rows-2" tooltip="Split down" @click="onSplit('vertical')" />
     </div>
   </div>
 </template>
