@@ -97,6 +97,7 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
       await fs.access(join(this.rootDir, pathname))
       return true
     } catch (e) {
+      if (isNodeError(e, 'ENOENT')) return false
       this.logger.warn(`exists(${pathname}) failed:`, e)
       return false
     }
