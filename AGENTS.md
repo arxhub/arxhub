@@ -151,3 +151,14 @@ Shared dependency versions are pinned in `pnpm-workspace.yaml` under `catalogs:`
 - `useDefineForClassFields: false` in tsconfig — required for the Plugin/Extension class pattern to work correctly.
 - The `biome-ignore format: Hand formatting` pattern in `core/` is intentional for method overload readability — keep it when adding new overloads.
 - `toolchains/vite/src/node.ts` has a `biome-ignore lint/style/noParameterAssign` — known workaround for default arg rewrite; do not replicate.
+
+## DESIGN CONTEXT
+
+Strategic design intent lives in [`PRODUCT.md`](PRODUCT.md) (root). Visual system lives in `DESIGN.md` (root, when present) + `.impeccable/design.json`.
+
+- **Register:** product (UI serves the tool; no marketing surfaces).
+- **Users:** Obsidian-style local-first knowledge workers + plugin authors; keyboard-driven; mobile is a planned future target.
+- **Personality:** *Linear-crisp* — precise, fast, unobtrusive. The tool recedes, content leads.
+- **Anti-references:** not generic SaaS, not heavy/enterprise, not toy/cute, not trendy AI-app.
+- **A11y commitment:** full keyboard navigation (every action reachable without a mouse).
+- Read `PRODUCT.md` before any UI/design work; run impeccable commands (`/impeccable critique|polish|live …`) for design tasks.
