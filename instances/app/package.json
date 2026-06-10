@@ -15,6 +15,7 @@
     "@arxhub/plugin-editor": "workspace:*",
     "@arxhub/plugin-explorer": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
+    "@arxhub/plugin-settings": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/plugin-sync": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",

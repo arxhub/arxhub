@@ -3,8 +3,14 @@ import { readConfig, writeConfig } from '@arxhub/config'
 import { ConfigForm } from '@arxhub/config/ui'
 import { VfsExtension } from '@arxhub/plugin-vfs/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
+import type { TObject } from '@sinclair/typebox'
 import { onMounted, ref } from 'vue'
-import { SyncConfigSchema } from '../sync-plugin'
+
+const props = defineProps<{
+  sectionId: string
+  title: string
+  schema: TObject
+}>()
 
 const arxhub = useArxHub()
 const { vfs } = arxhub.extensions.get(VfsExtension)
@@ -12,26 +18,25 @@ const { vfs } = arxhub.extensions.get(VfsExtension)
 const values = ref<Record<string, unknown>>({})
 
 onMounted(async () => {
-  const cfg = await readConfig(vfs, 'sync', SyncConfigSchema)
+  const cfg = await readConfig(vfs, props.sectionId, props.schema)
   values.value = cfg as Record<string, unknown>
 })
 
 async function onSave(data: Record<string, unknown>) {
-  await writeConfig(vfs, 'sync', SyncConfigSchema, data)
+  await writeConfig(vfs, props.sectionId, props.schema, data)
   values.value = { ...values.value, ...data }
 }
 </script>
 
 <template>
-  <div class="sync-settings">
-    <h3 class="title">Sync Settings</h3>
-    <p class="hint">Changes take effect on the next sync or app restart.</p>
-    <ConfigForm :schema="SyncConfigSchema" :values="values" @save="onSave" />
+  <div class="schema-settings-page">
+    <h3 class="title">{{ title }}</h3>
+    <ConfigForm :schema="schema" :values="values" @save="onSave" />
   </div>
 </template>
 
 <style scoped>
-.sync-settings {
+.schema-settings-page {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -43,13 +48,6 @@ async function onSave(data: Record<string, unknown>) {
   font-family: var(--font-sans);
   font-weight: var(--font-weight-medium);
   color: var(--gray-12);
-  margin: 0;
-}
-
-.hint {
-  font-size: var(--font-size-xs);
-  font-family: var(--font-sans);
-  color: var(--gray-10);
   margin: 0;
 }
 </style>

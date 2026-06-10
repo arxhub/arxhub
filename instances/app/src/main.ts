@@ -6,6 +6,7 @@ import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
+import { SettingsPlugin } from '@arxhub/plugin-settings/ui'
 import { ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
@@ -34,6 +35,7 @@ arxhub.plugins.register(PanelsPlugin)
 arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
 arxhub.plugins.register(EditorPlugin)
+arxhub.plugins.register(SettingsPlugin)
 arxhub.plugins.register(SyncPlugin)
 await arxhub.start()
 
