@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { SettingsExtension } from '@arxhub/plugin-settings/ui'
+import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { Button, IconButton } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
@@ -7,7 +8,8 @@ import { SyncExtension } from '../sync-extension'
 
 const arxhub = useArxHub()
 const sync = arxhub.extensions.get(SyncExtension)
-const { store } = arxhub.extensions.get(PanelStoreExtension)
+const shell = arxhub.extensions.get(ShellExtension)
+const settings = arxhub.extensions.get(SettingsExtension)
 
 const statusLabel = computed(() => {
   if (sync.status.value === 'syncing') return 'Syncing…'
@@ -21,7 +23,8 @@ const statusLabel = computed(() => {
 })
 
 function openSettings() {
-  store.openPanel('arxhub.sync.settings')
+  settings.open('sync')
+  shell.sidebar.setActive('arxhub.settings')
 }
 </script>
 

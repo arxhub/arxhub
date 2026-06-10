@@ -213,6 +213,9 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
+      '@arxhub/plugin-settings':
+        specifier: workspace:*
+        version: link:../../plugins/settings
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../../plugins/shell
@@ -350,9 +353,15 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
+      '@arxhub/plugin-settings':
+        specifier: workspace:*
+        version: link:../../plugins/settings
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../../plugins/shell
+      '@arxhub/plugin-sync':
+        specifier: workspace:*
+        version: link:../../plugins/sync
       '@arxhub/plugin-vfs':
         specifier: workspace:*
         version: link:../../plugins/vfs
@@ -1009,6 +1018,43 @@ importers:
         specifier: catalog:toolchain
         version: 5.6.0
 
+  plugins/settings:
+    dependencies:
+      '@arxhub/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/plugin-panels':
+        specifier: workspace:*
+        version: link:../panels
+      '@arxhub/plugin-shell':
+        specifier: workspace:*
+        version: link:../shell
+      '@arxhub/plugin-vfs':
+        specifier: workspace:*
+        version: link:../vfs
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@sinclair/typebox':
+        specifier: catalog:shared
+        version: 0.34.48
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+
   plugins/shell:
     dependencies:
       '@arxhub/core':
@@ -1039,9 +1085,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@arxhub/plugin-panels':
+      '@arxhub/plugin-settings':
         specifier: workspace:*
-        version: link:../panels
+        version: link:../settings
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell

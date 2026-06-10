@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, provide } from 'vue'
 import { type DropZone, isPanelTabDragData } from '../composables/drag-types'
-import { usePanels } from '../use-panels'
+import type { PanelStore } from '../types'
+import { PanelStoreKey, usePanels } from '../use-panels'
 import LayoutRenderer from './LayoutRenderer.vue'
 
-const store = usePanels()
-const layout = computed(() => store.layout.value)
+// A mini-app can pass its own independent store; otherwise fall back to the global singleton.
+const props = defineProps<{ store?: PanelStore }>()
+const panelStore = props.store ?? usePanels()
+provide(PanelStoreKey, panelStore)
+
+const layout = computed(() => panelStore.layout.value)
 
 let cleanup: (() => void) | null = null
 
@@ -31,15 +36,15 @@ onMounted(() => {
         const { groupId: destGroupId, index: destIndex } = dest.data
         const edge = extractClosestEdge(dest.data)
         const insertIndex = edge === 'left' ? destIndex : destIndex + 1
-        store.movePanel(instanceId, fromGroupId, destGroupId, insertIndex)
+        panelStore.movePanel(instanceId, fromGroupId, destGroupId, insertIndex)
       } else if (dest.data.type === 'tab-bar') {
         const destGroupId = dest.data.groupId as string
-        const destGroup = store.groups.value[destGroupId]
-        store.movePanel(instanceId, fromGroupId, destGroupId, destGroup?.instances.length ?? 0)
+        const destGroup = panelStore.groups.value[destGroupId]
+        panelStore.movePanel(instanceId, fromGroupId, destGroupId, destGroup?.instances.length ?? 0)
       } else if (dest.data.type === 'panel-group-body') {
         const destGroupId = dest.data.groupId as string
         const zone = (dest.data.zone as DropZone) ?? 'center'
-        store.movePanelToZone(instanceId, fromGroupId, destGroupId, zone)
+        panelStore.movePanelToZone(instanceId, fromGroupId, destGroupId, zone)
       }
     },
   })

@@ -1,8 +1,8 @@
 {
-  "name": "@arxhub/plugin-sync",
+  "name": "@arxhub/plugin-settings",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "Manual sync plugin for ArxHub — syncs local VFS to a remote server",
+  "description": "Global settings screen with a per-plugin section registry for ArxHub",
   "keywords": [
     "arxhub"
   ],
@@ -30,13 +30,10 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
-    "@arxhub/sync": "workspace:*",
-    "@arxhub/uikit": "workspace:*",
-    "@arxhub/vfs": "workspace:*",
-    "@arxhub/vfs-http": "workspace:*"
+    "@arxhub/uikit": "workspace:*"
   },
   "publishConfig": {
     "exports": {

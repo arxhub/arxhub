@@ -3,14 +3,18 @@
   "sideEffects": false,
   "version": "0.1.0",
   "description": "File explorer plugin for ArxHub",
-  "keywords": ["arxhub"],
+  "keywords": [
+    "arxhub"
+  ],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
   "exports": {
     "./ui": "./src/ui.ts"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build"
   },

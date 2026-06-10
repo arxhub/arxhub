@@ -1,7 +1,7 @@
 import { readConfig } from '@arxhub/config'
 import type { ArxHub } from '@arxhub/core'
 import { Plugin, type PluginArgs } from '@arxhub/core'
-import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { VfsExtension } from '@arxhub/plugin-vfs/ui'
 import { Repo, SyncEngine } from '@arxhub/sync'
@@ -11,7 +11,6 @@ import { markRaw } from 'vue'
 import { manifest } from './manifest'
 import { SyncExtension } from './sync-extension'
 import SyncFooter from './ui/SyncFooter.vue'
-import SyncSettings from './ui/SyncSettings.vue'
 
 export const SyncConfigSchema = Type.Object({
   serverUrl: Type.String({ title: 'Server URL', default: '' }),
@@ -30,12 +29,8 @@ export class SyncPlugin extends Plugin<ArxHub> {
   override configure(arxhub: ArxHub): void {
     super.configure(arxhub)
 
-    const { store } = arxhub.extensions.get(PanelStoreExtension)
-    store.registerPanel({
-      id: 'arxhub.sync.settings',
-      title: 'Sync Settings',
-      component: markRaw(SyncSettings),
-    })
+    const settings = arxhub.extensions.get(SettingsExtension)
+    settings.register({ id: 'sync', title: 'Sync', schema: SyncConfigSchema, order: 10 })
 
     const shell = arxhub.extensions.get(ShellExtension)
     shell.footer.register({ id: 'arxhub.sync', component: markRaw(SyncFooter), region: 'right' })
