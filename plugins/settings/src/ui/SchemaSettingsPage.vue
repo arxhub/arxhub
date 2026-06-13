@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { readConfig, writeConfig } from '@arxhub/config'
 import { ConfigForm } from '@arxhub/config/ui'
-import { VfsExtension } from '@arxhub/plugin-vfs/ui'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import type { VirtualFileSystem } from '@arxhub/vfs'
 import type { TObject } from '@sinclair/typebox'
 import { onMounted, ref } from 'vue'
 
@@ -10,20 +9,18 @@ const props = defineProps<{
   sectionId: string
   title: string
   schema: TObject
+  storage: VirtualFileSystem
 }>()
-
-const arxhub = useArxHub()
-const { vfs } = arxhub.extensions.get(VfsExtension)
 
 const values = ref<Record<string, unknown>>({})
 
 onMounted(async () => {
-  const cfg = await readConfig(vfs, props.sectionId, props.schema)
+  const cfg = await readConfig(props.storage, props.schema)
   values.value = cfg as Record<string, unknown>
 })
 
 async function onSave(data: Record<string, unknown>) {
-  await writeConfig(vfs, props.sectionId, props.schema, data)
+  await writeConfig(props.storage, props.schema, data)
   values.value = { ...values.value, ...data }
 }
 </script>

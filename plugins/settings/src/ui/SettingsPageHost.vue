@@ -15,10 +15,11 @@ const section = computed(() => settings.sections.value.find((s) => s.id === prop
 <template>
   <component :is="section.component" v-if="section?.component" />
   <SchemaSettingsPage
-    v-else-if="section?.schema"
+    v-else-if="section?.schema && section?.storage"
     :section-id="section.id"
     :title="section.title"
     :schema="section.schema"
+    :storage="section.storage"
   />
   <div v-else class="settings-missing">Unknown settings section: {{ sectionId }}</div>
 </template>
