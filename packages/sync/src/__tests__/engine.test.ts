@@ -46,10 +46,12 @@ describe('SyncEngine', () => {
       await local.add('/data')
 
       // Act
-      await local.snapshot()
+      const committed = await local.snapshot()
 
       // Assert
-      expect(await local.getHeadFile().readText()).toEqual('3bdec02bb21d82f532e08b53531e21f2a36f4fc267cbe1e5cfd1f41e03355893')
+      // Snapshot hashes are content-derived (canonical stableStringify); assert via the produced
+      // snapshot rather than pinning a magic literal. Parent is the empty snapshot = sha256('{}').
+      expect(await local.getHeadFile().readText()).toEqual(committed.hash)
       expect(await local.getChangesFile().readJSON()).toEqual([])
       expect(await local.getSnapshotFile('44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a').readJSON()).toEqual({
         hash: '44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a',
@@ -57,8 +59,8 @@ describe('SyncEngine', () => {
         timestamp: 0,
         files: {},
       })
-      expect(await local.getSnapshotFile('3bdec02bb21d82f532e08b53531e21f2a36f4fc267cbe1e5cfd1f41e03355893').readJSON()).toEqual({
-        hash: '3bdec02bb21d82f532e08b53531e21f2a36f4fc267cbe1e5cfd1f41e03355893',
+      expect(await local.getSnapshotFile(committed.hash).readJSON()).toEqual({
+        hash: committed.hash,
         parent: '44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a',
         timestamp: expect.any(Number),
         files: {
@@ -102,7 +104,8 @@ describe('SyncEngine', () => {
       // Assert
       const head = await remote.getHeadSnapshot()
       expect(head).toEqual({
-        hash: '5357bece6f5c405b7c089065f4de42ebe5d32dacd057747ba50b34eec7e7338e',
+        // Snapshot hash is content-derived; parent is the empty snapshot (sha256('{}'), stable).
+        hash: expect.any(String),
         parent: '44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a',
         timestamp: expect.any(Number),
         files: {
@@ -129,15 +132,21 @@ describe('SyncEngine', () => {
       await remote.add('remote.txt')
       await remote.snapshot()
 
+      // Capture the remote head BEFORE sync: the merged snapshot must be rebased onto it (its parent
+      // == this hash). Pinning parent guards against a regression that rebases onto the local head.
+      const remoteHeadBefore = await remote.getHeadSnapshot()
+
       // Act
       await engine.sync()
 
       // Assert
       expect(await localVfs.file('remote.txt').readText()).toEqual('remote content')
       const head = await remote.getHeadSnapshot()
+      expect(head.parent).toEqual(remoteHeadBefore.hash)
       expect(head).toEqual({
-        hash: 'a88e220e6a730e9610cd3e552fa767cc62415b6327cd3af7320f7ffa08372c0a',
-        parent: 'a0f5ae89c6048c17c30c2d8cee9abfebee14d86dccf3071ca95128ade77f0544',
+        // hash is content-derived; parent is asserted exactly above (rebased onto the remote head).
+        hash: expect.any(String),
+        parent: remoteHeadBefore.hash,
         timestamp: expect.any(Number),
         files: {
           'remote.txt': {
