@@ -1,4 +1,4 @@
-import { LazyContainer } from '@arxhub/stdlib/collections/lazy-container'
+import { isConstructor, LazyContainer } from '@arxhub/stdlib/collections/lazy-container'
 import type { Named } from '@arxhub/stdlib/collections/named'
 import type { Constructor, Except } from 'type-fest'
 import type { Logger } from './logger'
@@ -60,12 +60,22 @@ export class PluginContainer<T> extends LazyContainer<Plugin<T>> {
   }
 
   // TODO: waiting for biome 2.0 https://github.com/biomejs/biome/discussions/187
+  // self-bound: the plugin class is its own token
   // biome-ignore format: Hand formatting is more readable
-  override register(factory: Constructor<Plugin<T>, [PluginArgs]>): void
+  override register(token: Constructor<Plugin<T>, [PluginArgs]>): void
   // biome-ignore format: Hand formatting is more readable
-  override register<A extends PluginArgs>(factory: Constructor<Plugin<T>, [A]>, args: () => Except<A, keyof PluginArgs>): void
+  override register<A extends PluginArgs>(token: Constructor<Plugin<T>, [A]>, args: () => Except<A, keyof PluginArgs>): void
+  // token -> impl: resolve `token` to a `impl` instance
   // biome-ignore format: Hand formatting is more readable
-  override register<A extends PluginArgs>(factory: Constructor<Plugin<T>, [PluginArgs] | [A]>, args?: () => Except<A, keyof PluginArgs>): void {
-    super.register(factory, args == null ? () => [this.defaults] : () => [{ ...this.defaults, ...args() }])
+  override register<R extends Plugin<T>>(token: Constructor<R>, impl: Constructor<R, [PluginArgs]>): void
+  // biome-ignore format: Hand formatting is more readable
+  override register<R extends Plugin<T>, A extends PluginArgs>(token: Constructor<R>, impl: Constructor<R, [A]>, args: () => Except<A, keyof PluginArgs>): void
+  // biome-ignore format: Hand formatting is more readable
+  override register(token: Constructor<Plugin<T>>, implOrArgs?: Constructor<Plugin<T>> | (() => object), args?: () => object): void {
+    if (isConstructor(implOrArgs)) {
+      super.register(token, implOrArgs, () => [{ ...this.defaults, ...(args?.() ?? {}) }])
+    } else {
+      super.register(token, () => [{ ...this.defaults, ...(implOrArgs?.() ?? {}) }])
+    }
   }
 }
