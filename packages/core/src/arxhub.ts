@@ -1,5 +1,6 @@
 import { illegalState } from '@arxhub/errors'
 import type { EventBus, EventMap } from '@arxhub/events'
+import { LazyContainer } from '@arxhub/stdlib/collections/lazy-container'
 import EventEmitter from 'eventemitter3'
 import { ExtensionContainer } from './extension'
 import { ConsoleLogger, type Logger } from './logger'
@@ -10,6 +11,7 @@ type ConfigureCallback = (params: { plugins: PluginContainer<ArxHub>; extensions
 export class ArxHub {
   readonly plugins: PluginContainer<ArxHub>
   readonly extensions: ExtensionContainer
+  readonly services: LazyContainer<object>
   readonly logger: Logger
   readonly events: EventBus
 
@@ -17,7 +19,10 @@ export class ArxHub {
 
   constructor() {
     this.logger = new ConsoleLogger()
-    this.plugins = new PluginContainer({ logger: this.logger })
+    // Root DI scope for infrastructure services (e.g. RootVfs). Each plugin gets a child of this,
+    // so per-plugin bindings (PluginHome) stay isolated while shared services fall through here.
+    this.services = new LazyContainer('Service')
+    this.plugins = new PluginContainer(this.logger, this.services)
     this.extensions = new ExtensionContainer({ logger: this.logger })
     this.events = new EventEmitter<EventMap>()
   }

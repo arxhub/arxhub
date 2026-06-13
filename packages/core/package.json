@@ -16,7 +16,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "@arxhub/events": "workspace:*",
@@ -30,7 +31,8 @@
   },
   "peerDependencies": {
     "@arxhub/errors": "workspace:*",
-    "@arxhub/stdlib": "workspace:*"
+    "@arxhub/stdlib": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
   },
   "publishConfig": {
     "exports": {
