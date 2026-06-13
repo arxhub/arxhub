@@ -1,6 +1,8 @@
+import { hasErrorCode } from '@arxhub/errors'
 import { join } from '@arxhub/path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
+import { stableStringify } from '@arxhub/stdlib/record/stable-stringify'
 import type { VirtualFile, VirtualFileSystem, VirtualWalker } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
@@ -126,7 +128,9 @@ export class Repo {
     }
 
     const snapshot = {
-      hash: sha256(JSON.stringify(files)),
+      // stableStringify (not JSON.stringify) so identical file sets hash identically across devices.
+      // Matches prepare()'s empty-snapshot hash: stableStringify({}) === '{}' === JSON.stringify({}).
+      hash: sha256(stableStringify(files)),
       parent: head.hash,
       timestamp: dayjs().unix(),
       files,
@@ -139,22 +143,42 @@ export class Repo {
     return snapshot
   }
 
-  async findBaseSnapshot(localHead: string, remoteHead: string): Promise<Snapshot | null> {
-    const localAncestors = new Set<string>()
-    let current: string | null = localHead
-
-    while (current != null) {
-      if (localAncestors.has(current)) break
-      localAncestors.add(current)
-      const snapshot: Snapshot = await this.getSnapshotFile(current).readJSON()
+  // Walks a snapshot's parent chain, yielding each successfully-read snapshot oldest-link-last.
+  // A genuinely absent snapshot (pruned chain / partial upload) ends the walk cleanly via break;
+  // any OTHER error (transport/IO) propagates so the caller fails loudly instead of treating a
+  // flaky read as "chain ended" — that would let findBaseSnapshot return a wrong/empty base and
+  // resurrect deleted files during merge. Cycles are bounded by the visited set.
+  private async *ancestry(head: string): AsyncGenerator<Snapshot> {
+    const visited = new Set<string>()
+    let current: string | null = head
+    while (current != null && !visited.has(current)) {
+      visited.add(current)
+      let snapshot: Snapshot
+      try {
+        snapshot = await this.getSnapshotFile(current).readJSON()
+      } catch (error) {
+        if (hasErrorCode(error, 'FileNotFound')) break
+        throw error
+      }
+      yield snapshot
       current = snapshot.parent
     }
+  }
 
-    current = remoteHead
-    while (current != null) {
-      if (localAncestors.has(current)) return this.getSnapshotFile(current).readJSON()
-      const snapshot: Snapshot = await this.getSnapshotFile(current).readJSON()
-      current = snapshot.parent
+  async findBaseSnapshot(localHead: string, remoteHead: string): Promise<Snapshot | null> {
+    // Confirmed local ancestors: keyed by hash, value is the already-parsed snapshot. Only hashes
+    // whose snapshot file was actually read land here, so the lowest common ancestor returned below
+    // is guaranteed to exist (a hash with a missing file must never be handed back as a base).
+    const localAncestors = new Map<string, Snapshot>()
+    for await (const snapshot of this.ancestry(localHead)) {
+      localAncestors.set(snapshot.hash, snapshot)
+    }
+
+    // Walk the remote ancestry until it meets a confirmed local ancestor (the LCA); return the
+    // local copy we already parsed rather than re-reading it.
+    for await (const snapshot of this.ancestry(remoteHead)) {
+      const base = localAncestors.get(snapshot.hash)
+      if (base != null) return base
     }
 
     return null

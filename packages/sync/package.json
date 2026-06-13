@@ -20,6 +20,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/errors": "workspace:*",
     "@arxhub/path": "workspace:*",
     "async-lock": "catalog:shared",
     "dayjs": "catalog:shared",
