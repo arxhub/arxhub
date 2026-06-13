@@ -1,4 +1,4 @@
-import { join } from '@arxhub/path'
+import { posix } from '@arxhub/path'
 import { isRenameCapable } from '../capabilities/rename'
 import type { VirtualFileSystem } from '../virtual-file-system'
 
@@ -14,6 +14,6 @@ async function copyEntry(vfs: VirtualFileSystem, src: string, dest: string): Pro
   for await (const file of vfs.walk(src)) {
     const rel = file.pathname.slice(src.length)
     const bytes = await vfs.read(file.pathname)
-    await vfs.write(join(dest, rel), bytes)
+    await vfs.write(posix.join(dest, rel), bytes)
   }
 }

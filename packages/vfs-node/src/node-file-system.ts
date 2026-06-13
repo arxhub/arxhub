@@ -1,4 +1,4 @@
-import { createReadStream, createWriteStream, Dirent } from 'node:fs'
+import { createReadStream, createWriteStream, type Dirent } from 'node:fs'
 import fs from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { Readable, Writable } from 'node:stream'
@@ -36,8 +36,9 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
       return result
     }
     for (const entry of entries) {
-      const absEntry = join(absDir, entry.name)
-      const relPath = absEntry.slice(this.rootDir.length).replace(/^\/+/, '')
+      // Build the LOGICAL ('/') pathname from the normalized prefix + bare filename — never by
+      // slicing the OS path, whose separator is '\' on Windows and would leak into the VFS namespace.
+      const relPath = norm === '' ? entry.name : `${norm}/${entry.name}`
       if (entry.isDirectory()) result.push(this.dir(relPath))
       else if (!entry.name.endsWith('.arxmeta')) result.push(this.file(relPath))
     }
@@ -123,5 +124,4 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
     await fs.mkdir(dirname(absDest), { recursive: true })
     await fs.rename(absSrc, absDest)
   }
-
 }
