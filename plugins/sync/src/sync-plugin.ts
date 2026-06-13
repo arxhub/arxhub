@@ -1,9 +1,8 @@
 import { readConfig } from '@arxhub/config'
 import type { ArxHub } from '@arxhub/core'
-import { Plugin, type PluginArgs } from '@arxhub/core'
+import { Plugin, type PluginArgs, PluginHome } from '@arxhub/core'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { VfsExtension } from '@arxhub/plugin-vfs/ui'
 import { Repo, SyncEngine } from '@arxhub/sync'
 import { HttpFileSystem } from '@arxhub/vfs-http'
 import { Type } from '@sinclair/typebox'
@@ -29,8 +28,9 @@ export class SyncPlugin extends Plugin<ArxHub> {
   override configure(arxhub: ArxHub): void {
     super.configure(arxhub)
 
+    const home = this.container.get(PluginHome)
     const settings = arxhub.extensions.get(SettingsExtension)
-    settings.register({ id: 'sync', title: 'Sync', schema: SyncConfigSchema, order: 10 })
+    settings.register({ id: 'sync', title: 'Sync', schema: SyncConfigSchema, order: 10, storage: home.storage })
 
     const shell = arxhub.extensions.get(ShellExtension)
     shell.footer.register({ id: 'arxhub.sync', component: markRaw(SyncFooter), region: 'right' })
@@ -39,14 +39,16 @@ export class SyncPlugin extends Plugin<ArxHub> {
   override async start(arxhub: ArxHub): Promise<void> {
     await super.start(arxhub)
 
-    const { vfs } = arxhub.extensions.get(VfsExtension)
-    const cfg = await readConfig(vfs, this.manifest.name, SyncConfigSchema)
+    const home = this.container.get(PluginHome)
+    const cfg = await readConfig(home.storage, SyncConfigSchema, {}, this.logger)
 
     if (cfg.serverUrl) {
       const remoteVfs = new HttpFileSystem({ baseUrl: cfg.serverUrl }, this.logger)
       const syncExt = arxhub.extensions.get(SyncExtension)
       syncExt.engine = new SyncEngine({
-        local: new Repo(vfs),
+        // Read the synced tree (vault/ + storage/) via the granted scope; keep the repo store local
+        // in state/ so sync never chunks its own internals.
+        local: new Repo(home.granted('vfs:scope'), home.state),
         remote: new Repo(remoteVfs),
       })
     }
