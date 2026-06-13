@@ -8,13 +8,18 @@ import { Chunker } from './chunker'
 import type { FileStatus, Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 
 export class Repo {
-  private readonly vfs: VirtualFileSystem
+  // The working tree being versioned (user content). Read for status/snapshot, written on merge.
+  private readonly tree: VirtualFileSystem
+  // The repo store (`/repo/...`: changes journal, snapshots, chunks). Kept separate so it can live
+  // outside the synced tree (locally, in state/) and never chunk itself. Defaults to `tree`.
+  private readonly store: VirtualFileSystem
   private readonly lock: AsyncLock
   private readonly changes: VirtualFile
   private readonly chunker: Chunker
 
-  constructor(vfs: VirtualFileSystem) {
-    this.vfs = vfs
+  constructor(tree: VirtualFileSystem, store: VirtualFileSystem = tree) {
+    this.tree = tree
+    this.store = store
     this.lock = new AsyncLock()
     this.changes = this.getChangesFile()
     this.chunker = new Chunker()
@@ -34,7 +39,7 @@ export class Repo {
     const processed = new Set<string>()
 
     for (const pathname in snapshot.files) {
-      const file = this.vfs.file(pathname)
+      const file = this.tree.file(pathname)
       const status = await this.fileStatus(file, snapshot)
       if (status != null) {
         result.push(status)
@@ -47,7 +52,7 @@ export class Repo {
     for (const path of paths) {
       if (processed.has(path)) continue
 
-      for await (const file of this.vfs.walk(path)) {
+      for await (const file of this.tree.walk(path)) {
         const status = await this.fileStatus(file, snapshot)
         if (status != null) {
           result.push(status)
@@ -97,7 +102,7 @@ export class Repo {
 
       // else created || modified
 
-      const file = this.vfs.file(pathname)
+      const file = this.tree.file(pathname)
       const chunks: SnapshotFileChunk[] = []
 
       for await (const chunk of this.chunker.split(file)) {
@@ -175,7 +180,7 @@ export class Repo {
         if (!base) {
           await this.writeFile(localFile)
         } else if (localFile.hash === baseFile.hash) {
-          await this.vfs.delete(pathname)
+          await this.tree.delete(pathname)
         }
         // else: local modified, remote deleted -> silently keep local (no conflict)
         continue
@@ -186,7 +191,7 @@ export class Repo {
         if (!base) {
           await this.writeFile(remoteFile)
         } else if (remoteFile.hash === baseFile.hash) {
-          await this.vfs.delete(pathname)
+          await this.tree.delete(pathname)
         }
         // else: remote modified, local deleted -> silently keep remote (no conflict)
         continue
@@ -209,14 +214,14 @@ export class Repo {
 
   private async writeFile(file: SnapshotFile): Promise<void> {
     const stream = this.chunker.merge(file.chunks.map((it) => this.getChunkFile(it.hash)))
-    const writable = await this.vfs.file(file.pathname).writable()
+    const writable = await this.tree.file(file.pathname).writable()
     await stream.pipeTo(writable)
     await this.add(file.pathname)
   }
 
   private async writeConflictFile(remote: SnapshotFile): Promise<void> {
     const { path, name, ext } = splitPathname(remote.pathname)
-    const file = this.vfs.file(join(path, `conflict-${remote.hash.slice(0, 8)}-${name}.${ext}`))
+    const file = this.tree.file(join(path, `conflict-${remote.hash.slice(0, 8)}-${name}.${ext}`))
 
     const writable = await file.writable()
     const readable = this.chunker.merge(remote.chunks.map((it) => this.getChunkFile(it.hash)))
@@ -295,26 +300,26 @@ export class Repo {
   }
 
   listSnapshots(): VirtualWalker {
-    return this.vfs.walk('/repo/snapshots')
+    return this.store.walk('/repo/snapshots')
   }
 
   getChangesFile(): VirtualFile {
-    return this.vfs.file(`/repo/changes`)
+    return this.store.file(`/repo/changes`)
   }
 
   getHeadFile(): VirtualFile {
-    return this.vfs.file(`/repo/head`)
+    return this.store.file(`/repo/head`)
   }
 
   getSnapshotFile(hash: string): VirtualFile {
-    return this.vfs.file(`/repo/snapshots/${hash}`)
+    return this.store.file(`/repo/snapshots/${hash}`)
   }
 
   getChunkFile(hash: string): VirtualFile {
-    return this.vfs.file(`/repo/chunks/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash}`)
+    return this.store.file(`/repo/chunks/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash}`)
   }
 
   getManifestFile(hash: string): VirtualFile {
-    return this.vfs.file(`/repo/manifests/${hash}`)
+    return this.store.file(`/repo/manifests/${hash}`)
   }
 }
