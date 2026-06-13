@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { splitPathname } from './split-pathname';
+import { splitPathname } from '../fs/split-pathname';
 
 describe('splitPathname', () => {
   it('should return the correct path, name, and extension for a given pathname', () => {

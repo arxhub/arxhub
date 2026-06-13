@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findLongestPrefix } from './find-longest-prefix'
+import { findLongestPrefix } from '../fs/find-longest-prefix'
 
 describe('findLongestPrefix', () => {
   it('should find the longest matching prefix', () => {
