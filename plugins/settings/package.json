@@ -33,7 +33,8 @@
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
-    "@arxhub/uikit": "workspace:*"
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
   },
   "publishConfig": {
     "exports": {
