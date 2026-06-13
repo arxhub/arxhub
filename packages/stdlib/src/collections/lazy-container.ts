@@ -19,13 +19,24 @@ export function isConstructor(value: unknown): value is AnyConstructor<unknown> 
 // A lazy DI container. The registered token IS the lookup key — keyed by the constructor
 // *reference* (object identity), not its name, so it survives minification with no `keepNames`.
 // A token can be bound to itself (self-bound) or to a different implementation (token -> impl).
+//
+// Containers are hierarchical: a child resolves a token locally first and, on a miss, delegates to
+// its parent ("check locally, else go to parent"). Parent-owned singletons are cached in the parent,
+// so they stay shared across all children; a local binding shadows the parent for that scope only.
 export class LazyContainer<T> {
   private readonly domain: string
+  private readonly parent?: LazyContainer<T>
   private readonly _factories = new Map<AnyConstructor<T>, Entry<T>>()
   private readonly _instances = new Map<AnyConstructor<T>, T>()
 
-  constructor(domain: string) {
+  constructor(domain: string, parent?: LazyContainer<T>) {
     this.domain = domain
+    this.parent = parent
+  }
+
+  // A new child scope whose unresolved tokens fall through to this container.
+  child(domain?: string): LazyContainer<T> {
+    return new LazyContainer<T>(domain ?? this.domain, this)
   }
 
   // self-bound: the token is its own implementation
@@ -43,18 +54,23 @@ export class LazyContainer<T> {
   }
 
   has(token: AnyConstructor<T>): boolean {
-    return this._factories.has(token)
+    return this._factories.has(token) || (this.parent?.has(token) ?? false)
   }
 
   get<R extends T>(token: AnyConstructor<R>): R {
-    let instance: T | null = this._instances.get(token) ?? null
-    if (instance == null) {
-      const entry = this._factories.get(token)
-      if (entry == null) throw keyError(`${this.domain} '${token.name}' not found`)
-      const { impl, args } = entry
-      instance = args == null ? new impl() : new impl(...args())
-      this._instances.set(token, instance)
+    const cached = this._instances.get(token)
+    if (cached != null) return cached as R
+
+    const entry = this._factories.get(token)
+    if (entry == null) {
+      // Not bound locally — fall through to the parent so its singletons stay shared.
+      if (this.parent != null) return this.parent.get(token)
+      throw keyError(`${this.domain} '${token.name}' not found`)
     }
+
+    const { impl, args } = entry
+    const instance = args == null ? new impl() : new impl(...args())
+    this._instances.set(token, instance)
     return instance as R
   }
 
