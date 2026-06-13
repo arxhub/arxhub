@@ -29,6 +29,7 @@
     "type-fest": "catalog:toolchain"
   },
   "peerDependencies": {
+    "@arxhub/errors": "workspace:*",
     "@arxhub/stdlib": "workspace:*"
   },
   "publishConfig": {
