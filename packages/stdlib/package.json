@@ -19,7 +19,8 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@arxhub/errors": "workspace:*"
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/path": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
