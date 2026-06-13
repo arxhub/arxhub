@@ -108,4 +108,53 @@ describe('LazyContainer', () => {
     expect(isConstructor(() => [])).toBe(false)
     expect(isConstructor(undefined)).toBe(false)
   })
+
+  describe('hierarchy', () => {
+    it('resolves locally when bound in the child', () => {
+      const parent = new LazyContainer<Animal>('Animal')
+      parent.register(Animal, Cat)
+      const child = parent.child()
+      child.register(Animal, Dog)
+
+      expect(child.get(Animal)).toBeInstanceOf(Dog) // local binding shadows the parent
+      expect(parent.get(Animal)).toBeInstanceOf(Cat) // parent unaffected
+    })
+
+    it('falls through to the parent on a local miss', () => {
+      const parent = new LazyContainer<Animal>('Animal')
+      parent.register(Dog)
+      const child = parent.child()
+
+      expect(child.has(Dog)).toBe(true)
+      expect(child.get(Dog)).toBeInstanceOf(Dog)
+    })
+
+    it('shares a parent-owned singleton across children (cached in the parent)', () => {
+      const parent = new LazyContainer<Animal>('Animal')
+      parent.register(Dog)
+      const childA = parent.child()
+      const childB = parent.child()
+
+      const fromA = childA.get(Dog)
+      const fromB = childB.get(Dog)
+      expect(fromA).toBe(fromB)
+      expect(fromA).toBe(parent.get(Dog))
+    })
+
+    it('throws when neither child nor parent has the token', () => {
+      const parent = new LazyContainer<Animal>('Animal')
+      const child = parent.child()
+      expect(child.has(Cat)).toBe(false)
+      expect(() => child.get(Cat)).toThrow(/Animal/)
+    })
+
+    it('instantiate() only builds local factories, not the parent chain', () => {
+      const parent = new LazyContainer<Animal>('Animal')
+      parent.register(Cat)
+      const child = parent.child()
+      child.register(Dog)
+
+      expect(child.instantiate().map((a) => a.sound())).toEqual(['woof'])
+    })
+  })
 })
