@@ -1,7 +1,7 @@
 import '@arxhub/theme-preset'
 import '@arxhub/theme'
 
-import { ArxHub } from '@arxhub/core'
+import { ArxHub, RootVfs } from '@arxhub/core'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
@@ -29,7 +29,8 @@ async function createVfs(): Promise<VirtualFileSystem> {
 }
 
 const vfs = await createVfs()
-arxhub.plugins.register(VfsPlugin, () => ({ vfs }))
+arxhub.services.register(RootVfs, () => [vfs])
+arxhub.plugins.register(VfsPlugin)
 arxhub.plugins.register(ShellPlugin)
 arxhub.plugins.register(PanelsPlugin)
 arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
