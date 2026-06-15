@@ -1,11 +1,19 @@
 import { createReadStream, createWriteStream, type Dirent } from 'node:fs'
 import fs from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import type { Logger } from '@arxhub/core'
 import { isNodeError } from '@arxhub/errors'
 import { normalizePath } from '@arxhub/path'
-import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type RenameCapable, type VirtualEntry } from '@arxhub/vfs'
+import {
+  type DeleteOptions,
+  type FileHead,
+  fileNotFound,
+  GenericVirtualFileSystem,
+  type RenameCapable,
+  scopeAccessDenied,
+  type VirtualEntry,
+} from '@arxhub/vfs'
 
 export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCapable {
   private readonly rootDir: string
@@ -13,14 +21,27 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
 
   constructor(rootDir: string, logger: Logger) {
     super()
-    this.rootDir = rootDir
+    // Resolve once so the containment check below compares two absolute, normalized OS paths.
+    this.rootDir = resolve(rootDir)
     this.logger = logger.child('[NodeFileSystem] ')
-    fs.mkdir(rootDir, { recursive: true })
+    fs.mkdir(this.rootDir, { recursive: true })
+  }
+
+  // The SINGLE OS boundary (ADR 008): node:path is used only here to turn a logical VFS pathname into
+  // an absolute OS path, and the result is GUARANTEED to stay inside rootDir. Any pathname that would
+  // escape the chosen app storage folder — via '..' or an absolute path — is rejected with a 403, so
+  // no caller however untrusted (HTTP clients, plugins, sync) can ever read or write outside it.
+  private toOsPath(pathname: string): string {
+    const abs = resolve(this.rootDir, normalizePath(pathname))
+    const rel = relative(this.rootDir, abs)
+    // rel === '' is the root itself (allowed); a leading '..' segment or an absolute rel means escape.
+    if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw scopeAccessDenied(pathname)
+    return abs
   }
 
   async list(prefix: string): Promise<VirtualEntry[]> {
     const norm = normalizePath(prefix)
-    const absDir = join(this.rootDir, norm)
+    const absDir = this.toOsPath(norm)
     const result: VirtualEntry[] = []
     let entries: Dirent[] | null = null
     try {
@@ -46,8 +67,9 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
   }
 
   async read(pathname: string): Promise<Uint8Array> {
+    const filePath = this.toOsPath(pathname)
     try {
-      const buf = await fs.readFile(join(this.rootDir, pathname))
+      const buf = await fs.readFile(filePath)
       return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
     } catch (e) {
       this.logger.warn(`read(${pathname}) failed:`, e)
@@ -56,7 +78,7 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
   }
 
   async readable(pathname: string): Promise<ReadableStream<Uint8Array>> {
-    const filePath = join(this.rootDir, pathname)
+    const filePath = this.toOsPath(pathname)
     try {
       await fs.access(filePath)
     } catch (e) {
@@ -67,20 +89,21 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
   }
 
   async write(pathname: string, content: Uint8Array): Promise<void> {
-    const filePath = join(this.rootDir, pathname)
+    const filePath = this.toOsPath(pathname)
     await fs.mkdir(dirname(filePath), { recursive: true })
     await fs.writeFile(filePath, content)
   }
 
   async writable(pathname: string): Promise<WritableStream<Uint8Array>> {
-    const filePath = join(this.rootDir, pathname)
+    const filePath = this.toOsPath(pathname)
     await fs.mkdir(dirname(filePath), { recursive: true })
     return Writable.toWeb(createWriteStream(filePath))
   }
 
   async delete(pathname: string, options?: DeleteOptions): Promise<void> {
+    const filePath = this.toOsPath(pathname)
     try {
-      await fs.rm(join(this.rootDir, pathname), {
+      await fs.rm(filePath, {
         force: options?.force ?? false,
         recursive: options?.recursive ?? false,
       })
@@ -94,8 +117,9 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
   }
 
   async exists(pathname: string): Promise<boolean> {
+    const filePath = this.toOsPath(pathname)
     try {
-      await fs.access(join(this.rootDir, pathname))
+      await fs.access(filePath)
       return true
     } catch (e) {
       if (isNodeError(e, 'ENOENT')) return false
@@ -105,8 +129,9 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
   }
 
   async head(pathname: string): Promise<FileHead> {
+    const filePath = this.toOsPath(pathname)
     try {
-      const stats = await fs.stat(join(this.rootDir, pathname))
+      const stats = await fs.stat(filePath)
       return {
         size: stats.size,
         modifiedAt: stats.mtime.getTime(),
@@ -119,8 +144,8 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
   }
 
   async rename(src: string, dest: string): Promise<void> {
-    const absSrc = join(this.rootDir, src)
-    const absDest = join(this.rootDir, dest)
+    const absSrc = this.toOsPath(src)
+    const absDest = this.toOsPath(dest)
     await fs.mkdir(dirname(absDest), { recursive: true })
     await fs.rename(absSrc, absDest)
   }
