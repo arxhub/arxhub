@@ -1,13 +1,21 @@
-# SyncEngine: Secure, Offline-First Synchronization
+# SyncEngine: Offline-First Synchronization
 
-Keep your notes in sync across all your devices with end-to-end encryption. SyncEngine automatically synchronizes your notes between your devices and cloud storage, even when you're offline.
+> **Status — aspirational design doc.** This README describes the intended product, not the
+> current code. The implemented engine (`src/engine.ts`) syncs a `VirtualFileSystem` against a
+> remote `VirtualFileSystem` using content-defined Rabin chunking + immutable snapshots with
+> 3-way merge. The `saveNote`/`getNote`/S3-bucket API and **encryption shown below are NOT yet
+> implemented** — there is currently no encryption in this package. Do not rely on the security
+> claims here until the code provides them. See `algo.md` for the real algorithm.
+
+Keep your notes in sync across all your devices. SyncEngine synchronizes your notes between your
+devices and remote storage, even when you're offline.
 
 ## Key Features
 
-- **Offline-First**: Work on your notes anytime, anywhere. Changes sync automatically when you're back online.
-- **End-to-End Encrypted**: Your notes are encrypted on your device before being sent anywhere. Only you can read them.
-- **Fast & Efficient**: Only changed data is uploaded, saving bandwidth and time.
-- **Conflict Resolution**: If you edit the same note on multiple devices, SyncEngine intelligently handles conflicts.
+- **Offline-First**: Work on your notes anytime. Changes sync when you're back online. *(implemented)*
+- **End-to-End Encryption**: *Planned, not yet implemented* — notes will be encrypted on-device before upload.
+- **Fast & Efficient**: Only changed chunks are uploaded (Rabin content-defined chunking). *(implemented)*
+- **Conflict Resolution**: 3-way merge over snapshot history when the same file is edited on multiple devices. *(implemented)*
 
 ## Getting Started
 
@@ -52,11 +60,13 @@ When you sync, SyncEngine:
 
 ### Data Storage
 
-- **Local**: Your notes are stored in a local file system for instant access (decrypted)
-- **Remote**: Encrypted copies are stored in cloud storage for backup and cross-device sync
+- **Local**: Your notes live in a local `VirtualFileSystem` for instant access.
+- **Remote**: Chunks + snapshots are stored in a remote `VirtualFileSystem` for backup and cross-device sync.
 
-For detailed technical specifications, refer to the [Technical Design Document](./TECH_DESIGN.md).
+For the real algorithm (chunking, snapshots, merge), see [`algo.md`](./algo.md).
 
-### Security
+### Security (planned)
 
-All your data is encrypted with AES-256-GCM before leaving your device. The encryption key never leaves your device, ensuring complete privacy.
+The target design encrypts data with AES-256-GCM on-device before upload, with the key never
+leaving the device. **This is not yet implemented** — the current engine stores chunks in plaintext.
+Track this before depending on the privacy guarantees.
