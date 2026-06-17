@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { usePanelInstance } from '@arxhub/plugin-panels/ui'
 import { VfsExtension } from '@arxhub/plugin-vfs/ui'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { history } from 'prosemirror-history'
 import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
 import { EditorState } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
-import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { onUnmounted, ref, shallowRef, toRef } from 'vue'
 import { deserialize, emptyDoc, serialize } from '../editor-format'
 import { buildInputRules } from '../editor-input-rules'
 import { buildKeymap } from '../editor-keymap'
@@ -18,6 +18,7 @@ import 'prosemirror-view/style/prosemirror.css'
 const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
+const { vfs } = arxhub.extensions.get(VfsExtension)
 const panel = usePanelInstance()
 const editorEl = ref<HTMLDivElement>()
 const view = shallowRef<EditorView | null>(null)
@@ -26,48 +27,55 @@ function buildPlugins() {
   return [history(), keymap(buildKeymap(schema)), inputRules({ rules: buildInputRules(schema) })]
 }
 
-async function loadState(path: string): Promise<EditorState> {
-  const { vfs } = arxhub.extensions.get(VfsExtension)
+function buildState(_path: string, bytes: Uint8Array): EditorState {
+  if (bytes.length === 0) return EditorState.create({ schema, doc: emptyDoc(schema), plugins: buildPlugins() })
   try {
-    const bytes = await vfs.read(path)
-    if (bytes.length === 0) return EditorState.create({ schema, doc: emptyDoc(schema), plugins: buildPlugins() })
-    const text = new TextDecoder().decode(bytes)
-    const doc = deserialize(schema, text)
+    const doc = deserialize(schema, new TextDecoder().decode(bytes))
     return EditorState.create({ schema, doc, plugins: buildPlugins() })
   } catch {
+    // Malformed content (not a read failure) → open an empty doc rather than crashing the panel.
     return EditorState.create({ schema, doc: emptyDoc(schema), plugins: buildPlugins() })
   }
 }
 
-async function save() {
-  if (!view.value) return
-  const { vfs } = arxhub.extensions.get(VfsExtension)
-  const content = serialize(view.value.state.doc)
-  await vfs.write(props.path, new TextEncoder().encode(content))
-}
-
-onMounted(async () => {
-  if (!editorEl.value) return
-  const state = await loadState(props.path)
-  view.value = new EditorView(editorEl.value, {
-    state,
-    dispatchTransaction(tr) {
-      if (!view.value) return
-      view.value.updateState(view.value.state.apply(tr))
-      // First real edit promotes a VSCode-style preview tab to a permanent one (no-op otherwise)
-      if (tr.docChanged) panel?.promote()
-    },
-  })
+// Shared composable owns the load lifecycle: staleness guard on rapid file switches, open-empty
+// only on a genuine FileNotFound, and canSave gating so a failed/in-flight read can't be saved over.
+const {
+  error: loadError,
+  canSave,
+  reload,
+} = useFileDocument<EditorState>(toRef(props, 'path'), {
+  read: (path) => vfs.read(path),
+  build: (path, bytes) => buildState(path, bytes),
+  apply: (_path, state) => {
+    if (view.value) {
+      view.value.updateState(state)
+    } else if (editorEl.value) {
+      view.value = new EditorView(editorEl.value, {
+        state,
+        dispatchTransaction(tr) {
+          if (!view.value) return
+          view.value.updateState(view.value.state.apply(tr))
+          // First real edit promotes a VSCode-style preview tab to a permanent one (no-op otherwise)
+          if (tr.docChanged) panel?.promote()
+        },
+      })
+    }
+  },
 })
 
-watch(
-  () => props.path,
-  async (newPath) => {
-    if (!view.value) return
-    const state = await loadState(newPath)
-    view.value.updateState(state)
-  },
-)
+async function save() {
+  if (!view.value || !canSave.value) return
+  const content = serialize(view.value.state.doc)
+  try {
+    await vfs.write(props.path, new TextEncoder().encode(content))
+  } catch (error) {
+    // Don't swallow a failed write — that silently loses the user's edits. Surface it loudly.
+    // TODO: replace with a user-visible toast once a <Toaster> is mounted in the shell.
+    arxhub.logger.error(`[editor] failed to save ${props.path}:`, error)
+    throw error
+  }
+}
 
 onUnmounted(() => {
   view.value?.destroy()
@@ -78,7 +86,11 @@ onUnmounted(() => {
 <template>
   <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
     <EditorToolbar :view="view" :on-save="save" />
-    <div ref="editorEl" class="editor-content" />
+    <div v-if="loadError" class="editor-error">
+      <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
+      <button class="editor-error-retry" @click="reload(path)">Retry</button>
+    </div>
+    <div v-show="!loadError" ref="editorEl" class="editor-content" />
   </div>
 </template>
 
@@ -94,6 +106,25 @@ onUnmounted(() => {
   overflow-y: auto;
   padding: 24px 48px;
   box-sizing: border-box;
+}
+.editor-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--red-11);
+  background: var(--red-2);
+  border-bottom: 1px solid var(--red-6);
+}
+.editor-error-retry {
+  border: 1px solid var(--red-6);
+  border-radius: 4px;
+  background: var(--red-3);
+  color: var(--red-11);
+  padding: 2px 10px;
+  cursor: pointer;
 }
 .editor-content :deep(.ProseMirror) {
   outline: none;
