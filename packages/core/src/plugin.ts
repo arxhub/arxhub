@@ -1,13 +1,8 @@
 import { isConstructor, LazyContainer } from '@arxhub/stdlib/collections/lazy-container'
 import type { Named } from '@arxhub/stdlib/collections/named'
-import type { Scope } from '@arxhub/vfs'
 import type { Constructor, Except } from 'type-fest'
 import type { Logger } from './logger'
 import { PluginHome, RootVfs } from './plugin-home'
-
-// A manifest-declared permission (Tauri fs:scope shape): either a bare identifier (`'vfs:default'`)
-// or a scope object that grants allow/deny path globs under an identifier (`'vfs:scope'`).
-export type PluginPermission = string | (Scope & { identifier: string })
 
 export interface PluginManifest {
   name: string
@@ -15,7 +10,6 @@ export interface PluginManifest {
   description?: string
   author: string
   minApi?: string
-  permissions?: PluginPermission[]
 }
 
 export function definePluginManifest(manifest: PluginManifest): PluginManifest {

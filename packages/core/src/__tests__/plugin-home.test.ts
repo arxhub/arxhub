@@ -67,7 +67,6 @@ class TesterPlugin extends Plugin<ArxHub> {
         name: 'tester',
         version: '0.0.0',
         author: 'test',
-        permissions: ['vfs:default', { identifier: 'vfs:scope', allow: [{ path: 'vault/**' }] }],
       }),
     )
   }
@@ -77,7 +76,7 @@ class TesterPlugin extends Plugin<ArxHub> {
 }
 
 describe('Core DI scope + PluginHome (integration)', () => {
-  test('Core hands each plugin a home scoped to its manifest id, with declared scopes granted', async () => {
+  test('Core hands each plugin a home scoped to its manifest id', async () => {
     const mem = new MemoryFileSystem()
     const arxhub = new ArxHub()
     arxhub.services.register(RootVfs, () => [mem])
@@ -97,14 +96,8 @@ describe('Core DI scope + PluginHome (integration)', () => {
     expect(await mem.exists('state/tester/cursor')).toBe(true)
     expect(await mem.exists('temp/tester/blob')).toBe(true)
 
-    // granted scope: allowed inside vault/**, denied elsewhere
-    const granted = home.granted('vfs:scope')
-    await granted.write('vault/note.md', enc('hi'))
-    expect(await mem.exists('vault/note.md')).toBe(true)
-    await expectDenied(granted.write('storage/other/x', enc('no')))
-
-    // an undeclared scope is not granted
-    expect(() => home.granted('vfs:fs-all')).toThrow()
+    // The home buckets reject `..` escape past their prefix (hygiene, not a sandbox).
+    await expectDenied(home.storage.write('../other/x', enc('no')))
   })
 
   test('each plugin gets an isolated child scope', () => {

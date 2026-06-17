@@ -1,6 +1,6 @@
 import { readConfig } from '@arxhub/config'
 import type { ArxHub } from '@arxhub/core'
-import { Plugin, type PluginArgs, PluginHome } from '@arxhub/core'
+import { Plugin, type PluginArgs, PluginHome, RootVfs } from '@arxhub/core'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { Repo, SyncEngine } from '@arxhub/sync'
@@ -45,10 +45,12 @@ export class SyncPlugin extends Plugin<ArxHub> {
     if (cfg.serverUrl) {
       const remoteVfs = new HttpFileSystem({ baseUrl: cfg.serverUrl }, this.logger)
       const syncExt = arxhub.extensions.get(SyncExtension)
+      // Chunk the whole local tree (vault/ + storage/ content) via the root VFS, but keep the repo
+      // store in home.state/ so sync never chunks its own internals (state/ is never synced and is
+      // never add()-ed for snapshotting). state/temp exclusion is structural, not a permission check.
+      const root = this.container.get(RootVfs).fs
       syncExt.engine = new SyncEngine({
-        // Read the synced tree (vault/ + storage/) via the granted scope; keep the repo store local
-        // in state/ so sync never chunks its own internals.
-        local: new Repo(home.granted('vfs:scope'), home.state),
+        local: new Repo(root, home.state),
         remote: new Repo(remoteVfs),
       })
     }
