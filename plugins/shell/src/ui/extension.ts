@@ -37,7 +37,9 @@ export class ShellExtension extends Extension {
   readonly header = reactive({
     items: [] as HeaderItem[],
     register(item: HeaderItem): void {
-      this.items = [...this.items, item]
+      // markRaw the component (like sidebar does with layout) so Vue doesn't deeply track the
+      // component definition as reactive state — that's wasteful and can break some components.
+      this.items = [...this.items, { ...item, component: markRaw(item.component) }]
     },
     unregister(id: string): void {
       this.items = this.items.filter((i) => i.id !== id)
@@ -47,7 +49,7 @@ export class ShellExtension extends Extension {
   readonly footer = reactive({
     items: [] as FooterItem[],
     register(item: FooterItem): void {
-      this.items = [...this.items, item]
+      this.items = [...this.items, { ...item, component: markRaw(item.component) }]
     },
     unregister(id: string): void {
       this.items = this.items.filter((i) => i.id !== id)
