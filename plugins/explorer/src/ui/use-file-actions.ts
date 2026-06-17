@@ -9,6 +9,13 @@ export function useFileActions() {
   const explorer = arxhub.extensions.get(ExplorerExtension)
   const { store } = arxhub.extensions.get(PanelStoreExtension)
 
+  // Action descriptors are fire-and-forget (the menu/modal invokers don't await onSelect/onConfirm),
+  // so every async action routes through here: a rejection is logged, not left to surface as an
+  // unhandled promise rejection.
+  function runAction(action: Promise<void>, context: string): void {
+    action.catch((error) => arxhub.logger.error(`[explorer] ${context} failed:`, error))
+  }
+
   function openFile(node: TreeNode, preview: boolean): void {
     const path = node.entry.pathname
     const panels = store.getPanelsForFile(extname(path))
@@ -49,7 +56,7 @@ export function useFileActions() {
       content: `Delete "${name}"? This action cannot be undone.`,
       labels: { confirm: 'Delete', cancel: 'Cancel' },
       confirmProps: { danger: true },
-      onConfirm: () => explorer.deleteEntry(node.entry.pathname),
+      onConfirm: () => runAction(explorer.deleteEntry(node.entry.pathname), `delete ${node.entry.pathname}`),
     })
   }
 
@@ -64,8 +71,8 @@ export function useFileActions() {
       ]
     }
     return [
-      { id: 'new-file', label: 'New File', icon: 'lu:file-plus', onSelect: () => newFile(node) },
-      { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => newFolder(node) },
+      { id: 'new-file', label: 'New File', icon: 'lu:file-plus', onSelect: () => runAction(newFile(node), 'new file') },
+      { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => runAction(newFolder(node), 'new folder') },
       { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
       { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
     ]
@@ -73,8 +80,18 @@ export function useFileActions() {
 
   function getRootActions(): ActionItem[] {
     return [
-      { id: 'new-file', label: 'New File', icon: 'lu:file-plus', onSelect: () => explorer.createFile(explorer.root, 'untitled.arx') },
-      { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => explorer.createDir(explorer.root, 'new-folder') },
+      {
+        id: 'new-file',
+        label: 'New File',
+        icon: 'lu:file-plus',
+        onSelect: () => runAction(explorer.createFile(explorer.root, 'untitled.arx'), 'new file'),
+      },
+      {
+        id: 'new-folder',
+        label: 'New Folder',
+        icon: 'lu:folder-plus',
+        onSelect: () => runAction(explorer.createDir(explorer.root, 'new-folder'), 'new folder'),
+      },
     ]
   }
 
