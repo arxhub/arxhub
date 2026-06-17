@@ -19,13 +19,15 @@ The **Core** (`@arxhub/core`) is the central orchestrator of ArxHub. Its primary
 
 **Examples in ArxHub:**
 
-ArxHub utilizes several core plugins:
+ArxHub ships these plugins (see `plugins/`):
 
-*   **`vfs`:** Provides a Virtual File System, abstracting how and where files are stored and accessed.
-*   **`gateway`:** Acts as the main entry point, often an HTTP server, handling requests and responses. It exposes a `GatewayExtension` allowing other plugins to add routes or middleware.
-*   **`file-renderer`:** Renders various file types (like Markdown) into formats suitable for display (like HTML), often used by the `gateway`.
-*   **`web-app`:** Serves the main user interface assets (like `index.html` and associated JavaScript/CSS) by interacting with the `gateway` plugin to register routes.
-*   *(Other plugins like `gateway-vfs` and `http-client` provide specific integrations and utilities).*
+*   **`vfs`:** Provides the Virtual File System to other plugins via `VfsExtension`, abstracting how and where files are stored.
+*   **`gateway`:** HTTP server (Elysia). Exposes a `GatewayServerExtension` allowing other plugins to mount routes (e.g. `vfs-http`'s `vfsRoutes`).
+*   **`shell`:** The app shell — header/footer/sidebar registries and the `MiniAppShell` rail+content layout.
+*   **`panels`:** Tiling/tabbed panel store with drag-and-drop layout (ADR 004/006/007).
+*   **`explorer` / `editor` / `codemirror`:** A file-tree mini-app plus the ProseMirror and CodeMirror editor panels that open files from it.
+*   **`settings`:** A settings mini-app whose `SettingsExtension` lets plugins register schema-driven or custom config sections.
+*   **`sync`:** Sync UI — footer status indicator and a settings section, wrapping the `@arxhub/sync` engine.
 
 **Plugin Lifecycle:**
 

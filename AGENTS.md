@@ -10,29 +10,43 @@ ArxHub is a modular personal knowledge management system — a pnpm TypeScript m
 arxhub/
 ├── packages/         # Core publishable libraries
 │   ├── core/         # Plugin/Extension lifecycle orchestrator — start here
-│   ├── stdlib/       # Cross-cutting utilities (errors, collections, fs, crypto)
-│   ├── vfs/          # Virtual file system abstraction (interface + GenericFile)
+│   ├── stdlib/       # Cross-cutting utilities (collections, fs, record, crypto)
+│   ├── errors/       # AppError base + HTTP error factories/schemas
+│   ├── events/       # Typed EventBus (EventEmitter3 + declaration-merged EventMap)
+│   ├── config/       # TOML config read/write (typebox-defaulted) + ConfigForm.vue
+│   ├── http/         # HTTP client factory (wretch wrapper)
+│   ├── vfs/          # Virtual file system abstraction (interface + impls of file/dir/walker/info)
 │   ├── vfs-node/     # Node.js VFS implementation
-│   ├── vfs-browser/  # Browser VFS (IndexedDB)
-│   ├── vfs-tauri/    # Tauri VFS (native filesystem)
+│   ├── vfs-tauri/    # Tauri VFS (native filesystem, @tauri-apps/plugin-fs)
+│   ├── vfs-http/     # HTTP VFS — client (HttpFileSystem) + server (vfsRoutes)
 │   ├── sync/         # Offline-first sync engine (Rabin chunking + snapshots)
-│   ├── uikit/        # Vue 3 UI library — multi-entry: core / desktop / mobile
+│   ├── uikit/        # Vue 3 UI library — multi-entry: core / hooks
 │   ├── theme-preset/ # Radix Colors CSS variables (design tokens)
-│   ├── crypto/       # Browser crypto shim (crypto-browserify)
-│   └── path/         # Browser path shim (path-browserify)
-├── plugins/
-│   └── gateway/      # HTTP server plugin (Elysia/ElysiaJS, Node adapter)
+│   ├── crypto/       # Browser crypto shim (crypto-browserify) — dual node/browser entry
+│   └── path/         # Browser path shim (path-browserify) — dual node/browser entry
+├── plugins/          # Feature plugins (all communicate only via extensions)
+│   ├── shell/        # App shell: header/footer/sidebar registries, MiniAppShell rail+content
+│   ├── panels/       # Tiling/tabbed panel store + drag-and-drop layout (ADR 004/006/007)
+│   ├── explorer/     # File-tree mini-app (VFS browser, rename/delete actions)
+│   ├── editor/       # ProseMirror rich-text editor panel
+│   ├── codemirror/   # CodeMirror code editor panel
+│   ├── settings/     # Settings mini-app: section registry + schema-driven pages
+│   ├── sync/         # Sync UI: footer status + settings section (wraps @arxhub/sync)
+│   ├── vfs/          # Provides the VirtualFileSystem to other plugins via VfsExtension
+│   └── gateway/      # HTTP server plugin (Elysia, Node adapter)
 ├── toolchains/
-│   ├── vite/         # Shared vite.config factories (createNodeConfig, createBrowserConfig, createVueConfig)
+│   ├── vite/         # Shared vite.config factories (createGenericConfig, createNodeConfig, createBrowserConfig, createVueConfig, createTauriConfig)
 │   ├── tsconfig/     # Shared tsconfig base (strict, esnext, bundler resolution)
 │   └── biome/        # Shared Biome config (single quotes, 144 line width, no semicolons)
 ├── themes/
 │   └── default/      # Default theme CSS (Cyan + Slate, imports theme-preset)
-├── instances/
-│   ├── app/          # Client app — Vue SPA, desktop + mobile (Tauri 2.x)
-│   └── server/       # Headless server — Node.js + Gateway plugin (Elysia)
+├── instances/        # Each instance is self-contained: owns its own plugin registration + config
+│   ├── app/          # Tauri desktop app (also builds as a Vite SPA)
+│   ├── client/       # Pure SPA build (browser-only, vfs-http backend)
+│   ├── dev/          # Combined dev stand — Vite SPA + embedded Elysia server via ssrLoadModule
+│   └── server/       # Headless server — Node.js + Gateway + vfs-http (Elysia)
 └── docs/
-    ├── adr/          # Architecture Decision Records
+    ├── adr/          # Architecture Decision Records (001–007)
     └── concepts/     # Architecture narratives (plugin-system.md)
 ```
 
@@ -47,9 +61,9 @@ arxhub/
 | Node.js VFS impl | `packages/vfs-node/src/node-file-system.ts` |
 | Sync engine entrypoint | `packages/sync/src/engine.ts` |
 | Snapshot/chunk data models | `packages/sync/src/types/` |
-| Error base classes | `packages/stdlib/src/errors/app-error.ts` |
+| Error base classes | `packages/errors/src/core.ts` (`AppError`); HTTP factories in `packages/errors/src/http.ts` |
 | Generic collections | `packages/stdlib/src/collections/` |
-| Vite config factories | `toolchains/vite/src/` (`createVueConfig`, `createNodeConfig`, `createTauriConfig`) |
+| Vite config factories | `toolchains/vite/src/` (`createVueConfig`, `createNodeConfig`, `createBrowserConfig`, `createTauriConfig`, `createGenericConfig`) |
 | Design tokens (CSS vars) | `packages/theme-preset/src/` |
 | UI primitives (`@arxhub/uikit/core`) | `packages/uikit/src/core/` |
 | Desktop layout shell | `plugins/shell/src/ui/desktop/` |
@@ -78,9 +92,9 @@ Plugin-based hexagonal architecture. Plugins register Extensions during `create(
 - **Formatter/Linter**: Biome (NOT ESLint/Prettier). `biome check --write` to fix.
 - **Style**: single quotes, no semicolons, trailing commas, 144 char line width.
 - **Imports**: `@arxhub/*` workspace references; absolute paths via tsconfig `moduleResolution: bundler`.
-- **Errors**: All errors extend `AppError` from `@arxhub/stdlib/errors/app-error`. Set `httpStatusCode`.
+- **Errors**: All errors extend `AppError` from `@arxhub/errors`. Set `httpStatusCode`. HTTP error factories live in `@arxhub/errors` (`packages/errors/src/http.ts`).
 - **Collections**: Use `Container`, `LazyContainer`, `NamedContainer` from `@arxhub/stdlib/collections`.
-- **Tests**: `*.test.ts` co-located in `src/__tests__/` (sync) or next to source (stdlib). Vitest only.
+- **Tests**: `*.test.ts` always in a `src/__tests__/` folder within the package (never co-located next to source). Imports reach into source one level up (`../foo`). Vitest only; discovery is scoped to `src/**/*.test.ts` via `toolchains/vite/src/generic.ts`.
 - **Build**: Each package builds individually with `tsc && vite build`. No root build.
 - **Test run**: `pnpm --filter @arxhub/sync test` (per-package). No root test runner configured.
 - **biome-ignore format**: Hand-format overloaded method signatures only (established pattern in core/).
@@ -105,17 +119,22 @@ pnpm install
 pnpm --filter @arxhub/core build
 pnpm --filter @arxhub/uikit build
 
-# Run app (web browser)
-pnpm --filter @arxhub/app dev:web
+# Run the dev stand (Vite SPA + embedded Elysia server) — this is the one you usually run
+pnpm --filter @arxhub/dev dev
 
-# Run app (Tauri desktop)
-pnpm --filter @arxhub/app dev
+# Run the Tauri desktop app (frontend dev server)
+pnpm --filter app dev
+# Tauri native window / packaging (wraps the Tauri CLI)
+pnpm --filter app tauri dev
+pnpm --filter app build      # SPA build (vue-tsc --noEmit && vite build)
 
-# Build for web / desktop / mobile
-pnpm --filter @arxhub/app build:web
-pnpm --filter @arxhub/app build
-pnpm --filter @arxhub/app build:android
-pnpm --filter @arxhub/app build:ios
+# Headless server
+pnpm --filter @arxhub/server dev    # dev (vite, embedded)
+pnpm --filter @arxhub/server build  # tsc && vite build → dist/main.js
+pnpm --filter @arxhub/server start  # node dist/main.js
+
+# Pure SPA build
+pnpm --filter @arxhub/client build
 
 # Test
 pnpm --filter @arxhub/sync test
@@ -130,24 +149,20 @@ pnpm --filter @arxhub/sync add some-pkg
 
 ## CATALOG VERSIONS
 
-Shared dependency versions are pinned in `pnpm-workspace.yaml` under `catalogs:`. Reference via `catalog:client`, `catalog:server`, `catalog:shared`, `catalog:toolchain`, `catalog:tauri`. Don't pin versions manually in package.json when a catalog entry exists.
-
-## CATALOG VERSIONS
-
-Shared dependency versions are pinned in `pnpm-workspace.yaml` under `catalogs:`. Reference via `catalog:client`, `catalog:server`, `catalog:shared`, `catalog:toolchain`, `catalog:tauri`. Don't pin versions manually in package.json when a catalog entry exists.
+Shared dependency versions are pinned in `pnpm-workspace.yaml` under `catalogs:`. Reference via `catalog:client`, `catalog:server`, `catalog:shared`, `catalog:toolchain`, `catalog:tauri`. Don't pin versions manually in package.json when a catalog entry exists. The table below is a convenience snapshot — `pnpm-workspace.yaml` is the source of truth; verify there before relying on a version.
 
 | Catalog | Key Packages |
 |---------|--------------|
-| client | vue@3.4, @ark-ui/vue@3.2, @radix-ui/colors@3.0 |
-| server | elysia@1.2.25, @elysiajs/node@1.2.6, esbuild@0.25.2 |
-| shared | @signaldb/core@1.6, rabin-rs@2.1 |
-| toolchain | typescript@5.9.3, vite@7.1.10, @biomejs/biome@2.2.6, vitest@3.2.4 |
-| tauri | @tauri-apps/api@2.5.0, @tauri-apps/cli@2.5.0 |
+| client | vue@^3.5, @ark-ui/vue@^5.36 (installed 5.x — see cerebrum), @radix-ui/colors@^3.0, codemirror@^6, prosemirror-*@^1, @atlaskit/pragmatic-drag-and-drop@^1.4 |
+| server | elysia@^1.4, @elysiajs/node@^1.2, esbuild@^0.25 |
+| shared | @signaldb/core@^1.6, rabin-rs@^2.1, @sinclair/typebox@^0.34, smol-toml@^1.3, async-lock@^1.4, nanoid@^5.1, fflate@^0.8 |
+| toolchain | typescript@^6.0, vite@^8.0, @biomejs/biome@^2.4, vitest@^4.1 |
+| tauri | @tauri-apps/api@^2.11, @tauri-apps/cli@^2.11, @tauri-apps/plugin-fs@^2.5 |
 
 ## NOTES
 
-- `instances/app` is the single app instance — runs as a Vite SPA (`dev:web`/`build:web`) or Tauri native app (`dev`/`build`/`build:android`/`build:ios`). Boots ArxHub and renders the desktop layout.
-- `packages/crypto` and `packages/path` are thin browser shims (pre-compiled JS), not TypeScript.
+- There are **four** self-contained instances, each owning its own plugin registration in `src/main.ts` (no shared abstraction — they intentionally drift, so check the one you run): `app` (Tauri desktop, also a SPA build), `client` (pure browser SPA, vfs-http backend), `dev` (combined dev stand — Vite SPA + embedded Elysia via `server.ssrLoadModule`, the one you usually run), `server` (headless Elysia gateway). `dev` uses Vite on :3000 and Elysia on :3001.
+- `packages/crypto` and `packages/path` are thin shims over `crypto-browserify`/`path-browserify` with dual `node`/`browser`/`default` export conditions (a `browser` condition is required — Vite 8 does not fall through to `default`).
 - `useDefineForClassFields: false` in tsconfig — required for the Plugin/Extension class pattern to work correctly.
 - The `biome-ignore format: Hand formatting` pattern in `core/` is intentional for method overload readability — keep it when adding new overloads.
 - `toolchains/vite/src/node.ts` has a `biome-ignore lint/style/noParameterAssign` — known workaround for default arg rewrite; do not replicate.

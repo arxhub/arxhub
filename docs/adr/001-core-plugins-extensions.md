@@ -29,8 +29,8 @@ A plugin adds a new feature. It can work on its own. Plugins can create extensio
 
 Plugins go through these stages:
 
-1.  **Create:** The `create` method is called. Plugin should create extensions.
-2.  **Configure:** The `apply` method is called. All plugins are created. Plugins can intersact each other.
+1.  **Create:** The `create` method is called. Plugin should register extensions.
+2.  **Configure:** The `configure` method is called. All plugins are created, so plugins can interact with each other (retrieve and use each other's extensions).
 3.  **Start:** The `start` method is called to begin long-running tasks like serving a http server.
 4.  **Running:** The plugin is running and doing its job.
 5.  **Stop:** The `stop` method is called to stop any long-running tasks and clean up.
