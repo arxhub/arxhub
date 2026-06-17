@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { readConfig, writeConfig } from '@arxhub/config'
 import { ConfigForm } from '@arxhub/config/ui'
+import { useArxHub } from '@arxhub/uikit/hooks'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import type { TObject } from '@sinclair/typebox'
-import { onMounted, ref } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps<{
   sectionId: string
@@ -12,15 +13,32 @@ const props = defineProps<{
   storage: VirtualFileSystem
 }>()
 
+const arxhub = useArxHub()
+
 const values = ref<Record<string, unknown>>({})
 
-onMounted(async () => {
-  const cfg = await readConfig(props.storage, props.schema)
-  values.value = cfg as Record<string, unknown>
-})
+// Reload whenever the section changes (not just on mount) — the host may reuse this component
+// for a different section. immediate:true covers the initial load.
+watch(
+  () => props.sectionId,
+  async (sectionId) => {
+    let cfg: Record<string, unknown>
+    try {
+      cfg = (await readConfig(props.storage, props.schema, {}, arxhub.logger)) as Record<string, unknown>
+    } catch (error) {
+      arxhub.logger.error(`[settings] failed to load config for ${sectionId}:`, error)
+      cfg = {}
+    }
+    // Drop a stale resolution: if the active section changed while this load was in flight, applying
+    // it would show (and let onSave persist) the wrong section's values into the new section's file.
+    if (sectionId !== props.sectionId) return
+    values.value = cfg
+  },
+  { immediate: true },
+)
 
 async function onSave(data: Record<string, unknown>) {
-  await writeConfig(props.storage, props.schema, data)
+  await writeConfig(props.storage, props.schema, data, {}, arxhub.logger)
   values.value = { ...values.value, ...data }
 }
 </script>
