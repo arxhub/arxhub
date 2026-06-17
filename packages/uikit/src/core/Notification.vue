@@ -23,7 +23,7 @@ defineEmits<(e: 'close') => void>()
       </div>
     </div>
     <button class="close-btn" @click="$emit('close')">
-      <Icon name="close" :size="14" />
+      <Icon name="lu:x" :size="14" />
     </button>
   </div>
 </template>
@@ -31,11 +31,11 @@ defineEmits<(e: 'close') => void>()
 <style scoped>
 .notification {
   width: 100%;
-  background-color: var(--radix-gray-1);
-  border: 1px solid var(--border-cold);
+  background-color: var(--gray-1);
+  border: 1px solid var(--gray-6);
   border-radius: var(--radius-lg);
   padding: 0.75rem; /* p-3 */
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* shadow-2xl */
+  box-shadow: var(--shadow-lg);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -43,10 +43,24 @@ defineEmits<(e: 'close') => void>()
 }
 
 .notification.info {
-  border-left-color: var(--primary);
+  border-left-color: var(--accent-9);
 }
 .notification.info .icon-wrapper {
-  color: var(--primary);
+  color: var(--accent-9);
+}
+
+.notification.success {
+  border-left-color: var(--green-9);
+}
+.notification.success .icon-wrapper {
+  color: var(--green-9);
+}
+
+.notification.error {
+  border-left-color: var(--red-9);
+}
+.notification.error .icon-wrapper {
+  color: var(--red-9);
 }
 
 .content {
@@ -60,18 +74,18 @@ defineEmits<(e: 'close') => void>()
 }
 
 .title {
-  color: var(--text-main);
+  color: var(--gray-12);
   font-weight: 700;
 }
 
 .subtitle {
-  color: var(--text-muted);
+  color: var(--gray-10);
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: var(--gray-10);
   cursor: pointer;
   padding: 0;
   display: flex;
