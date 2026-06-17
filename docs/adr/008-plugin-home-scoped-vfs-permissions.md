@@ -1,5 +1,19 @@
 # ADR: Per-Plugin Home, Scoped VFS, and Permissions
 
+> **Update (2026-06) — the permission layer was removed.** The manifest `permissions` field,
+> the `Scope`/`matchesScope` allow-deny machinery, `PluginHome.granted()`, and the `scope?`
+> parameter on `ScopedFileSystem` are gone. Reason: in a single-process JS app where all plugins
+> share one heap, a decorator-based permission is **not a security boundary** — any plugin can
+> resolve the raw root (`this.container.get(RootVfs)`, or `target.services`/the extension registry)
+> and reach around it. Keeping it implied a guarantee the runtime cannot deliver.
+>
+> What remains is **organizational**, and still holds: the folder layout (§2.1), the per-plugin home
+> buckets (`storage`/`state`/`temp`, each a prefix-rooted `ScopedFileSystem`), the `..`-escape guard
+> on that prefix, and the structural sync exclusion (§2.1). A plugin needing broader access (sync
+> chunking the whole tree) now resolves `RootVfs` directly. Real isolation against untrusted plugins
+> needs an actual sandbox (worker/process + RPC, host-stamped identity) — see §5. Sections below are
+> the original decision; read them through this update.
+
 ## 1. Context
 
 Originally every plugin received the **same unscoped root `VirtualFileSystem`** (via `VfsExtension.vfs`), and `@arxhub/config` computed a flat `config/<pluginId>.toml` path. Consequences:
@@ -25,20 +39,11 @@ One real `VirtualFileSystem` per instance, partitioned by reserved top-level fol
 
 Sync walks `vault/` + `storage/` only; `state/` and `temp/` are simply never handed to the repo engine — that is the entire enforcement mechanism (no per-file ignore lists). The repo engine's own store therefore lives in `state/` and can never chunk itself.
 
-### 2.2 Scoped VFS + Tauri-style permissions
+### 2.2 Scoped VFS (~~+ Tauri-style permissions~~ — permissions removed, see banner)
 
-`@arxhub/vfs` gains `ScopedFileSystem(inner, prefix, scope?)` — a `VirtualFileSystem` decorator that roots every operation at `prefix` and optionally enforces an allow/deny `scope` (Tauri `fs:scope` shape). Path-escape via `..` is rejected; `walk`/`list` strip the prefix on the way out.
+`@arxhub/vfs` gains `ScopedFileSystem(inner, prefix)` — a `VirtualFileSystem` decorator that roots every operation at `prefix`. Path-escape via `..` is rejected; `walk`/`list` strip the prefix on the way out.
 
-A plugin declares access in its manifest:
-
-```jsonc
-"permissions": [
-  "vfs:default",
-  { "identifier": "vfs:scope", "allow": [{ "path": "vault/**" }, { "path": "storage/**" }] }
-]
-```
-
-The plugin's **home is its default grant**; extra scopes are explicit. We use the term **permissions** (never "capabilities"), matching Tauri and the Android mental model.
+_Originally `ScopedFileSystem` also took an allow/deny `scope` (Tauri `fs:scope` shape) and plugins declared `permissions` in their manifest. Removed — see the banner. The decorator is now prefix-rooting only: an organizational/hygiene boundary, not a sandbox._
 
 ### 2.3 Delivery via a scoped DI container
 
@@ -46,7 +51,7 @@ The plugin's **home is its default grant**; extra scopes are explicit. We use th
 
 - `ArxHub.services` is the root scope. Each instance binds the concrete root vfs there as `RootVfs`.
 - Each plugin receives its **own child scope** (`services.child()`) via `PluginArgs.container`.
-- The base `Plugin` constructor seeds `PluginHome` into its own scope from `this.manifest` — so **Core, not the subclass, owns the home id**. Plugins obtain storage via `this.container.get(PluginHome)` → `{ storage, state, temp, granted(scopeId) }`.
+- The base `Plugin` constructor seeds `PluginHome` into its own scope from `this.manifest` — so **Core, not the subclass, owns the home id**. Plugins obtain storage via `this.container.get(PluginHome)` → `{ storage, state, temp }`. A plugin needing the whole tree (sync) resolves `this.container.get(RootVfs)` directly.
 
 `@arxhub/config`'s `readConfig`/`writeConfig` drop the `pluginId` argument and take a (scoped) vfs + optional `name` (default `config`). `VfsExtension` is repurposed to expose the shared **vault content view** (`ScopedFileSystem(root, 'vault')`) for the editor/explorer/codemirror UI — never the raw root.
 
@@ -65,10 +70,9 @@ Rules:
 ## 3. Consequences
 
 **Positive**
-- Plugins are sandboxed: a plugin sees only its own `storage`/`state`/`temp` unless it declares an explicit `vfs:scope`. A scope violation throws `ScopeAccessDenied` (403).
+- Plugins get a tidy default home (`storage`/`state`/`temp`, each prefix-rooted to their id) so well-behaved code doesn't accidentally collide with other plugins' data. _This is hygiene, not a sandbox — see the banner; a plugin can resolve `RootVfs` and reach the whole tree._
 - Non-synced data has a clear home (`state/`, `temp/`); the sync engine's store sits in `state/` and structurally cannot chunk itself.
 - Config no longer owns path layout; storage location follows plugin identity.
-- One permission model end-to-end, matching the native fs layer already used in `src-tauri/capabilities`.
 - The `/`-only invariant + isolated OS-boundary translation fixes a latent Windows bug in `vfs-node` (it previously leaked `\` into logical pathnames via OS-path slicing).
 
 **Negative / trade-offs**
@@ -82,6 +86,6 @@ Accepted and implemented (2026-06). Verified via unit/integration tests (`@arxhu
 
 ## 5. Future work
 
-- An ADR/spec for a fuller permission catalog (richer `vfs:*` identifiers, network/other resource permissions).
+- **Real plugin isolation** when third-party/installable plugins land — the removed permission layer was theater for that threat. A genuine boundary needs an actual sandbox: plugin code in a Worker/iframe/separate process, the VFS exposed only over message-passing RPC, and permission checks enforced **host-side** keyed to the connection's identity (not a self-asserted `manifest.name`). A permission catalog only makes sense on top of such a boundary.
 - Installable plugin **code** bundles (SiYuan's `data/plugins/<id>/`) once plugins are installed rather than compiled in.
 - Possibly a true machine-local backend for `state/`/`temp/` in the HTTP deployments.

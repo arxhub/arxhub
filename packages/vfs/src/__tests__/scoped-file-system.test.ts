@@ -3,7 +3,6 @@ import { normalizePath } from '@arxhub/path'
 import { describe, expect, test } from 'vitest'
 import { fileNotFound } from '../errors'
 import { GenericVirtualFileSystem } from '../generic-virtual-file-system'
-import { matchesScope } from '../scope'
 import { ScopedFileSystem } from '../scoped-file-system'
 import type { VirtualEntry } from '../virtual-entry'
 import type { FileHead } from '../virtual-file-system'
@@ -138,53 +137,6 @@ describe('ScopedFileSystem — prefix rooting', () => {
   })
 })
 
-describe('ScopedFileSystem — scope enforcement', () => {
-  const build = () => {
-    const mem = new MemoryFileSystem()
-    mem.seed('vault/note.md')
-    mem.seed('storage/sync/config.toml')
-    mem.seed('state/sync/repo.json')
-    mem.seed('temp/sync/cache.bin')
-    const fs = new ScopedFileSystem(mem, '', { allow: [{ path: 'vault/**' }, { path: 'storage/**' }] })
-    return { mem, fs }
-  }
-
-  test('allows reads inside the granted scope', async () => {
-    const { fs } = build()
-    expect(dec(await fs.read('vault/note.md'))).toBe('x')
-    expect(dec(await fs.read('storage/sync/config.toml'))).toBe('x')
-  })
-
-  test('denies reads and writes outside the granted scope', async () => {
-    const { fs } = build()
-    await expectDenied(fs.read('state/sync/repo.json'))
-    await expectDenied(fs.write('temp/sync/cache.bin', enc('y')))
-  })
-
-  test('list filters out entries outside the scope', async () => {
-    const { fs } = build()
-    const top = await fs.list('')
-    expect(top.map((e) => e.pathname).sort()).toEqual(['storage', 'vault'])
-  })
-
-  test('walk only visits granted subtrees', async () => {
-    const { fs } = build()
-    const names: string[] = []
-    for await (const file of fs.walk('')) names.push(file.pathname)
-    expect(names.sort()).toEqual(['storage/sync/config.toml', 'vault/note.md'])
-  })
-
-  test('deny wins over allow', async () => {
-    const mem = new MemoryFileSystem()
-    mem.seed('vault/public.md')
-    mem.seed('vault/.secret/key')
-    const fs = new ScopedFileSystem(mem, '', { allow: [{ path: '**' }], deny: [{ path: 'vault/.secret/**' }] })
-
-    expect(dec(await fs.read('vault/public.md'))).toBe('x')
-    await expectDenied(fs.read('vault/.secret/key'))
-  })
-})
-
 describe('ScopedFileSystem — lock delegation', () => {
   test('runs the critical section and returns its value', async () => {
     const mem = new MemoryFileSystem()
@@ -207,32 +159,5 @@ describe('ScopedFileSystem — lock delegation', () => {
     })
     await Promise.all([first, second])
     expect(order).toEqual(['a-start', 'a-end', 'b'])
-  })
-})
-
-describe('matchesScope', () => {
-  test('allow-list semantics with /** and exact rules', () => {
-    const scope = { allow: [{ path: 'vault/**' }, { path: 'a/b.toml' }] }
-    expect(matchesScope('vault', scope)).toBe(true)
-    expect(matchesScope('vault/x/y', scope)).toBe(true)
-    expect(matchesScope('a/b.toml', scope)).toBe(true)
-    expect(matchesScope('a/b.tomlx', scope)).toBe(false)
-    expect(matchesScope('other', scope)).toBe(false)
-  })
-
-  test('empty allow-list allows everything', () => {
-    expect(matchesScope('anything/here', {})).toBe(true)
-  })
-
-  test('/* matches only direct children', () => {
-    const scope = { allow: [{ path: 'x/*' }] }
-    expect(matchesScope('x/a', scope)).toBe(true)
-    expect(matchesScope('x/a/b', scope)).toBe(false)
-  })
-
-  test('deny overrides allow', () => {
-    const scope = { allow: [{ path: '**' }], deny: [{ path: 'secret/**' }] }
-    expect(matchesScope('ok', scope)).toBe(true)
-    expect(matchesScope('secret/x', scope)).toBe(false)
   })
 })
