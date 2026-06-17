@@ -436,6 +436,12 @@ importers:
 
   packages/config:
     dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@arxhub/vfs':
         specifier: workspace:*
         version: link:../vfs
@@ -470,12 +476,18 @@ importers:
 
   packages/core:
     dependencies:
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@arxhub/events':
         specifier: workspace:*
         version: link:../events
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../vfs
       eventemitter3:
         specifier: catalog:shared
         version: 5.0.4
@@ -577,6 +589,9 @@ importers:
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../errors
+      '@arxhub/path':
+        specifier: workspace:*
+        version: link:../path
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -596,6 +611,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@arxhub/path':
         specifier: workspace:*
         version: link:../path
@@ -644,6 +662,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../errors
       lucide-vue-next:
         specifier: catalog:client
         version: 1.0.0(vue@3.5.33(typescript@6.0.3))
@@ -1038,6 +1059,9 @@ importers:
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
       vue:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)

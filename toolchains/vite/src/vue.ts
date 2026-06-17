@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 import vue from '@vitejs/plugin-vue'
-import { type ConfigEnv, type UserConfig, mergeConfig } from 'vite'
+import { type ConfigEnv, mergeConfig, type UserConfig } from 'vite'
 import { createGenericConfig } from './generic'
 
 export interface VueConfigOptions {
@@ -15,9 +15,7 @@ export interface VueConfigOptions {
 export function createVueConfig(dirname: string, env: ConfigEnv, options: VueConfigOptions = {}): UserConfig {
   const { lib = true, external = [], entries = [] } = options
 
-  const resolvedEntries = entries.length === 0
-    ? [resolve(dirname, 'src/index.ts')]
-    : entries.map((e) => resolve(dirname, e))
+  const resolvedEntries = entries.length === 0 ? [resolve(dirname, 'src/index.ts')] : entries.map((e) => resolve(dirname, e))
 
   const libConfig: UserConfig = lib
     ? {
