@@ -21,7 +21,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "@arxhub/errors": "workspace:*",
