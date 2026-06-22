@@ -1,7 +1,6 @@
-import type { ArxHub } from '@arxhub/core'
-import { Plugin, type PluginArgs } from '@arxhub/core'
+import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { VfsExtension } from '@arxhub/plugin-vfs/ui'
+import { VaultVfs } from '@arxhub/vfs'
 import { ExplorerExtension } from './explorer-extension'
 import { manifest } from './manifest'
 import ExplorerLayout from './ui/ExplorerLayout.vue'
@@ -10,7 +9,7 @@ type ExplorerPluginArgs = PluginArgs & {
   root?: string
 }
 
-export class ExplorerPlugin extends Plugin<ArxHub> {
+export class ExplorerPlugin extends Plugin {
   private readonly root: string
 
   constructor(args: ExplorerPluginArgs) {
@@ -18,19 +17,19 @@ export class ExplorerPlugin extends Plugin<ArxHub> {
     this.root = args.root ?? '/'
   }
 
-  override create(arxhub: ArxHub): void {
-    super.create(arxhub)
-    const { vfs } = arxhub.extensions.get(VfsExtension)
-    arxhub.extensions.register(ExplorerExtension, () => ({
-      vfs,
+  override create(ctx: PluginContext): void {
+    super.create(ctx)
+    const vault = ctx.services.get(VaultVfs)
+    ctx.extensions.register(ExplorerExtension, () => ({
+      vfs: vault,
       root: this.root,
     }))
   }
 
-  override configure(arxhub: ArxHub): void {
-    super.configure(arxhub)
+  override configure(ctx: PluginContext): void {
+    super.configure(ctx)
 
-    const shell = arxhub.extensions.get(ShellExtension)
+    const shell = ctx.extensions.get(ShellExtension)
     shell.sidebar.register({
       id: 'arxhub.explorer',
       icon: 'lu:folder-open',

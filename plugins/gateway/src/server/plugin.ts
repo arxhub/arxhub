@@ -1,9 +1,9 @@
-import { type ArxHub, Plugin, type PluginArgs } from '@arxhub/core'
+import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import manifest from '../manifest'
 import { GatewayServerExtension } from './extension'
 import { healthcheckRoute } from './routes/healthcheck'
 
-export class GatewayServerPlugin extends Plugin<ArxHub> {
+export class GatewayServerPlugin extends Plugin {
   private readonly port: number
 
   constructor({ port = 3000, ...args }: PluginArgs & { port?: number }) {
@@ -11,22 +11,22 @@ export class GatewayServerPlugin extends Plugin<ArxHub> {
     this.port = port
   }
 
-  override create(target: ArxHub): void {
-    target.extensions.register(GatewayServerExtension)
+  override create(ctx: PluginContext): void {
+    ctx.extensions.register(GatewayServerExtension)
   }
 
-  override configure(target: ArxHub): void {
-    const { gateway } = target.extensions.get(GatewayServerExtension)
+  override configure(ctx: PluginContext): void {
+    const { gateway } = ctx.extensions.get(GatewayServerExtension)
     gateway.use(healthcheckRoute())
   }
 
-  override start(target: ArxHub): Promise<void> {
-    const { gateway } = target.extensions.get(GatewayServerExtension)
+  override start(ctx: PluginContext): Promise<void> {
+    const { gateway } = ctx.extensions.get(GatewayServerExtension)
     return gateway.listen(this.port)
   }
 
-  override stop(target: ArxHub): Promise<void> {
-    const { gateway } = target.extensions.get(GatewayServerExtension)
+  override stop(ctx: PluginContext): Promise<void> {
+    const { gateway } = ctx.extensions.get(GatewayServerExtension)
     return gateway.stop()
   }
 }

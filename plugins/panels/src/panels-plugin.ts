@@ -1,5 +1,4 @@
-import type { ArxHub } from '@arxhub/core'
-import { Plugin, type PluginArgs, type PluginManifest } from '@arxhub/core'
+import { Plugin, type PluginArgs, type PluginContext, type PluginManifest } from '@arxhub/core'
 import { PanelStoreExtension } from './panel-store-extension'
 
 const manifest: PluginManifest = {
@@ -9,13 +8,13 @@ const manifest: PluginManifest = {
   description: 'Tiling panel layout system',
 }
 
-export class PanelsPlugin extends Plugin<ArxHub> {
+export class PanelsPlugin extends Plugin {
   constructor(args: PluginArgs) {
     super(args, manifest)
   }
 
-  override create(arxhub: ArxHub): void {
-    super.create(arxhub)
-    arxhub.extensions.register(PanelStoreExtension, () => ({ bus: arxhub.events }))
+  override create(ctx: PluginContext): void {
+    super.create(ctx)
+    ctx.extensions.register(PanelStoreExtension, () => ({ bus: ctx.events }))
   }
 }

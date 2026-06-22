@@ -14,7 +14,7 @@ function configPath(opts: ConfigOptions): string {
   return `${opts.name ?? 'config'}.toml`
 }
 
-// `vfs` is expected to be a plugin's scoped storage view (e.g. PluginHome.storage), so the config
+// `vfs` is expected to be a plugin's scoped storage view (e.g. Vfs.storage), so the config
 // file lives at the scope root — this package no longer owns any per-plugin path layout.
 export async function readConfig<S extends TObject>(
   vfs: VirtualFileSystem,

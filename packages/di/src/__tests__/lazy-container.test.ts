@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isConstructor, LazyContainer } from '../collections/lazy-container'
+import { createKey, isConstructor, LazyContainer } from '../lazy-container'
 
 class Animal {
   sound(): string {
@@ -62,6 +62,24 @@ describe('LazyContainer', () => {
     c.register(Base, Impl, () => ['custom'])
 
     expect(c.get(Base).label).toBe('custom')
+  })
+
+  it('binds a value Key to a factory and resolves it directly (no construction)', () => {
+    const Config = createKey<{ url: string }>('Config')
+    const c = new LazyContainer<object>('Service')
+    let calls = 0
+    c.bind(Config, () => {
+      calls++
+      return { url: 'x' }
+    })
+
+    const first = c.get(Config)
+    expect(first.url).toBe('x') // returned as-is, no `new`
+    expect(c.get(Config)).toBe(first) // factory runs once, then cached
+    expect(calls).toBe(1)
+
+    // A child scope resolves the key from the parent.
+    expect(c.child().get(Config)).toBe(first)
   })
 
   it('keys on the constructor reference, not its name (survives minification)', () => {

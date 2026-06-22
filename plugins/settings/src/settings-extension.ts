@@ -13,7 +13,7 @@ export interface SettingsSection {
   icon?: string
   order?: number
   schema?: TObject
-  // The owning plugin's scoped storage (e.g. PluginHome.storage). Required when `schema` is set —
+  // The owning plugin's scoped storage (e.g. ctx.services.get(PluginVfs).storage). Required when `schema` is set —
   // the schema form persists into it, so a section can never write outside its owner's sandbox.
   storage?: VirtualFileSystem
   component?: Component

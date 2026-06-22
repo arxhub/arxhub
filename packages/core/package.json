@@ -30,9 +30,9 @@
     "type-fest": "catalog:toolchain"
   },
   "peerDependencies": {
+    "@arxhub/di": "workspace:*",
     "@arxhub/errors": "workspace:*",
-    "@arxhub/stdlib": "workspace:*",
-    "@arxhub/vfs": "workspace:*"
+    "@arxhub/stdlib": "workspace:*"
   },
   "publishConfig": {
     "exports": {

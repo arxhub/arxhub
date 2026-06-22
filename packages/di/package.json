@@ -1,13 +1,13 @@
 {
-  "name": "@arxhub/vfs",
+  "name": "@arxhub/di",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "",
+  "description": "Lazy dependency-injection container for ArxHub — constructor tokens + typed value keys",
   "keywords": [
     "arxhub",
-    "fs",
-    "vfs",
-    "virtual"
+    "di",
+    "container",
+    "ioc"
   ],
   "license": "AGPL-3.0-or-later",
   "author": "",
@@ -23,21 +23,12 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@arxhub/crypto": "workspace:*",
-    "@arxhub/di": "workspace:*",
-    "@arxhub/errors": "workspace:*",
-    "@arxhub/path": "workspace:*",
-    "async-lock": "catalog:shared"
+    "@arxhub/errors": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/async-lock": "catalog:toolchain",
-    "@types/node": "catalog:toolchain",
     "type-fest": "catalog:toolchain"
-  },
-  "peerDependencies": {
-    "@arxhub/core": "workspace:*"
   },
   "publishConfig": {
     "exports": {

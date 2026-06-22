@@ -476,6 +476,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@arxhub/di':
+        specifier: workspace:*
+        version: link:../di
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../errors
@@ -485,9 +488,6 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
-      '@arxhub/vfs':
-        specifier: workspace:*
-        version: link:../vfs
       eventemitter3:
         specifier: catalog:shared
         version: 5.0.4
@@ -516,6 +516,22 @@ importers:
       '@types/node':
         specifier: catalog:toolchain
         version: 25.6.0
+
+  packages/di:
+    dependencies:
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../errors
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      type-fest:
+        specifier: catalog:toolchain
+        version: 5.6.0
 
   packages/errors:
     dependencies:
@@ -696,6 +712,9 @@ importers:
       '@arxhub/crypto':
         specifier: workspace:*
         version: link:../crypto
+      '@arxhub/di':
+        specifier: workspace:*
+        version: link:../di
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../errors
@@ -847,12 +866,12 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
-      '@arxhub/plugin-vfs':
-        specifier: workspace:*
-        version: link:../vfs
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
       '@codemirror/language':
         specifier: catalog:client
         version: 6.12.3
@@ -887,12 +906,12 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
-      '@arxhub/plugin-vfs':
-        specifier: workspace:*
-        version: link:../vfs
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
       prosemirror-commands:
         specifier: catalog:client
         version: 1.7.1
@@ -948,9 +967,6 @@ importers:
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell
-      '@arxhub/plugin-vfs':
-        specifier: workspace:*
-        version: link:../vfs
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
@@ -1004,6 +1020,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@arxhub/events':
         specifier: workspace:*
         version: link:../../packages/events

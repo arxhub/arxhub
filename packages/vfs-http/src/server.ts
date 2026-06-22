@@ -1,4 +1,4 @@
-import { type ArxHub, definePluginManifest, Plugin, type PluginArgs } from '@arxhub/core'
+import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { hasErrorCode, validation } from '@arxhub/errors'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
 import type { VirtualFileSystem } from '@arxhub/vfs'
@@ -130,7 +130,7 @@ type VfsHttpServerPluginArgs = PluginArgs & {
 
 // Mounts vfsRoutes onto the gateway during configure(). Register alongside
 // GatewayServerPlugin in a server instance, injecting the backing filesystem.
-export class VfsHttpServerPlugin extends Plugin<ArxHub> {
+export class VfsHttpServerPlugin extends Plugin {
   private readonly vfs: VirtualFileSystem
 
   constructor(args: VfsHttpServerPluginArgs) {
@@ -138,9 +138,9 @@ export class VfsHttpServerPlugin extends Plugin<ArxHub> {
     this.vfs = args.vfs
   }
 
-  override configure(target: ArxHub): void {
-    super.configure(target)
-    const { gateway } = target.extensions.get(GatewayServerExtension)
+  override configure(ctx: PluginContext): void {
+    super.configure(ctx)
+    const { gateway } = ctx.extensions.get(GatewayServerExtension)
     gateway.use(vfsRoutes(this.vfs))
   }
 }

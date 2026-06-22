@@ -1,4 +1,4 @@
-import { isConstructor, LazyContainer } from '@arxhub/stdlib/collections/lazy-container'
+import { isConstructor, LazyContainer } from '@arxhub/di'
 import type { Constructor, Except } from 'type-fest'
 import type { Logger } from './logger'
 

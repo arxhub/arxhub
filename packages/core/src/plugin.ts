@@ -1,8 +1,8 @@
-import { isConstructor, LazyContainer } from '@arxhub/stdlib/collections/lazy-container'
+import { isConstructor, LazyContainer } from '@arxhub/di'
 import type { Named } from '@arxhub/stdlib/collections/named'
 import type { Constructor, Except } from 'type-fest'
 import type { Logger } from './logger'
-import { PluginHome, RootVfs } from './plugin-home'
+import type { PluginContext, PluginHost } from './plugin-context'
 
 export interface PluginManifest {
   name: string
@@ -18,75 +18,72 @@ export function definePluginManifest(manifest: PluginManifest): PluginManifest {
 
 export type PluginArgs = {
   logger: Logger
-  container: LazyContainer<object>
 }
 
-export abstract class Plugin<T> implements Named {
+export abstract class Plugin implements Named {
   protected readonly logger: Logger
-  protected readonly container: LazyContainer<object>
   readonly manifest: PluginManifest
 
-  constructor({ logger, container }: PluginArgs, manifest: PluginManifest) {
+  constructor({ logger }: PluginArgs, manifest: PluginManifest) {
     this.logger = logger.child(`[${this.name}] - `)
     this.manifest = manifest
-    this.container = container
-    // Seed this plugin's own scope. PluginHome is built lazily from the root vfs (resolved from the
-    // parent `services` container) and THIS manifest — so Core, not the subclass, owns the home id.
-    container.register(PluginHome, () => [container.get(RootVfs).fs, manifest])
   }
 
   get name(): string {
     return this.constructor.name
   }
 
-  create(target: T): void {
+  // Runs first, for ALL plugins, before any context/DI-scope is built. Wire instance-level
+  // infrastructure here via the narrow host (e.g. VfsPlugin binds a per-plugin VFS scope) — so a
+  // contribution applies to every plugin, the declaring one included, independent of registration order.
+  setup(host: PluginHost): void {}
+
+  create(ctx: PluginContext): void {
     this.logger.info('Creating...')
   }
 
-  configure(target: T): void {
+  configure(ctx: PluginContext): void {
     this.logger.info('Configuring...')
   }
 
-  start(target: T): Promise<void> {
+  start(ctx: PluginContext): Promise<void> {
     this.logger.info('Starting...')
     return Promise.resolve()
   }
 
-  stop(target: T): Promise<void> {
+  stop(ctx: PluginContext): Promise<void> {
     this.logger.info('Stopping...')
     return Promise.resolve()
   }
 }
 
-export class PluginContainer<T> extends LazyContainer<Plugin<T>> {
+export class PluginContainer extends LazyContainer<Plugin> {
   private readonly logger: Logger
-  private readonly services: LazyContainer<object>
 
-  constructor(logger: Logger, services: LazyContainer<object>) {
+  constructor(logger: Logger) {
     super('Plugin')
     this.logger = logger
-    this.services = services
   }
 
-  // Per-plugin base args. Each plugin gets its OWN child scope (parent = the shared `services`
-  // container), so its PluginHome binding stays isolated while globals fall through to the parent.
+  // Per-plugin base args. The DI scope/home are no longer plumbed through here — each plugin's
+  // capabilities arrive via the PluginContext that ArxHub hands to its lifecycle phases.
   private base(): PluginArgs {
-    return { logger: this.logger, container: this.services.child('PluginScope') }
+    return { logger: this.logger }
   }
 
   // TODO: waiting for biome 2.0 https://github.com/biomejs/biome/discussions/187
   // self-bound: the plugin class is its own token
   // biome-ignore format: Hand formatting is more readable
-  override register(token: Constructor<Plugin<T>, [PluginArgs]>): void
+  override register(token: Constructor<Plugin, [PluginArgs]>): void
   // biome-ignore format: Hand formatting is more readable
-  override register<A extends PluginArgs>(token: Constructor<Plugin<T>, [A]>, args: () => Except<A, keyof PluginArgs>): void
+  override register<A extends PluginArgs>(token: Constructor<Plugin, [A]>, args: () => Except<A, keyof PluginArgs>): void
   // token -> impl: resolve `token` to a `impl` instance
   // biome-ignore format: Hand formatting is more readable
-  override register<R extends Plugin<T>>(token: Constructor<R>, impl: Constructor<R, [PluginArgs]>): void
+  override register<R extends Plugin>(token: Constructor<R>, impl: Constructor<R, [PluginArgs]>): void
   // biome-ignore format: Hand formatting is more readable
-  override register<R extends Plugin<T>, A extends PluginArgs>(token: Constructor<R>, impl: Constructor<R, [A]>, args: () => Except<A, keyof PluginArgs>): void
+  override register<R extends Plugin, A extends PluginArgs>(token: Constructor<R>, impl: Constructor<R, [A]>, args: () => Except<A, keyof PluginArgs>): void
   // biome-ignore format: Hand formatting is more readable
-  override register(token: Constructor<Plugin<T>>, implOrArgs?: Constructor<Plugin<T>> | (() => object), args?: () => object): void {
+  override register(token: Constructor<Plugin>, implOrArgs?: Constructor<Plugin> | (() => object), args?: () => object): void {
     if (isConstructor(implOrArgs)) {
       super.register(token, implOrArgs, () => [{ ...this.base(), ...(args?.() ?? {}) }])
     } else {
