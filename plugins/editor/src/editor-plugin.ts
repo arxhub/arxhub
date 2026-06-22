@@ -1,18 +1,17 @@
-import type { ArxHub } from '@arxhub/core'
-import { Plugin, type PluginArgs } from '@arxhub/core'
+import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { manifest } from './manifest'
 import EditorPanel from './ui/EditorPanel.vue'
 
-export class EditorPlugin extends Plugin<ArxHub> {
+export class EditorPlugin extends Plugin {
   constructor(args: PluginArgs) {
     super(args, manifest)
   }
 
-  override configure(arxhub: ArxHub): void {
-    super.configure(arxhub)
+  override configure(ctx: PluginContext): void {
+    super.configure(ctx)
 
-    const { store } = arxhub.extensions.get(PanelStoreExtension)
+    const { store } = ctx.extensions.get(PanelStoreExtension)
     store.registerPanel({
       id: 'arxhub.editor',
       title: 'Editor',

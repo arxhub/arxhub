@@ -7,8 +7,8 @@ export default defineConfig((env) =>
     external: [
       '@arxhub/core',
       '@arxhub/plugin-panels',
-      '@arxhub/plugin-vfs',
       '@arxhub/uikit',
+      '@arxhub/vfs',
       'codemirror',
       '@codemirror/language',
       '@codemirror/language-data',

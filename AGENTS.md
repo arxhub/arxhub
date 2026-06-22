@@ -93,7 +93,7 @@ Plugin-based hexagonal architecture. Plugins register Extensions during `create(
 - **Style**: single quotes, no semicolons, trailing commas, 144 char line width.
 - **Imports**: `@arxhub/*` workspace references; absolute paths via tsconfig `moduleResolution: bundler`.
 - **Errors**: All errors extend `AppError` from `@arxhub/errors`. Set `httpStatusCode`. HTTP error factories live in `@arxhub/errors` (`packages/errors/src/http.ts`).
-- **Collections**: Use `Container`, `LazyContainer`, `NamedContainer` from `@arxhub/stdlib/collections`.
+- **Collections**: Use `Container`, `NamedContainer` from `@arxhub/stdlib/collections`. The DI container (`LazyContainer`, `Key`, `createKey`, `isConstructor`) lives in its own package `@arxhub/di`.
 - **Tests**: `*.test.ts` always in a `src/__tests__/` folder within the package (never co-located next to source). Imports reach into source one level up (`../foo`). Vitest only; discovery is scoped to `src/**/*.test.ts` via `toolchains/vite/src/generic.ts`.
 - **Build**: Each package builds individually with `tsc && vite build`. No root build.
 - **Test run**: `pnpm --filter @arxhub/sync test` (per-package). No root test runner configured.

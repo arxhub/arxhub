@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { usePanelInstance } from '@arxhub/plugin-panels/ui'
-import { VfsExtension } from '@arxhub/plugin-vfs/ui'
 import { useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
+import { VaultVfs } from '@arxhub/vfs'
 import { history } from 'prosemirror-history'
 import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
@@ -18,7 +18,7 @@ import 'prosemirror-view/style/prosemirror.css'
 const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
-const { vfs } = arxhub.extensions.get(VfsExtension)
+const vfs = arxhub.services.get(VaultVfs)
 const panel = usePanelInstance()
 const editorEl = ref<HTMLDivElement>()
 const view = shallowRef<EditorView | null>(null)

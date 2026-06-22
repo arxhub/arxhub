@@ -1,16 +1,22 @@
 {
   "name": "@arxhub/plugin-editor",
-  "sideEffects": ["**/*.css"],
+  "sideEffects": [
+    "**/*.css"
+  ],
   "version": "0.1.0",
   "description": "ProseMirror note editor plugin for ArxHub",
-  "keywords": ["arxhub"],
+  "keywords": [
+    "arxhub"
+  ],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
   "exports": {
     "./ui": "./src/ui.ts"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build"
   },
@@ -34,8 +40,8 @@
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
-    "@arxhub/plugin-vfs": "workspace:*",
-    "@arxhub/uikit": "workspace:*"
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
   },
   "publishConfig": {
     "exports": {

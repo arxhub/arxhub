@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { VfsExtension } from '@arxhub/plugin-vfs/ui'
 import { useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
+import { VaultVfs } from '@arxhub/vfs'
 import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
 import { EditorState } from '@codemirror/state'
@@ -10,7 +10,7 @@ import { onUnmounted, ref, toRef } from 'vue'
 const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
-const { vfs } = arxhub.extensions.get(VfsExtension)
+const vfs = arxhub.services.get(VaultVfs)
 const editorEl = ref<HTMLDivElement>()
 let view: EditorView | null = null
 
