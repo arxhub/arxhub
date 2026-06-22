@@ -1,0 +1,37 @@
+{
+  "name": "@arxhub/plugin-config",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Config provider plugin for ArxHub — binds a per-plugin scoped config service",
+  "keywords": ["arxhub"],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./ui": "./src/ui.ts"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/config": "workspace:*",
+    "@arxhub/core": "workspace:*",
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { Button, Input, Switch } from '@arxhub/uikit/core'
 import type { TObject } from '@sinclair/typebox'
 import { reactive, watch } from 'vue'
-import { Button, Input, Switch } from '@arxhub/uikit/core'
 
 const props = defineProps<{
   schema: TObject

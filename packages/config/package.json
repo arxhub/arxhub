@@ -23,8 +23,9 @@
   },
   "dependencies": {
     "@sinclair/typebox": "catalog:shared",
-    "@arxhub/core": "workspace:*",
+    "@arxhub/di": "workspace:*",
     "@arxhub/errors": "workspace:*",
+    "@arxhub/logger": "workspace:*",
     "@arxhub/vfs": "workspace:*",
     "smol-toml": "catalog:shared"
   },
