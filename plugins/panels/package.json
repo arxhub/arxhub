@@ -36,6 +36,7 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
     "@arxhub/events": "workspace:*",
     "@arxhub/uikit": "workspace:*"
   },

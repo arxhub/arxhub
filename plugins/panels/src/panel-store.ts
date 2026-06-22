@@ -1,4 +1,5 @@
 import './events'
+import { illegalState } from '@arxhub/errors'
 import type { EventBus } from '@arxhub/events'
 import { nanoid } from 'nanoid'
 import { markRaw, readonly, ref } from 'vue'
@@ -68,7 +69,7 @@ export function createPanelStore(bus: EventBus): PanelStore {
 
     openPanel(definitionId: string, props?: Record<string, unknown>, title?: string, targetGroupId?: string, preview = false): string {
       const def = definitions.value.find((d) => d.id === definitionId)
-      if (!def) throw new Error(`Panel definition not found: ${definitionId}`)
+      if (!def) throw illegalState(`Panel definition not found: ${definitionId}`)
 
       let groupId = targetGroupId ?? activeGroupId.value
 
