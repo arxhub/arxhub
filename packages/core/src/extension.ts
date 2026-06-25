@@ -1,6 +1,6 @@
 import { isConstructor, LazyContainer } from '@arxhub/di'
+import type { Logger } from '@arxhub/logger'
 import type { Constructor, Except } from 'type-fest'
-import type { Logger } from './logger'
 
 export type ExtensionArgs = {
   logger: Logger

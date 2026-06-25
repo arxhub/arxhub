@@ -1,7 +1,6 @@
 import type { LazyContainer } from '@arxhub/di'
 import type { EventBus } from '@arxhub/events'
 import type { ExtensionContainer } from './extension'
-import type { Logger } from './logger'
 import type { Plugin } from './plugin'
 
 // A DI scope (the per-plugin child of the root `services` container). Domain packages type their
@@ -27,13 +26,14 @@ export interface PluginHost {
 
 // What a plugin sees during its lifecycle (create/configure/start/stop). Deliberately narrow: no
 // plugin registry, no start/stop — inter-plugin communication stays via extensions. Core is
-// domain-agnostic, so anything concrete (the VFS, etc.) is resolved from `services` by DI; the token
-// (e.g. Vfs from @arxhub/vfs) is owned by the domain package and bound via a ScopeConfigurer.
+// domain-agnostic, so anything concrete (the VFS, the logger, etc.) is resolved from `services` by
+// DI; the token (e.g. Vfs from @arxhub/vfs, Logger from @arxhub/logger) is owned by its domain
+// package and bound via a ScopeConfigurer. (The base Plugin still exposes its own `this.logger`.)
 export interface PluginContext {
-  readonly logger: Logger
   readonly extensions: ExtensionContainer
   readonly events: EventBus
   // This plugin's own DI scope (a child of the root services container). Falls through to shared
-  // services on a miss; locally-bound tokens (e.g. Vfs) stay isolated to this plugin.
+  // services on a miss; locally-bound tokens (e.g. Vfs, the per-plugin Logger) stay isolated to this
+  // plugin.
   readonly services: LazyContainer<object>
 }

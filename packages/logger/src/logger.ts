@@ -1,3 +1,5 @@
+import { createKey } from '@arxhub/di'
+
 export interface Logger {
   log(message: unknown, ...optonalParams: unknown[]): void
   info(message: unknown, ...optonalParams: unknown[]): void
@@ -5,6 +7,12 @@ export interface Logger {
   error(message: unknown, ...optonalParams: unknown[]): void
   child(prefix: string): Logger
 }
+
+// Per-plugin logger DI key. Bound per-plugin by bindPluginLogger to a name-prefixed child of the
+// RootLogger. Declared here, next to the interface, so the value (key) and type (interface) merge
+// under the single name `Logger` — consumers resolve the scoped logger as `ctx.services.get(Logger)`
+// and type against `Logger` from the same import.
+export const Logger = createKey<Logger>('Logger')
 
 export class ConsoleLogger implements Logger {
   private prefix: string | null = null

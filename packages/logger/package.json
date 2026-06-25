@@ -1,10 +1,11 @@
 {
-  "name": "@arxhub/core",
+  "name": "@arxhub/logger",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "",
+  "description": "Logger interface + ConsoleLogger and a per-plugin DI-scoped logger for ArxHub",
   "keywords": [
-    "arxhub"
+    "arxhub",
+    "logger"
   ],
   "license": "AGPL-3.0-or-later",
   "author": "",
@@ -20,20 +21,12 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@arxhub/events": "workspace:*",
-    "@arxhub/logger": "workspace:*",
-    "eventemitter3": "catalog:shared"
+    "@arxhub/di": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
-    "@types/node": "catalog:toolchain",
     "type-fest": "catalog:toolchain"
-  },
-  "peerDependencies": {
-    "@arxhub/di": "workspace:*",
-    "@arxhub/errors": "workspace:*",
-    "@arxhub/stdlib": "workspace:*"
   },
   "publishConfig": {
     "exports": {
