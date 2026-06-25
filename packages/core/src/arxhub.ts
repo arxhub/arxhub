@@ -1,9 +1,9 @@
 import { LazyContainer } from '@arxhub/di'
 import { aggregate, illegalState } from '@arxhub/errors'
 import type { EventBus, EventMap } from '@arxhub/events'
+import { ConsoleLogger, type Logger } from '@arxhub/logger'
 import EventEmitter from 'eventemitter3'
 import { ExtensionContainer } from './extension'
-import { ConsoleLogger, type Logger } from './logger'
 import { type Plugin, PluginContainer } from './plugin'
 import type { PluginContext, PluginHost, ScopeConfigureCallback } from './plugin-context'
 
@@ -92,7 +92,6 @@ export class ArxHub {
       const scope = this.services.child('PluginScope')
       for (const configure of this.scopeConfigurers) configure(scope, plugin)
       ctx = {
-        logger: this.logger.child(`[${plugin.name}] - `),
         extensions: this.extensions,
         events: this.events,
         services: scope,
