@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { readConfig, writeConfig } from '@arxhub/config'
+import type { PluginConfig } from '@arxhub/config'
 import { ConfigForm } from '@arxhub/config/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
-import type { VirtualFileSystem } from '@arxhub/vfs'
 import type { TObject } from '@sinclair/typebox'
 import { ref, watch } from 'vue'
 
@@ -10,7 +9,7 @@ const props = defineProps<{
   sectionId: string
   title: string
   schema: TObject
-  storage: VirtualFileSystem
+  config: PluginConfig
 }>()
 
 const arxhub = useArxHub()
@@ -24,7 +23,7 @@ watch(
   async (sectionId) => {
     let cfg: Record<string, unknown>
     try {
-      cfg = (await readConfig(props.storage, props.schema, {}, arxhub.logger)) as Record<string, unknown>
+      cfg = (await props.config.read(props.schema)) as Record<string, unknown>
     } catch (error) {
       arxhub.logger.error(`[settings] failed to load config for ${sectionId}:`, error)
       cfg = {}
@@ -38,7 +37,7 @@ watch(
 )
 
 async function onSave(data: Record<string, unknown>) {
-  await writeConfig(props.storage, props.schema, data, {}, arxhub.logger)
+  await props.config.write(props.schema, data)
   values.value = { ...values.value, ...data }
 }
 </script>

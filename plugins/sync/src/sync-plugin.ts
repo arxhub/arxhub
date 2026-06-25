@@ -1,4 +1,4 @@
-import { readConfig } from '@arxhub/config'
+import { PluginConfig } from '@arxhub/config'
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
@@ -28,9 +28,9 @@ export class SyncPlugin extends Plugin {
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
 
-    const pluginVfs = ctx.services.get(PluginVfs)
+    const config = ctx.services.get(PluginConfig)
     const settings = ctx.extensions.get(SettingsExtension)
-    settings.register({ id: 'sync', title: 'Sync', schema: SyncConfigSchema, order: 10, storage: pluginVfs.storage })
+    settings.register({ id: 'sync', title: 'Sync', schema: SyncConfigSchema, order: 10, config })
 
     const shell = ctx.extensions.get(ShellExtension)
     shell.footer.register({ id: 'arxhub.sync', component: markRaw(SyncFooter), region: 'right' })
@@ -40,7 +40,7 @@ export class SyncPlugin extends Plugin {
     await super.start(ctx)
 
     const pluginVfs = ctx.services.get(PluginVfs)
-    const cfg = await readConfig(pluginVfs.storage, SyncConfigSchema, {}, this.logger)
+    const cfg = await ctx.services.get(PluginConfig).read(SyncConfigSchema)
 
     if (cfg.serverUrl) {
       const remoteVfs = new HttpFileSystem({ baseUrl: cfg.serverUrl }, this.logger)

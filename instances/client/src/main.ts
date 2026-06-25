@@ -3,8 +3,10 @@ import '@arxhub/theme'
 
 import { ArxHub } from '@arxhub/core'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
+import { ConfigPlugin } from '@arxhub/plugin-config/ui'
 import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
+import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
@@ -18,6 +20,8 @@ const arxhub = new ArxHub()
 const vfs = new HttpFileSystem({ baseUrl: '/vfs' }, arxhub.logger)
 
 arxhub.plugins.register(VfsPlugin, () => ({ fs: vfs }))
+arxhub.plugins.register(LoggerPlugin)
+arxhub.plugins.register(ConfigPlugin)
 arxhub.plugins.register(ShellPlugin)
 arxhub.plugins.register(PanelsPlugin)
 arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))

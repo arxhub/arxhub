@@ -1,21 +1,22 @@
+import type { PluginConfig } from '@arxhub/config'
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import type { PanelStore } from '@arxhub/plugin-panels/ui'
-import type { VirtualFileSystem } from '@arxhub/vfs'
 import type { TObject } from '@sinclair/typebox'
 import { type Component, markRaw, ref } from 'vue'
 
 // A settings section is contributed by a plugin in its configure() step.
 // Provide EITHER a `schema` (auto-rendered into a form by SchemaSettingsPage) plus the owning
-// plugin's `storage` scope (where the form reads/writes config.toml) OR a custom `component`.
+// plugin's scoped `config` service (where the form reads/writes config.toml) OR a custom `component`.
 export interface SettingsSection {
   id: string
   title: string
   icon?: string
   order?: number
   schema?: TObject
-  // The owning plugin's scoped storage (e.g. ctx.services.get(PluginVfs).storage). Required when `schema` is set —
-  // the schema form persists into it, so a section can never write outside its owner's sandbox.
-  storage?: VirtualFileSystem
+  // The owning plugin's scoped config service (e.g. ctx.services.get(PluginConfig)). Required when
+  // `schema` is set — the schema form persists through it, so a section can never write outside its
+  // owner's sandbox.
+  config?: PluginConfig
   component?: Component
 }
 
@@ -34,8 +35,8 @@ export class SettingsExtension extends Extension {
       this.logger.warn(`register(${section.id}) ignored: section needs a schema or a component`)
       return
     }
-    if (section.schema && !section.storage) {
-      this.logger.warn(`register(${section.id}) ignored: a schema section needs a storage scope to persist into`)
+    if (section.schema && !section.config) {
+      this.logger.warn(`register(${section.id}) ignored: a schema section needs a config service to persist into`)
       return
     }
     const next = section.component ? { ...section, component: markRaw(section.component) } : section

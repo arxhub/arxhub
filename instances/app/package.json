@@ -12,7 +12,9 @@
   "dependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
+    "@arxhub/plugin-config": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",
+    "@arxhub/plugin-logger": "workspace:*",
     "@arxhub/plugin-explorer": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
