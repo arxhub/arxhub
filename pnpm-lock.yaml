@@ -204,12 +204,18 @@ importers:
       '@arxhub/plugin-codemirror':
         specifier: workspace:*
         version: link:../../plugins/codemirror
+      '@arxhub/plugin-config':
+        specifier: workspace:*
+        version: link:../../plugins/config
       '@arxhub/plugin-editor':
         specifier: workspace:*
         version: link:../../plugins/editor
       '@arxhub/plugin-explorer':
         specifier: workspace:*
         version: link:../../plugins/explorer
+      '@arxhub/plugin-logger':
+        specifier: workspace:*
+        version: link:../../plugins/logger
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
@@ -286,12 +292,18 @@ importers:
       '@arxhub/plugin-codemirror':
         specifier: workspace:*
         version: link:../../plugins/codemirror
+      '@arxhub/plugin-config':
+        specifier: workspace:*
+        version: link:../../plugins/config
       '@arxhub/plugin-editor':
         specifier: workspace:*
         version: link:../../plugins/editor
       '@arxhub/plugin-explorer':
         specifier: workspace:*
         version: link:../../plugins/explorer
+      '@arxhub/plugin-logger':
+        specifier: workspace:*
+        version: link:../../plugins/logger
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
@@ -341,6 +353,9 @@ importers:
       '@arxhub/plugin-codemirror':
         specifier: workspace:*
         version: link:../../plugins/codemirror
+      '@arxhub/plugin-config':
+        specifier: workspace:*
+        version: link:../../plugins/config
       '@arxhub/plugin-editor':
         specifier: workspace:*
         version: link:../../plugins/editor
@@ -350,6 +365,9 @@ importers:
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../../plugins/gateway
+      '@arxhub/plugin-logger':
+        specifier: workspace:*
+        version: link:../../plugins/logger
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
@@ -436,12 +454,15 @@ importers:
 
   packages/config:
     dependencies:
-      '@arxhub/core':
+      '@arxhub/di':
         specifier: workspace:*
-        version: link:../core
+        version: link:../di
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../errors
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@arxhub/vfs':
         specifier: workspace:*
         version: link:../vfs
@@ -485,6 +506,9 @@ importers:
       '@arxhub/events':
         specifier: workspace:*
         version: link:../events
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
@@ -580,6 +604,22 @@ importers:
       '@types/node':
         specifier: catalog:toolchain
         version: 25.6.0
+
+  packages/logger:
+    dependencies:
+      '@arxhub/di':
+        specifier: workspace:*
+        version: link:../di
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      type-fest:
+        specifier: catalog:toolchain
+        version: 5.6.0
 
   packages/path:
     dependencies:
@@ -898,6 +938,31 @@ importers:
         specifier: catalog:toolchain
         version: 25.6.0
 
+  plugins/config:
+    dependencies:
+      '@arxhub/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+
   plugins/editor:
     dependencies:
       '@arxhub/core':
@@ -1004,6 +1069,25 @@ importers:
       elysia:
         specifier: catalog:server
         version: 1.4.28(@sinclair/typebox@0.34.48)(exact-mirror@0.2.7(@sinclair/typebox@0.34.48))(file-type@21.3.0)(openapi-types@12.1.3)(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+
+  plugins/logger:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
