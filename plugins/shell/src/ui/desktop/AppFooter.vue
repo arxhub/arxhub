@@ -17,29 +17,22 @@
   height: 1.75rem;
   width: 100%;
   background-color: var(--gray-1);
-  border-top: 1px solid var(--accent-a2);
+  border-top: 1px solid var(--gray-6);
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
-  padding-right: 1rem;
-  font-size: 0.625rem;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
   color: var(--gray-11);
-  font-family: var(--font-mono);
   flex-shrink: 0;
   z-index: var(--z-index-docked);
   user-select: none;
-  box-shadow: var(--shadow-md);
 }
 
-.left-section {
-  display: flex;
-  align-items: center;
-  height: 100%;
-}
-
+.left-section,
 .right-section {
   display: flex;
-  align-items: center;
-  gap: 1.25rem;
+  align-items: stretch;
+  height: 100%;
 }
 </style>

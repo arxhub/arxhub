@@ -18,6 +18,18 @@ const counts = computed(() => {
   return { warn, error }
 })
 
+// Error outranks warning — the dot reflects the most severe level present.
+const tone = computed(() => {
+  if (counts.value.error > 0) return 'error'
+  if (counts.value.warn > 0) return 'warn'
+  return 'clean'
+})
+
+// Keep the bar narrow: counts past 999 add no signal, only width.
+function fmt(n: number): string {
+  return n > 999 ? '999+' : String(n)
+}
+
 function openLogs(): void {
   // Focus the Logs sidebar mini-app (idempotent — never opens a duplicate).
   shell.sidebar.setActive('arxhub.logs')
@@ -25,48 +37,56 @@ function openLogs(): void {
 </script>
 
 <template>
-  <button type="button" class="log-footer" title="Open logs" @click="openLogs">
-    <span class="dot" :class="{ alert: counts.error > 0 || counts.warn > 0 }" />
-    <span class="label">Logs</span>
-    <span v-if="counts.warn > 0" class="count warn">{{ counts.warn }}</span>
-    <span v-if="counts.error > 0" class="count error">{{ counts.error }}</span>
+  <button type="button" class="fx-item" aria-label="Open logs" title="Open logs" @click="openLogs">
+    <span class="dot" :class="`dot--${tone}`" />
+    <span>Logs</span>
+    <span v-if="counts.warn > 0" class="count count--warn">{{ fmt(counts.warn) }}</span>
+    <span v-if="counts.error > 0" class="count count--error">{{ fmt(counts.error) }}</span>
   </button>
 </template>
 
 <style scoped>
-.log-footer {
-  display: flex;
+.fx-item {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 8px;
+  gap: 8px;
   height: 100%;
+  padding: 0 8px;
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: var(--font-size-xs);
   font-family: var(--font-sans);
-  color: var(--gray-10);
+  font-size: var(--font-size-xs);
+  color: var(--gray-11);
+  white-space: nowrap;
+  transition: color var(--duration-normal), background-color var(--duration-normal);
 }
 
-.log-footer:hover {
+.fx-item:hover {
+  background-color: var(--gray-3);
   color: var(--gray-12);
+}
+
+.fx-item:focus-visible {
+  outline: 2px solid var(--accent-9);
+  outline-offset: -2px;
 }
 
 .dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: var(--gray-8);
+  flex-shrink: 0;
 }
 
-.dot.alert {
-  background: var(--warning-9);
-}
+.dot--warn { background: var(--warning-9); }
+.dot--error { background: var(--red-9); }
 
 .count {
   font-weight: var(--font-weight-bold);
 }
 
-.count.warn { color: var(--warning-11); }
-.count.error { color: var(--red-11); }
+.count--warn { color: var(--warning-11); }
+.count--error { color: var(--red-11); }
 </style>
