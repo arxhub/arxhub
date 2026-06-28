@@ -41,7 +41,7 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
 .control {
   width: var(--size-xs);
   height: var(--size-xs-half);
-  background-color: var(--gray-3);
+  background-color: var(--gray-5);
   border-radius: var(--radius-full);
   position: relative;
   transition: background-color var(--duration-normal);
@@ -63,8 +63,9 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
 .thumb {
   width: 0.75rem;
   height: 0.75rem;
-  background-color: white;
+  background-color: var(--white);
   border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
   position: absolute;
   top: 0.125rem;
   left: 0.125rem;

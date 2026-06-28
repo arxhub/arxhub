@@ -21,7 +21,7 @@ withDefaults(
 <style scoped>
 .track {
   width: 100%;
-  height: 0.375rem;
+  height: 0.5rem;
   background-color: var(--gray-3);
   border-radius: var(--radius-full);
   overflow: hidden;

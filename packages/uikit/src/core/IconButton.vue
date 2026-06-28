@@ -77,7 +77,7 @@ const iconSize = computed(() => ({ xs: 12, sm: 16, md: 20 })[props.size])
 }
 
 .icon-button.active {
-  background-color: var(--gray-4);
+  background-color: var(--gray-5);
   color: var(--gray-12);
 }
 

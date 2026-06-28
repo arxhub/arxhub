@@ -3,14 +3,14 @@ name: ArxHub
 description: A modular, offline-first personal knowledge workbench — Linear-crisp, keyboard-first, theme-driven.
 colors:
   accent: "#00a2c7"          # cyan-9 — the accent ROLE (default theme: Cyan). Themeable.
-  accent-hover: "#23afd0"    # cyan-10 (default theme, dark)
-  accent-text: "#4ccce6"     # cyan-11 — accent text/icon on dark surfaces
-  accent-surface: "#082c36"  # cyan-3 — active/selected background tint
-  neutral-bg: "#111113"      # slate-1 — shell + content surface (default theme is dark)
-  neutral-surface: "#18191b" # slate-2 — panels, cards, raised regions
-  neutral-line: "#363a3f"    # slate-6 — hairline structural borders & dividers
-  neutral-muted: "#b0b4ba"   # slate-11 — secondary text, resting icons
-  neutral-ink: "#edeef0"     # slate-12 — primary text
+  accent-hover: "#0797b9"    # cyan-10 (default theme, light)
+  accent-text: "#107d98"     # cyan-11 — accent text/icon on light surfaces
+  accent-surface: "#def7f9"  # cyan-3 — active/selected background tint
+  neutral-bg: "#fcfcfd"      # slate-1 — shell + content surface (default theme is light)
+  neutral-surface: "#f9f9fb" # slate-2 — panels, cards, raised regions
+  neutral-line: "#d9d9e0"    # slate-6 — hairline structural borders & dividers
+  neutral-muted: "#60646c"   # slate-11 — secondary text, resting icons
+  neutral-ink: "#1c2024"     # slate-12 — primary text
   danger: "#e5484d"          # red-9
   warning: "#f76b15"         # orange-9
   info: "#0090ff"            # blue-9
@@ -134,7 +134,7 @@ ArxHub is a bench of swappable tools, and the interface says so plainly. Every f
 
 The register is **product** and the personality is **Linear-crisp**: precise, fast, unobtrusive. Surfaces are flat and tonal, separated by hairline borders rather than drop shadows. Type is small and dense — this is a daily-driver kept open for hours, optimized for scanning and recall, not for first-impression spectacle. The single accent is spent only where it carries meaning (a primary action, an active tab, a focused field); the rest of the screen is a calm field of near-neutral gray. The macOS-style traffic-light cluster in the top-left is the one signature flourish, and it reads as native-app chrome, not decoration.
 
-Color is **theme-driven**, and this is the system's load-bearing idea. A *theme* is the unit of choice — the user picks a whole theme, not a light/dark switch — and **each theme declares whether it is light or dark**. A theme maps the abstract roles `--accent-*` and `--gray-*` onto Radix palette hues and carries the matching surface values. The shipped default theme is **Cyan + Slate (dark)**. Components never name a hue or a brightness; they bind only to roles, so the same explorer renders correctly under a Cyan-dark theme, an Indigo-dark theme, or a light theme nobody has written yet.
+Color is **theme-driven**, and this is the system's load-bearing idea. A *theme* is the unit of choice — the user picks a whole theme, not a light/dark switch — and **each theme declares whether it is light or dark**. A theme maps the abstract roles `--accent-*` and `--gray-*` onto Radix palette hues and carries the matching surface values. The shipped default theme is **Cyan + Slate (light)**. Theming works like VSCode/Obsidian: a theme is a whole swappable unit the user selects (each declares its own brightness) — *not* a global light/dark toggle layered over one palette. The default theme currently supplies the Radix *light* scale; dark or alternate-hue themes are authored as their own theme units (each carrying its full set of surface values) and selected, not toggled. Components never name a hue or a brightness; they bind only to roles, so the same explorer renders correctly under whichever theme is active.
 
 This system explicitly **rejects**: generic-SaaS dashboard tropes (gradient heroes, hero-metric cards, identical icon+heading grids); heavy/enterprise weight (ribbons, dialog-on-dialog, dense chrome); toy/cute consumer whimsy (rounded blobs, emoji-as-UI, mascot illustrations); and the trendy AI-app look (glassmorphism by default, neon gradients, glowing borders).
 
@@ -151,14 +151,14 @@ This system explicitly **rejects**: generic-SaaS dashboard tropes (gradient hero
 A near-neutral Slate field carrying a single Cyan signal. The palette is the Radix Colors system, consumed through two layers of indirection so it stays swappable: raw Radix scales → semantic roles → the active theme.
 
 ### Primary
-- **Action Cyan** (`#00a2c7`, cyan-9): the accent *role*, default theme Cyan. Primary buttons, active navigation, focus rings, selected tabs, links. Used sparingly and always to mean "this is the live thing." Hover deepens to `#23afd0` (cyan-10); text/icon-on-dark uses `#4ccce6` (cyan-11); active/selected backgrounds tint to `#082c36` (cyan-3).
+- **Action Cyan** (`#00a2c7`, cyan-9): the accent *role*, default theme Cyan. Primary buttons, active navigation, focus rings, selected tabs, links. Used sparingly and always to mean "this is the live thing." Hover deepens to `#0797b9` (cyan-10); text/icon-on-surface uses `#107d98` (cyan-11); active/selected backgrounds tint to `#def7f9` (cyan-3).
 
 ### Neutral
-- **Shell Slate** (`#111113`, slate-1): the dominant surface — app shell, content area, input wells.
-- **Raised Slate** (`#18191b`, slate-2): panels, cards, and any region lifted one step off the shell.
-- **Hairline** (`#363a3f`, slate-6): structural borders and dividers; the primary tool for separating regions.
-- **Muted Ink** (`#b0b4ba`, slate-11): secondary text, resting icons, micro-labels.
-- **Ink** (`#edeef0`, slate-12): primary text and active icons.
+- **Shell Slate** (`#fcfcfd`, slate-1): the dominant surface — app shell, content area, input wells.
+- **Raised Slate** (`#f9f9fb`, slate-2): panels, cards, and any region lifted one step off the shell.
+- **Hairline** (`#d9d9e0`, slate-6): structural borders and dividers; the primary tool for separating regions.
+- **Muted Ink** (`#60646c`, slate-11): secondary text, resting icons, micro-labels.
+- **Ink** (`#1c2024`, slate-12): primary text and active icons.
 
 ### Semantic (role-mapped, not theme-mapped)
 - **Danger** (`#e5484d`, red-9) · **Warning** (`#f76b15`, orange-9) · **Info** (`#0090ff`, blue-9) · **Success** (`#30a46c`, green-9). Used for status, validation, and the sync footer. Each has a full 12-step + alpha ramp; reach for step 11 when the color must sit as text on a neutral surface.

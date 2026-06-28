@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  variant?: 'success' | 'alert' | 'neutral'
+  variant?: 'success' | 'warning' | 'danger' | 'info' | 'neutral'
 }>()
 </script>
 
@@ -28,10 +28,22 @@ defineProps<{
   color: var(--success-9);
 }
 
-.alert {
+.warning {
   background-color: var(--warning-a4);
   border-color: var(--warning-9);
   color: var(--warning-9);
+}
+
+.danger {
+  background-color: var(--danger-a4);
+  border-color: var(--danger-9);
+  color: var(--danger-9);
+}
+
+.info {
+  background-color: var(--info-a4);
+  border-color: var(--info-9);
+  color: var(--info-9);
 }
 
 .neutral {

@@ -1,17 +1,19 @@
 <script setup lang="ts">
 defineProps<{
-  variant?: 'primary' | 'secondary' | 'ghost' | 'icon' | 'danger'
-  size?: 'sm' | 'md' | 'icon'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+  size?: 'sm' | 'md'
   active?: boolean
+  disabled?: boolean
   type?: 'button' | 'submit' | 'reset'
 }>()
 </script>
 
 <template>
-  <button 
-    class="btn" 
+  <button
+    class="btn"
     :class="[`btn-${variant || 'primary'}`, `btn-${size || 'md'}`, { active }]"
     :type="type || 'button'"
+    :disabled="disabled"
   >
     <slot />
   </button>
@@ -29,15 +31,25 @@ defineProps<{
   transition: all var(--duration-normal);
   cursor: pointer;
   border: 1px solid transparent;
-  gap: 0.375rem;
+  gap: 0.5rem;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent-9);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Variants */
 .btn-primary {
   background-color: var(--accent-9);
-  color: white;
+  color: var(--accent-contrast);
 }
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background-color: var(--accent-10);
 }
 
@@ -46,8 +58,8 @@ defineProps<{
   border-color: var(--gray-6);
   color: var(--gray-12);
 }
-.btn-secondary:hover {
-  background-color: var(--gray-6);
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--gray-4);
 }
 
 .btn-ghost {
@@ -55,25 +67,16 @@ defineProps<{
   border-color: var(--accent-a5);
   color: var(--accent-9);
 }
-.btn-ghost:hover {
+.btn-ghost:hover:not(:disabled) {
   background-color: var(--accent-a3);
 }
 
 .btn-danger {
-  background-color: var(--red-9);
-  color: white;
+  background-color: var(--danger-9);
+  color: var(--danger-contrast);
 }
-.btn-danger:hover {
-  background-color: var(--red-10);
-}
-
-.btn-icon {
-  background-color: transparent;
-  color: var(--gray-11);
-}
-.btn-icon:hover {
-  background-color: var(--gray-3);
-  color: var(--gray-12);
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--danger-10);
 }
 
 /* Sizes */
@@ -85,11 +88,5 @@ defineProps<{
 .btn-md {
   height: var(--size-sm);
   padding: 0 1rem;
-}
-
-.btn-icon {
-  width: var(--size-xs);
-  height: var(--size-xs);
-  padding: 0;
 }
 </style>

@@ -21,7 +21,7 @@ withDefaults(
 <style scoped>
 .separator {
   flex-shrink: 0;
-  background: var(--gray-5);
+  background: var(--gray-6);
 }
 
 .separator.vertical {

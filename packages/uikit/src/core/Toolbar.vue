@@ -5,7 +5,7 @@ withDefaults(
     wrap?: boolean
     bordered?: boolean
   }>(),
-  { gap: 2, wrap: false, bordered: true },
+  { gap: 4, wrap: false, bordered: true },
 )
 </script>
 
@@ -29,7 +29,7 @@ withDefaults(
 }
 
 .toolbar.bordered {
-  border-bottom: 1px solid var(--gray-4);
+  border-bottom: 1px solid var(--gray-6);
 }
 
 .toolbar.wrap {

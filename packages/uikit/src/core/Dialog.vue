@@ -53,7 +53,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 .dialog-backdrop {
   position: fixed;
   inset: 0;
-  background: var(--black-a6, rgba(0, 0, 0, 0.5));
+  background: var(--black-a6);
   z-index: var(--z-index-overlay);
 }
 
@@ -101,7 +101,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--gray-4);
+  border-bottom: 1px solid var(--gray-6);
 }
 
 .dialog-title {
@@ -144,6 +144,6 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   justify-content: flex-end;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  border-top: 1px solid var(--gray-4);
+  border-top: 1px solid var(--gray-6);
 }
 </style>

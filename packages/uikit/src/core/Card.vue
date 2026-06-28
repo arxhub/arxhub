@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import Icon from './Icon.vue'
-import IconButton from './IconButton.vue'
 
 defineProps<{
   title: string
+  icon?: string
 }>()
 </script>
 
@@ -11,10 +11,12 @@ defineProps<{
   <div class="card">
     <div class="card-header">
       <div class="title-wrapper">
-        <Icon name="lu:type" :size="14" />
+        <Icon v-if="icon" :name="icon" :size="14" />
         <span class="title">{{ title }}</span>
       </div>
-      <IconButton icon="lu:copy" size="xs" tooltip="Copy" />
+      <div v-if="$slots.actions" class="card-actions">
+        <slot name="actions" />
+      </div>
     </div>
     <div class="card-content">
       <slot />
@@ -27,7 +29,6 @@ defineProps<{
   background-color: var(--gray-2);
   display: flex;
   flex-direction: column;
-  min-height: 350px;
 }
 
 .card-header {
@@ -43,7 +44,7 @@ defineProps<{
 
 .title-wrapper {
   font-size: 0.625rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-widest);
   color: var(--gray-11);
@@ -54,6 +55,12 @@ defineProps<{
 
 .title {
   line-height: var(--line-height-none);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .card-content {

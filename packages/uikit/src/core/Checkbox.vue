@@ -48,13 +48,18 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
   width: var(--size-xs-half);
   height: var(--size-xs-half);
   border-radius: var(--radius-sm);
-  border: 1px solid var(--accent-9);
-  background-color: var(--accent-a4);
+  border: 1px solid var(--gray-7);
+  background-color: var(--gray-3);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   transition: all var(--duration-normal);
+}
+
+.control[data-state='checked'] {
+  border-color: var(--accent-9);
+  background-color: var(--accent-a4);
 }
 
 .control[data-focus-visible] {

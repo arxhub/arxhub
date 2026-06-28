@@ -33,8 +33,8 @@ async function newFolder() {
 <template>
   <div class="file-tree-wrap">
     <Toolbar :gap="4">
-      <Button variant="icon" size="sm" title="New File" @click="newFile">＋ File</Button>
-      <Button variant="icon" size="sm" title="New Folder" @click="newFolder">＋ Folder</Button>
+      <Button variant="secondary" size="sm" title="New File" @click="newFile">＋ File</Button>
+      <Button variant="secondary" size="sm" title="New Folder" @click="newFolder">＋ Folder</Button>
     </Toolbar>
 
     <div class="file-tree" @contextmenu.prevent="onRootContextMenu">

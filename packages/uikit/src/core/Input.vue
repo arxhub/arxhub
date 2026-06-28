@@ -4,6 +4,7 @@ const model = defineModel<string>()
 defineProps<{
   placeholder?: string
   type?: string
+  disabled?: boolean
 }>()
 </script>
 
@@ -12,6 +13,7 @@ defineProps<{
     class="input"
     :type="type || 'text'"
     :placeholder="placeholder"
+    :disabled="disabled"
     v-model="model"
   />
 </template>
@@ -21,11 +23,11 @@ defineProps<{
   width: 100%;
   height: var(--size-sm);
   background-color: var(--gray-1);
-  border: 1px solid transparent;
+  border: 1px solid var(--gray-7);
   border-radius: var(--radius-sm);
   padding: 0 0.75rem;
   font-size: var(--font-size-xs);
-  color: white;
+  color: var(--gray-12);
   outline: none;
   font-family: var(--font-sans);
   transition: all var(--duration-normal);
@@ -38,5 +40,10 @@ defineProps<{
 
 .input::placeholder {
   color: var(--gray-11);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

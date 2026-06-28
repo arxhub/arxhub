@@ -25,6 +25,10 @@
   --gray-a11: var(--slate-a11);
   --gray-a12: var(--slate-a12);
 
+  /* Legible foreground on the gray-9 solid fill. Theme-owned (depends on the
+     neutral hue); slate-9 is designed for white foreground text (per Radix). */
+  --gray-contrast: var(--white);
+
   --accent-1: var(--cyan-1);
   --accent-2: var(--cyan-2);
   --accent-3: var(--cyan-3);
@@ -50,4 +54,10 @@
   --accent-a10: var(--cyan-a10);
   --accent-a11: var(--cyan-a11);
   --accent-a12: var(--cyan-a12);
+
+  /* Legible foreground on the accent-9 solid fill. Theme-owned because it
+     depends on the accent hue: cyan-9 is designed for white foreground text
+     (per Radix), but a theme mapping the accent onto Sky/Mint/Lime/Yellow/Amber
+     would override this to a dark value. */
+  --accent-contrast: var(--white);
 }
