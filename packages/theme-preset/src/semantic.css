@@ -53,6 +53,10 @@
   --danger-a11: var(--red-a11);
   --danger-a12: var(--red-a12);
 
+  /* Legible foreground on the danger-9 solid fill. Red-9 is designed for white
+     foreground text (per Radix), so white is the correct default. */
+  --danger-contrast: var(--white);
+
   --warning-1: var(--orange-1);
   --warning-2: var(--orange-2);
   --warning-3: var(--orange-3);
@@ -78,6 +82,9 @@
   --warning-a10: var(--orange-a10);
   --warning-a11: var(--orange-a11);
   --warning-a12: var(--orange-a12);
+
+  /* Legible foreground on the warning-9 solid fill (orange-9 → white per Radix). */
+  --warning-contrast: var(--white);
 
   --info-1: var(--blue-1);
   --info-2: var(--blue-2);
@@ -105,6 +112,9 @@
   --info-a11: var(--blue-a11);
   --info-a12: var(--blue-a12);
 
+  /* Legible foreground on the info-9 solid fill (blue-9 → white per Radix). */
+  --info-contrast: var(--white);
+
   --success-1: var(--green-1);
   --success-2: var(--green-2);
   --success-3: var(--green-3);
@@ -130,4 +140,7 @@
   --success-a10: var(--green-a10);
   --success-a11: var(--green-a11);
   --success-a12: var(--green-a12);
+
+  /* Legible foreground on the success-9 solid fill (green-9 → white per Radix). */
+  --success-contrast: var(--white);
 }

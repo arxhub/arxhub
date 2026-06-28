@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import Icon from './Icon.vue'
+import IconButton from './IconButton.vue'
 
 defineProps<{
   title: string
   subtitle?: string
   icon?: string
-  variant?: 'success' | 'error' | 'info'
+  variant?: 'success' | 'warning' | 'danger' | 'info'
 }>()
 
 defineEmits<(e: 'close') => void>()
@@ -22,9 +23,7 @@ defineEmits<(e: 'close') => void>()
         <div v-if="subtitle" class="subtitle">{{ subtitle }}</div>
       </div>
     </div>
-    <button class="close-btn" @click="$emit('close')">
-      <Icon name="lu:x" :size="14" />
-    </button>
+    <IconButton icon="lu:x" size="xs" aria-label="Dismiss" @click="$emit('close')" />
   </div>
 </template>
 
@@ -34,62 +33,43 @@ defineEmits<(e: 'close') => void>()
   background-color: var(--gray-1);
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-lg);
-  padding: 0.75rem; /* p-3 */
+  padding: 0.75rem;
   box-shadow: var(--shadow-lg);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-left-width: 2px;
+  gap: 0.5rem;
 }
 
-.notification.info {
-  border-left-color: var(--accent-9);
-}
 .notification.info .icon-wrapper {
-  color: var(--accent-9);
-}
-
-.notification.success {
-  border-left-color: var(--green-9);
+  color: var(--info-9);
 }
 .notification.success .icon-wrapper {
-  color: var(--green-9);
+  color: var(--success-9);
 }
-
-.notification.error {
-  border-left-color: var(--red-9);
+.notification.warning .icon-wrapper {
+  color: var(--warning-9);
 }
-.notification.error .icon-wrapper {
-  color: var(--red-9);
+.notification.danger .icon-wrapper {
+  color: var(--danger-9);
 }
 
 .content {
   display: flex;
   align-items: center;
-  gap: 0.75rem; /* gap-3 */
+  gap: 0.75rem;
 }
 
 .text-content {
-  font-size: 0.6875rem; /* text-[11px] */
+  font-size: var(--font-size-xs);
 }
 
 .title {
   color: var(--gray-12);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .subtitle {
   color: var(--gray-10);
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--gray-10);
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 </style>

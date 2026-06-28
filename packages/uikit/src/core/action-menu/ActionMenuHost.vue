@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import Icon from '../Icon.vue'
 import { actionMenu, useActionMenuState } from './action-menu'
@@ -13,6 +13,40 @@ function run(item: { disabled?: boolean; onSelect: () => void }) {
   item.onSelect()
   actionMenu.close()
 }
+
+// Roving focus over the enabled items (desktop menu — see onMenuKeydown).
+function focusItem(index: number) {
+  const items = menuEl.value?.querySelectorAll<HTMLButtonElement>('.action-item:not(:disabled)')
+  if (!items?.length) return
+  items[(index + items.length) % items.length]?.focus()
+}
+
+function onMenuKeydown(event: KeyboardEvent) {
+  const items = Array.from(menuEl.value?.querySelectorAll<HTMLButtonElement>('.action-item:not(:disabled)') ?? [])
+  if (!items.length) return
+  const current = items.indexOf(document.activeElement as HTMLButtonElement)
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    focusItem(current + 1)
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    focusItem(current - 1)
+  } else if (event.key === 'Home') {
+    event.preventDefault()
+    focusItem(0)
+  } else if (event.key === 'End') {
+    event.preventDefault()
+    focusItem(items.length - 1)
+  }
+}
+
+// Focus the first item when the desktop menu opens so it's keyboard-drivable.
+watch(
+  () => state.value.open,
+  (open) => {
+    if (open && !isMobile.value) nextTick(() => focusItem(0))
+  },
+)
 
 function onGlobalPointerDown(event: PointerEvent) {
   if (!state.value.open) return
@@ -52,14 +86,18 @@ onBeforeUnmount(() => {
       v-if="state.open && !isMobile"
       ref="menuEl"
       class="action-menu"
+      role="menu"
       :style="{ top: `${state.y}px`, left: `${state.x}px` }"
       @contextmenu.prevent
+      @keydown="onMenuKeydown"
     >
       <button
         v-for="item in state.items"
         :key="item.id"
         class="action-item"
         :class="{ danger: item.variant === 'danger' }"
+        role="menuitem"
+        tabindex="-1"
         :disabled="item.disabled"
         @click="run(item)"
       >
@@ -109,7 +147,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 5px 10px;
+  padding: 4px 12px;
   text-align: left;
   background: none;
   border: none;
@@ -130,11 +168,11 @@ onBeforeUnmount(() => {
 }
 
 .action-item.danger {
-  color: var(--red-9);
+  color: var(--danger-9);
 }
 
 .action-item.danger:hover:not(:disabled) {
-  background: var(--red-a3);
+  background: var(--danger-a3);
 }
 
 .action-label {
@@ -181,6 +219,6 @@ onBeforeUnmount(() => {
 }
 
 .action-sheet-item.danger {
-  color: var(--red-9);
+  color: var(--danger-9);
 }
 </style>

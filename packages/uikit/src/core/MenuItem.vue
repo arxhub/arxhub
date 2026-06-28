@@ -25,7 +25,7 @@ const emit = defineEmits<{ select: [] }>()
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 12px;
+  padding: 4px 12px;
   font-size: var(--font-size-xs);
   font-family: var(--font-sans);
   color: var(--gray-12);
@@ -40,11 +40,11 @@ const emit = defineEmits<{ select: [] }>()
 }
 
 .menu-item.danger {
-  color: var(--red-9);
+  color: var(--danger-9);
 }
 
 .menu-item.danger[data-highlighted] {
-  background: var(--red-a3);
+  background: var(--danger-a3);
 }
 
 .menu-item[data-disabled] {
