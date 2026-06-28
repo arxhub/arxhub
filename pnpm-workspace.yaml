@@ -37,6 +37,7 @@ catalogs:
     eventemitter3: ^5.0.1
     memoirist: ^0.3.0
     nanoid: ^5.1.5
+    pino: ^9.6.0
     ts-dedent: ^2.2.0
     rabin-rs: ^2.1.0
     fflate: ^0.8.2

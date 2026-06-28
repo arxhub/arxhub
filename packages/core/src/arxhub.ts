@@ -1,7 +1,7 @@
 import { LazyContainer } from '@arxhub/di'
 import { aggregate, illegalState } from '@arxhub/errors'
 import type { EventBus, EventMap } from '@arxhub/events'
-import { ConsoleLogger, type Logger } from '@arxhub/logger'
+import { createRootLogger, type LogBuffer, LogBufferKey, type Logger } from '@arxhub/logger'
 import EventEmitter from 'eventemitter3'
 import { ExtensionContainer } from './extension'
 import { type Plugin, PluginContainer } from './plugin'
@@ -14,6 +14,9 @@ export class ArxHub {
   readonly extensions: ExtensionContainer
   readonly services: LazyContainer<object>
   readonly logger: Logger
+  // The application-wide live log buffer the root logger feeds; bound into `services` under
+  // LogBufferKey so the logger plugin's panel/file writer resolve this exact instance.
+  readonly logBuffer: LogBuffer
   readonly events: EventBus
 
   private started = false
@@ -24,10 +27,14 @@ export class ArxHub {
   private readonly scopeConfigurers: ScopeConfigureCallback[] = []
 
   constructor() {
-    this.logger = new ConsoleLogger()
+    const { logger, buffer } = createRootLogger()
+    this.logger = logger
+    this.logBuffer = buffer
     // Root DI scope for infrastructure services (e.g. RootVfs). The per-plugin PluginContext resolves
     // RootVfs from here lazily to build each plugin's home buckets.
     this.services = new LazyContainer('Service')
+    // Expose the live log buffer to plugins (the logger plugin renders + persists it) via DI.
+    this.services.bind(LogBufferKey, () => this.logBuffer)
     this.plugins = new PluginContainer(this.logger)
     this.extensions = new ExtensionContainer({ logger: this.logger })
     this.events = new EventEmitter<EventMap>()

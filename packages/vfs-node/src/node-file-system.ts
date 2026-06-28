@@ -23,7 +23,7 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
     super()
     // Resolve once so the containment check below compares two absolute, normalized OS paths.
     this.rootDir = resolve(rootDir)
-    this.logger = logger.child('[NodeFileSystem] ')
+    this.logger = logger.child({ name: 'NodeFileSystem' })
     fs.mkdir(this.rootDir, { recursive: true })
   }
 
@@ -98,6 +98,14 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
     const filePath = this.toOsPath(pathname)
     await fs.mkdir(dirname(filePath), { recursive: true })
     return Writable.toWeb(createWriteStream(filePath))
+  }
+
+  // Native append (AppendCapable) — O(delta), unlike write() which rewrites the whole file. Used by
+  // the appendEntry op so backends without it fall back to read-modify-write.
+  async append(pathname: string, content: Uint8Array): Promise<void> {
+    const filePath = this.toOsPath(pathname)
+    await fs.mkdir(dirname(filePath), { recursive: true })
+    await fs.appendFile(filePath, content)
   }
 
   async delete(pathname: string, options?: DeleteOptions): Promise<void> {

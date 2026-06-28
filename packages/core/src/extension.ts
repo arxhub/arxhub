@@ -10,7 +10,7 @@ export abstract class Extension {
   protected readonly logger: Logger
 
   constructor({ logger }: ExtensionArgs) {
-    this.logger = logger.child(`[${this.name}] - `)
+    this.logger = logger.child({ name: this.name })
   }
 
   get name(): string {

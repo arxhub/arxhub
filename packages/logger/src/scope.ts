@@ -15,5 +15,5 @@ type NamedPlugin = { manifest: { name: string } }
 // `Logger` into each plugin's DI scope, derived from the instance-bound RootLogger + the plugin name.
 // Lazy — RootLogger is only resolved when a plugin actually reads its scoped Logger.
 export function bindPluginLogger(scope: LazyContainer<object>, plugin: NamedPlugin): void {
-  scope.bind(Logger, () => scope.get(RootLogger).child(`[${plugin.manifest.name}] - `))
+  scope.bind(Logger, () => scope.get(RootLogger).child({ name: plugin.manifest.name }))
 }

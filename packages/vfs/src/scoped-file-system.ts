@@ -1,6 +1,7 @@
 import { normalizePath, posix } from '@arxhub/path'
 import { scopeAccessDenied } from './errors'
 import { GenericVirtualFileSystem } from './generic-virtual-file-system'
+import { appendEntry } from './ops/append'
 import type { VirtualEntry } from './virtual-entry'
 import type { DeleteOptions, FileHead, VirtualFileSystem } from './virtual-file-system'
 
@@ -53,6 +54,13 @@ export class ScopedFileSystem extends GenericVirtualFileSystem {
 
   override async write(pathname: string, content: Uint8Array): Promise<void> {
     return this.inner.write(this.resolve(pathname), content)
+  }
+
+  // Translate the scoped path, then re-dispatch through the op so native-vs-fallback append is
+  // decided at the real backend (e.g. NodeFileSystem's fs.appendFile). Exposing `append` here makes
+  // a scoped view (a plugin's home) itself append-capable.
+  async append(pathname: string, content: Uint8Array): Promise<void> {
+    return appendEntry(this.inner, this.resolve(pathname), content)
   }
 
   override async writable(pathname: string): Promise<WritableStream<Uint8Array>> {

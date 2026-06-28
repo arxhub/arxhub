@@ -31,6 +31,7 @@ const sidebarItems = computed((): SidebarItem[] =>
     title: item.title,
     region: item.region,
     order: item.order,
+    hidden: item.hidden,
   })),
 )
 </script>

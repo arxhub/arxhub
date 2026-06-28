@@ -33,7 +33,7 @@ export class HttpFileSystem extends GenericVirtualFileSystem {
     super()
     const baseUrl = (options.baseUrl ?? VFS_DEFAULT_BASE_URL).replace(/\/+$/, '')
     this.http = createHttpClient(baseUrl, { fetch: options.fetch })
-    this.logger = logger.child('[HttpFileSystem] ')
+    this.logger = logger.child({ name: 'HttpFileSystem' })
   }
 
   async list(prefix: string): Promise<VirtualEntry[]> {
