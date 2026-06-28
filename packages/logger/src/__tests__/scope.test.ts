@@ -12,7 +12,7 @@ describe('bindPluginLogger', () => {
     return scope
   }
 
-  it('binds the per-plugin Logger key to a name-prefixed child of RootLogger', () => {
+  it('binds the per-plugin Logger key to a name-bound child of RootLogger', () => {
     const scope = setup('Sync')
     const logger = scope.get(Logger)
     // The Logger key resolves to a real logger (not the RootLogger itself).
@@ -20,18 +20,17 @@ describe('bindPluginLogger', () => {
     expect(logger).not.toBe(scope.get(RootLogger))
   })
 
-  it('prefixes log output with the plugin name', () => {
+  it('tags log output with the plugin name binding', () => {
     const scope = setup('Sync')
     const lines: unknown[][] = []
-    const spy = { ...console, log: (...args: unknown[]) => lines.push(args) }
-    const original = console.log
-    console.log = spy.log
+    const original = console.info
+    console.info = (...args: unknown[]) => lines.push(args)
     try {
-      scope.get(Logger).log('hello')
+      scope.get(Logger).info('hello')
     } finally {
-      console.log = original
+      console.info = original
     }
-    expect(lines).toEqual([['[Sync] - hello']])
+    expect(lines).toEqual([['[Sync]', 'hello']])
   })
 
   it('caches the scoped Logger as a singleton within its scope', () => {

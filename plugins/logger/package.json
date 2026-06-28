@@ -3,18 +3,25 @@
   "sideEffects": false,
   "version": "0.1.0",
   "description": "Logger provider plugin for ArxHub — binds a per-plugin scoped logger",
-  "keywords": ["arxhub"],
+  "keywords": [
+    "arxhub"
+  ],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
   "exports": {
     "./ui": "./src/ui.ts"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build"
   },
-  "dependencies": {},
+  "dependencies": {
+    "dayjs": "catalog:shared",
+    "vue": "catalog:client"
+  },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
@@ -22,7 +29,11 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/logger": "workspace:*"
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/path": "workspace:*",
+    "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
   },
   "publishConfig": {
     "exports": {

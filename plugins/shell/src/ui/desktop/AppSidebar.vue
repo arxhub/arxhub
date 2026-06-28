@@ -6,9 +6,13 @@ import type { AppSidebarProps } from './types'
 const props = defineProps<AppSidebarProps>()
 defineEmits<{ 'item-select': [id: string] }>()
 
-const topItems = computed(() => (props.items ?? []).filter((i) => i.region !== 'bottom').sort((a, b) => (a.order ?? 0) - (b.order ?? 0)))
+const topItems = computed(() =>
+  (props.items ?? []).filter((i) => !i.hidden && i.region !== 'bottom').sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+)
 
-const bottomItems = computed(() => (props.items ?? []).filter((i) => i.region === 'bottom').sort((a, b) => (a.order ?? 0) - (b.order ?? 0)))
+const bottomItems = computed(() =>
+  (props.items ?? []).filter((i) => !i.hidden && i.region === 'bottom').sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+)
 </script>
 
 <template>

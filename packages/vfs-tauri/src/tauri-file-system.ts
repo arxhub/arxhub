@@ -12,7 +12,7 @@ export class TauriFileSystem extends GenericVirtualFileSystem {
     super()
     this.basePath = basePath
     this.baseDir = baseDir
-    this.logger = logger.child('[TauriFileSystem] ')
+    this.logger = logger.child({ name: 'TauriFileSystem' })
   }
 
   private fullPath(pathname: string): string {

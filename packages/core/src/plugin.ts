@@ -25,7 +25,7 @@ export abstract class Plugin implements Named {
   readonly manifest: PluginManifest
 
   constructor({ logger }: PluginArgs, manifest: PluginManifest) {
-    this.logger = logger.child(`[${this.name}] - `)
+    this.logger = logger.child({ name: this.name })
     this.manifest = manifest
   }
 

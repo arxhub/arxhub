@@ -21,7 +21,9 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@arxhub/di": "workspace:*"
+    "@arxhub/di": "workspace:*",
+    "eventemitter3": "catalog:shared",
+    "pino": "catalog:shared"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
