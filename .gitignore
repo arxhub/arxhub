@@ -102,6 +102,9 @@ _dist
 dist
 
 .omc
-.claude
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/worklog/
 .wolf
 .impeccable
