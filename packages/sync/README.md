@@ -3,9 +3,14 @@
 > **Status — aspirational design doc.** This README describes the intended product, not the
 > current code. The implemented engine (`src/engine.ts`) syncs a `VirtualFileSystem` against a
 > remote `VirtualFileSystem` using content-defined Rabin chunking + immutable snapshots with
-> 3-way merge. The `saveNote`/`getNote`/S3-bucket API and **encryption shown below are NOT yet
-> implemented** — there is currently no encryption in this package. Do not rely on the security
-> claims here until the code provides them. See `algo.md` for the real algorithm.
+> 3-way merge. The `saveNote`/`getNote`/S3-bucket API shown below is NOT yet implemented.
+> See `algo.md` for the real algorithm.
+>
+> **Encryption note:** the engine itself is intentionally crypto-agnostic — it reads/writes the
+> `VirtualFileSystem`s it is handed. End-to-end encryption is provided *above* the engine by wrapping
+> the **remote** `VirtualFileSystem` in `EncryptingFileSystem` (`@arxhub/vfs`, AES-256-GCM). The sync
+> plugin (`@arxhub/plugin-sync`) does exactly this using the key from `@arxhub/plugin-protection`, so
+> the remote stores only ciphertext while chunking/dedup still run on plaintext locally.
 
 Keep your notes in sync across all your devices. SyncEngine synchronizes your notes between your
 devices and remote storage, even when you're offline.
@@ -13,7 +18,7 @@ devices and remote storage, even when you're offline.
 ## Key Features
 
 - **Offline-First**: Work on your notes anytime. Changes sync when you're back online. *(implemented)*
-- **End-to-End Encryption**: *Planned, not yet implemented* — notes will be encrypted on-device before upload.
+- **End-to-End Encryption**: *implemented above the engine* — the sync plugin wraps the remote VFS in `EncryptingFileSystem` (AES-256-GCM), so blobs are encrypted on-device before upload; the engine stays crypto-agnostic.
 - **Fast & Efficient**: Only changed chunks are uploaded (Rabin content-defined chunking). *(implemented)*
 - **Conflict Resolution**: 3-way merge over snapshot history when the same file is edited on multiple devices. *(implemented)*
 

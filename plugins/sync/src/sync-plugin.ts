@@ -1,9 +1,11 @@
 import { PluginConfig } from '@arxhub/config'
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { MutableRequestSigner } from '@arxhub/crypto'
+import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { Repo, SyncEngine } from '@arxhub/sync'
-import { PluginVfs, RootVfs } from '@arxhub/vfs'
+import { EncryptingFileSystem, PluginVfs, RootVfs } from '@arxhub/vfs'
 import { HttpFileSystem } from '@arxhub/vfs-http'
 import { Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
@@ -42,16 +44,32 @@ export class SyncPlugin extends Plugin {
     const pluginVfs = ctx.services.get(PluginVfs)
     const cfg = await ctx.services.get(PluginConfig).read(SyncConfigSchema)
 
-    if (cfg.serverUrl) {
-      const remoteVfs = new HttpFileSystem({ baseUrl: cfg.serverUrl }, this.logger)
-      const syncExt = ctx.extensions.get(SyncExtension)
-      // Chunk the whole local tree (vault/ + storage/ content) via the root VFS, but keep the repo
-      // store in state/ so sync never chunks its own internals (state/ is never synced and is never
-      // add()-ed for snapshotting). state/temp exclusion is structural, not a permission check.
-      syncExt.engine = new SyncEngine({
-        local: new Repo(ctx.services.get(RootVfs), pluginVfs.state),
-        remote: new Repo(remoteVfs),
-      })
+    if (!cfg.serverUrl) return
+
+    // Sync requires the user's identity: the keyring both encrypts content and authenticates to the
+    // (protected) remote. Without it there is no safe way to sync, so we stay idle and surface why.
+    const keyring = ctx.extensions.get(KeyringExtension).keyring
+    if (keyring == null) {
+      this.logger.warn('Sync is configured but no identity is set — add a recovery phrase in Security settings')
+      return
     }
+
+    // Sign remote requests with the same identity so a protected sync server accepts them.
+    const signer = new MutableRequestSigner()
+    signer.install(keyring)
+
+    // The remote holds only ciphertext: wrap the HTTP transport so every chunk/snapshot blob is
+    // AES-256-GCM encrypted before upload and decrypted on download. Chunking/hashing still run on
+    // plaintext locally (in the local Repo), so dedup is unaffected.
+    const remoteVfs = new EncryptingFileSystem(new HttpFileSystem({ baseUrl: cfg.serverUrl, signer }, this.logger), keyring.encryptionKey)
+
+    const syncExt = ctx.extensions.get(SyncExtension)
+    // Chunk the whole local tree (vault/ + storage/ content) via the root VFS, but keep the repo
+    // store in state/ so sync never chunks its own internals (state/ is never synced and is never
+    // add()-ed for snapshotting). state/temp exclusion is structural, not a permission check.
+    syncExt.engine = new SyncEngine({
+      local: new Repo(ctx.services.get(RootVfs), pluginVfs.state),
+      remote: new Repo(remoteVfs),
+    })
   }
 }
