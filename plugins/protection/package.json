@@ -21,9 +21,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@arxhub/config": "workspace:*",
     "@arxhub/crypto": "workspace:*",
-    "@sinclair/typebox": "catalog:shared",
     "elysia": "catalog:server"
   },
   "devDependencies": {
@@ -33,8 +31,7 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/plugin-gateway": "workspace:*",
-    "@arxhub/plugin-settings": "workspace:*"
+    "@arxhub/plugin-gateway": "workspace:*"
   },
   "publishConfig": {
     "exports": {

@@ -1223,9 +1223,6 @@ importers:
 
   plugins/protection:
     dependencies:
-      '@arxhub/config':
-        specifier: workspace:*
-        version: link:../../packages/config
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1235,12 +1232,6 @@ importers:
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../gateway
-      '@arxhub/plugin-settings':
-        specifier: workspace:*
-        version: link:../settings
-      '@sinclair/typebox':
-        specifier: catalog:shared
-        version: 0.34.48
       elysia:
         specifier: catalog:server
         version: 1.4.28(@sinclair/typebox@0.34.48)(exact-mirror@0.2.7(@sinclair/typebox@0.34.48))(file-type@21.3.0)(openapi-types@12.1.3)(typescript@6.0.3)

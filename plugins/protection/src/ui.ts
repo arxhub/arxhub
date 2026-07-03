@@ -1,2 +1,3 @@
+export { browserIdentityStore, type IdentityStore, loadOrCreateKeyring } from './identity-store'
 export { KeyringExtension } from './keyring-extension'
-export { ProtectionConfigSchema, ProtectionPlugin } from './protection-plugin'
+export { ProtectionPlugin } from './protection-plugin'

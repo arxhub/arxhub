@@ -9,7 +9,7 @@ import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
-import { ProtectionPlugin } from '@arxhub/plugin-protection/ui'
+import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { SettingsPlugin } from '@arxhub/plugin-settings/ui'
 import { ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
@@ -22,10 +22,12 @@ import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
 
 const arxhub = new ArxHub()
-// Shared signer: handed to the HTTP VFS (browser mode) and populated by ProtectionPlugin once the
-// identity resolves. Under Tauri the native fs needs no signing, but the same identity still drives
-// sync encryption/auth.
+// Resolve the device identity from client-local storage and install it into the signer before start().
+// In browser mode this signs every /vfs request; under Tauri the native fs needs no signing, but the
+// same identity still drives sync encryption/auth.
+const keyring = loadOrCreateKeyring()
 const signer = new MutableRequestSigner()
+signer.install(keyring)
 
 async function createVfs(): Promise<VirtualFileSystem> {
   if (isTauri()) {
@@ -46,7 +48,7 @@ arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
 arxhub.plugins.register(EditorPlugin)
 arxhub.plugins.register(SettingsPlugin)
-arxhub.plugins.register(ProtectionPlugin, () => ({ signer }))
+arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
 arxhub.plugins.register(SyncPlugin)
 await arxhub.start()
 
