@@ -3,7 +3,10 @@
   "sideEffects": false,
   "version": "0.1.0",
   "description": "",
-  "keywords": ["arxhub", "crypto"],
+  "keywords": [
+    "arxhub",
+    "crypto"
+  ],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
@@ -14,9 +17,12 @@
       "default": "./src/index.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
@@ -26,9 +32,23 @@
   "publishConfig": {
     "exports": {
       ".": {
-        "node": { "import": "./dist/index.node.js", "types": "./dist/index.node.d.ts" },
-        "default": { "import": "./dist/index.js", "types": "./dist/index.d.ts" }
+        "node": {
+          "import": "./dist/index.node.js",
+          "types": "./dist/index.node.d.ts"
+        },
+        "default": {
+          "import": "./dist/index.js",
+          "types": "./dist/index.d.ts"
+        }
       }
     }
+  },
+  "dependencies": {
+    "@arxhub/errors": "workspace:*",
+    "@noble/ciphers": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
+    "@scure/bip32": "^2.2.0",
+    "@scure/bip39": "^2.2.0",
+    "@sinclair/typebox": "catalog:shared"
   }
 }
