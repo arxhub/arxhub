@@ -13,6 +13,7 @@
   "dependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
+    "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/stdlib": "workspace:*",
     "@arxhub/vfs-http": "workspace:*",
     "@arxhub/vfs-node": "workspace:*"

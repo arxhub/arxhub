@@ -2,12 +2,14 @@ import '@arxhub/theme-preset'
 import '@arxhub/theme'
 
 import { ArxHub } from '@arxhub/core'
+import { MutableRequestSigner } from '@arxhub/crypto'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { ConfigPlugin } from '@arxhub/plugin-config/ui'
 import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
+import { ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { SettingsPlugin } from '@arxhub/plugin-settings/ui'
 import { ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
@@ -19,7 +21,10 @@ import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
 
 const arxhub = new ArxHub()
-const vfs = new HttpFileSystem({ baseUrl: '/vfs' }, arxhub.logger)
+// Shared signer: handed to the HTTP VFS now and populated by ProtectionPlugin once the identity is
+// resolved, so every /vfs request (working tree + sync) is signed.
+const signer = new MutableRequestSigner()
+const vfs = new HttpFileSystem({ baseUrl: '/vfs', signer }, arxhub.logger)
 
 arxhub.plugins.register(VfsPlugin, () => ({ fs: vfs }))
 arxhub.plugins.register(LoggerPlugin)
@@ -30,6 +35,7 @@ arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
 arxhub.plugins.register(EditorPlugin)
 arxhub.plugins.register(SettingsPlugin)
+arxhub.plugins.register(ProtectionPlugin, () => ({ signer }))
 arxhub.plugins.register(SyncPlugin)
 await arxhub.start()
 
