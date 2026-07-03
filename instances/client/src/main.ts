@@ -7,6 +7,7 @@ import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { ConfigPlugin } from '@arxhub/plugin-config/ui'
 import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
+import { KeyStorePlugin, LocalStorageKeyStore } from '@arxhub/plugin-keystore/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
@@ -23,7 +24,8 @@ import WelcomePanel from './panels/WelcomePanel.vue'
 const arxhub = new ArxHub()
 // Resolve the device identity from client-local storage (never the server VFS) and install it into the
 // signer BEFORE start(): the /vfs backend is protected, so every request must already be signed.
-const keyring = loadOrCreateKeyring()
+const keystore = new LocalStorageKeyStore()
+const keyring = await loadOrCreateKeyring(keystore)
 const signer = new MutableRequestSigner()
 signer.install(keyring)
 const vfs = new HttpFileSystem({ baseUrl: '/vfs', signer }, arxhub.logger)
@@ -37,6 +39,7 @@ arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
 arxhub.plugins.register(EditorPlugin)
 arxhub.plugins.register(SettingsPlugin)
+arxhub.plugins.register(KeyStorePlugin, () => ({ keystore }))
 arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
 arxhub.plugins.register(SyncPlugin)
 await arxhub.start()

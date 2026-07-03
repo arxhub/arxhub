@@ -1,8 +1,8 @@
 {
-  "name": "@arxhub/plugin-protection",
+  "name": "@arxhub/plugin-keystore",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "Identity, content-encryption keys, and request authentication for ArxHub",
+  "description": "Client-local secure key/secret storage for ArxHub (localStorage today; keychain/IndexedDB later)",
   "keywords": [
     "arxhub"
   ],
@@ -10,8 +10,7 @@
   "author": "",
   "type": "module",
   "exports": {
-    "./ui": "./src/ui.ts",
-    "./server": "./src/server.ts"
+    "./ui": "./src/ui.ts"
   },
   "files": [
     "dist"
@@ -20,10 +19,6 @@
     "build": "tsc && vite build",
     "test": "vitest"
   },
-  "dependencies": {
-    "@arxhub/crypto": "workspace:*",
-    "elysia": "catalog:server"
-  },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
@@ -31,18 +26,13 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/plugin-gateway": "workspace:*",
-    "@arxhub/plugin-keystore": "workspace:*"
+    "@arxhub/errors": "workspace:*"
   },
   "publishConfig": {
     "exports": {
       "./ui": {
         "import": "./dist/ui.js",
         "types": "./dist/ui.d.ts"
-      },
-      "./server": {
-        "import": "./dist/server.js",
-        "types": "./dist/server.d.ts"
       }
     }
   }

@@ -219,6 +219,9 @@ importers:
       '@arxhub/plugin-explorer':
         specifier: workspace:*
         version: link:../../plugins/explorer
+      '@arxhub/plugin-keystore':
+        specifier: workspace:*
+        version: link:../../plugins/keystore
       '@arxhub/plugin-logger':
         specifier: workspace:*
         version: link:../../plugins/logger
@@ -313,6 +316,9 @@ importers:
       '@arxhub/plugin-explorer':
         specifier: workspace:*
         version: link:../../plugins/explorer
+      '@arxhub/plugin-keystore':
+        specifier: workspace:*
+        version: link:../../plugins/keystore
       '@arxhub/plugin-logger':
         specifier: workspace:*
         version: link:../../plugins/logger
@@ -389,6 +395,9 @@ importers:
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../../plugins/gateway
+      '@arxhub/plugin-keystore':
+        specifier: workspace:*
+        version: link:../../plugins/keystore
       '@arxhub/plugin-logger':
         specifier: workspace:*
         version: link:../../plugins/logger
@@ -1141,6 +1150,25 @@ importers:
         specifier: catalog:toolchain
         version: 25.6.0
 
+  plugins/keystore:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+
   plugins/logger:
     dependencies:
       '@arxhub/core':
@@ -1232,6 +1260,9 @@ importers:
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../gateway
+      '@arxhub/plugin-keystore':
+        specifier: workspace:*
+        version: link:../keystore
       elysia:
         specifier: catalog:server
         version: 1.4.28(@sinclair/typebox@0.34.48)(exact-mirror@0.2.7(@sinclair/typebox@0.34.48))(file-type@21.3.0)(openapi-types@12.1.3)(typescript@6.0.3)
