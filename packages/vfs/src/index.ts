@@ -1,4 +1,5 @@
 export * from './capabilities'
+export * from './encrypting-file-system'
 export * from './errors'
 export * from './generic-virtual-file-system'
 export * from './info-namespace'
