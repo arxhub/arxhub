@@ -25,6 +25,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/crypto": "workspace:*",
     "@arxhub/errors": "workspace:*",
     "@arxhub/http": "workspace:*",
     "@arxhub/path": "workspace:*",

@@ -1,13 +1,8 @@
 import type { Logger } from '@arxhub/core'
+import type { RequestSigner } from '@arxhub/crypto'
 import { createHttpClient, type HttpClient } from '@arxhub/http'
 import { normalizePath } from '@arxhub/path'
-import {
-  type DeleteOptions,
-  type FileHead,
-  fileNotFound,
-  GenericVirtualFileSystem,
-  type VirtualEntry,
-} from '@arxhub/vfs'
+import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type VirtualEntry } from '@arxhub/vfs'
 import { type ExistsResponse, type FileHeadResponse, type ListResponse, VFS_DEFAULT_BASE_URL, VFS_ROUTES } from './protocol'
 
 export interface HttpFileSystemOptions {
@@ -16,6 +11,9 @@ export interface HttpFileSystemOptions {
   baseUrl?: string
   // Override the fetch implementation (mainly for testing). Defaults to the global fetch.
   fetch?: typeof fetch
+  // Signs every request with the user's auth key so a protected server accepts it. Omit for an
+  // unauthenticated backend; provide the shared MutableRequestSigner for a protected one.
+  signer?: RequestSigner
 }
 
 // VirtualFileSystem backed by an ArxHub server over HTTP (via @arxhub/http).
@@ -32,7 +30,7 @@ export class HttpFileSystem extends GenericVirtualFileSystem {
   constructor(options: HttpFileSystemOptions, logger: Logger) {
     super()
     const baseUrl = (options.baseUrl ?? VFS_DEFAULT_BASE_URL).replace(/\/+$/, '')
-    this.http = createHttpClient(baseUrl, { fetch: options.fetch })
+    this.http = createHttpClient(baseUrl, { fetch: options.fetch, signer: options.signer })
     this.logger = logger.child({ name: 'HttpFileSystem' })
   }
 

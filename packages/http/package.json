@@ -22,6 +22,7 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
+    "@arxhub/crypto": "workspace:*",
     "wretch": "catalog:shared"
   },
   "devDependencies": {
