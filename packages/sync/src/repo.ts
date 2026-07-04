@@ -1,4 +1,4 @@
-import { hasErrorCode } from '@arxhub/errors'
+import { hasErrorCode, illegalState } from '@arxhub/errors'
 import { join } from '@arxhub/path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
@@ -282,16 +282,30 @@ export class Repo {
   async download(from: Repo, hash: string): Promise<void> {
     const snapshot = await from.getSnapshotFile(hash).readJSON<Snapshot>()
 
+    // Zero-trust: `from` is an untrusted remote. Encryption stops it forging content, but it can still
+    // serve the wrong (or a swapped) blob under a hash-named path — which would silently corrupt the
+    // ancestry chain or resurrect deleted files on merge. So verify the decrypted bytes actually hash
+    // to the path they came from before trusting anything into the local store. Content is addressed
+    // by sha256 of plaintext, so this check is exactly the integrity guarantee content-addressing implies.
+    if (snapshot.hash !== hash) {
+      throw illegalState(`Snapshot integrity check failed: requested ${hash}, got ${snapshot.hash}`)
+    }
+
     for (const pathname in snapshot.files) {
       const file = snapshot.files[pathname]
 
       for (const chunk of file.chunks) {
         const toChunkFile = this.getChunkFile(chunk.hash)
         if (!(await toChunkFile.exists())) {
-          const fromChunkFile = from.getChunkFile(chunk.hash)
-          const readable = await fromChunkFile.readable()
-          const writable = await toChunkFile.writable()
-          await readable.pipeTo(writable)
+          // Read fully + re-hash rather than streaming straight to disk: a chunk must be proven before
+          // it lands, and Rabin chunks are already sized to fit in memory (the chunker hashes them the
+          // same way when splitting).
+          const content = await from.getChunkFile(chunk.hash).read()
+          const actual = sha256(content)
+          if (actual !== chunk.hash) {
+            throw illegalState(`Chunk integrity check failed: expected ${chunk.hash}, got ${actual}`)
+          }
+          await toChunkFile.write(content)
         }
       }
     }
