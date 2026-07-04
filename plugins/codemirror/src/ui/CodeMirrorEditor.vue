@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePanelInstance } from '@arxhub/plugin-panels/ui'
 import { useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { LanguageDescription } from '@codemirror/language'
@@ -11,6 +12,7 @@ const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
+const panel = usePanelInstance()
 const editorEl = ref<HTMLDivElement>()
 let view: EditorView | null = null
 
@@ -18,7 +20,19 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
   const doc = new TextDecoder().decode(bytes)
   const langDesc = LanguageDescription.matchFilename(languages, path)
   const langSupport = langDesc ? await langDesc.load() : null
-  return EditorState.create({ doc, extensions: [basicSetup, ...(langSupport ? [langSupport] : [])] })
+  return EditorState.create({
+    doc,
+    extensions: [
+      basicSetup,
+      ...(langSupport ? [langSupport] : []),
+      // First real edit promotes a VSCode-style preview tab to permanent (mirrors the ProseMirror
+      // editor). Guard on transactions: a programmatic setState() during a file switch reports
+      // docChanged but carries no transaction, so it must NOT promote.
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged && update.transactions.length > 0) panel?.promote()
+      }),
+    ],
+  })
 }
 
 // Shared composable owns the load lifecycle: staleness guard on rapid file switches, open-empty
