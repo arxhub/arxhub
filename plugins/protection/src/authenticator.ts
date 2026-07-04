@@ -9,6 +9,10 @@ export interface RequestAuthenticatorOptions {
   pinnedPublicKey?: string
   // Max clock skew (seconds) allowed between the signed timestamp and the server clock. Default 30.
   toleranceSeconds?: number
+  // Invoked once, with the pinned xpub, at the moment a key is pinned via TOFU. Lets the caller persist
+  // it so a paired key survives a server restart (otherwise every restart reopens the TOFU window).
+  // NOT called when pinnedPublicKey is configured (already fixed) nor for later requests from that key.
+  onPair?: (publicKey: string) => void
 }
 
 // Stateful policy for authenticating signed requests: freshness window, replay (nonce) rejection, and
@@ -17,6 +21,7 @@ export interface RequestAuthenticatorOptions {
 export class RequestAuthenticator {
   private pinned: string | null
   private readonly tolerance: number
+  private readonly onPair?: (publicKey: string) => void
   // nonce → expiry (unix seconds). A nonce only matters within the freshness window, so expired
   // entries are pruned lazily on each call to keep the map bounded.
   private readonly seenNonces = new Map<string, number>()
@@ -24,6 +29,7 @@ export class RequestAuthenticator {
   constructor(options: RequestAuthenticatorOptions = {}) {
     this.pinned = options.pinnedPublicKey ?? null
     this.tolerance = options.toleranceSeconds ?? 30
+    this.onPair = options.onPair
   }
 
   get pinnedPublicKey(): string | null {
@@ -44,6 +50,7 @@ export class RequestAuthenticator {
     if (this.pinned == null) {
       this.pinned = headers.publicKey
       pairedNow = true
+      this.onPair?.(headers.publicKey)
     } else if (this.pinned !== headers.publicKey) {
       return { ok: false, reason: 'unknown-key' }
     }
@@ -51,7 +58,10 @@ export class RequestAuthenticator {
     // Replay is checked AFTER the signature so an unauthenticated caller can't burn nonces.
     this.pruneExpired(nowSeconds)
     if (this.seenNonces.has(headers.nonce)) return { ok: false, reason: 'replay' }
-    this.seenNonces.set(headers.nonce, nowSeconds + this.tolerance)
+    // Expiry is anchored to the SIGNED timestamp, not the server clock: the nonce must stay blocked
+    // for as long as the timestamp itself is still within the freshness window. Using nowSeconds would
+    // prune it early whenever the client clock runs ahead, leaving a replay hole equal to the skew.
+    this.seenNonces.set(headers.nonce, ts + this.tolerance)
 
     return { ok: true, publicKey: headers.publicKey, pairedNow }
   }

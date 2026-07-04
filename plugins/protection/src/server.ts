@@ -62,7 +62,11 @@ export class ProtectionServerPlugin extends Plugin {
 
   constructor(args: ProtectionServerPluginArgs) {
     super(args, manifest)
-    this.authenticator = new RequestAuthenticator({ pinnedPublicKey: args.pinnedPublicKey, toleranceSeconds: args.toleranceSeconds })
+    this.authenticator = new RequestAuthenticator({
+      pinnedPublicKey: args.pinnedPublicKey,
+      toleranceSeconds: args.toleranceSeconds,
+      onPair: args.onPair,
+    })
   }
 
   override configure(ctx: PluginContext): void {

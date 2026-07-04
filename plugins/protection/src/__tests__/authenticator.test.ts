@@ -66,6 +66,35 @@ describe('RequestAuthenticator (TOFU)', () => {
     const later = NOW + 1000
     expect(auth.authenticate(desc, sign(client, 'dup', later), later).ok).toBe(true)
   })
+
+  it('keeps a replayed nonce blocked for the full window even when the client clock runs ahead', () => {
+    const auth = new RequestAuthenticator({ toleranceSeconds: 30 })
+    // Client clock 20s ahead of the server: it signs at NOW+20, the server receives it at NOW.
+    const headers = sign(client, 'skew', NOW + 20)
+    expect(auth.authenticate(desc, headers, NOW).ok).toBe(true)
+    // A replay lands at server-time NOW+35. The signed timestamp NOW+20 is still fresh
+    // (|(NOW+35)-(NOW+20)| = 15 <= 30), so the nonce must still be cached. Anchoring nonce expiry to
+    // the signed timestamp (NOW+20+30 = NOW+50) keeps it blocked; anchoring to the server clock
+    // (NOW+30) would prune it at NOW+31 and let this replay through — a hole equal to the skew.
+    expect(auth.authenticate(desc, headers, NOW + 35)).toEqual({ ok: false, reason: 'replay' })
+  })
+})
+
+describe('RequestAuthenticator (onPair persistence hook)', () => {
+  it('invokes onPair once when a key is pinned via TOFU, not on later requests', () => {
+    const paired: string[] = []
+    const auth = new RequestAuthenticator({ onPair: (k) => paired.push(k) })
+    auth.authenticate(desc, sign(client, 'n1'), NOW)
+    auth.authenticate(desc, sign(client, 'n2'), NOW)
+    expect(paired).toEqual([client.authPublicKey])
+  })
+
+  it('does not invoke onPair when a key is pre-configured (TOFU disabled)', () => {
+    const paired: string[] = []
+    const auth = new RequestAuthenticator({ pinnedPublicKey: client.authPublicKey, onPair: (k) => paired.push(k) })
+    auth.authenticate(desc, sign(client, 'n1'), NOW)
+    expect(paired).toEqual([])
+  })
 })
 
 describe('RequestAuthenticator (configured pin, TOFU disabled)', () => {
