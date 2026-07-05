@@ -8,6 +8,7 @@ export * from './keyring'
 export * from './mnemonic'
 export * from './paths'
 export * from './request-auth'
+export * from './request-auth-middleware'
 export type { HashAlgorithm, Hasher } from './types'
 
 export const hash: Hash = async (data, algorithm) => createHash(algorithm).update(data).digest('hex')

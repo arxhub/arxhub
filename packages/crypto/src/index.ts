@@ -7,6 +7,7 @@ export * from './keyring'
 export * from './mnemonic'
 export * from './paths'
 export * from './request-auth'
+export * from './request-auth-middleware'
 export type { HashAlgorithm, Hasher } from './types'
 
 function toHex(buf: ArrayBuffer): string {

@@ -1,5 +1,5 @@
 import type { Logger } from '@arxhub/core'
-import type { RequestSigner } from '@arxhub/crypto'
+import { type RequestSigner, signingMiddleware } from '@arxhub/crypto'
 import { createHttpClient, type HttpClient } from '@arxhub/http'
 import { normalizePath } from '@arxhub/path'
 import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type VirtualEntry } from '@arxhub/vfs'
@@ -30,7 +30,10 @@ export class HttpFileSystem extends GenericVirtualFileSystem {
   constructor(options: HttpFileSystemOptions, logger: Logger) {
     super()
     const baseUrl = (options.baseUrl ?? VFS_DEFAULT_BASE_URL).replace(/\/+$/, '')
-    this.http = createHttpClient(baseUrl, { fetch: options.fetch, signer: options.signer })
+    this.http = createHttpClient(baseUrl, {
+      fetch: options.fetch,
+      middlewares: options.signer ? [signingMiddleware(options.signer)] : undefined,
+    })
     this.logger = logger.child({ name: 'HttpFileSystem' })
   }
 
