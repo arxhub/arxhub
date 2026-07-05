@@ -27,8 +27,8 @@ describe('chunker', async () => {
   })
 
   test('merge', async () => {
-    const chunks = []
-    for (const chunk of await vfs.list('chunks')) chunks.push(chunk)
+    // list() yields VirtualEntry (pathname + kind); merge needs VirtualFile, so resolve each by path.
+    const chunks = (await vfs.list('chunks')).map((entry) => vfs.file(entry.pathname))
     const file = vfs.file('merged')
     const writable = await file.writable()
     const merged = chunker.merge(chunks)
