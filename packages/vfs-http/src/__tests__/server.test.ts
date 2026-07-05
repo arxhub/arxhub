@@ -51,49 +51,49 @@ const putReq = (path: string) =>
 describe('vfsRoutes path safety', () => {
   test('DELETE with no path is rejected (must never resolve to the VFS root)', async () => {
     const { vfs, calls } = makeVfs()
-    const res = await vfsRoutes(vfs).handle(req('DELETE', '/vfs/delete?recursive=1'))
+    const res = await vfsRoutes(vfs).handle(req('DELETE', '/delete?recursive=1'))
     expect(res.status).toBe(400)
     expect(calls.find((c) => c.method === 'delete')).toBeUndefined()
   })
 
   test.each(['read', 'head', 'exists'])('%s with no path is rejected', async (route) => {
     const { vfs, calls } = makeVfs()
-    const res = await vfsRoutes(vfs).handle(req('GET', `/vfs/${route}`))
+    const res = await vfsRoutes(vfs).handle(req('GET', `/${route}`))
     expect(res.status).toBe(400)
     expect(calls.find((c) => c.method === route)).toBeUndefined()
   })
 
   test('write with no path is rejected (with a valid body, so the path guard is what fires)', async () => {
     const { vfs, calls } = makeVfs()
-    const res = await vfsRoutes(vfs).handle(putReq('/vfs/write'))
+    const res = await vfsRoutes(vfs).handle(putReq('/write'))
     expect(res.status).toBe(400)
     expect(calls.find((c) => c.method === 'write')).toBeUndefined()
   })
 
   test('forward-slash traversal is rejected', async () => {
     const { vfs, calls } = makeVfs()
-    const res = await vfsRoutes(vfs).handle(req('GET', '/vfs/read?path=a/../../etc/passwd'))
+    const res = await vfsRoutes(vfs).handle(req('GET', '/read?path=a/../../etc/passwd'))
     expect(res.status).toBe(400)
     expect(calls.find((c) => c.method === 'read')).toBeUndefined()
   })
 
   test('backslash traversal is rejected (platform-independent)', async () => {
     const { vfs, calls } = makeVfs()
-    const res = await vfsRoutes(vfs).handle(req('GET', `/vfs/read?path=${encodeURIComponent('..\\..\\secret')}`))
+    const res = await vfsRoutes(vfs).handle(req('GET', `/read?path=${encodeURIComponent('..\\..\\secret')}`))
     expect(res.status).toBe(400)
     expect(calls.find((c) => c.method === 'read')).toBeUndefined()
   })
 
   test('a valid nested path is normalized and forwarded', async () => {
     const { vfs, calls } = makeVfs()
-    const res = await vfsRoutes(vfs).handle(req('GET', '/vfs/read?path=a/b/../c/note.txt'))
+    const res = await vfsRoutes(vfs).handle(req('GET', '/read?path=a/b/../c/note.txt'))
     expect(res.status).toBe(200)
     expect(calls).toContainEqual({ method: 'read', path: 'a/c/note.txt' })
   })
 
   test('list accepts an empty prefix (the whole tree)', async () => {
     const { vfs, calls } = makeVfs()
-    const res = await vfsRoutes(vfs).handle(req('GET', '/vfs/list'))
+    const res = await vfsRoutes(vfs).handle(req('GET', '/list'))
     expect(res.status).toBe(200)
     expect(calls).toContainEqual({ method: 'list', path: '' })
   })
@@ -104,7 +104,7 @@ describe('vfsRoutes path safety', () => {
         throw fileNotFound(path)
       },
     } as unknown as VirtualFileSystem
-    const res = await vfsRoutes(vfs).handle(req('GET', '/vfs/read?path=does/not/exist.txt'))
+    const res = await vfsRoutes(vfs).handle(req('GET', '/read?path=does/not/exist.txt'))
     expect(res.status).toBe(404)
   })
 })

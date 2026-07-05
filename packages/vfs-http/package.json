@@ -14,7 +14,6 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./protocol": "./src/protocol.ts",
     "./server": "./src/server.ts"
   },
   "files": [
@@ -47,10 +46,6 @@
       ".": {
         "import": "./dist/index.js",
         "types": "./dist/index.d.ts"
-      },
-      "./protocol": {
-        "import": "./dist/protocol.js",
-        "types": "./dist/protocol.d.ts"
       },
       "./server": {
         "import": "./dist/server.js",

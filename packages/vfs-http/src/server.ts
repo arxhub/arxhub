@@ -2,8 +2,7 @@ import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } fro
 import { hasErrorCode, validation } from '@arxhub/errors'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
 import type { VirtualFileSystem } from '@arxhub/vfs'
-import Elysia, { type AnyElysia, t } from 'elysia'
-import { type ExistsResponse, type FileHeadResponse, type ListResponse, VFS_ROUTES } from './protocol'
+import Elysia, { t } from 'elysia'
 
 // Reject oversized writes. The body is already buffered by Elysia's t.ArrayBuffer() parser, so this
 // is a disk-DoS guard rather than a true streaming limit; configure a transport-level body limit at
@@ -53,69 +52,103 @@ export function failOrRethrow(error: unknown, set: { status?: number | string })
   throw error
 }
 
-// Server counterpart of HttpFileSystem: serves any VirtualFileSystem over HTTP using the wire contract
-// in ./protocol. Routes are RELATIVE (`/list`, `/read`, …); arxhub's gateway mounts them under
-// `/api/vfs` (gateway.mount), which HttpFileSystem's default base URL matches.
-export function vfsRoutes(vfs: VirtualFileSystem): AnyElysia {
-  return new Elysia()
-    .get(VFS_ROUTES.list, async ({ query, set }): Promise<ListResponse | string> => {
-      try {
-        const entries = await vfs.list(safePath(query.prefix, { allowEmpty: true }))
-        return { entries: entries.map((entry) => ({ pathname: entry.pathname, kind: entry.kind })) }
-      } catch (e) {
-        return failOrRethrow(e, set)
-      }
-    })
-    .get(VFS_ROUTES.read, async ({ query, set }) => {
-      try {
-        const bytes = await vfs.read(safePath(query.path, { allowEmpty: false }))
-        return new Response(new Uint8Array(bytes), { headers: { 'content-type': 'application/octet-stream' } })
-      } catch (e) {
-        return failOrRethrow(e, set)
-      }
-    })
-    .put(
-      VFS_ROUTES.write,
-      async ({ query, body, set }) => {
-        try {
-          const path = safePath(query.path, { allowEmpty: false })
-          if (body.byteLength > MAX_WRITE_BYTES) {
-            set.status = 413
-            return 'Payload Too Large'
+// Server counterpart of HttpFileSystem: serves any VirtualFileSystem over HTTP. Routes are RELATIVE
+// (`/list`, `/read`, …) with query typed via `t.Object`; arxhub's gateway mounts them under `/api/vfs`
+// (gateway.forPlugin), which the client's baseUrl carries. This function's inferred return type is the
+// client contract — `HttpFileSystem` is `createTypedHttp<VfsApp>`, so there are no route consts or DTOs.
+//
+// Each handler maps errors inline via `status(code, …)` — missing file → 404, rejected path → 400,
+// everything else rethrows (a genuine 500). Inlined (not the shared failOrRethrow) so every status is a
+// distinct entry in the route's response type; a `set.status`+string return would poison the typed client.
+export function vfsRoutes(vfs: VirtualFileSystem) {
+  return (
+    new Elysia()
+      .get(
+        '/list',
+        async ({ query, status }) => {
+          try {
+            const entries = await vfs.list(safePath(query.prefix, { allowEmpty: true }))
+            return { entries: entries.map((entry) => ({ pathname: entry.pathname, kind: entry.kind })) }
+          } catch (e) {
+            if (hasErrorCode(e, 'ValidationError')) return status(400, 'Bad Request')
+            throw e
           }
-          await vfs.write(path, new Uint8Array(body))
-          set.status = 204
-          return ''
-        } catch (e) {
-          return failOrRethrow(e, set)
-        }
-      },
-      { body: t.ArrayBuffer() },
-    )
-    .delete(VFS_ROUTES.delete, async ({ query, set }) => {
-      try {
-        await vfs.delete(safePath(query.path, { allowEmpty: false }), { force: query.force === '1', recursive: query.recursive === '1' })
-        set.status = 204
-        return ''
-      } catch (e) {
-        return failOrRethrow(e, set)
-      }
-    })
-    .get(VFS_ROUTES.exists, async ({ query, set }): Promise<ExistsResponse | string> => {
-      try {
-        return { exists: await vfs.exists(safePath(query.path, { allowEmpty: false })) }
-      } catch (e) {
-        return failOrRethrow(e, set)
-      }
-    })
-    .get(VFS_ROUTES.head, async ({ query, set }) => {
-      try {
-        return (await vfs.head(safePath(query.path, { allowEmpty: false }))) satisfies FileHeadResponse
-      } catch (e) {
-        return failOrRethrow(e, set)
-      }
-    })
+        },
+        { query: t.Object({ prefix: t.Optional(t.String()) }) },
+      )
+      // Raw file bytes; Elysia sends a Uint8Array verbatim but sets no content-type, so declare it.
+      .get(
+        '/read',
+        async ({ query, set, status }) => {
+          try {
+            set.headers['content-type'] = 'application/octet-stream'
+            return new Uint8Array(await vfs.read(safePath(query.path, { allowEmpty: false })))
+          } catch (e) {
+            if (hasErrorCode(e, 'FileNotFound')) return status(404, 'Not Found')
+            if (hasErrorCode(e, 'ValidationError')) return status(400, 'Bad Request')
+            throw e
+          }
+        },
+        { query: t.Object({ path: t.Optional(t.String()) }) },
+      )
+      .put(
+        '/write',
+        async ({ query, body, status }) => {
+          if (body.byteLength > MAX_WRITE_BYTES) return status(413, 'Payload Too Large')
+          try {
+            await vfs.write(safePath(query.path, { allowEmpty: false }), new Uint8Array(body))
+            return new Response(null, { status: 204 })
+          } catch (e) {
+            if (hasErrorCode(e, 'ValidationError')) return status(400, 'Bad Request')
+            throw e
+          }
+        },
+        { query: t.Object({ path: t.Optional(t.String()) }), body: t.ArrayBuffer() },
+      )
+      .delete(
+        '/delete',
+        async ({ query, status }) => {
+          try {
+            await vfs.delete(safePath(query.path, { allowEmpty: false }), { force: query.force === '1', recursive: query.recursive === '1' })
+            return new Response(null, { status: 204 })
+          } catch (e) {
+            if (hasErrorCode(e, 'FileNotFound')) return status(404, 'Not Found')
+            if (hasErrorCode(e, 'ValidationError')) return status(400, 'Bad Request')
+            throw e
+          }
+        },
+        { query: t.Object({ path: t.Optional(t.String()), force: t.Optional(t.String()), recursive: t.Optional(t.String()) }) },
+      )
+      .get(
+        '/exists',
+        async ({ query, status }) => {
+          try {
+            return { exists: await vfs.exists(safePath(query.path, { allowEmpty: false })) }
+          } catch (e) {
+            if (hasErrorCode(e, 'ValidationError')) return status(400, 'Bad Request')
+            throw e
+          }
+        },
+        { query: t.Object({ path: t.Optional(t.String()) }) },
+      )
+      .get(
+        '/head',
+        async ({ query, status }) => {
+          try {
+            return await vfs.head(safePath(query.path, { allowEmpty: false }))
+          } catch (e) {
+            if (hasErrorCode(e, 'FileNotFound')) return status(404, 'Not Found')
+            if (hasErrorCode(e, 'ValidationError')) return status(400, 'Bad Request')
+            throw e
+          }
+        },
+        { query: t.Object({ path: t.Optional(t.String()) }) },
+      )
+  )
 }
+
+// The exported route-tree type the client infers from. `import type { VfsApp } from '@arxhub/vfs-http/server'`.
+export type VfsApp = ReturnType<typeof vfsRoutes>
 
 const manifest = definePluginManifest({
   name: 'VfsHttpServer',
