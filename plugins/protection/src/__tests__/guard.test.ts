@@ -85,3 +85,42 @@ describe('createAuthGuard (Elysia integration)', () => {
     expect(res.status).toBe(401)
   })
 })
+
+describe('createAuthGuard (public GET prefixes)', () => {
+  // The published-content surface: GET under /p is world-readable, everything else stays guarded.
+  function makePublicApp() {
+    return new Elysia()
+      .use(createAuthGuard(new RequestAuthenticator(), undefined, { publicGetPrefixes: ['/p'] }))
+      .get('/p', () => 'public root')
+      .get('/p/*', () => 'public')
+      .put('/p/page.html', () => 'nope')
+      .get('/pwned', () => 'secret')
+      .get('/vfs/list', () => ({ ok: true }))
+      .compile()
+  }
+
+  it('serves an unsigned GET under the public prefix', async () => {
+    const res = await makePublicApp().handle(new Request('http://localhost/p/notes/page.html'))
+    expect(res.status).toBe(200)
+  })
+
+  it('serves an unsigned GET of the prefix root itself', async () => {
+    const res = await makePublicApp().handle(new Request('http://localhost/p'))
+    expect(res.status).toBe(200)
+  })
+
+  it('still rejects an unsigned GET outside the prefix', async () => {
+    const res = await makePublicApp().handle(new Request('http://localhost/vfs/list?prefix='))
+    expect(res.status).toBe(401)
+  })
+
+  it('does not treat a prefix-sharing path as public (/p vs /pwned)', async () => {
+    const res = await makePublicApp().handle(new Request('http://localhost/pwned'))
+    expect(res.status).toBe(401)
+  })
+
+  it('never exempts writes, even under the public prefix', async () => {
+    const res = await makePublicApp().handle(new Request('http://localhost/p/page.html', { method: 'PUT', body: 'x' }))
+    expect(res.status).toBe(401)
+  })
+})

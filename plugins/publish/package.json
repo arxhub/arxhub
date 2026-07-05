@@ -1,0 +1,63 @@
+{
+  "name": "@arxhub/plugin-publish",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Publish vault pages/folders as public, unauthenticated read-only content",
+  "keywords": [
+    "arxhub"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./ui": "./src/ui.ts",
+    "./server": "./src/server.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@arxhub/crypto": "workspace:*",
+    "@arxhub/http": "workspace:*",
+    "@arxhub/path": "workspace:*",
+    "elysia": "catalog:server"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs-node": "workspace:*",
+    "@sinclair/typebox": "catalog:shared",
+    "@types/node": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/config": "workspace:*",
+    "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/plugin-explorer": "workspace:*",
+    "@arxhub/plugin-gateway": "workspace:*",
+    "@arxhub/plugin-protection": "workspace:*",
+    "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/plugin-vfs": "workspace:*",
+    "@arxhub/stdlib": "workspace:*",
+    "@arxhub/sync": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
+    "@arxhub/vfs-http": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      },
+      "./server": {
+        "import": "./dist/server.js",
+        "types": "./dist/server.d.ts"
+      }
+    }
+  }
+}

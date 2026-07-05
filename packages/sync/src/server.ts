@@ -2,7 +2,7 @@ import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } fro
 import { hasErrorCode } from '@arxhub/errors'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
 import type { VirtualFileSystem } from '@arxhub/vfs'
-import Elysia, { type AnyElysia, t } from 'elysia'
+import Elysia, { t } from 'elysia'
 import { decodeObjectFrame } from './remote/decode-object-frame'
 import { encodeObjectFrame } from './remote/encode-object-frame'
 import type { SyncRemote } from './remote/sync-remote'
@@ -12,22 +12,25 @@ import { VfsSyncRemote } from './remote/vfs-sync-remote'
 // per-object framing — 64 MiB is a comfortable ceiling that still bounds a disk-DoS attempt.
 const MAX_PUT_FRAME_BYTES = 64 * 1024 * 1024
 
-// Prefix-free sync object-store routes. THIS function's inferred return type is the client contract:
-// `HttpSyncRemote` is `createTypedHttp<SyncApp>` and derives its urls + request/response types from it,
-// so there are no hand-written route consts or DTO interfaces to keep in sync. Do NOT annotate the
-// return `: AnyElysia` — that erases the route tree the client reads.
+// The batched object-store routes, named RELATIVELY (`/head`, `/objects/*`). arxhub's gateway mounts
+// them under `/api/<namespace>` (gateway.forPlugin), so the paths here carry no prefix — the client's
+// baseUrl does (`<origin>/api/sync`, `<origin>/api/publish`, …). THIS function's inferred return type
+// is the client contract: `createTypedHttp<ReturnType<…>>` derives its urls + request/response types
+// from it, so there are no hand-written route consts or DTO interfaces. Do NOT annotate the return
+// `: AnyElysia` — that erases the route tree the client reads. Reused verbatim by publish over an
+// unencrypted public store (see @arxhub/plugin-publish).
 //
 // Handlers return the success value directly (→ 200) or `status(code, …)` for errors, so every status
 // is a distinct entry in the route's response type (a bare `set.status = 400; return '…'` would fold
 // the error string into the 200 type and poison inference). App-level ValidationError (a bad hash or a
 // malformed frame — the network can send either) maps to 400; anything else rethrows so the gateway
 // logs a genuine 500 instead of masking a server fault as a client error.
-export function syncRoutes(remote: SyncRemote) {
+export function objectStoreRoutes(remote: SyncRemote) {
   return (
     new Elysia()
-      .get('/sync/head', async () => ({ head: await remote.getHead() }))
+      .get('/head', async () => ({ head: await remote.getHead() }))
       .put(
-        '/sync/head',
+        '/head',
         async ({ body, status }) => {
           try {
             // Compare-and-swap: 409 tells the client another device moved the head first — re-sync.
@@ -42,7 +45,7 @@ export function syncRoutes(remote: SyncRemote) {
         { body: t.Object({ expected: t.Union([t.String(), t.Null()]), next: t.String() }) },
       )
       .post(
-        '/sync/objects/stat',
+        '/objects/stat',
         async ({ body, status }) => {
           try {
             return { has: [...(await remote.hasObjects(body.hashes))] }
@@ -56,7 +59,7 @@ export function syncRoutes(remote: SyncRemote) {
       // Returns the object frame as raw bytes. Elysia sends a Uint8Array body verbatim but sets NO
       // content-type, so declare it explicitly — the client keys binary-vs-text parsing off it.
       .post(
-        '/sync/objects/get',
+        '/objects/get',
         async ({ body, set, status }) => {
           try {
             set.headers['content-type'] = 'application/octet-stream'
@@ -69,7 +72,7 @@ export function syncRoutes(remote: SyncRemote) {
         { body: t.Object({ hashes: t.Array(t.String()) }) },
       )
       .post(
-        '/sync/objects/put',
+        '/objects/put',
         async ({ body, status }) => {
           if (body.byteLength > MAX_PUT_FRAME_BYTES) return status(413, 'Payload Too Large')
           try {
@@ -86,18 +89,11 @@ export function syncRoutes(remote: SyncRemote) {
 }
 
 // The exported route-tree type the client infers from. `import type { SyncApp } from '@arxhub/sync/server'`.
-export type SyncApp = ReturnType<typeof syncRoutes>
-
-// Mount the (prefix-free) sync routes under `prefix` (default /sync). Kept separate from syncRoutes so
-// SyncApp stays prefix-free: the client's baseUrl carries the prefix, which lets publish reuse these
-// same routes at `/publish` over an unencrypted public store. The protection guard (global onRequest)
-// covers these routes like every other mounted route.
-export function mountSyncRoutes(remote: SyncRemote): AnyElysia {
-  return new Elysia().use(syncRoutes(remote))
-}
+export type SyncApp = ReturnType<typeof objectStoreRoutes>
 
 const manifest = definePluginManifest({
   name: 'SyncServer',
+  namespace: 'sync',
   version: '0.1.0',
   author: 'arxhub',
   description: 'Serves the batched sync object-store protocol over HTTP',
@@ -110,8 +106,8 @@ type SyncServerPluginArgs = PluginArgs & {
   vfs: VirtualFileSystem
 }
 
-// Mounts the sync routes onto the gateway during configure(). Register alongside GatewayServerPlugin in
-// a server instance, injecting the backing object store (mirrors VfsHttpServerPlugin).
+// Mounts the sync object store at `/api/sync` during configure(). Register alongside GatewayServerPlugin
+// in a server instance, injecting the backing object store (mirrors VfsHttpServerPlugin).
 export class SyncServerPlugin extends Plugin {
   private readonly vfs: VirtualFileSystem
 
@@ -122,7 +118,9 @@ export class SyncServerPlugin extends Plugin {
 
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
-    const { gateway } = ctx.extensions.get(GatewayServerExtension)
-    gateway.use(mountSyncRoutes(new VfsSyncRemote(this.vfs)))
+    ctx.extensions
+      .get(GatewayServerExtension)
+      .forPlugin(this)
+      .use(objectStoreRoutes(new VfsSyncRemote(this.vfs)))
   }
 }

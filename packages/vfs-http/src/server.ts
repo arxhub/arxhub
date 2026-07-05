@@ -21,7 +21,7 @@ const MAX_WRITE_BYTES = 100 * 1024 * 1024
 // We resolve '.'/'..' ourselves against a virtual root rather than node:path.normalize (win32 on
 // Windows, which would emit backslashes that bypass a '../' check); backslashes are folded to '/'
 // first so the check is platform-independent.
-function safePath(raw: unknown, { allowEmpty }: { allowEmpty: boolean }): string {
+export function safePath(raw: unknown, { allowEmpty }: { allowEmpty: boolean }): string {
   const input = String(raw ?? '').replace(/\\/g, '/')
   const segments: string[] = []
   for (const segment of input.split('/')) {
@@ -41,7 +41,7 @@ function safePath(raw: unknown, { allowEmpty }: { allowEmpty: boolean }): string
 // Single error→HTTP-status mapping shared by every route: a rejected path → 400, a missing file →
 // 404, and anything else is rethrown so the gateway's onError logs it as a genuine 500 (rather than
 // masking server faults like EACCES as 404, which sync would then trust as "file deleted").
-function failOrRethrow(error: unknown, set: { status?: number | string }): string {
+export function failOrRethrow(error: unknown, set: { status?: number | string }): string {
   if (hasErrorCode(error, 'ValidationError')) {
     set.status = 400
     return 'Bad Request'
@@ -53,11 +53,11 @@ function failOrRethrow(error: unknown, set: { status?: number | string }): strin
   throw error
 }
 
-// Server counterpart of HttpFileSystem: serves any VirtualFileSystem over HTTP
-// using the wire contract in ./protocol. Mounted under the `/vfs` prefix to
-// match HttpFileSystem's default base URL.
+// Server counterpart of HttpFileSystem: serves any VirtualFileSystem over HTTP using the wire contract
+// in ./protocol. Routes are RELATIVE (`/list`, `/read`, …); arxhub's gateway mounts them under
+// `/api/vfs` (gateway.mount), which HttpFileSystem's default base URL matches.
 export function vfsRoutes(vfs: VirtualFileSystem): AnyElysia {
-  return new Elysia({ prefix: '/vfs' })
+  return new Elysia()
     .get(VFS_ROUTES.list, async ({ query, set }): Promise<ListResponse | string> => {
       try {
         const entries = await vfs.list(safePath(query.prefix, { allowEmpty: true }))
@@ -119,6 +119,7 @@ export function vfsRoutes(vfs: VirtualFileSystem): AnyElysia {
 
 const manifest = definePluginManifest({
   name: 'VfsHttpServer',
+  namespace: 'vfs',
   version: '0.1.0',
   author: 'arxhub',
   description: 'Serves a VirtualFileSystem over HTTP for browser-mode clients',
@@ -140,7 +141,6 @@ export class VfsHttpServerPlugin extends Plugin {
 
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
-    const { gateway } = ctx.extensions.get(GatewayServerExtension)
-    gateway.use(vfsRoutes(this.vfs))
+    ctx.extensions.get(GatewayServerExtension).forPlugin(this).use(vfsRoutes(this.vfs))
   }
 }

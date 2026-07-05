@@ -3,6 +3,9 @@ import { join } from 'node:path'
 import { ArxHub } from '@arxhub/core'
 import GatewayServerPlugin from '@arxhub/plugin-gateway/server'
 import { ProtectionServerPlugin } from '@arxhub/plugin-protection/server'
+import { PUBLIC_READ_PATH, PublishServerPlugin } from '@arxhub/plugin-publish/server'
+import { SyncServerPlugin } from '@arxhub/sync/server'
+import { ScopedFileSystem } from '@arxhub/vfs'
 import { VfsHttpServerPlugin } from '@arxhub/vfs-http/server'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 
@@ -22,15 +25,21 @@ export async function createArxHub(): Promise<ArxHub> {
   const pinnedPublicKey = process.env.ARXHUB_SYNC_PUBKEY ?? persistedPin
 
   arxhub.plugins.register(GatewayServerPlugin)
-  // Guard every /vfs route with signed-request auth. TOFU pins the first valid client key and, via
-  // onPair, persists it so the next boot loads it above.
+  // Guard every route with signed-request auth. TOFU pins the first valid client key and, via
+  // onPair, persists it so the next boot loads it above. GETs under the published-content prefix
+  // are the ONE deliberate public hole (read-only, method-restricted).
   arxhub.plugins.register(ProtectionServerPlugin, () => ({
     pinnedPublicKey,
+    publicGetPrefixes: [PUBLIC_READ_PATH],
     onPair: (key: string) => {
       pinnedFile.writeText(key).catch((error) => arxhub.logger.error('Failed to persist pinned client key', error))
     },
   }))
   arxhub.plugins.register(VfsHttpServerPlugin, () => ({ vfs }))
+  // Batched sync object store (client-encrypted blobs) under repo/.
+  arxhub.plugins.register(SyncServerPlugin, () => ({ vfs: new ScopedFileSystem(vfs, 'repo') }))
+  // Published (plaintext, world-readable) content under public/.
+  arxhub.plugins.register(PublishServerPlugin, () => ({ vfs: new ScopedFileSystem(vfs, 'public') }))
 
   await arxhub.start()
   return arxhub

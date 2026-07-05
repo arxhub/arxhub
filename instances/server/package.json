@@ -14,7 +14,10 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
+    "@arxhub/plugin-publish": "workspace:*",
     "@arxhub/stdlib": "workspace:*",
+    "@arxhub/sync": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
     "@arxhub/vfs-http": "workspace:*",
     "@arxhub/vfs-node": "workspace:*"
   },

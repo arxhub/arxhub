@@ -21,7 +21,7 @@ export interface FileHeadResponse {
   createdAt: number
 }
 
-export const VFS_DEFAULT_BASE_URL = '/vfs'
+export const VFS_DEFAULT_BASE_URL = '/api/vfs'
 
 export const VFS_ROUTES = {
   list: '/list',

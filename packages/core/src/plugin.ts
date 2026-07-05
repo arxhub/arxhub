@@ -10,6 +10,10 @@ export interface PluginManifest {
   description?: string
   author: string
   minApi?: string
+  // Unique route namespace for a plugin that mounts HTTP routes. arxhub's gateway bakes it into an
+  // `/api/<namespace>` prefix (see GatewayServerExtension.forPlugin), so the plugin names its routes
+  // relatively and never hardcodes the prefix. Omit for plugins with no server routes.
+  namespace?: string
 }
 
 export function definePluginManifest(manifest: PluginManifest): PluginManifest {

@@ -63,11 +63,14 @@ export function useFileActions() {
   // Presentation-agnostic action descriptors — consumed by the desktop context menu now and a
   // mobile bottom-sheet later (uikit's ActionMenuHost decides how to render them).
   function getNodeActions(node: TreeNode): ActionItem[] {
+    // Contributed actions (from other plugins via ExplorerExtension.registerNodeActions) follow
+    // the built-ins so destructive built-ins stay in their familiar place.
     if (node.entry.kind === 'file') {
       return [
         { id: 'open', label: 'Open', icon: 'lu:file-plus', onSelect: () => openFile(node, false) },
         { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
         { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
+        ...explorer.getContributedActions(node),
       ]
     }
     return [
@@ -75,6 +78,7 @@ export function useFileActions() {
       { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => runAction(newFolder(node), 'new folder') },
       { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
       { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
+      ...explorer.getContributedActions(node),
     ]
   }
 

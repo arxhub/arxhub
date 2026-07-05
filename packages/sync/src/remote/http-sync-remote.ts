@@ -6,8 +6,8 @@ import { encodeObjectFrame } from './encode-object-frame'
 import type { SyncRemote } from './sync-remote'
 
 export interface HttpSyncRemoteOptions {
-  // Where the server mounts the sync routes, e.g. `https://hub.example.com/sync`. Defaults to `/sync`
-  // (same-origin, reachable through the dev proxy). This is the mount prefix — route paths are relative.
+  // The object store's mount, e.g. `https://hub.example.com/api/sync` (or `/api/publish` for the public
+  // store — the routes are relative, so this baseUrl carries the whole `/api/<namespace>` prefix).
   baseUrl?: string
   // Override the fetch implementation (mainly for testing). Defaults to the global fetch.
   fetch?: typeof fetch
@@ -33,12 +33,12 @@ export class HttpSyncRemote implements SyncRemote {
   }
 
   async getHead(): Promise<string | null> {
-    return (await this.http.get('/sync/head')).head
+    return (await this.http.get('/head')).head
   }
 
   async setHead(expected: string | null, next: string): Promise<boolean> {
     try {
-      await this.http.put('/sync/head', { expected, next })
+      await this.http.put('/head', { expected, next })
       return true
     } catch (e) {
       // 409 = another device moved the head first; the caller must re-sync, not overwrite.
@@ -49,18 +49,18 @@ export class HttpSyncRemote implements SyncRemote {
 
   async hasObjects(hashes: string[]): Promise<Set<string>> {
     if (hashes.length === 0) return new Set()
-    const { has } = await this.http.post('/sync/objects/stat', { hashes })
+    const { has } = await this.http.post('/objects/stat', { hashes })
     return new Set(has)
   }
 
   async getObjects(hashes: string[]): Promise<Map<string, Uint8Array>> {
     if (hashes.length === 0) return new Map()
-    const frame = await this.http.post('/sync/objects/get', { hashes })
+    const frame = await this.http.post('/objects/get', { hashes })
     return decodeObjectFrame(new Uint8Array(frame))
   }
 
   async putObjects(objects: Map<string, Uint8Array>): Promise<void> {
     if (objects.size === 0) return
-    await this.http.post('/sync/objects/put', encodeObjectFrame(objects))
+    await this.http.post('/objects/put', encodeObjectFrame(objects))
   }
 }

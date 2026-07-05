@@ -4,9 +4,8 @@ import { MutableRequestSigner } from '@arxhub/crypto'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { Repo, SyncEngine } from '@arxhub/sync'
-import { EncryptingFileSystem, PluginVfs, RootVfs } from '@arxhub/vfs'
-import { HttpFileSystem } from '@arxhub/vfs-http'
+import { EncryptedSyncRemote, HttpSyncRemote, Repo, SyncEngine } from '@arxhub/sync'
+import { PluginVfs, RootVfs } from '@arxhub/vfs'
 import { Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
 import { manifest } from './manifest'
@@ -14,7 +13,8 @@ import { SyncExtension } from './sync-extension'
 import SyncFooter from './ui/SyncFooter.vue'
 
 export const SyncConfigSchema = Type.Object({
-  serverUrl: Type.String({ title: 'Server URL', default: '' }),
+  // The server ORIGIN (e.g. https://hub.example.com) — the /sync route prefix is appended here.
+  serverUrl: Type.String({ title: 'Server URL', description: 'ArxHub server origin, e.g. https://hub.example.com', default: '' }),
 })
 
 export class SyncPlugin extends Plugin {
@@ -58,10 +58,13 @@ export class SyncPlugin extends Plugin {
     const signer = new MutableRequestSigner()
     signer.install(keyring)
 
-    // The remote holds only ciphertext: wrap the HTTP transport so every chunk/snapshot blob is
-    // AES-256-GCM encrypted before upload and decrypted on download. Chunking/hashing still run on
-    // plaintext locally (in the local Repo), so dedup is unaffected.
-    const remoteVfs = new EncryptingFileSystem(new HttpFileSystem({ baseUrl: cfg.serverUrl, signer }, this.logger), keyring.encryptionKey)
+    // The remote speaks the dedicated batched /sync protocol (NOT per-file VFS routes) and holds
+    // only ciphertext: every chunk/snapshot blob is AES-256-GCM encrypted before upload and
+    // decrypted on download. Chunking/hashing still run on plaintext locally (in the local Repo),
+    // so dedup is unaffected.
+    // arxhub mounts the sync object store at /api/sync; the client's paths are relative to it.
+    const remoteBaseUrl = `${cfg.serverUrl.replace(/\/+$/, '')}/api/sync`
+    const remote = new EncryptedSyncRemote(new HttpSyncRemote({ baseUrl: remoteBaseUrl, signer }), keyring.encryptionKey)
 
     const syncExt = ctx.extensions.get(SyncExtension)
     // Chunk the whole local tree (vault/ + storage/ content) via the root VFS, but keep the repo
@@ -69,7 +72,7 @@ export class SyncPlugin extends Plugin {
     // add()-ed for snapshotting). state/temp exclusion is structural, not a permission check.
     syncExt.engine = new SyncEngine({
       local: new Repo(ctx.services.get(RootVfs), pluginVfs.state),
-      remote: new Repo(remoteVfs),
+      remote,
     })
   }
 }

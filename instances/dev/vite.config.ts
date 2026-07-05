@@ -3,18 +3,15 @@ import { request } from 'node:http'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
-const API_PREFIXES = ['/vfs', '/healthcheck']
+const API_PREFIXES = ['/api', '/healthcheck']
 
 function apiProxy(port: number) {
   return (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     if (!API_PREFIXES.some((p) => req.url?.startsWith(p))) return next()
-    const proxy = request(
-      { hostname: 'localhost', port, path: req.url, method: req.method, headers: req.headers },
-      (upstream) => {
-        res.writeHead(upstream.statusCode ?? 200, upstream.headers)
-        upstream.pipe(res, { end: true })
-      },
-    )
+    const proxy = request({ hostname: 'localhost', port, path: req.url, method: req.method, headers: req.headers }, (upstream) => {
+      res.writeHead(upstream.statusCode ?? 200, upstream.headers)
+      upstream.pipe(res, { end: true })
+    })
     proxy.on('error', next)
     req.pipe(proxy, { end: true })
   }
@@ -31,9 +28,7 @@ export default defineConfig({
         const { createArxHub } = await server.ssrLoadModule('/src/server/arxhub.ts')
         const arxhub = await createArxHub(3001)
 
-        const { GatewayServerExtension } = await server.ssrLoadModule(
-          '/node_modules/@arxhub/plugin-gateway/src/server/extension.ts',
-        )
+        const { GatewayServerExtension } = await server.ssrLoadModule('/node_modules/@arxhub/plugin-gateway/src/server/extension.ts')
         const apiPort = arxhub.extensions.get(GatewayServerExtension).gateway.port ?? 3001
 
         server.middlewares.use(apiProxy(apiPort))

@@ -16,6 +16,8 @@ export class Gateway {
     this.port = null
   }
 
+  // Mount an app at the server root (no namespace). For cross-cutting apps only — the auth guard's
+  // global onRequest, the healthcheck. Feature plugins mount via a NamespacedGateway (forPlugin).
   use(plugin: AnyElysia): void {
     this.elysia.use(plugin)
   }
@@ -33,5 +35,23 @@ export class Gateway {
     this.disposable?.stop(true)
     this.port = null
     this.logger.info('Stopped')
+  }
+}
+
+// A gateway view scoped to one plugin's namespace. `use(routes)` mounts the plugin's RELATIVE routes
+// (e.g. `/head`, `/objects/stat`) under `/api/<namespace>`: arxhub owns the `/api` + namespace prefix,
+// the plugin owns the route names below it — so route paths never hardcode the prefix, and clients
+// target `<origin>/api/<namespace>`.
+export class NamespacedGateway {
+  private readonly gateway: Gateway
+  private readonly namespace: string
+
+  constructor(gateway: Gateway, namespace: string) {
+    this.gateway = gateway
+    this.namespace = namespace
+  }
+
+  use(routes: AnyElysia): void {
+    this.gateway.use(new Elysia({ prefix: `/api/${this.namespace}` }).use(routes))
   }
 }

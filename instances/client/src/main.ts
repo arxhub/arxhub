@@ -28,7 +28,7 @@ const keystore = new LocalStorageKeyStore()
 const keyring = await loadOrCreateKeyring(keystore)
 const signer = new MutableRequestSigner()
 signer.install(keyring)
-const vfs = new HttpFileSystem({ baseUrl: '/vfs', signer }, arxhub.logger)
+const vfs = new HttpFileSystem({ baseUrl: '/api/vfs', signer }, arxhub.logger)
 
 arxhub.plugins.register(VfsPlugin, () => ({ fs: vfs }))
 arxhub.plugins.register(LoggerPlugin)

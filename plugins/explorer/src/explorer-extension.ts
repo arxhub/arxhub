@@ -1,5 +1,6 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { basename, dirname, join } from '@arxhub/path'
+import type { ActionItem } from '@arxhub/uikit/core'
 import { type VirtualEntry, type VirtualFileSystem, renameEntry as vfsRenameEntry } from '@arxhub/vfs'
 import { ref } from 'vue'
 
@@ -8,6 +9,10 @@ export interface TreeNode {
   children: TreeNode[] | null
   expanded: boolean
 }
+
+// Other plugins contribute context-menu actions for tree nodes (extension-only inter-plugin
+// channel). Called each time a menu opens; return [] to contribute nothing for a node.
+export type NodeActionContributor = (node: TreeNode) => ActionItem[]
 
 type ExplorerExtensionArgs = ExtensionArgs & {
   vfs: VirtualFileSystem
@@ -24,11 +29,20 @@ export class ExplorerExtension extends Extension {
   // Path of the node currently being inline-renamed (shared so only one renames at a time).
   readonly renamingPath = ref<string | null>(null)
   contentGroupId: string | null = null
+  private readonly nodeActionContributors: NodeActionContributor[] = []
 
   constructor(args: ExplorerExtensionArgs) {
     super(args)
     this.vfs = args.vfs
     this.root = args.root
+  }
+
+  registerNodeActions(contributor: NodeActionContributor): void {
+    this.nodeActionContributors.push(contributor)
+  }
+
+  getContributedActions(node: TreeNode): ActionItem[] {
+    return this.nodeActionContributors.flatMap((contribute) => contribute(node))
   }
 
   async loadRoot(): Promise<void> {
