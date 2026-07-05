@@ -1,4 +1,4 @@
-import { hasErrorCode, illegalState } from '@arxhub/errors'
+import { hasErrorCode } from '@arxhub/errors'
 import { join } from '@arxhub/path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
@@ -7,6 +7,7 @@ import type { VirtualFile, VirtualFileSystem, VirtualWalker } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
 import { Chunker } from './chunker'
+import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
 import type { FileStatus, Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 
 export class Repo {
@@ -254,7 +255,7 @@ export class Repo {
   }
 
   async prepare(): Promise<void> {
-    const hash = sha256('{}')
+    const hash = EMPTY_SNAPSHOT_HASH
     const snapshot = this.getSnapshotFile(hash)
     const isSnapshotExists = await snapshot.exists()
     if (!isSnapshotExists) {
@@ -277,64 +278,6 @@ export class Repo {
     const head = this.getHeadFile()
     const hash = await head.readText()
     return this.getSnapshotFile(hash).readJSON()
-  }
-
-  async download(from: Repo, hash: string): Promise<void> {
-    const snapshot = await from.getSnapshotFile(hash).readJSON<Snapshot>()
-
-    // Zero-trust: `from` is an untrusted remote. Encryption stops it forging content, but it can still
-    // serve the wrong (or a swapped) blob under a hash-named path — which would silently corrupt the
-    // ancestry chain or resurrect deleted files on merge. So verify the decrypted bytes actually hash
-    // to the path they came from before trusting anything into the local store. Content is addressed
-    // by sha256 of plaintext, so this check is exactly the integrity guarantee content-addressing implies.
-    if (snapshot.hash !== hash) {
-      throw illegalState(`Snapshot integrity check failed: requested ${hash}, got ${snapshot.hash}`)
-    }
-
-    for (const pathname in snapshot.files) {
-      const file = snapshot.files[pathname]
-
-      for (const chunk of file.chunks) {
-        const toChunkFile = this.getChunkFile(chunk.hash)
-        if (!(await toChunkFile.exists())) {
-          // Read fully + re-hash rather than streaming straight to disk: a chunk must be proven before
-          // it lands, and Rabin chunks are already sized to fit in memory (the chunker hashes them the
-          // same way when splitting).
-          const content = await from.getChunkFile(chunk.hash).read()
-          const actual = sha256(content)
-          if (actual !== chunk.hash) {
-            throw illegalState(`Chunk integrity check failed: expected ${chunk.hash}, got ${actual}`)
-          }
-          await toChunkFile.write(content)
-        }
-      }
-    }
-
-    await this.getSnapshotFile(hash).writeJSON(snapshot)
-  }
-
-  async upload(to: Repo, hash: string): Promise<void> {
-    if (await to.getSnapshotFile(hash).exists()) {
-      return
-    }
-
-    const snapshot = await this.getSnapshotFile(hash).readJSON<Snapshot>()
-
-    for (const pathname in snapshot.files) {
-      const file = snapshot.files[pathname]
-
-      for (const chunk of file.chunks) {
-        const toChunkFile = to.getChunkFile(chunk.hash)
-        if (!(await toChunkFile.exists())) {
-          const fromChunkFile = this.getChunkFile(chunk.hash)
-          const readable = await fromChunkFile.readable()
-          const writable = await toChunkFile.writable()
-          await readable.pipeTo(writable)
-        }
-      }
-    }
-
-    await to.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
   }
 
   listSnapshots(): VirtualWalker {

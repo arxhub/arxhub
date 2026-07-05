@@ -1,2 +1,6 @@
+export * from './chunker'
+export * from './empty-snapshot-hash'
 export * from './engine'
+export * from './remote'
 export * from './repo'
+export * from './types'

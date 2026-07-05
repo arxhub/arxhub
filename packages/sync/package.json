@@ -10,7 +10,8 @@
   "author": "",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
   },
   "files": [
     "dist"
@@ -20,10 +21,14 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/crypto": "workspace:*",
     "@arxhub/errors": "workspace:*",
+    "@arxhub/http": "workspace:*",
     "@arxhub/path": "workspace:*",
+    "@arxhub/plugin-gateway": "workspace:*",
     "async-lock": "catalog:shared",
     "dayjs": "catalog:shared",
+    "elysia": "catalog:server",
     "rabin-rs": "catalog:shared"
   },
   "devDependencies": {
@@ -44,6 +49,10 @@
       ".": {
         "import": "./dist/index.js",
         "types": "./dist/index.d.ts"
+      },
+      "./server": {
+        "import": "./dist/server.js",
+        "types": "./dist/server.d.ts"
       }
     }
   }
