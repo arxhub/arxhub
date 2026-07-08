@@ -1,8 +1,9 @@
-import { ConsoleLogger } from '@arxhub/core'
+import { apiBaseUrl, ConsoleLogger } from '@arxhub/core'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 import Elysia from 'elysia'
 import { beforeEach, describe, expect, test } from 'vitest'
+import { SYNC_NAMESPACE } from '../namespace'
 import { HttpSyncRemote } from '../remote/http-sync-remote'
 import { VfsSyncRemote } from '../remote/vfs-sync-remote'
 import { objectStoreRoutes } from '../server'
@@ -20,11 +21,11 @@ describe('HttpSyncRemote over syncRoutes', () => {
   beforeEach(async () => {
     const store: VirtualFileSystem = new NodeFileSystem(`${__dirname}/testdata/http-sync-remote`, new ConsoleLogger())
     await store.delete('/', { force: true, recursive: true })
-    // Mount the relative routes under `/api/sync`, exactly as arxhub's gateway.forPlugin does.
-    const app = new Elysia({ prefix: '/api/sync' }).use(objectStoreRoutes(new VfsSyncRemote(store)))
+    // Mount the relative routes under /api/<namespace>, exactly as arxhub's gateway.forPlugin does.
+    const app = new Elysia({ prefix: apiBaseUrl('', SYNC_NAMESPACE) }).use(objectStoreRoutes(new VfsSyncRemote(store)))
     const fetch = ((input: RequestInfo | URL, init?: RequestInit) =>
       app.handle(new Request(typeof input === 'string' ? input : input.toString(), init))) as typeof globalThis.fetch
-    client = new HttpSyncRemote({ baseUrl: 'http://sync.test/api/sync', fetch })
+    client = new HttpSyncRemote({ baseUrl: apiBaseUrl('http://sync.test', SYNC_NAMESPACE), fetch })
   })
 
   test('head starts null and moves through compare-and-swap; a stale CAS 409s to false', async () => {

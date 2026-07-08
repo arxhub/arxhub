@@ -4,11 +4,12 @@ import { VfsSyncRemote } from '@arxhub/sync'
 import { objectStoreRoutes } from '@arxhub/sync/server'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import Elysia from 'elysia'
+import { PUBLISH_NAMESPACE } from '../namespace'
 import { publicReadRoutes } from './public-read-routes'
 
 const manifest = definePluginManifest({
   name: 'PublishServer',
-  namespace: 'publish',
+  namespace: PUBLISH_NAMESPACE,
   version: '0.1.0',
   author: 'arxhub',
   description: 'Serves published (plaintext, content-addressed) content and its owner-only upload routes',

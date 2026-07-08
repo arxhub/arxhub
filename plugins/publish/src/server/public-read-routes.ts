@@ -1,6 +1,8 @@
+import { apiBaseUrl } from '@arxhub/core'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { failOrRethrow, safePath } from '@arxhub/vfs-http/server'
 import Elysia, { type AnyElysia } from 'elysia'
+import { PUBLISH_NAMESPACE } from '../namespace'
 import type { PublishManifest } from '../publish-manifest'
 import { contentTypeFor } from './content-type'
 import { PublishReader } from './publish-reader'
@@ -12,7 +14,7 @@ export const PUBLIC_ROUTE_PREFIX = '/public'
 
 // The full path the anonymous surface resolves to, for the protection guard's publicGetPrefixes. arxhub
 // bakes `/api/<namespace>`; publish's namespace is `publish`, so instances allowlist this.
-export const PUBLIC_READ_PATH = `/api/publish${PUBLIC_ROUTE_PREFIX}`
+export const PUBLIC_READ_PATH = `${apiBaseUrl('', PUBLISH_NAMESPACE)}${PUBLIC_ROUTE_PREFIX}`
 
 // A folder URL with no source file of its own tries these in order before returning 404.
 const INDEX_CANDIDATES = ['index.md', 'index.arx', 'index.html']

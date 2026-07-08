@@ -3,6 +3,7 @@ import { hasErrorCode, validation } from '@arxhub/errors'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import Elysia, { t } from 'elysia'
+import { VFS_NAMESPACE } from './namespace'
 
 // Reject oversized writes. The body is already buffered by Elysia's t.ArrayBuffer() parser, so this
 // is a disk-DoS guard rather than a true streaming limit; configure a transport-level body limit at
@@ -152,7 +153,7 @@ export type VfsApp = ReturnType<typeof vfsRoutes>
 
 const manifest = definePluginManifest({
   name: 'VfsHttpServer',
-  namespace: 'vfs',
+  namespace: VFS_NAMESPACE,
   version: '0.1.0',
   author: 'arxhub',
   description: 'Serves a VirtualFileSystem over HTTP for browser-mode clients',

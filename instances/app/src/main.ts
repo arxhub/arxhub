@@ -1,7 +1,7 @@
 import '@arxhub/theme-preset'
 import '@arxhub/theme'
 
-import { ArxHub } from '@arxhub/core'
+import { ArxHub, apiBaseUrl } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { ConfigPlugin } from '@arxhub/plugin-config/ui'
@@ -36,8 +36,8 @@ async function createVfs(): Promise<VirtualFileSystem> {
     const { TauriFileSystem, BaseDirectory } = await import('@arxhub/vfs-tauri')
     return new TauriFileSystem('.arxhub', BaseDirectory.Home, arxhub.logger)
   }
-  const { HttpFileSystem } = await import('@arxhub/vfs-http')
-  return new HttpFileSystem({ baseUrl: '/api/vfs', signer }, arxhub.logger)
+  const { HttpFileSystem, VFS_NAMESPACE } = await import('@arxhub/vfs-http')
+  return new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer }, arxhub.logger)
 }
 
 const vfs = await createVfs()

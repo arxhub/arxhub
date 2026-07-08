@@ -1,7 +1,7 @@
 import '@arxhub/theme-preset'
 import '@arxhub/theme'
 
-import { ArxHub } from '@arxhub/core'
+import { ArxHub, apiBaseUrl } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { ConfigPlugin } from '@arxhub/plugin-config/ui'
@@ -17,7 +17,7 @@ import { ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
 import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
-import { HttpFileSystem } from '@arxhub/vfs-http'
+import { HttpFileSystem, VFS_NAMESPACE } from '@arxhub/vfs-http'
 import { createApp } from 'vue'
 import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
@@ -30,7 +30,7 @@ const keystore = new LocalStorageKeyStore()
 const keyring = await loadOrCreateKeyring(keystore)
 const signer = new MutableRequestSigner()
 signer.install(keyring)
-const vfs = new HttpFileSystem({ baseUrl: '/api/vfs', signer }, arxhub.logger)
+const vfs = new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer }, arxhub.logger)
 
 arxhub.plugins.register(VfsPlugin, () => ({ fs: vfs }))
 arxhub.plugins.register(LoggerPlugin)

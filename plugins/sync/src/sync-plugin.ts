@@ -1,10 +1,10 @@
 import { PluginConfig } from '@arxhub/config'
-import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { EncryptedSyncRemote, HttpSyncRemote, Repo, SyncEngine } from '@arxhub/sync'
+import { EncryptedSyncRemote, HttpSyncRemote, Repo, SYNC_NAMESPACE, SyncEngine } from '@arxhub/sync'
 import { PluginVfs, RootVfs } from '@arxhub/vfs'
 import { Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
@@ -62,8 +62,8 @@ export class SyncPlugin extends Plugin {
     // only ciphertext: every chunk/snapshot blob is AES-256-GCM encrypted before upload and
     // decrypted on download. Chunking/hashing still run on plaintext locally (in the local Repo),
     // so dedup is unaffected.
-    // arxhub mounts the sync object store at /api/sync; the client's paths are relative to it.
-    const remoteBaseUrl = `${cfg.serverUrl.replace(/\/+$/, '')}/api/sync`
+    // arxhub mounts the sync object store at /api/<namespace>; the client targets that, paths relative.
+    const remoteBaseUrl = apiBaseUrl(cfg.serverUrl, SYNC_NAMESPACE)
     const remote = new EncryptedSyncRemote(new HttpSyncRemote({ baseUrl: remoteBaseUrl, signer }), keyring.encryptionKey)
 
     const syncExt = ctx.extensions.get(SyncExtension)

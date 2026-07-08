@@ -3,6 +3,7 @@ import { hasErrorCode } from '@arxhub/errors'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import Elysia, { t } from 'elysia'
+import { SYNC_NAMESPACE } from './namespace'
 import { decodeObjectFrame } from './remote/decode-object-frame'
 import { encodeObjectFrame } from './remote/encode-object-frame'
 import type { SyncRemote } from './remote/sync-remote'
@@ -93,7 +94,7 @@ export type SyncApp = ReturnType<typeof objectStoreRoutes>
 
 const manifest = definePluginManifest({
   name: 'SyncServer',
-  namespace: 'sync',
+  namespace: SYNC_NAMESPACE,
   version: '0.1.0',
   author: 'arxhub',
   description: 'Serves the batched sync object-store protocol over HTTP',

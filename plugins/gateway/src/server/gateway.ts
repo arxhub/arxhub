@@ -1,4 +1,4 @@
-import type { Logger } from '@arxhub/core'
+import { API_PREFIX, type Logger } from '@arxhub/core'
 import { node } from '@elysiajs/node'
 import Elysia, { type AnyElysia } from 'elysia'
 import type { Server } from 'elysia/universal'
@@ -52,6 +52,6 @@ export class NamespacedGateway {
   }
 
   use(routes: AnyElysia): void {
-    this.gateway.use(new Elysia({ prefix: `/api/${this.namespace}` }).use(routes))
+    this.gateway.use(new Elysia({ prefix: `${API_PREFIX}/${this.namespace}` }).use(routes))
   }
 }

@@ -1,5 +1,5 @@
 import { PluginConfig } from '@arxhub/config'
-import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
 import { ExplorerExtension } from '@arxhub/plugin-explorer/ui'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
@@ -9,6 +9,7 @@ import type { ActionItem } from '@arxhub/uikit/core'
 import { PluginVfs, VaultVfs } from '@arxhub/vfs'
 import { Type } from '@sinclair/typebox'
 import { manifest } from './manifest'
+import { PUBLISH_NAMESPACE } from './namespace'
 import { PublishExtension } from './publish-extension'
 import { Publisher } from './publisher'
 
@@ -83,7 +84,7 @@ export class PublishPlugin extends Plugin {
     // Plaintext public store: the SAME object-store client sync uses (HttpSyncRemote) pointed at the
     // publish namespace, with NO EncryptedSyncRemote wrapper — chunks + manifest are uploaded as-is so
     // the server can reassemble and anonymous readers can fetch them.
-    const remote = new HttpSyncRemote({ baseUrl: `${cfg.serverUrl.replace(/\/+$/, '')}/api/publish`, signer })
+    const remote = new HttpSyncRemote({ baseUrl: apiBaseUrl(cfg.serverUrl, PUBLISH_NAMESPACE), signer })
 
     const publisher = new Publisher({
       vault: ctx.services.get(VaultVfs),
