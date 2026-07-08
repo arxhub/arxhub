@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "@arxhub/errors": "workspace:*",
-    "@arxhub/path": "workspace:*"
+    "@arxhub/path": "workspace:*",
+    "@noble/hashes": "^2.2.0"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
