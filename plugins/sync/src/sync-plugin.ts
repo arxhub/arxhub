@@ -15,9 +15,15 @@ import SyncFooter from './ui/SyncFooter.vue'
 export const SyncConfigSchema = Type.Object({
   // The server ORIGIN (e.g. https://hub.example.com) — the /sync route prefix is appended here.
   serverUrl: Type.String({ title: 'Server URL', description: 'ArxHub server origin, e.g. https://hub.example.com', default: '' }),
+  // Auto-sync cadence in seconds. A no-change sync is ~1 request (getHead) and sync() no-ops while one
+  // is already running, so polling is cheap; the manual footer button stays for an immediate push.
+  // 0 disables the poll (manual-only).
+  autoSyncSeconds: Type.Number({ title: 'Auto-sync interval (seconds)', description: '0 to sync manually only', default: 30, minimum: 0 }),
 })
 
 export class SyncPlugin extends Plugin {
+  private syncTimer: ReturnType<typeof setInterval> | null = null
+
   constructor(args: PluginArgs) {
     super(args, manifest)
   }
@@ -74,5 +80,20 @@ export class SyncPlugin extends Plugin {
       local: new Repo(ctx.services.get(RootVfs), pluginVfs.state),
       remote,
     })
+
+    // Sync once at startup (pull remote edits made while offline), then poll so local saves
+    // propagate without the manual footer button. sync() self-guards against overlap.
+    void syncExt.sync()
+    if (cfg.autoSyncSeconds > 0) {
+      this.syncTimer = setInterval(() => void syncExt.sync(), cfg.autoSyncSeconds * 1000)
+    }
+  }
+
+  override async stop(ctx: PluginContext): Promise<void> {
+    if (this.syncTimer != null) {
+      clearInterval(this.syncTimer)
+      this.syncTimer = null
+    }
+    await super.stop(ctx)
   }
 }
