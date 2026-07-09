@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePanelInstance } from '@arxhub/plugin-panels/ui'
-import { useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
@@ -56,8 +56,8 @@ async function save() {
     await vfs.write(props.path, new TextEncoder().encode(view.state.doc.toString()))
   } catch (error) {
     // Don't swallow — a failed write silently loses edits.
-    // TODO: surface via a user-visible toast once a <Toaster> is mounted in the shell.
     arxhub.logger.error(`[codemirror] failed to save ${props.path}:`, error)
+    toaster.create({ title: 'Save failed', description: `Couldn't save ${props.path}`, type: 'error' })
     throw error
   }
 }

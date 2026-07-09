@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Toaster } from '@arxhub/uikit/core'
 import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
@@ -25,6 +26,7 @@ import AppSidebar from './AppSidebar.vue'
     <slot name="footer">
       <AppFooter />
     </slot>
+    <Toaster />
   </div>
 </template>
 
