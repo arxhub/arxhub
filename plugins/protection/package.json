@@ -25,8 +25,11 @@
     "elysia": "catalog:server"
   },
   "devDependencies": {
+    "@arxhub/sync": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
+    "@arxhub/vfs-node": "workspace:*",
     "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {
