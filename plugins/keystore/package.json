@@ -19,6 +19,10 @@
     "build": "tsc && vite build",
     "test": "vitest"
   },
+  "dependencies": {
+    "@arxhub/crypto": "workspace:*",
+    "@noble/hashes": "^2.2.0"
+  },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",

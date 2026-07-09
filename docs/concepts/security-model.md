@@ -84,9 +84,37 @@ The ONE anonymous surface is method-restricted GET under the published-content p
   `~/.arxhub`. Auth gates access, but this topology requires a *trusted* (self-hosted) server. Do
   not point it at infrastructure you wouldn't hand your notes to.
 
+## Key storage at rest
+
+The device mnemonic (the single root secret) lives in a `KeyStore`, resolved at the composition root
+before anything else. Backends:
+
+- `LocalStorageKeyStore` — the default. Plaintext at rest and readable by any script in the page, so
+  on the **web** it is XSS-reachable: treat it as the weakest option.
+- `EncryptedKeyStore(inner, passphrase)` — a decorator that encrypts every value with AES-256-GCM
+  under a scrypt-derived key from a user passphrase. The inner store then holds only ciphertext plus
+  a non-secret salt; a stolen `localStorage` dump (or an XSS read of it) is useless without the
+  passphrase, which is never persisted. Wire it at the composition root behind an unlock prompt:
+
+  ```ts
+  const passphrase = await promptUnlock()               // an unlock screen shown before start()
+  const keystore = new EncryptedKeyStore(new LocalStorageKeyStore(), passphrase)
+  const keyring = await loadOrCreateKeyring(keystore)    // as today
+  ```
+
+  A wrong passphrase surfaces as a decryption failure on the first `get()` of an existing value (the
+  GCM tag fails) — the unlock screen should catch that and re-prompt.
+
+**Recommended per platform:**
+- **Web**: `EncryptedKeyStore` (an OS keychain is not available to a browser).
+- **Tauri (desktop/mobile)**: an OS-keychain `KeyStore` backend is the stronger option — encrypted at
+  rest, tied to the OS user, no passphrase prompt. Not yet implemented (needs a native Rust plugin,
+  e.g. stronghold/keyring, plus a capability); the async `KeyStore` seam is ready for it. Until then,
+  `EncryptedKeyStore` works on Tauri too.
+
 ## Known limitations (accepted, tracked)
 
-- The device mnemonic rests in `localStorage` (plaintext at rest, XSS-reachable). Planned: OS
-  keychain/stronghold backend for Tauri; the `KeyStore` interface is already async for this.
+- No OS-keychain `KeyStore` backend yet (see Key storage) — `EncryptedKeyStore` (passphrase) is the
+  interim hardening; plain `LocalStorageKeyStore` is plaintext at rest.
 - No fork detection across devices without device-signed heads (see rollback section).
 - Nonce map and TOFU pin assume a single server process (see deployment).

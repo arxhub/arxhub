@@ -1191,9 +1191,15 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@noble/hashes':
+        specifier: ^2.2.0
+        version: 2.2.0
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
