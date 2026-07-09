@@ -2,12 +2,12 @@ import { hasErrorCode } from '@arxhub/errors'
 import { join } from '@arxhub/path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
-import { stableStringify } from '@arxhub/stdlib/record/stable-stringify'
 import type { VirtualFile, VirtualFileSystem, VirtualWalker } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
 import { Chunker } from './chunker'
 import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
+import { snapshotHash } from './snapshot-hash'
 import type { FileStatus, Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 
 export class Repo {
@@ -129,9 +129,9 @@ export class Repo {
     }
 
     const snapshot = {
-      // stableStringify (not JSON.stringify) so identical file sets hash identically across devices.
-      // Matches prepare()'s empty-snapshot hash: stableStringify({}) === '{}' === JSON.stringify({}).
-      hash: sha256(stableStringify(files)),
+      // The address commits to files AND parent (see snapshotHash) — matches prepare()'s
+      // EMPTY_SNAPSHOT_HASH, which is snapshotHash(null, {}).
+      hash: snapshotHash(head.hash, files),
       parent: head.hash,
       timestamp: dayjs().unix(),
       files,
@@ -164,6 +164,17 @@ export class Repo {
       yield snapshot
       current = snapshot.parent
     }
+  }
+
+  // True when `ancestor` is `head` itself or on head's parent chain. Walks the LOCAL snapshot store
+  // only — the engine calls this after fetch(), which has already replicated the remote chain down to
+  // the first locally-known snapshot, so a hole here means the chain genuinely doesn't connect.
+  async isAncestor(ancestor: string, head: string): Promise<boolean> {
+    if (ancestor === head) return true
+    for await (const snapshot of this.ancestry(head)) {
+      if (snapshot.hash === ancestor || snapshot.parent === ancestor) return true
+    }
+    return false
   }
 
   async findBaseSnapshot(localHead: string, remoteHead: string): Promise<Snapshot | null> {
@@ -290,6 +301,12 @@ export class Repo {
 
   getHeadFile(): VirtualFile {
     return this.store.file(`/repo/head`)
+  }
+
+  // The remote head hash of the last SUCCESSFUL sync — the engine's rollback-detection anchor. Local
+  // state (never synced); deleting it re-enters trust-on-first-sync against the current remote.
+  getLastSyncedFile(): VirtualFile {
+    return this.store.file(`/repo/last-synced`)
   }
 
   getSnapshotFile(hash: string): VirtualFile {

@@ -1,10 +1,10 @@
 import { hasErrorCode, illegalState } from '@arxhub/errors'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
-import { stableStringify } from '@arxhub/stdlib/record/stable-stringify'
 import AsyncLock from 'async-lock'
 import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
 import type { SyncRemote } from './remote/sync-remote'
 import type { Repo } from './repo'
+import { snapshotHash } from './snapshot-hash'
 import type { Snapshot } from './types'
 
 export type SyncEngineOptions = {
@@ -56,7 +56,32 @@ export class SyncEngine {
       // The head we sync AGAINST — also the CAS token: if another device moves the remote head
       // while we work, the final setHead fails and this sync throws instead of overwriting them.
       const syncedHead = await this.remote.getHead()
+
+      // Rollback detection. The head is an unauthenticated pointer the server fully controls, so a
+      // malicious/compromised remote could serve an OLD head and quietly unwind other devices'
+      // pushes. Anchor: the head of the last successful sync must be the new head itself or one of
+      // its ancestors (the server cannot forge snapshots — they're encrypted and hash-verified — so
+      // descent is provable from real objects only). First sync has no anchor: trust-on-first-sync,
+      // like the server's TOFU pairing. Deleting repo/last-synced re-enters that mode deliberately.
+      const lastSyncedFile = this.local.getLastSyncedFile()
+      const lastSynced = (await lastSyncedFile.exists()) ? (await lastSyncedFile.readText()).trim() || null : null
+      if (lastSynced != null && syncedHead == null) {
+        throw illegalState(
+          'Remote head is gone but this device has synced before — the remote was wiped or rolled back. ' +
+            'If intentional, delete repo/last-synced from local sync state and sync again.',
+        )
+      }
+
       if (syncedHead != null) await this.fetch(syncedHead)
+
+      // Checked AFTER fetch: the remote chain is now replicated locally, so failing to reach the
+      // anchor from the new head means the chain genuinely does not descend from it.
+      if (lastSynced != null && syncedHead != null && !(await this.local.isAncestor(lastSynced, syncedHead))) {
+        throw illegalState(
+          `Remote head ${syncedHead} does not descend from the last synced head ${lastSynced} — possible rollback or fork by the remote. ` +
+            'If the remote was reset intentionally, delete repo/last-synced from local sync state and sync again.',
+        )
+      }
 
       const localSnapshot = await this.local.snapshot()
       // A remote that has never been pushed to stands at the empty snapshot (prepare() guarantees
@@ -72,6 +97,10 @@ export class SyncEngine {
       const latest = await this.local.snapshot()
 
       await this.push(syncedHead, latest)
+
+      // Only after a fully-committed sync: `latest` is now the remote head (push CAS'd it, or it
+      // already WAS the head in the no-op case), so it becomes the next rollback anchor.
+      await lastSyncedFile.writeText(latest.hash)
     })
   }
 
@@ -135,11 +164,12 @@ export class SyncEngine {
   }
 
   // Zero-trust: a snapshot must prove itself twice — the declared hash must match the address it
-  // was fetched from, AND the files map must actually hash to it (stableStringify is the canonical
-  // form), so a forged snapshot can't ride in under a familiar name.
+  // was fetched from, AND its files+parent must actually hash to it (snapshotHash is the canonical
+  // form), so a forged snapshot — or a real one with a rewritten parent — can't ride in under a
+  // familiar name.
   private parseSnapshot(hash: string, bytes: Uint8Array): Snapshot {
     const snapshot: Snapshot = JSON.parse(decoder.decode(bytes))
-    if (snapshot.hash !== hash || sha256(stableStringify(snapshot.files)) !== hash) {
+    if (snapshot.hash !== hash || snapshotHash(snapshot.parent, snapshot.files) !== hash) {
       throw illegalState(`Snapshot integrity check failed: requested ${hash}, got ${snapshot.hash}`)
     }
     return snapshot
