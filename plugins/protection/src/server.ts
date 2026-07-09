@@ -141,9 +141,13 @@ export class ProtectionServerPlugin extends Plugin {
     // The TOFU window is a first-boot race: until a key is pinned, whoever reaches the server first
     // becomes the paired device. Loud so an operator exposing the port pre-pairing knows the stakes.
     if (this.authenticator.pinnedPublicKey == null) {
-      this.logger.warn('No pinned client key — trust-on-first-use is OPEN: the first valid signer will be paired. Set ARXHUB_SYNC_PUBKEY to close it.')
+      this.logger.warn(
+        'No pinned client key — trust-on-first-use is OPEN: the first valid signer will be paired. Set ARXHUB_SYNC_PUBKEY to close it.',
+      )
     }
     const { gateway } = ctx.extensions.get(GatewayServerExtension)
-    gateway.use(createAuthGuard(this.authenticator, this.logger, { publicGetPrefixes: this.publicGetPrefixes, maxBodyBytes: this.maxBodyBytes }))
+    gateway.use(
+      createAuthGuard(this.authenticator, this.logger, { publicGetPrefixes: this.publicGetPrefixes, maxBodyBytes: this.maxBodyBytes }),
+    )
   }
 }
