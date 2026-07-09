@@ -13,6 +13,12 @@ import { VfsSyncRemote } from './remote/vfs-sync-remote'
 // per-object framing — 64 MiB is a comfortable ceiling that still bounds a disk-DoS attempt.
 const MAX_PUT_FRAME_BYTES = 64 * 1024 * 1024
 
+// Ceilings on the hash-array routes, sized above the engine's client batches (STAT_BATCH = 512,
+// GET_BATCH = 32) with headroom. Protocol limits, not tunables: they bound per-request server work
+// and — for get, where every hash can resolve to an 8 MiB chunk — the response frame size.
+const MAX_STAT_HASHES = 1024
+const MAX_GET_HASHES = 64
+
 // The batched object-store routes, named RELATIVELY (`/head`, `/objects/*`). arxhub's gateway mounts
 // them under `/api/<namespace>` (gateway.forPlugin), so the paths here carry no prefix — the client's
 // baseUrl does (`<origin>/api/sync`, `<origin>/api/publish`, …). THIS function's inferred return type
@@ -55,7 +61,7 @@ export function objectStoreRoutes(remote: SyncRemote) {
             throw e
           }
         },
-        { body: t.Object({ hashes: t.Array(t.String()) }) },
+        { body: t.Object({ hashes: t.Array(t.String(), { maxItems: MAX_STAT_HASHES }) }) },
       )
       // Returns the object frame as raw bytes. Elysia sends a Uint8Array body verbatim but sets NO
       // content-type, so declare it explicitly — the client keys binary-vs-text parsing off it.
@@ -70,7 +76,7 @@ export function objectStoreRoutes(remote: SyncRemote) {
             throw e
           }
         },
-        { body: t.Object({ hashes: t.Array(t.String()) }) },
+        { body: t.Object({ hashes: t.Array(t.String(), { maxItems: MAX_GET_HASHES }) }) },
       )
       .post(
         '/objects/put',
