@@ -25,20 +25,25 @@ export interface SignedRequestHeaders {
 }
 
 // Identifies the request being signed. `body` is hashed (never included raw) so the signed payload is
-// bounded regardless of upload size, while still binding the exact bytes.
+// bounded regardless of upload size, while still binding the exact bytes. `host` binds the signature
+// to the server the client targeted (URL host, port included when non-default), so a captured request
+// can't be replayed against a different server that pins the same key.
 export interface RequestDescriptor {
   method: string
+  host?: string
   path: string
   query?: string
   body?: Uint8Array
 }
 
 // Deterministic canonical serialization signed by the client and reconstructed by the server. Every
-// field that must not be tampered with is included: method, path, query, timestamp, nonce, and a hash
-// of the body. Newline-separated; method upper-cased so 'get'/'GET' can't diverge.
+// field that must not be tampered with is included: method, host, path, query, timestamp, nonce, and a
+// hash of the body. Newline-separated; method upper-cased so 'get'/'GET' can't diverge. The server
+// reconstructs host from the request's Host header — a reverse proxy MUST forward it unchanged
+// (nginx: `proxy_set_header Host $host`) or every signature check fails closed.
 export function buildCanonicalString(desc: RequestDescriptor, timestamp: number, nonce: string): Uint8Array {
   const bodyHash = bytesToHex(sha256(desc.body ?? new Uint8Array()))
-  const canonical = [desc.method.toUpperCase(), desc.path, desc.query ?? '', String(timestamp), nonce, bodyHash].join('\n')
+  const canonical = [desc.method.toUpperCase(), desc.host ?? '', desc.path, desc.query ?? '', String(timestamp), nonce, bodyHash].join('\n')
   return utf8ToBytes(canonical)
 }
 

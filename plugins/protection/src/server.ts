@@ -15,18 +15,55 @@ function readAuthHeaders(headers: Headers): SignedRequestHeaders | null {
   return { timestamp, nonce, signature, publicKey }
 }
 
+// The guard buffers the request body (for the signed body hash) BEFORE the auth verdict, so the
+// buffering itself must be bounded or an unauthenticated client could exhaust server memory. 64 MiB
+// matches the sync put-frame ceiling — the largest legitimate body on the gateway.
+const DEFAULT_MAX_BODY_BYTES = 64 * 1024 * 1024
+
+// Reads the cloned request body while enforcing the cap DURING the read, so a missing or lying
+// content-length can't cause unbounded buffering. Returns null once the body exceeds maxBytes.
+async function readBodyBounded(request: Request, maxBytes: number): Promise<Uint8Array | null> {
+  const stream = request.clone().body
+  if (stream == null) return new Uint8Array()
+  const reader = stream.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.length
+    // Early return releases the reader; the clone's stream is simply abandoned.
+    if (total > maxBytes) return null
+    chunks.push(value)
+  }
+  const out = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    out.set(chunk, offset)
+    offset += chunk.length
+  }
+  return out
+}
+
 // Builds the same RequestDescriptor the client signed (see @arxhub/http describeRequest): method, the
 // URL pathname and raw query string, and the raw request body. The body is read from a clone so the
-// original stream is left intact for the route handler.
-async function describe(request: Request): Promise<RequestDescriptor> {
+// original stream is left intact for the route handler. Returns null when the body exceeds
+// maxBodyBytes — rejected on the declared content-length first (cheap), then enforced while reading
+// (a client can omit or understate the header).
+async function describe(request: Request, maxBodyBytes: number): Promise<RequestDescriptor | null> {
   const url = new URL(request.url)
   const method = request.method.toUpperCase()
   let body: Uint8Array | undefined
   if (method !== 'GET' && method !== 'HEAD') {
-    const buffer = await request.clone().arrayBuffer()
-    body = buffer.byteLength > 0 ? new Uint8Array(buffer) : undefined
+    const declared = Number(request.headers.get('content-length') ?? '0')
+    if (declared > maxBodyBytes) return null
+    const bytes = await readBodyBounded(request, maxBodyBytes)
+    if (bytes == null) return null
+    body = bytes.byteLength > 0 ? bytes : undefined
   }
-  return { method, path: url.pathname, query: url.search.replace(/^\?/, ''), body }
+  // host comes from the request's Host header (via request.url) — binding the signature to THIS
+  // server. A reverse proxy must forward Host unchanged (nginx: proxy_set_header Host $host).
+  return { method, host: url.host, path: url.pathname, query: url.search.replace(/^\?/, ''), body }
 }
 
 export interface AuthGuardOptions {
@@ -35,6 +72,9 @@ export interface AuthGuardOptions {
   // deliberate hole in the guard — it never applies to writes, and each prefix must be an
   // explicitly public, read-only surface.
   publicGetPrefixes?: string[]
+  // Upper bound (bytes) on a request body accepted for authentication; larger requests are rejected
+  // with 413 before their body is buffered. Defaults to the sync put-frame ceiling (64 MiB).
+  maxBodyBytes?: number
 }
 
 function isPublicRead(method: string, pathname: string, prefixes: string[]): boolean {
@@ -47,10 +87,17 @@ function isPublicRead(method: string, pathname: string, prefixes: string[]): boo
 // (including vfsRoutes) regardless of registration order.
 export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Logger, options: AuthGuardOptions = {}): AnyElysia {
   const publicGetPrefixes = options.publicGetPrefixes ?? []
+  const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES
   return new Elysia({ name: 'protection-guard' }).onRequest(async ({ request, set }) => {
     const url = new URL(request.url)
     if (isPublicRead(request.method.toUpperCase(), url.pathname, publicGetPrefixes)) return
-    const result = authenticator.authenticate(await describe(request), readAuthHeaders(request.headers), Math.floor(Date.now() / 1000))
+    const desc = await describe(request, maxBodyBytes)
+    if (desc == null) {
+      logger?.warn(`Rejected oversized request body to ${url.pathname}`)
+      set.status = 413
+      return 'Payload Too Large'
+    }
+    const result = authenticator.authenticate(desc, readAuthHeaders(request.headers), Math.floor(Date.now() / 1000))
     if (result.ok) {
       if (result.pairedNow) logger?.info(`Paired client key ${result.publicKey.slice(0, 16)}…`)
       return
@@ -76,10 +123,12 @@ export interface ProtectionServerPluginArgs extends PluginArgs, RequestAuthentic
 export class ProtectionServerPlugin extends Plugin {
   private readonly authenticator: RequestAuthenticator
   private readonly publicGetPrefixes?: string[]
+  private readonly maxBodyBytes?: number
 
   constructor(args: ProtectionServerPluginArgs) {
     super(args, manifest)
     this.publicGetPrefixes = args.publicGetPrefixes
+    this.maxBodyBytes = args.maxBodyBytes
     this.authenticator = new RequestAuthenticator({
       pinnedPublicKey: args.pinnedPublicKey,
       toleranceSeconds: args.toleranceSeconds,
@@ -89,7 +138,12 @@ export class ProtectionServerPlugin extends Plugin {
 
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
+    // The TOFU window is a first-boot race: until a key is pinned, whoever reaches the server first
+    // becomes the paired device. Loud so an operator exposing the port pre-pairing knows the stakes.
+    if (this.authenticator.pinnedPublicKey == null) {
+      this.logger.warn('No pinned client key — trust-on-first-use is OPEN: the first valid signer will be paired. Set ARXHUB_SYNC_PUBKEY to close it.')
+    }
     const { gateway } = ctx.extensions.get(GatewayServerExtension)
-    gateway.use(createAuthGuard(this.authenticator, this.logger, { publicGetPrefixes: this.publicGetPrefixes }))
+    gateway.use(createAuthGuard(this.authenticator, this.logger, { publicGetPrefixes: this.publicGetPrefixes, maxBodyBytes: this.maxBodyBytes }))
   }
 }

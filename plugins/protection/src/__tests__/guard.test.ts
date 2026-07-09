@@ -45,7 +45,7 @@ describe('createAuthGuard (Elysia integration)', () => {
     const auth = new RequestAuthenticator()
     const app = makeApp(auth)
     const signer = signerFor(MNEMONIC)
-    const headers = authHeaderBag(signer, { method: 'GET', path: '/vfs/list', query: 'prefix=' })
+    const headers = authHeaderBag(signer, { method: 'GET', host: 'localhost', path: '/vfs/list', query: 'prefix=' })
 
     const res = await app.handle(new Request('http://localhost/vfs/list?prefix=', { headers }))
     expect(res.status).toBe(200)
@@ -56,7 +56,7 @@ describe('createAuthGuard (Elysia integration)', () => {
     const app = makeApp()
     const signer = signerFor(MNEMONIC)
     const body = new TextEncoder().encode('note contents')
-    const headers = authHeaderBag(signer, { method: 'PUT', path: '/vfs/write', query: 'path=note.md', body })
+    const headers = authHeaderBag(signer, { method: 'PUT', host: 'localhost', path: '/vfs/write', query: 'path=note.md', body })
 
     const res = await app.handle(new Request('http://localhost/vfs/write?path=note.md', { method: 'PUT', body, headers }))
     expect(res.status).toBe(204)
@@ -67,11 +67,11 @@ describe('createAuthGuard (Elysia integration)', () => {
     const app = makeApp(auth)
     await app.handle(
       new Request('http://localhost/vfs/list?prefix=', {
-        headers: authHeaderBag(signerFor(MNEMONIC), { method: 'GET', path: '/vfs/list', query: 'prefix=' }),
+        headers: authHeaderBag(signerFor(MNEMONIC), { method: 'GET', host: 'localhost', path: '/vfs/list', query: 'prefix=' }),
       }),
     )
 
-    const attacker = authHeaderBag(signerFor(OTHER), { method: 'GET', path: '/vfs/list', query: 'prefix=' })
+    const attacker = authHeaderBag(signerFor(OTHER), { method: 'GET', host: 'localhost', path: '/vfs/list', query: 'prefix=' })
     const res = await app.handle(new Request('http://localhost/vfs/list?prefix=', { headers: attacker }))
     expect(res.status).toBe(401)
   })
@@ -80,9 +80,49 @@ describe('createAuthGuard (Elysia integration)', () => {
     const app = makeApp()
     const signer = signerFor(MNEMONIC)
     // Sign for /vfs/list but replay the headers against /vfs/write.
-    const headers = authHeaderBag(signer, { method: 'GET', path: '/vfs/list', query: 'prefix=' })
+    const headers = authHeaderBag(signer, { method: 'GET', host: 'localhost', path: '/vfs/list', query: 'prefix=' })
     const res = await app.handle(new Request('http://localhost/vfs/write?path=x', { method: 'PUT', body: new Uint8Array(), headers }))
     expect(res.status).toBe(401)
+  })
+
+  it('rejects a signature replayed against a different host (cross-server replay)', async () => {
+    const app = makeApp()
+    const signer = signerFor(MNEMONIC)
+    // Signed for staging.example.com, replayed verbatim against this server (Host: localhost).
+    const headers = authHeaderBag(signer, { method: 'GET', host: 'staging.example.com', path: '/vfs/list', query: 'prefix=' })
+    const res = await app.handle(new Request('http://localhost/vfs/list?prefix=', { headers }))
+    expect(res.status).toBe(401)
+  })
+})
+
+describe('createAuthGuard (body size cap)', () => {
+  function makeCappedApp(maxBodyBytes: number) {
+    return new Elysia()
+      .use(createAuthGuard(new RequestAuthenticator(), undefined, { maxBodyBytes }))
+      .put('/vfs/write', () => new Response(null, { status: 204 }))
+      .compile()
+  }
+
+  it('rejects a body larger than the cap with 413 before authenticating', async () => {
+    const app = makeCappedApp(16)
+    const body = new Uint8Array(64)
+    // Even a correctly-signed request is refused: the guard must never buffer past the cap.
+    const headers = authHeaderBag(signerFor(MNEMONIC), { method: 'PUT', host: 'localhost', path: '/vfs/write', query: '', body })
+    const res = await app.handle(new Request('http://localhost/vfs/write', { method: 'PUT', body, headers }))
+    expect(res.status).toBe(413)
+  })
+
+  it('rejects an unsigned oversized body with 413 (no auth work wasted)', async () => {
+    const res = await makeCappedApp(16).handle(new Request('http://localhost/vfs/write', { method: 'PUT', body: new Uint8Array(64) }))
+    expect(res.status).toBe(413)
+  })
+
+  it('accepts a signed body under the cap', async () => {
+    const app = makeCappedApp(16)
+    const body = new TextEncoder().encode('tiny')
+    const headers = authHeaderBag(signerFor(MNEMONIC), { method: 'PUT', host: 'localhost', path: '/vfs/write', query: '', body })
+    const res = await app.handle(new Request('http://localhost/vfs/write', { method: 'PUT', body, headers }))
+    expect(res.status).toBe(204)
   })
 })
 
