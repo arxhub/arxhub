@@ -23,13 +23,22 @@ export async function createArxHub(port: number): Promise<ArxHub> {
   const persistedPin = (await pinnedFile.exists()) ? (await pinnedFile.readText()).trim() || undefined : undefined
   const pinnedPublicKey = process.env.ARXHUB_SYNC_PUBKEY ?? persistedPin
 
+  // Cross-origin clients (desktop app / web SPA on another origin) need CORS headers or the browser
+  // blocks sync. Signature auth has no ambient credential, so '*' is safe; ARXHUB_CORS_ORIGINS narrows it.
+  const corsOrigins: string[] | '*' = process.env.ARXHUB_CORS_ORIGINS
+    ? process.env.ARXHUB_CORS_ORIGINS.split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    : '*'
+
   arxhub.plugins.register(GatewayServerPlugin, () => ({ port }))
   // Guard every route with signed-request auth. TOFU pins the first valid client key and, via
   // onPair, persists it so the next boot loads it above. GETs under the published-content prefix
   // are the ONE deliberate public hole (read-only, method-restricted).
   arxhub.plugins.register(ProtectionServerPlugin, () => ({
     pinnedPublicKey,
-    publicGetPrefixes: [PUBLIC_READ_PATH],
+    publicGetPrefixes: [PUBLIC_READ_PATH, '/healthcheck'],
+    corsOrigins,
     onPair: (key: string) => {
       pinnedFile.writeText(key).catch((error) => arxhub.logger.error('Failed to persist pinned client key', error))
     },

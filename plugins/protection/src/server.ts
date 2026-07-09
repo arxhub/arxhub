@@ -75,11 +75,31 @@ export interface AuthGuardOptions {
   // Upper bound (bytes) on a request body accepted for authentication; larger requests are rejected
   // with 413 before their body is buffered. Defaults to the sync put-frame ceiling (64 MiB).
   maxBodyBytes?: number
+  // Origins allowed to call this server cross-origin (a Tauri desktop/mobile app or a web SPA served
+  // from a different origin). '*' allows any; a list echoes only matching origins (with Vary: Origin).
+  // Safe to open wide because auth is a per-request signature, NOT an ambient credential (cookie): a
+  // hostile page still cannot forge a signature. Default undefined = no CORS headers (same-origin only).
+  corsOrigins?: string[] | '*'
 }
 
 function isPublicRead(method: string, pathname: string, prefixes: string[]): boolean {
   if (method !== 'GET' && method !== 'HEAD') return false
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`))
+}
+
+// Headers the signed-request client attaches; the browser must be told they're allowed on cross-origin
+// requests or the preflight fails. content-type covers the octet-stream/json bodies.
+const CORS_ALLOWED_HEADERS = [AUTH_HEADERS.timestamp, AUTH_HEADERS.nonce, AUTH_HEADERS.signature, AUTH_HEADERS.publicKey, 'content-type'].join(
+  ', ',
+)
+
+// Resolve the Access-Control-Allow-Origin value for this request, or null when CORS is off or the
+// request's Origin isn't allowed (→ no CORS headers, browser blocks it).
+function resolveAllowOrigin(corsOrigins: string[] | '*' | undefined, requestOrigin: string | null): string | null {
+  if (corsOrigins == null) return null
+  if (corsOrigins === '*') return '*'
+  if (requestOrigin != null && corsOrigins.includes(requestOrigin)) return requestOrigin
+  return null
 }
 
 // A global Elysia guard: every request must carry a valid signature (see @arxhub/crypto request-auth).
@@ -88,8 +108,34 @@ function isPublicRead(method: string, pathname: string, prefixes: string[]): boo
 export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Logger, options: AuthGuardOptions = {}): AnyElysia {
   const publicGetPrefixes = options.publicGetPrefixes ?? []
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES
+  const corsOrigins = options.corsOrigins
   return new Elysia({ name: 'protection-guard' }).onRequest(async ({ request, set }) => {
     const url = new URL(request.url)
+
+    // CORS. Resolve the allowed origin once and stamp it on EVERY response (incl. 401/413) so the
+    // browser can actually read the outcome instead of masking it as an opaque CORS failure.
+    const allowOrigin = resolveAllowOrigin(corsOrigins, request.headers.get('origin'))
+    if (allowOrigin != null) {
+      set.headers['access-control-allow-origin'] = allowOrigin
+      if (allowOrigin !== '*') set.headers.vary = 'Origin'
+    }
+    // Preflight: answer BEFORE auth. An OPTIONS carries no signature (the browser sends it on its own
+    // to negotiate the custom x-arx-* headers), so authenticating it would 401 every cross-origin
+    // request. It exposes nothing — it only announces which methods/headers the real request may use.
+    // Return a bodyless Response directly (a 204 must carry no body — set.status + a '' body makes
+    // Elysia build an invalid 204, see bug-316) with the CORS headers on the Response itself.
+    if (request.method === 'OPTIONS') {
+      const headers: Record<string, string> = {}
+      if (allowOrigin != null) {
+        headers['access-control-allow-origin'] = allowOrigin
+        if (allowOrigin !== '*') headers.vary = 'Origin'
+        headers['access-control-allow-methods'] = 'GET, HEAD, POST, PUT, DELETE'
+        headers['access-control-allow-headers'] = CORS_ALLOWED_HEADERS
+        headers['access-control-max-age'] = '600'
+      }
+      return new Response(null, { status: 204, headers })
+    }
+
     if (isPublicRead(request.method.toUpperCase(), url.pathname, publicGetPrefixes)) return
     const desc = await describe(request, maxBodyBytes)
     if (desc == null) {
@@ -124,11 +170,13 @@ export class ProtectionServerPlugin extends Plugin {
   private readonly authenticator: RequestAuthenticator
   private readonly publicGetPrefixes?: string[]
   private readonly maxBodyBytes?: number
+  private readonly corsOrigins?: string[] | '*'
 
   constructor(args: ProtectionServerPluginArgs) {
     super(args, manifest)
     this.publicGetPrefixes = args.publicGetPrefixes
     this.maxBodyBytes = args.maxBodyBytes
+    this.corsOrigins = args.corsOrigins
     this.authenticator = new RequestAuthenticator({
       pinnedPublicKey: args.pinnedPublicKey,
       toleranceSeconds: args.toleranceSeconds,
@@ -147,7 +195,11 @@ export class ProtectionServerPlugin extends Plugin {
     }
     const { gateway } = ctx.extensions.get(GatewayServerExtension)
     gateway.use(
-      createAuthGuard(this.authenticator, this.logger, { publicGetPrefixes: this.publicGetPrefixes, maxBodyBytes: this.maxBodyBytes }),
+      createAuthGuard(this.authenticator, this.logger, {
+        publicGetPrefixes: this.publicGetPrefixes,
+        maxBodyBytes: this.maxBodyBytes,
+        corsOrigins: this.corsOrigins,
+      }),
     )
   }
 }

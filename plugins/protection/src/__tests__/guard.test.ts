@@ -164,3 +164,58 @@ describe('createAuthGuard (public GET prefixes)', () => {
     expect(res.status).toBe(401)
   })
 })
+
+describe('createAuthGuard (CORS for cross-origin clients)', () => {
+  // A desktop webview / web SPA on another origin.
+  const ORIGIN = 'http://tauri.localhost'
+
+  function makeCorsApp(corsOrigins: string[] | '*') {
+    return new Elysia()
+      .use(createAuthGuard(new RequestAuthenticator(), undefined, { corsOrigins }))
+      .get('/vfs/list', () => ({ ok: true }))
+      .put('/vfs/write', () => new Response(null, { status: 204 }))
+      .compile()
+  }
+
+  it('answers an OPTIONS preflight with 204 + CORS headers WITHOUT requiring a signature (the bug that blocked desktop→server sync)', async () => {
+    const res = await makeCorsApp('*').handle(
+      new Request('http://localhost/vfs/write', {
+        method: 'OPTIONS',
+        headers: {
+          origin: ORIGIN,
+          'access-control-request-method': 'PUT',
+          'access-control-request-headers': 'x-arx-signature,content-type',
+        },
+      }),
+    )
+    expect(res.status).toBe(204)
+    expect(res.headers.get('access-control-allow-origin')).toBe('*')
+    expect(res.headers.get('access-control-allow-headers')).toContain('x-arx-signature')
+    expect(res.headers.get('access-control-allow-methods')).toContain('PUT')
+  })
+
+  it('stamps Access-Control-Allow-Origin on a 401 too, so the browser can read the outcome', async () => {
+    const res = await makeCorsApp('*').handle(new Request('http://localhost/vfs/list', { headers: { origin: ORIGIN } }))
+    expect(res.status).toBe(401)
+    expect(res.headers.get('access-control-allow-origin')).toBe('*')
+  })
+
+  it('echoes an allow-listed origin (with Vary: Origin) and refuses an unlisted one', async () => {
+    const app = makeCorsApp([ORIGIN])
+    const allowed = await app.handle(new Request('http://localhost/vfs/list', { headers: { origin: ORIGIN } }))
+    expect(allowed.headers.get('access-control-allow-origin')).toBe(ORIGIN)
+    expect(allowed.headers.get('vary')).toBe('Origin')
+
+    const denied = await app.handle(new Request('http://localhost/vfs/list', { headers: { origin: 'http://evil.example' } }))
+    expect(denied.headers.get('access-control-allow-origin')).toBeNull()
+  })
+
+  it('emits no CORS headers when corsOrigins is unset (same-origin default unchanged)', async () => {
+    const app = new Elysia()
+      .use(createAuthGuard(new RequestAuthenticator()))
+      .get('/vfs/list', () => ({ ok: true }))
+      .compile()
+    const res = await app.handle(new Request('http://localhost/vfs/list', { headers: { origin: ORIGIN } }))
+    expect(res.headers.get('access-control-allow-origin')).toBeNull()
+  })
+})
