@@ -103,8 +103,12 @@ dist
 
 .omc
 .claude/*
+AGENTS.md
+CLAUDE.md
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/worklog/
 .wolf
 .impeccable
+forge-wiki
+.ai
