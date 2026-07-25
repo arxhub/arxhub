@@ -270,12 +270,18 @@ importers:
       '@arxhub/plugin-sync':
         specifier: workspace:*
         version: link:../../plugins/sync
+      '@arxhub/plugin-theme':
+        specifier: workspace:*
+        version: link:../../plugins/theme
       '@arxhub/plugin-vfs':
         specifier: workspace:*
         version: link:../../plugins/vfs
       '@arxhub/theme':
         specifier: workspace:*
         version: link:../../themes/default
+      '@arxhub/theme-catppuccin':
+        specifier: workspace:*
+        version: link:../../themes/catppuccin
       '@arxhub/theme-preset':
         specifier: workspace:*
         version: link:../../packages/theme-preset
@@ -370,12 +376,18 @@ importers:
       '@arxhub/plugin-sync':
         specifier: workspace:*
         version: link:../../plugins/sync
+      '@arxhub/plugin-theme':
+        specifier: workspace:*
+        version: link:../../plugins/theme
       '@arxhub/plugin-vfs':
         specifier: workspace:*
         version: link:../../plugins/vfs
       '@arxhub/theme':
         specifier: workspace:*
         version: link:../../themes/default
+      '@arxhub/theme-catppuccin':
+        specifier: workspace:*
+        version: link:../../themes/catppuccin
       '@arxhub/theme-preset':
         specifier: workspace:*
         version: link:../../packages/theme-preset
@@ -452,6 +464,9 @@ importers:
       '@arxhub/plugin-sync':
         specifier: workspace:*
         version: link:../../plugins/sync
+      '@arxhub/plugin-theme':
+        specifier: workspace:*
+        version: link:../../plugins/theme
       '@arxhub/plugin-vfs':
         specifier: workspace:*
         version: link:../../plugins/vfs
@@ -461,6 +476,9 @@ importers:
       '@arxhub/theme':
         specifier: workspace:*
         version: link:../../themes/default
+      '@arxhub/theme-catppuccin':
+        specifier: workspace:*
+        version: link:../../themes/catppuccin
       '@arxhub/theme-preset':
         specifier: workspace:*
         version: link:../../packages/theme-preset
@@ -1590,6 +1608,37 @@ importers:
         specifier: catalog:toolchain
         version: 25.6.0
 
+  plugins/theme:
+    dependencies:
+      '@arxhub/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/plugin-settings':
+        specifier: workspace:*
+        version: link:../settings
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@sinclair/typebox':
+        specifier: catalog:shared
+        version: 0.34.48
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+
   plugins/vfs:
     dependencies:
       '@arxhub/core':
@@ -1608,6 +1657,12 @@ importers:
       '@types/node':
         specifier: catalog:toolchain
         version: 25.6.0
+
+  themes/catppuccin:
+    dependencies:
+      '@arxhub/theme-preset':
+        specifier: workspace:*
+        version: link:../../packages/theme-preset
 
   themes/default:
     dependencies:

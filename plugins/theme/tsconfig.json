@@ -1,0 +1,4 @@
+{
+  "extends": "@arxhub/toolchain-tsconfig",
+  "include": ["src/**/*"]
+}

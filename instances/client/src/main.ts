@@ -1,5 +1,8 @@
 import '@arxhub/theme-preset'
+// Every theme the instance offers ships loaded and scoped to its own attribute; ThemePlugin flips
+// the attribute. Adding a theme here is what makes it selectable.
 import '@arxhub/theme'
+import '@arxhub/theme-catppuccin'
 
 import { ArxHub, apiBaseUrl } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
@@ -14,6 +17,7 @@ import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection
 import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
 import { AboutSettingsPage, ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
+import { type Theme, ThemePlugin } from '@arxhub/plugin-theme/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
 import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
 import { HttpFileSystem, VFS_NAMESPACE } from '@arxhub/vfs-http'
@@ -39,6 +43,14 @@ arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
 arxhub.plugins.register(EditorPlugin)
 arxhub.plugins.register(SettingsPlugin)
+const themes: Theme[] = [
+  { id: 'default', title: 'ArxHub', base: 'light' },
+  { id: 'catppuccin-latte', title: 'Catppuccin Latte', base: 'light' },
+  { id: 'catppuccin-frappe', title: 'Catppuccin Frappé', base: 'dark' },
+  { id: 'catppuccin-macchiato', title: 'Catppuccin Macchiato', base: 'dark' },
+  { id: 'catppuccin-mocha', title: 'Catppuccin Mocha', base: 'dark' },
+]
+arxhub.plugins.register(ThemePlugin, () => ({ themes }))
 arxhub.plugins.register(KeyStorePlugin, () => ({ keystore }))
 arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
 arxhub.plugins.register(SyncPlugin)

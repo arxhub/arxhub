@@ -1,4 +1,6 @@
-:root {
+/* The theme that applies when nothing is selected — hence the :not() arm. */
+:root:not([data-arxhub-theme]),
+:root[data-arxhub-theme="default"] {
   --gray-1: var(--slate-1);
   --gray-2: var(--slate-2);
   --gray-3: var(--slate-3);

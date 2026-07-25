@@ -1,0 +1,243 @@
+/* Catppuccin as ArxHub themes — four flavours, each a whole unit.
+ *
+ * Generated shape, hand-checked: the neutral ramp is the flavour's own twelve surface tones in
+ * contrast order, so the step roles the interface relies on (6 border, 7 interactive border,
+ * 4 hover, 9 solid, 11/12 text) land where they should. Catppuccin has a single accent colour, so
+ * the accent ramp is mixed from it against the ramp's ends rather than invented.
+ */
+
+/* Catppuccin Latte */
+:root[data-arxhub-theme="catppuccin-latte"] {
+  --gray-1: #eff1f5;
+  --gray-2: #e6e9ef;
+  --gray-3: #dce0e8;
+  --gray-4: #ccd0da;
+  --gray-5: #bcc0cc;
+  --gray-6: #acb0be;
+  --gray-7: #9ca0b0;
+  --gray-8: #8c8fa1;
+  --gray-9: #7c7f93;
+  --gray-10: #6c6f85;
+  --gray-11: #5c5f77;
+  --gray-12: #4c4f69;
+
+  --gray-a1: color-mix(in srgb, #4c4f69 8%, transparent);
+  --gray-a2: color-mix(in srgb, #4c4f69 16%, transparent);
+  --gray-a3: color-mix(in srgb, #4c4f69 24%, transparent);
+  --gray-a4: color-mix(in srgb, #4c4f69 32%, transparent);
+  --gray-a5: color-mix(in srgb, #4c4f69 40%, transparent);
+  --gray-a6: color-mix(in srgb, #4c4f69 48%, transparent);
+  --gray-a7: color-mix(in srgb, #4c4f69 56%, transparent);
+  --gray-a8: color-mix(in srgb, #4c4f69 64%, transparent);
+  --gray-a9: color-mix(in srgb, #4c4f69 72%, transparent);
+  --gray-a10: color-mix(in srgb, #4c4f69 80%, transparent);
+  --gray-a11: color-mix(in srgb, #4c4f69 88%, transparent);
+  --gray-a12: color-mix(in srgb, #4c4f69 96%, transparent);
+
+  --gray-contrast: #eff1f5;
+
+  --accent-1: color-mix(in srgb, #8839ef 6%, #eff1f5);
+  --accent-2: color-mix(in srgb, #8839ef 12%, #eff1f5);
+  --accent-3: color-mix(in srgb, #8839ef 20%, #eff1f5);
+  --accent-4: color-mix(in srgb, #8839ef 28%, #eff1f5);
+  --accent-5: color-mix(in srgb, #8839ef 36%, #eff1f5);
+  --accent-6: color-mix(in srgb, #8839ef 46%, #eff1f5);
+  --accent-7: color-mix(in srgb, #8839ef 58%, #eff1f5);
+  --accent-8: color-mix(in srgb, #8839ef 72%, #eff1f5);
+  --accent-9: #8839ef;
+  --accent-10: color-mix(in srgb, #8839ef 88%, #4c4f69);
+  --accent-11: color-mix(in srgb, #8839ef 66%, #4c4f69);
+  --accent-12: color-mix(in srgb, #8839ef 38%, #4c4f69);
+
+  --accent-a1: color-mix(in srgb, #8839ef 8%, transparent);
+  --accent-a2: color-mix(in srgb, #8839ef 16%, transparent);
+  --accent-a3: color-mix(in srgb, #8839ef 24%, transparent);
+  --accent-a4: color-mix(in srgb, #8839ef 32%, transparent);
+  --accent-a5: color-mix(in srgb, #8839ef 40%, transparent);
+  --accent-a6: color-mix(in srgb, #8839ef 48%, transparent);
+  --accent-a7: color-mix(in srgb, #8839ef 56%, transparent);
+  --accent-a8: color-mix(in srgb, #8839ef 64%, transparent);
+  --accent-a9: color-mix(in srgb, #8839ef 72%, transparent);
+  --accent-a10: color-mix(in srgb, #8839ef 80%, transparent);
+  --accent-a11: color-mix(in srgb, #8839ef 88%, transparent);
+  --accent-a12: color-mix(in srgb, #8839ef 96%, transparent);
+
+  --accent-contrast: #eff1f5;
+}
+
+/* Catppuccin Frappé */
+:root[data-arxhub-theme="catppuccin-frappe"] {
+  --gray-1: #232634;
+  --gray-2: #292c3c;
+  --gray-3: #303446;
+  --gray-4: #414559;
+  --gray-5: #51576d;
+  --gray-6: #626880;
+  --gray-7: #737994;
+  --gray-8: #838ba7;
+  --gray-9: #949cbb;
+  --gray-10: #a5adce;
+  --gray-11: #b5bfe2;
+  --gray-12: #c6d0f5;
+
+  --gray-a1: color-mix(in srgb, #c6d0f5 8%, transparent);
+  --gray-a2: color-mix(in srgb, #c6d0f5 16%, transparent);
+  --gray-a3: color-mix(in srgb, #c6d0f5 24%, transparent);
+  --gray-a4: color-mix(in srgb, #c6d0f5 32%, transparent);
+  --gray-a5: color-mix(in srgb, #c6d0f5 40%, transparent);
+  --gray-a6: color-mix(in srgb, #c6d0f5 48%, transparent);
+  --gray-a7: color-mix(in srgb, #c6d0f5 56%, transparent);
+  --gray-a8: color-mix(in srgb, #c6d0f5 64%, transparent);
+  --gray-a9: color-mix(in srgb, #c6d0f5 72%, transparent);
+  --gray-a10: color-mix(in srgb, #c6d0f5 80%, transparent);
+  --gray-a11: color-mix(in srgb, #c6d0f5 88%, transparent);
+  --gray-a12: color-mix(in srgb, #c6d0f5 96%, transparent);
+
+  --gray-contrast: #232634;
+
+  --accent-1: color-mix(in srgb, #ca9ee6 6%, #232634);
+  --accent-2: color-mix(in srgb, #ca9ee6 12%, #232634);
+  --accent-3: color-mix(in srgb, #ca9ee6 20%, #232634);
+  --accent-4: color-mix(in srgb, #ca9ee6 28%, #232634);
+  --accent-5: color-mix(in srgb, #ca9ee6 36%, #232634);
+  --accent-6: color-mix(in srgb, #ca9ee6 46%, #232634);
+  --accent-7: color-mix(in srgb, #ca9ee6 58%, #232634);
+  --accent-8: color-mix(in srgb, #ca9ee6 72%, #232634);
+  --accent-9: #ca9ee6;
+  --accent-10: color-mix(in srgb, #ca9ee6 88%, #c6d0f5);
+  --accent-11: color-mix(in srgb, #ca9ee6 66%, #c6d0f5);
+  --accent-12: color-mix(in srgb, #ca9ee6 38%, #c6d0f5);
+
+  --accent-a1: color-mix(in srgb, #ca9ee6 8%, transparent);
+  --accent-a2: color-mix(in srgb, #ca9ee6 16%, transparent);
+  --accent-a3: color-mix(in srgb, #ca9ee6 24%, transparent);
+  --accent-a4: color-mix(in srgb, #ca9ee6 32%, transparent);
+  --accent-a5: color-mix(in srgb, #ca9ee6 40%, transparent);
+  --accent-a6: color-mix(in srgb, #ca9ee6 48%, transparent);
+  --accent-a7: color-mix(in srgb, #ca9ee6 56%, transparent);
+  --accent-a8: color-mix(in srgb, #ca9ee6 64%, transparent);
+  --accent-a9: color-mix(in srgb, #ca9ee6 72%, transparent);
+  --accent-a10: color-mix(in srgb, #ca9ee6 80%, transparent);
+  --accent-a11: color-mix(in srgb, #ca9ee6 88%, transparent);
+  --accent-a12: color-mix(in srgb, #ca9ee6 96%, transparent);
+
+  --accent-contrast: #232634;
+}
+
+/* Catppuccin Macchiato */
+:root[data-arxhub-theme="catppuccin-macchiato"] {
+  --gray-1: #181926;
+  --gray-2: #1e2030;
+  --gray-3: #24273a;
+  --gray-4: #363a4f;
+  --gray-5: #494d64;
+  --gray-6: #5b6078;
+  --gray-7: #6e738d;
+  --gray-8: #8087a2;
+  --gray-9: #939ab7;
+  --gray-10: #a5adcb;
+  --gray-11: #b8c0e0;
+  --gray-12: #cad3f5;
+
+  --gray-a1: color-mix(in srgb, #cad3f5 8%, transparent);
+  --gray-a2: color-mix(in srgb, #cad3f5 16%, transparent);
+  --gray-a3: color-mix(in srgb, #cad3f5 24%, transparent);
+  --gray-a4: color-mix(in srgb, #cad3f5 32%, transparent);
+  --gray-a5: color-mix(in srgb, #cad3f5 40%, transparent);
+  --gray-a6: color-mix(in srgb, #cad3f5 48%, transparent);
+  --gray-a7: color-mix(in srgb, #cad3f5 56%, transparent);
+  --gray-a8: color-mix(in srgb, #cad3f5 64%, transparent);
+  --gray-a9: color-mix(in srgb, #cad3f5 72%, transparent);
+  --gray-a10: color-mix(in srgb, #cad3f5 80%, transparent);
+  --gray-a11: color-mix(in srgb, #cad3f5 88%, transparent);
+  --gray-a12: color-mix(in srgb, #cad3f5 96%, transparent);
+
+  --gray-contrast: #181926;
+
+  --accent-1: color-mix(in srgb, #c6a0f6 6%, #181926);
+  --accent-2: color-mix(in srgb, #c6a0f6 12%, #181926);
+  --accent-3: color-mix(in srgb, #c6a0f6 20%, #181926);
+  --accent-4: color-mix(in srgb, #c6a0f6 28%, #181926);
+  --accent-5: color-mix(in srgb, #c6a0f6 36%, #181926);
+  --accent-6: color-mix(in srgb, #c6a0f6 46%, #181926);
+  --accent-7: color-mix(in srgb, #c6a0f6 58%, #181926);
+  --accent-8: color-mix(in srgb, #c6a0f6 72%, #181926);
+  --accent-9: #c6a0f6;
+  --accent-10: color-mix(in srgb, #c6a0f6 88%, #cad3f5);
+  --accent-11: color-mix(in srgb, #c6a0f6 66%, #cad3f5);
+  --accent-12: color-mix(in srgb, #c6a0f6 38%, #cad3f5);
+
+  --accent-a1: color-mix(in srgb, #c6a0f6 8%, transparent);
+  --accent-a2: color-mix(in srgb, #c6a0f6 16%, transparent);
+  --accent-a3: color-mix(in srgb, #c6a0f6 24%, transparent);
+  --accent-a4: color-mix(in srgb, #c6a0f6 32%, transparent);
+  --accent-a5: color-mix(in srgb, #c6a0f6 40%, transparent);
+  --accent-a6: color-mix(in srgb, #c6a0f6 48%, transparent);
+  --accent-a7: color-mix(in srgb, #c6a0f6 56%, transparent);
+  --accent-a8: color-mix(in srgb, #c6a0f6 64%, transparent);
+  --accent-a9: color-mix(in srgb, #c6a0f6 72%, transparent);
+  --accent-a10: color-mix(in srgb, #c6a0f6 80%, transparent);
+  --accent-a11: color-mix(in srgb, #c6a0f6 88%, transparent);
+  --accent-a12: color-mix(in srgb, #c6a0f6 96%, transparent);
+
+  --accent-contrast: #181926;
+}
+
+/* Catppuccin Mocha */
+:root[data-arxhub-theme="catppuccin-mocha"] {
+  --gray-1: #11111b;
+  --gray-2: #181825;
+  --gray-3: #1e1e2e;
+  --gray-4: #313244;
+  --gray-5: #45475a;
+  --gray-6: #585b70;
+  --gray-7: #6c7086;
+  --gray-8: #7f849c;
+  --gray-9: #9399b2;
+  --gray-10: #a6adc8;
+  --gray-11: #bac2de;
+  --gray-12: #cdd6f4;
+
+  --gray-a1: color-mix(in srgb, #cdd6f4 8%, transparent);
+  --gray-a2: color-mix(in srgb, #cdd6f4 16%, transparent);
+  --gray-a3: color-mix(in srgb, #cdd6f4 24%, transparent);
+  --gray-a4: color-mix(in srgb, #cdd6f4 32%, transparent);
+  --gray-a5: color-mix(in srgb, #cdd6f4 40%, transparent);
+  --gray-a6: color-mix(in srgb, #cdd6f4 48%, transparent);
+  --gray-a7: color-mix(in srgb, #cdd6f4 56%, transparent);
+  --gray-a8: color-mix(in srgb, #cdd6f4 64%, transparent);
+  --gray-a9: color-mix(in srgb, #cdd6f4 72%, transparent);
+  --gray-a10: color-mix(in srgb, #cdd6f4 80%, transparent);
+  --gray-a11: color-mix(in srgb, #cdd6f4 88%, transparent);
+  --gray-a12: color-mix(in srgb, #cdd6f4 96%, transparent);
+
+  --gray-contrast: #11111b;
+
+  --accent-1: color-mix(in srgb, #cba6f7 6%, #11111b);
+  --accent-2: color-mix(in srgb, #cba6f7 12%, #11111b);
+  --accent-3: color-mix(in srgb, #cba6f7 20%, #11111b);
+  --accent-4: color-mix(in srgb, #cba6f7 28%, #11111b);
+  --accent-5: color-mix(in srgb, #cba6f7 36%, #11111b);
+  --accent-6: color-mix(in srgb, #cba6f7 46%, #11111b);
+  --accent-7: color-mix(in srgb, #cba6f7 58%, #11111b);
+  --accent-8: color-mix(in srgb, #cba6f7 72%, #11111b);
+  --accent-9: #cba6f7;
+  --accent-10: color-mix(in srgb, #cba6f7 88%, #cdd6f4);
+  --accent-11: color-mix(in srgb, #cba6f7 66%, #cdd6f4);
+  --accent-12: color-mix(in srgb, #cba6f7 38%, #cdd6f4);
+
+  --accent-a1: color-mix(in srgb, #cba6f7 8%, transparent);
+  --accent-a2: color-mix(in srgb, #cba6f7 16%, transparent);
+  --accent-a3: color-mix(in srgb, #cba6f7 24%, transparent);
+  --accent-a4: color-mix(in srgb, #cba6f7 32%, transparent);
+  --accent-a5: color-mix(in srgb, #cba6f7 40%, transparent);
+  --accent-a6: color-mix(in srgb, #cba6f7 48%, transparent);
+  --accent-a7: color-mix(in srgb, #cba6f7 56%, transparent);
+  --accent-a8: color-mix(in srgb, #cba6f7 64%, transparent);
+  --accent-a9: color-mix(in srgb, #cba6f7 72%, transparent);
+  --accent-a10: color-mix(in srgb, #cba6f7 80%, transparent);
+  --accent-a11: color-mix(in srgb, #cba6f7 88%, transparent);
+  --accent-a12: color-mix(in srgb, #cba6f7 96%, transparent);
+
+  --accent-contrast: #11111b;
+}

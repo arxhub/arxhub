@@ -1,0 +1,9 @@
+{
+  "name": "@arxhub/theme-catppuccin",
+  "version": "0.1.0",
+  "description": "Catppuccin themes for ArxHub (Latte, Frappé, Macchiato, Mocha)",
+  "main": "index.css",
+  "peerDependencies": {
+    "@arxhub/theme-preset": "workspace:*"
+  }
+}
