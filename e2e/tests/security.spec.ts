@@ -69,11 +69,10 @@ test.describe('Security settings', () => {
     await expect.poll(() => storedMnemonic(app)).toBe(OTHER_MNEMONIC)
   })
 
-  // Documents a real gap, not a flaky test. After the reload the stand still has the previous key
-  // pinned, so every /vfs call answers 401, three plugins throw out of start(), ArxHub.start()
-  // rejects and nothing mounts — a blank page with no way back to Settings to correct the phrase.
-  // Recovering needs devtools. Un-fixme once a failed start still renders the shell.
-  test.fixme('stays usable when the server rejects the new identity', async ({ app }) => {
+  // After the reload the stand still has the previous key pinned, so every vault call answers 401.
+  // The app must still come up: otherwise a mistyped phrase is unrecoverable without devtools,
+  // because Settings — the one place that can correct it — lives inside the app.
+  test('stays usable when the server rejects the new identity', async ({ app }) => {
     await app.getByRole('textbox').fill(OTHER_MNEMONIC)
     await app.getByRole('button', { name: 'Replace identity' }).click()
     await app.getByRole('button', { name: 'Replace identity' }).last().click()

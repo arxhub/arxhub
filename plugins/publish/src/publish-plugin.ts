@@ -68,8 +68,10 @@ export class PublishPlugin extends Plugin {
   override async start(ctx: PluginContext): Promise<void> {
     await super.start(ctx)
 
-    const cfg = await ctx.services.get(PluginConfig).read(PublishConfigSchema)
-    if (!cfg.serverUrl) return
+    // tryRead, not read: an unreachable settings store leaves publishing idle rather than aborting
+    // the boot (FR-147).
+    const cfg = await ctx.services.get(PluginConfig).tryRead(PublishConfigSchema)
+    if (cfg == null || !cfg.serverUrl) return
 
     // Publishing WRITES require the owner's identity (the /publish routes sit behind the auth
     // guard); only the anonymous READ side is keyless.

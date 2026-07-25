@@ -55,7 +55,14 @@ export class LoggerPlugin extends Plugin {
     const vfs = ctx.services.get(PluginVfs).state
     ext.bindVfs(vfs)
     this.writer = new LogFileWriter(vfs, ext.buffer, this.logger)
-    ext.sessionFile.value = await this.writer.open(Date.now())
+    try {
+      ext.sessionFile.value = await this.writer.open(Date.now())
+    } catch (error) {
+      // Losing the session file must not take the app down — the live buffer and the viewer stay
+      // usable, and this is exactly the situation the user needs a log for.
+      this.logger.error('Could not open the log session file — this session will not be persisted', error)
+      this.writer = null
+    }
   }
 
   override async stop(ctx: PluginContext): Promise<void> {

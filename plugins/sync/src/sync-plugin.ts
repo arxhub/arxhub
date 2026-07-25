@@ -48,9 +48,11 @@ export class SyncPlugin extends Plugin {
     await super.start(ctx)
 
     const pluginVfs = ctx.services.get(PluginVfs)
-    const cfg = await ctx.services.get(PluginConfig).read(SyncConfigSchema)
+    // tryRead, not read: the product works offline (FR-147), so an unreachable settings store leaves
+    // sync idle instead of aborting the whole boot.
+    const cfg = await ctx.services.get(PluginConfig).tryRead(SyncConfigSchema)
 
-    if (!cfg.serverUrl) return
+    if (cfg == null || !cfg.serverUrl) return
 
     // Sync requires the user's identity: the keyring both encrypts content and authenticates to the
     // (protected) remote. Without it there is no safe way to sync, so we stay idle and surface why.

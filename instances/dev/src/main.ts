@@ -45,7 +45,10 @@ arxhub.plugins.register(KeyStorePlugin, () => ({ keystore }))
 arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
 arxhub.plugins.register(SyncPlugin)
 arxhub.plugins.register(PublishPlugin)
-await arxhub.start()
+// A plugin failing to start must not leave a blank page: configure() already registered every
+// UI contribution, so the shell can still mount and the user can reach Settings to fix what broke
+// (a phrase the server does not know, an unreachable host). Failures are logged per plugin.
+await arxhub.start().catch((error) => arxhub.logger.error('Some plugins failed to start', error))
 
 const shell = arxhub.extensions.get(ShellExtension)
 const { store } = arxhub.extensions.get(PanelStoreExtension)
