@@ -76,7 +76,7 @@ function confirmReplace(): void {
           The public key is what a server pins to recognise this device. It is safe to share.
         </p>
         <div class="row">
-          <code class="value">{{ keyring.authPublicKey }}</code>
+          <code class="value" data-testid="public-key">{{ keyring.authPublicKey }}</code>
           <Button size="sm" variant="secondary" @click="run(copy(keyring.authPublicKey, 'Public key'), 'Could not copy')">Copy</Button>
         </div>
       </template>
@@ -92,7 +92,7 @@ function confirmReplace(): void {
         <Button size="sm" variant="secondary" @click="confirmReveal">Show recovery phrase</Button>
       </div>
       <template v-else>
-        <code class="value phrase">{{ phrase }}</code>
+        <code class="value phrase" data-testid="recovery-phrase">{{ phrase }}</code>
         <div class="row">
           <Button size="sm" variant="secondary" @click="run(copy(phrase, 'Recovery phrase'), 'Could not copy')">Copy</Button>
           <Button size="sm" variant="ghost" @click="phrase = null">Hide</Button>

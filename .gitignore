@@ -101,3 +101,7 @@ _dist
 # Generic build output
 dist
 
+
+# Playwright
+test-results
+playwright-report

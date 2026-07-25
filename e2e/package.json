@@ -1,0 +1,19 @@
+{
+  "name": "@arxhub/e2e",
+  "private": true,
+  "version": "0.1.0",
+  "description": "End-to-end tests driving the dev stand in a real browser",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@playwright/test": "catalog:toolchain",
+    "@types/node": "catalog:toolchain",
+    "typescript": "catalog:toolchain"
+  }
+}
