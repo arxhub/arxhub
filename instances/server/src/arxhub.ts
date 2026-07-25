@@ -1,6 +1,7 @@
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { ArxHub } from '@arxhub/core'
+import { illegalState } from '@arxhub/errors'
 import GatewayServerPlugin from '@arxhub/plugin-gateway/server'
 import { ProtectionServerPlugin } from '@arxhub/plugin-protection/server'
 import { PUBLIC_READ_PATH, PublishServerPlugin } from '@arxhub/plugin-publish/server'
@@ -12,9 +13,22 @@ import { NodeFileSystem } from '@arxhub/vfs-node'
 // Local-only (never synced) home for the TOFU pin. Lives under state/, like the sync repo store.
 const PINNED_KEY_FILE = 'state/protection/pinned-key'
 
+function readPort(): number {
+  const raw = process.env.ARXHUB_PORT
+  if (raw == null || raw.trim() === '') return 3000
+  const port = Number(raw)
+  // A typo here would otherwise surface as a server listening on a port nobody expects.
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw illegalState(`ARXHUB_PORT must be an integer between 1 and 65535, got '${raw}'`)
+  }
+  return port
+}
+
 export async function createArxHub(): Promise<ArxHub> {
   const arxhub = new ArxHub()
-  const vfs = new NodeFileSystem(join(homedir(), '.arxhub'), arxhub.logger)
+  // The data root lives outside the artifact so updating the server never touches the vault.
+  const dataDir = process.env.ARXHUB_DATA_DIR?.trim() || join(homedir(), '.arxhub')
+  const vfs = new NodeFileSystem(dataDir, arxhub.logger)
 
   // Persist the TOFU pin across restarts. Without this, every restart comes up with no pin and
   // re-enters trust-on-first-use, so whoever reaches the server first could pin their own key. Load
@@ -34,7 +48,7 @@ export async function createArxHub(): Promise<ArxHub> {
         .filter(Boolean)
     : '*'
 
-  arxhub.plugins.register(GatewayServerPlugin)
+  arxhub.plugins.register(GatewayServerPlugin, () => ({ port: readPort() }))
   // Guard every route with signed-request auth. TOFU pins the first valid client key and, via
   // onPair, persists it so the next boot loads it above. GETs under the published-content prefix
   // are the ONE deliberate public hole (read-only, method-restricted).
