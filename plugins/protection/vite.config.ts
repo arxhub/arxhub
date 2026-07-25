@@ -1,5 +1,9 @@
-import { createBrowserConfig } from '@arxhub/toolchain-vite'
+import { createVueConfig } from '@arxhub/toolchain-vite'
 import { defineConfig } from 'vite'
 
-// biome-ignore format: Hand formatting is more readable
-export default defineConfig((env) => createBrowserConfig(__dirname, env))
+export default defineConfig((env) =>
+  createVueConfig(__dirname, env, {
+    entries: ['src/ui.ts', 'src/server.ts'],
+    external: ['@arxhub/core', '@arxhub/crypto', '@arxhub/plugin-keystore', '@arxhub/plugin-settings', '@arxhub/uikit', 'elysia', 'vue'],
+  }),
+)

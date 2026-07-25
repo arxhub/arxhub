@@ -1,7 +1,10 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import type { Keyring } from '@arxhub/crypto'
+import { SettingsExtension } from '@arxhub/plugin-settings/ui'
+import { markRaw } from 'vue'
 import { KeyringExtension } from './keyring-extension'
 import { manifest } from './manifest'
+import SecuritySettingsPage from './ui/SecuritySettingsPage.vue'
 
 export interface ProtectionPluginArgs extends PluginArgs {
   // The device keyring, resolved from client-local storage at the composition root (see
@@ -25,5 +28,12 @@ export class ProtectionPlugin extends Plugin {
   override create(ctx: PluginContext): void {
     super.create(ctx)
     ctx.extensions.register(KeyringExtension, () => ({ keyring: this.keyring }))
+  }
+
+  override configure(ctx: PluginContext): void {
+    super.configure(ctx)
+
+    const settings = ctx.extensions.get(SettingsExtension)
+    settings.register({ id: 'security', title: 'Security', order: 1, component: markRaw(SecuritySettingsPage) })
   }
 }

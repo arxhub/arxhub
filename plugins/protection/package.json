@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "@arxhub/crypto": "workspace:*",
-    "elysia": "catalog:server"
+    "elysia": "catalog:server",
+    "vue": "catalog:client"
   },
   "devDependencies": {
     "@arxhub/sync": "workspace:*",
@@ -35,7 +36,9 @@
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
-    "@arxhub/plugin-keystore": "workspace:*"
+    "@arxhub/plugin-keystore": "workspace:*",
+    "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/uikit": "workspace:*"
   },
   "publishConfig": {
     "exports": {
