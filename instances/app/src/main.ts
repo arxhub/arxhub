@@ -11,6 +11,7 @@ import { KeyStorePlugin, LocalStorageKeyStore } from '@arxhub/plugin-keystore/ui
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
+import { PublishPlugin } from '@arxhub/plugin-publish/ui'
 import { SettingsPlugin } from '@arxhub/plugin-settings/ui'
 import { ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
@@ -53,6 +54,7 @@ arxhub.plugins.register(SettingsPlugin)
 arxhub.plugins.register(KeyStorePlugin, () => ({ keystore }))
 arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
 arxhub.plugins.register(SyncPlugin)
+arxhub.plugins.register(PublishPlugin)
 await arxhub.start()
 
 const shell = arxhub.extensions.get(ShellExtension)

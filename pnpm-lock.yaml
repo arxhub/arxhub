@@ -231,6 +231,9 @@ importers:
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../../plugins/protection
+      '@arxhub/plugin-publish':
+        specifier: workspace:*
+        version: link:../../plugins/publish
       '@arxhub/plugin-settings':
         specifier: workspace:*
         version: link:../../plugins/settings
