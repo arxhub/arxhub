@@ -37,7 +37,7 @@ async function newFolder() {
       <Button variant="secondary" size="sm" title="New Folder" @click="newFolder">＋ Folder</Button>
     </Toolbar>
 
-    <div class="file-tree" @contextmenu.prevent="onRootContextMenu">
+    <div class="file-tree" role="tree" aria-label="Files" @contextmenu.prevent="onRootContextMenu">
       <FileTreeNode
         v-for="node in explorer.tree.value"
         :key="node.entry.pathname"

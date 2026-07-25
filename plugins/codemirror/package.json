@@ -23,7 +23,10 @@
     "@codemirror/language": "catalog:client",
     "@codemirror/language-data": "catalog:client",
     "@codemirror/state": "catalog:client",
-    "vue": "catalog:client"
+    "vue": "catalog:client",
+    "@codemirror/lang-markdown": "catalog:client",
+    "@codemirror/view": "catalog:client",
+    "@lezer/highlight": "^1.2.1"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

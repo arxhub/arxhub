@@ -10,7 +10,11 @@ const API_PORT = 3101
 
 // A throwaway vault per run. The stand persists the TOFU pin of the first key that reaches it, so
 // pointing it at the real ~/.arxhub would unpair the developer's actual devices.
-const dataDir = mkdtempSync(join(tmpdir(), 'arxhub-e2e-'))
+// Each worker re-loads this config, so creating the directory unconditionally would give every
+// worker its own — and the vault fixture would write where the stand is not looking. The runner
+// creates it once and workers inherit the path through the environment.
+const dataDir = process.env.ARXHUB_E2E_DATA_DIR ?? mkdtempSync(join(tmpdir(), 'arxhub-e2e-'))
+process.env.ARXHUB_E2E_DATA_DIR = dataDir
 
 export default defineConfig({
   testDir: './tests',

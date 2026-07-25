@@ -5,25 +5,42 @@ import { VaultVfs } from '@arxhub/vfs'
 import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
 import { EditorState } from '@codemirror/state'
+import { keymap } from '@codemirror/view'
 import { basicSetup, EditorView } from 'codemirror'
-import { onUnmounted, ref, toRef } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, toRef } from 'vue'
+import { insertLink, toggleBold, toggleInlineCode, toggleItalic } from '../markdown-commands'
+import { isMarkdown, markdownProfile } from '../markdown-profile'
+import MarkdownToolbar from './MarkdownToolbar.vue'
 
 const props = defineProps<{ path: string }>()
+
+const markdownKeymap = [
+  { key: 'Mod-b', run: toggleBold },
+  { key: 'Mod-i', run: toggleItalic },
+  { key: 'Mod-e', run: toggleInlineCode },
+  { key: 'Mod-k', run: insertLink },
+]
 
 const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
 const panel = usePanelInstance()
 const editorEl = ref<HTMLDivElement>()
-let view: EditorView | null = null
+// shallowRef so the markdown toolbar can reach the live view; the view is not reactive data.
+const view = shallowRef<EditorView | null>(null)
+const note = computed(() => isMarkdown(props.path))
 
 async function buildState(path: string, bytes: Uint8Array): Promise<EditorState> {
   const doc = new TextDecoder().decode(bytes)
-  const langDesc = LanguageDescription.matchFilename(languages, path)
+  // Markdown gets the note profile — the document-like presentation and formatting keys — instead of
+  // the plain code-editor language support. Everything else stays a code file.
+  const note = isMarkdown(path)
+  const langDesc = note ? null : LanguageDescription.matchFilename(languages, path)
   const langSupport = langDesc ? await langDesc.load() : null
   return EditorState.create({
     doc,
     extensions: [
       basicSetup,
+      ...(note ? [markdownProfile(), keymap.of(markdownKeymap)] : []),
       ...(langSupport ? [langSupport] : []),
       // First real edit promotes a VSCode-style preview tab to permanent (mirrors the ProseMirror
       // editor). Guard on transactions: a programmatic setState() during a file switch reports
@@ -45,15 +62,15 @@ const {
   read: (path) => vfs.read(path),
   build: (path, bytes) => buildState(path, bytes),
   apply: (_path, state) => {
-    if (view) view.setState(state)
-    else if (editorEl.value) view = new EditorView({ state, parent: editorEl.value })
+    if (view.value) view.value.setState(state)
+    else if (editorEl.value) view.value = new EditorView({ state, parent: editorEl.value })
   },
 })
 
 async function save() {
-  if (!view || !canSave.value) return
+  if (!view.value || !canSave.value) return
   try {
-    await vfs.write(props.path, new TextEncoder().encode(view.state.doc.toString()))
+    await vfs.write(props.path, new TextEncoder().encode(view.value.state.doc.toString()))
   } catch (error) {
     // Don't swallow — a failed write silently loses edits.
     arxhub.logger.error(`[codemirror] failed to save ${props.path}:`, error)
@@ -63,8 +80,8 @@ async function save() {
 }
 
 onUnmounted(() => {
-  view?.destroy()
-  view = null
+  view.value?.destroy()
+  view.value = null
 })
 </script>
 
@@ -74,6 +91,7 @@ onUnmounted(() => {
       <span class="codemirror-path">{{ path }}</span>
       <button class="save-btn" :disabled="!canSave" @click="save">Save</button>
     </div>
+    <MarkdownToolbar v-if="note && !loadError" :view="view" />
     <div v-if="loadError" class="codemirror-error">
       <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
       <button class="save-btn" @click="reload(path)">Retry</button>
