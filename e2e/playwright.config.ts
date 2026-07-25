@@ -29,7 +29,12 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
 
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // Both frames are the same app at different widths, so both run the same specs. A spec that only
+  // makes sense in one frame skips itself on the other.
+  projects: [
+    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+  ],
 
   webServer: {
     command: `pnpm --filter @arxhub/dev exec vite --port ${WEB_PORT} --strictPort`,

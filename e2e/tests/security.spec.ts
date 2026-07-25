@@ -78,6 +78,6 @@ test.describe('Security settings', () => {
     await app.getByRole('button', { name: 'Replace identity' }).last().click()
 
     await app.waitForLoadState('domcontentloaded')
-    await expect(app.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
+    await expect(app.getByRole('main')).toBeVisible()
   })
 })

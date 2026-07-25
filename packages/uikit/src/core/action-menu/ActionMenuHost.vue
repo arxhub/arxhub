@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { useIsMobile } from '../../hooks/useIsMobile'
+import BottomSheet from '../BottomSheet.vue'
 import Icon from '../Icon.vue'
 import { actionMenu, useActionMenuState } from './action-menu'
 
 const state = useActionMenuState()
-const isMobile = useMediaQuery('(max-width: 640px)')
+const isMobile = useIsMobile()
 const menuEl = ref<HTMLElement | null>(null)
 
 function run(item: { disabled?: boolean; onSelect: () => void }) {
@@ -50,6 +51,9 @@ watch(
 
 function onGlobalPointerDown(event: PointerEvent) {
   if (!state.value.open) return
+  // The sheet dismisses itself (backdrop, drag, back), and it lives outside menuEl — leaving it to
+  // this handler would close it on the very tap meant to pick an item.
+  if (isMobile.value) return
   if (menuEl.value?.contains(event.target as Node)) return
   actionMenu.close()
 }
@@ -58,24 +62,26 @@ function onGlobalKeydown(event: KeyboardEvent) {
   if (state.value.open && event.key === 'Escape') actionMenu.close()
 }
 
-function onClose() {
-  actionMenu.close()
+// Scroll/resize/blur reposition or invalidate a pointer-anchored menu; a sheet is anchored to the
+// screen edge and survives all three.
+function onCloseIfAnchored() {
+  if (!isMobile.value) actionMenu.close()
 }
 
 onMounted(() => {
   window.addEventListener('pointerdown', onGlobalPointerDown, true)
   window.addEventListener('keydown', onGlobalKeydown)
-  window.addEventListener('scroll', onClose, true)
-  window.addEventListener('resize', onClose)
-  window.addEventListener('blur', onClose)
+  window.addEventListener('scroll', onCloseIfAnchored, true)
+  window.addEventListener('resize', onCloseIfAnchored)
+  window.addEventListener('blur', onCloseIfAnchored)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('pointerdown', onGlobalPointerDown, true)
   window.removeEventListener('keydown', onGlobalKeydown)
-  window.removeEventListener('scroll', onClose, true)
-  window.removeEventListener('resize', onClose)
-  window.removeEventListener('blur', onClose)
+  window.removeEventListener('scroll', onCloseIfAnchored, true)
+  window.removeEventListener('resize', onCloseIfAnchored)
+  window.removeEventListener('blur', onCloseIfAnchored)
 })
 </script>
 
@@ -106,18 +112,17 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <!-- Mobile: TODO render a <BottomSheet> of the same items (deferred; contract is final). -->
-    <div
-      v-else-if="state.open && isMobile"
-      ref="menuEl"
-      class="action-sheet"
-    >
-      <div v-if="state.title" class="action-sheet-title">{{ state.title }}</div>
+  </Teleport>
+
+  <!-- Narrow screens get the same items as a bottom sheet: one list of actions, declared once. -->
+  <BottomSheet :open="state.open && isMobile" :title="state.title" label="Actions" @close="actionMenu.close()">
+    <div class="action-sheet" role="menu">
       <button
         v-for="item in state.items"
         :key="item.id"
         class="action-sheet-item"
         :class="{ danger: item.variant === 'danger' }"
+        role="menuitem"
         :disabled="item.disabled"
         @click="run(item)"
       >
@@ -125,7 +130,7 @@ onBeforeUnmount(() => {
         <span>{{ item.label }}</span>
       </button>
     </div>
-  </Teleport>
+  </BottomSheet>
 </template>
 
 <style scoped>
@@ -179,27 +184,12 @@ onBeforeUnmount(() => {
   flex: 1;
 }
 
-/* Mobile bottom-sheet (placeholder styling; full BottomSheet primitive is future work) */
+/* The sheet itself — backdrop, dismissal, back handling — belongs to BottomSheet; only the item
+   list is styled here. */
 .action-sheet {
-  position: fixed;
-  z-index: var(--z-index-modal);
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: flex;
   flex-direction: column;
-  padding: 8px;
-  background: var(--gray-2);
-  border-top: 1px solid var(--gray-6);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  box-shadow: var(--shadow-lg);
-}
-
-.action-sheet-title {
-  padding: 8px 12px;
-  font-size: var(--font-size-xs);
-  font-family: var(--font-sans);
-  color: var(--gray-10);
+  padding: 0 0.5rem;
 }
 
 .action-sheet-item {

@@ -1,7 +1,8 @@
-import { expect, test } from './fixtures'
+import { expect, openNavigation, test } from './fixtures'
 
 test.describe('application boot', () => {
   test('comes up with the shell and its mini-apps', async ({ app }) => {
+    await openNavigation(app)
     await expect(app.getByRole('button', { name: 'Explorer' })).toBeVisible()
     await expect(app.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
   })

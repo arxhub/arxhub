@@ -1,18 +1,26 @@
 <script setup lang="ts">
 import { ActionMenuHost, ModalsProvider } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
-import { computed } from 'vue'
+import { useArxHub, useIsMobile } from '@arxhub/uikit/hooks'
+import { computed, ref } from 'vue'
 import AppFooter from './desktop/AppFooter.vue'
 import AppHeader from './desktop/AppHeader.vue'
 import AppSidebar from './desktop/AppSidebar.vue'
 import DesktopLayout from './desktop/DesktopLayout.vue'
 import type { SidebarItem } from './desktop/types'
 import { ShellExtension } from './extension'
+import MobileDrawer from './mobile/MobileDrawer.vue'
+import MobileLayout from './mobile/MobileLayout.vue'
+
+// The frame follows the viewport, not the build target: a narrow window on a desktop gets the same
+// frame a phone does, and rotating a device switches it without a restart.
+const isMobile = useIsMobile()
+const drawerOpen = ref(false)
 
 const arxhub = useArxHub()
 const shell = arxhub.extensions.get(ShellExtension)
 
 const activeItem = computed(() => shell.sidebar.items.find((i) => i.id === shell.sidebar.activeId))
+const activeTitle = computed(() => activeItem.value?.title ?? 'ArxHub')
 
 function sortedByOrder<T extends { order?: number }>(items: T[]): T[] {
   return [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -37,7 +45,23 @@ const sidebarItems = computed((): SidebarItem[] =>
 </script>
 
 <template>
-  <DesktopLayout>
+  <MobileLayout
+    v-if="isMobile"
+    :title="activeTitle"
+    :drawer-open="drawerOpen"
+    @toggle-navigation="drawerOpen = !drawerOpen"
+  >
+    <template #header-right>
+      <component v-for="item in headerRight" :key="item.id" :is="item.component" />
+    </template>
+    <template #footer>
+      <component v-for="item in footerLeft" :key="item.id" :is="item.component" />
+      <component v-for="item in footerRight" :key="item.id" :is="item.component" />
+    </template>
+    <component v-if="activeItem?.layout" :is="activeItem.layout" />
+  </MobileLayout>
+
+  <DesktopLayout v-else>
     <template #sidebar>
       <AppSidebar
         :content="shell.content.value ?? undefined"
@@ -71,6 +95,15 @@ const sidebarItems = computed((): SidebarItem[] =>
     </template>
     <component v-if="activeItem?.layout" :is="activeItem.layout" />
   </DesktopLayout>
+  <!-- Outside both frames on purpose: a mini-app teleports its rail into this drawer, and a target
+       that lives inside a frame is destroyed the moment the window crosses the breakpoint. -->
+  <MobileDrawer
+    :open="isMobile && drawerOpen"
+    :items="sidebarItems"
+    :active-id="shell.sidebar.activeId"
+    @item-select="shell.sidebar.setActive($event)"
+    @close="drawerOpen = false"
+  />
   <ModalsProvider />
   <ActionMenuHost />
 </template>

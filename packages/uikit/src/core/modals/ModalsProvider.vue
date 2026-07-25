@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { type Component, computed } from 'vue'
+import { useBackStack } from '../../hooks/useBackStack'
 import Dialog from '../Dialog.vue'
 import ConfirmModalBody from './ConfirmModalBody.vue'
 import { type ConfirmLabels, modals, openModals } from './modals'
@@ -25,6 +26,15 @@ const contextComponent = computed(() => (contextModal.value ? props.modals?.[con
 function onOpenChange(open: boolean) {
   if (!open && current.value) modals.close(current.value.id)
 }
+
+// A dialog is a layer like any other, so back dismisses it. Dismissal is a cancel, never a confirm:
+// closing without choosing must not perform an irreversible action.
+useBackStack(
+  () => current.value != null,
+  () => {
+    if (current.value) modals.close(current.value.id)
+  },
+)
 </script>
 
 <template>

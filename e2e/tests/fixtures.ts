@@ -63,7 +63,8 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
       [IDENTITY_KEY, SEEDED_MNEMONIC] as const,
     )
     await page.goto('/')
-    await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
+    // The mobile frame keeps the mini-app list behind the menu, so wait on something both frames show.
+    await expect(page.getByRole('main')).toBeVisible()
     await use(page)
   },
 })
@@ -71,12 +72,29 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
 // The tree is read at boot, so a note written after the app came up needs a reload to appear.
 export async function openNote(page: Page, path: string): Promise<void> {
   await page.reload()
+  await openNavigation(page)
   await page.getByRole('treeitem', { name: path }).click()
   await expect(page.locator('.cm-content')).toBeVisible()
 }
 
+// True while the viewport is narrow enough for the mobile frame — mirrors MOBILE_BREAKPOINT.
+export function isMobileViewport(page: Page): boolean {
+  return (page.viewportSize()?.width ?? 0) <= 640
+}
+
+// On the mobile frame the mini-app list and each mini-app's own navigation live behind the menu.
+export async function openNavigation(page: Page): Promise<void> {
+  if (!isMobileViewport(page)) return
+  await page.getByRole('button', { name: 'Open navigation' }).click()
+  await expect(page.getByRole('navigation', { name: 'Navigation' })).toBeVisible()
+}
+
 export async function openSecuritySettings(page: Page): Promise<void> {
+  await openNavigation(page)
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  // Picking a mini-app is itself a navigation step on the mobile frame, so the drawer closes and the
+  // app's own section list has to be reopened. On desktop the rail is always there.
+  await openNavigation(page)
   await page.getByRole('button', { name: 'Security', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Device identity' })).toBeVisible()
 }

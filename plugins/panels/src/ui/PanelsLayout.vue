@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useIsMobile } from '@arxhub/uikit/hooks'
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
 import { computed, onMounted, onUnmounted, provide } from 'vue'
@@ -6,6 +7,7 @@ import { type DropZone, isPanelTabDragData } from '../composables/drag-types'
 import type { PanelStore } from '../types'
 import { PanelStoreKey, usePanels } from '../use-panels'
 import LayoutRenderer from './LayoutRenderer.vue'
+import MobilePanels from './MobilePanels.vue'
 
 // A mini-app can pass its own independent store; otherwise fall back to the global singleton.
 const props = defineProps<{ store?: PanelStore }>()
@@ -13,6 +15,7 @@ const panelStore = props.store ?? usePanels()
 provide(PanelStoreKey, panelStore)
 
 const layout = computed(() => panelStore.layout.value)
+const isMobile = useIsMobile()
 
 let cleanup: (() => void) | null = null
 
@@ -57,10 +60,13 @@ onUnmounted(() => {
 
 <template>
   <div class="panels-layout">
-    <LayoutRenderer v-if="layout" :node="layout" />
-    <div v-else class="panels-empty">
-      <p>No panels open</p>
-    </div>
+    <MobilePanels v-if="isMobile" :store="panelStore" />
+    <template v-else>
+      <LayoutRenderer v-if="layout" :node="layout" />
+      <div v-else class="panels-empty">
+        <p>No panels open</p>
+      </div>
+    </template>
   </div>
 </template>
 

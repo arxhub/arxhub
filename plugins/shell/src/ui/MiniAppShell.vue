@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useIsMobile } from '@arxhub/uikit/hooks'
 import { computed, onUnmounted, ref, useSlots } from 'vue'
 import { RAIL_MAX, RAIL_MIN, useRailWidth } from './use-rail-width'
 
@@ -13,7 +14,12 @@ const props = withDefaults(
 )
 
 const slots = useSlots()
-const showRail = computed(() => props.rail && !!slots.rail)
+const isMobile = useIsMobile()
+const hasRail = computed(() => props.rail && !!slots.rail)
+// A narrow screen has no room for a permanent column, so the mini-app's own navigation moves into
+// the frame's drawer. It is teleported rather than re-declared, so a plugin writes its rail once.
+const showRail = computed(() => hasRail.value && !isMobile.value)
+const teleportRail = computed(() => hasRail.value && isMobile.value)
 
 const railWidth = useRailWidth(props.widthKey)
 const shellEl = ref<HTMLElement | null>(null)
@@ -45,6 +51,10 @@ onUnmounted(() => cleanup?.())
 </script>
 
 <template>
+  <Teleport v-if="teleportRail" to="#arxhub-mobile-rail" defer>
+    <slot name="rail" />
+  </Teleport>
+
   <div ref="shellEl" class="mini-app-shell">
     <template v-if="showRail">
       <div class="rail" :style="{ width: `${railWidth}px` }">
