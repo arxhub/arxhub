@@ -21,6 +21,12 @@ type ExplorerExtensionArgs = ExtensionArgs & {
 
 const EMPTY_ARX = JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph' }] } })
 
+// Seed content has to match the extension: an '.arx' reader rejects a bare file, and a markdown note
+// seeded with a document tree would open as JSON text.
+function emptyContentFor(name: string): string {
+  return name.toLowerCase().endsWith('.arx') ? EMPTY_ARX : ''
+}
+
 export class ExplorerExtension extends Extension {
   readonly vfs: VirtualFileSystem
   readonly root: string
@@ -61,7 +67,7 @@ export class ExplorerExtension extends Extension {
   }
 
   async createFile(parentPath: string, name: string): Promise<void> {
-    await this.vfs.file(join(parentPath, name)).writeText(EMPTY_ARX)
+    await this.vfs.file(join(parentPath, name)).writeText(emptyContentFor(name))
     await this.refreshPath(parentPath)
   }
 

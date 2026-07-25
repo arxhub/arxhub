@@ -21,7 +21,7 @@ function onRootContextMenu(event: MouseEvent) {
 
 async function newFile() {
   const parent = explorer.selectedPath.value ?? explorer.root
-  await explorer.createFile(parent, 'untitled.arx')
+  await explorer.createFile(parent, 'untitled.md')
 }
 
 async function newFolder() {

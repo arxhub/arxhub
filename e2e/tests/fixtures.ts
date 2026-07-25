@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
@@ -21,6 +21,7 @@ export const OTHER_MNEMONIC = 'abandon abandon abandon abandon abandon abandon a
 export interface Vault {
   write(relative: string, content: string): Promise<string>
   read(relative: string): Promise<string>
+  remove(relative: string): Promise<void>
 }
 
 function vaultRoot(): string {
@@ -48,6 +49,10 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
       },
       async read(relative) {
         return readFileSync(join(vaultRoot(), relative), 'utf8')
+      },
+      async remove(relative) {
+        rmSync(join(vaultRoot(), relative), { force: true })
+        rmSync(join(vaultRoot(), `${relative}.arxmeta`), { force: true })
       },
     }
     await use(vault)
@@ -85,8 +90,10 @@ export function isMobileViewport(page: Page): boolean {
 // On the mobile frame the mini-app list and each mini-app's own navigation live behind the menu.
 export async function openNavigation(page: Page): Promise<void> {
   if (!isMobileViewport(page)) return
-  await page.getByRole('button', { name: 'Open navigation' }).click()
-  await expect(page.getByRole('navigation', { name: 'Navigation' })).toBeVisible()
+  const drawer = page.getByRole('navigation', { name: 'Navigation' })
+  // Idempotent: some flows leave the drawer open, and clicking the menu again would close it.
+  if (!(await drawer.isVisible())) await page.getByRole('button', { name: 'Open navigation' }).click()
+  await expect(drawer).toBeVisible()
 }
 
 export async function openSettingsSection(page: Page, section: string): Promise<void> {

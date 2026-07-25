@@ -101,6 +101,7 @@ function handleEnter() {
       ref="renameInput"
       v-model="renameValue"
       class="rename-input"
+      aria-label="New name"
       @keydown.enter.prevent.stop="commitRename"
       @keydown.escape.prevent.stop="cancelRename"
       @blur="commitRename"
