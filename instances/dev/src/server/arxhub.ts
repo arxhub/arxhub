@@ -14,7 +14,10 @@ const PINNED_KEY_FILE = 'state/protection/pinned-key'
 
 export async function createArxHub(port: number): Promise<ArxHub> {
   const arxhub = new ArxHub()
-  const vfs = new NodeFileSystem(join(homedir(), '.arxhub'), arxhub.logger)
+  // Same knob as the server instance. E2E runs point it at a throwaway directory — otherwise a test
+  // would pin its ephemeral key into the developer's real vault and unpair their actual devices.
+  const dataDir = process.env.ARXHUB_DATA_DIR?.trim() || join(homedir(), '.arxhub')
+  const vfs = new NodeFileSystem(dataDir, arxhub.logger)
 
   // Persist the TOFU pin across restarts so a paired key survives the frequent dev-server restarts
   // (otherwise each restart reopens the trust-on-first-use window). Load before start so no request
