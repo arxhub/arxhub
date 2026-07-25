@@ -101,6 +101,3 @@ _dist
 # Generic build output
 dist
 
-# The AI/planning layer (forge-wiki, scripts, AGENTS.md, CLAUDE.md, agent state dirs) is NOT ignored:
-# the private origin tracks everything as is. It is kept out of the public repository by the filter in
-# scripts/publish.sh, which rebuilds a scrubbed mirror — see the header of that script.
