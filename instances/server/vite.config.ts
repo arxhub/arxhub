@@ -3,7 +3,10 @@ import { defineConfig } from 'vite'
 export default defineConfig((env) => {
   if (env.command === 'build') {
     return {
-      resolve: { tsconfigPaths: true },
+      // Dual-entry workspace packages (@arxhub/path, @arxhub/crypto) default to their browser entry
+      // otherwise, and this build targets Node — path-browserify is CJS, so its named exports break
+      // at runtime under ESM.
+      resolve: { tsconfigPaths: true, conditions: ['node', 'import', 'module', 'default'] },
       build: {
         outDir: 'dist',
         target: 'esnext',

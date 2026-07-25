@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-publish": "workspace:*",
@@ -19,7 +20,16 @@
     "@arxhub/sync": "workspace:*",
     "@arxhub/vfs": "workspace:*",
     "@arxhub/vfs-http": "workspace:*",
-    "@arxhub/vfs-node": "workspace:*"
+    "@arxhub/vfs-node": "workspace:*",
+    "@elysiajs/node": "catalog:server",
+    "@noble/hashes": "^2.2.0",
+    "@scure/bip32": "^2.2.0",
+    "@sinclair/typebox": "catalog:shared",
+    "async-lock": "catalog:shared",
+    "elysia": "catalog:server",
+    "eventemitter3": "catalog:shared",
+    "path-browserify": "catalog:shared",
+    "pino": "catalog:shared"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
