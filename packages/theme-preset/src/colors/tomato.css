@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --tomato-1: #181111;
   --tomato-2: #1f1513;
   --tomato-3: #391714;

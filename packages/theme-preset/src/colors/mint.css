@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --mint-1: #0e1515;
   --mint-2: #0f1b1b;
   --mint-3: #092c2b;

@@ -113,5 +113,4 @@ export class TauriFileSystem extends GenericVirtualFileSystem {
       throw fileNotFound(pathname)
     }
   }
-
 }

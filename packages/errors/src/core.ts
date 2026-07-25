@@ -25,8 +25,7 @@ export interface RenderableError {
   render(): GenericAppError
 }
 
-export const isRenderableError = (e: unknown): e is RenderableError =>
-  e != null && typeof e === 'object' && 'render' in e
+export const isRenderableError = (e: unknown): e is RenderableError => e != null && typeof e === 'object' && 'render' in e
 
 // A single error class carrying its rendered body as data — no per-error subclasses.
 // Create instances through the factory functions (see ./http), not `new` directly.
@@ -48,5 +47,4 @@ export class AppError<B extends GenericAppError = GenericAppError> extends Error
 
 export const isAppError = (e: unknown): e is AppError => e instanceof AppError
 
-export const hasErrorCode = (e: unknown, code: string): e is AppError =>
-  e instanceof AppError && e.body.code === code
+export const hasErrorCode = (e: unknown, code: string): e is AppError => e instanceof AppError && e.body.code === code

@@ -1,6 +1,6 @@
 import { ConsoleLogger } from '@arxhub/core'
-import { beforeEach, describe, expect, test } from 'vitest'
 import type { VirtualFileSystem } from '@arxhub/vfs'
+import { beforeEach, describe, expect, test } from 'vitest'
 import { NodeFileSystem } from '../index'
 
 describe('VirtualFileImpl', () => {

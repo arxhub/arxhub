@@ -35,7 +35,8 @@
     "@tauri-apps/plugin-fs": "catalog:tauri",
     "@tauri-apps/plugin-opener": "catalog:tauri",
     "lucide-vue-next": "catalog:client",
-    "vue": "catalog:client"
+    "vue": "catalog:client",
+    "@tauri-apps/plugin-os": "catalog:tauri"
   },
   "devDependencies": {
     "@tauri-apps/cli": "catalog:tauri",

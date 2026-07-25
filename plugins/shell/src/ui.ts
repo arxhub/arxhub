@@ -1,3 +1,4 @@
+export { default as AboutSettingsPage } from './ui/AboutSettingsPage.vue'
 export { default as ArxShell } from './ui/ArxShell.vue'
 export { default as AppFooter } from './ui/desktop/AppFooter.vue'
 export { default as AppHeader } from './ui/desktop/AppHeader.vue'

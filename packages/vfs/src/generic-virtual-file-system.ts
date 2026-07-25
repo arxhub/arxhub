@@ -1,5 +1,5 @@
-import AsyncLock from 'async-lock'
 import { normalizePath } from '@arxhub/path'
+import AsyncLock from 'async-lock'
 import type { VirtualDir } from './virtual-dir'
 import { VirtualDirImpl } from './virtual-dir'
 import type { VirtualEntry } from './virtual-entry'

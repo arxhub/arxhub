@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --sky-1: #0d141f;
   --sky-2: #111a27;
   --sky-3: #112840;

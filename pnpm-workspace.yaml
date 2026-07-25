@@ -76,6 +76,7 @@ catalogs:
     '@tauri-apps/cli': ^2.11.0
     '@tauri-apps/plugin-fs': ^2.5.0
     '@tauri-apps/plugin-opener': ^2
+    '@tauri-apps/plugin-os': ^2.3.2
 
 onlyBuiltDependencies:
   - '@biomejs/biome'

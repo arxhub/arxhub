@@ -1,7 +1,7 @@
 import { ConsoleLogger } from '@arxhub/core'
-import { beforeEach, describe, expect, test } from 'vitest'
-import { InfoNamespaceImpl } from '@arxhub/vfs'
 import type { VirtualFileSystem } from '@arxhub/vfs'
+import { InfoNamespaceImpl } from '@arxhub/vfs'
+import { beforeEach, describe, expect, test } from 'vitest'
 import { NodeFileSystem } from '../index'
 
 describe('InfoNamespaceImpl', () => {
@@ -25,7 +25,11 @@ describe('InfoNamespaceImpl', () => {
   })
 
   test('set({ flush: false }) batches, flush() writes once', async () => {
-    interface Fields { a: string; b: string; hash?: string }
+    interface Fields {
+      a: string
+      b: string
+      hash?: string
+    }
     const file = vfs.file<Fields>('batch.txt')
     await file.writeText('x')
 
@@ -52,15 +56,16 @@ describe('InfoNamespaceImpl', () => {
   })
 
   test('concurrent auto-flush calls — no lost writes', async () => {
-    interface Fields { a: string; b: string; c: string; hash?: string }
+    interface Fields {
+      a: string
+      b: string
+      c: string
+      hash?: string
+    }
     const file = vfs.file<Fields>('concurrent.txt')
     await file.writeText('x')
     // Fire three concurrent auto-flush set() calls — vfs.lock serializes flush writes
-    await Promise.all([
-      file.info.set('a', 'alpha'),
-      file.info.set('b', 'beta'),
-      file.info.set('c', 'gamma'),
-    ])
+    await Promise.all([file.info.set('a', 'alpha'), file.info.set('b', 'beta'), file.info.set('c', 'gamma')])
     const file2 = vfs.file<Fields>('concurrent.txt')
     const all = await file2.info.getAll()
     expect(all.a).toEqual('alpha')
@@ -77,7 +82,11 @@ describe('InfoNamespaceImpl', () => {
   })
 
   test('type inference: get(key) returns typed value with generic T', async () => {
-    interface ArticleInfo { title: string; count: number; hash?: string }
+    interface ArticleInfo {
+      title: string
+      count: number
+      hash?: string
+    }
     const file = vfs.file<ArticleInfo>('typed.txt')
     await file.writeText('article')
     await file.info.set('title', 'Hello World')

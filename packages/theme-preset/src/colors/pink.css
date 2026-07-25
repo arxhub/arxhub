@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --pink-1: #191117;
   --pink-2: #21121d;
   --pink-3: #37172f;

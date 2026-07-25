@@ -12,14 +12,14 @@ import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { PublishPlugin } from '@arxhub/plugin-publish/ui'
-import { SettingsPlugin } from '@arxhub/plugin-settings/ui'
-import { ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
+import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
+import { AboutSettingsPage, ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
 import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { isTauri } from '@tauri-apps/api/core'
-import { createApp } from 'vue'
+import { createApp, h, markRaw } from 'vue'
 import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
 
@@ -35,7 +35,14 @@ signer.install(keyring)
 async function createVfs(): Promise<VirtualFileSystem> {
   if (isTauri()) {
     const { TauriFileSystem, BaseDirectory } = await import('@arxhub/vfs-tauri')
-    return new TauriFileSystem('.arxhub', BaseDirectory.Home, arxhub.logger)
+    const { platform } = await import('@tauri-apps/plugin-os')
+    // Mobile platforms have no home directory in the desktop sense — the vault belongs to the app's
+    // own data directory there. The tree layout underneath is identical, or the two devices would
+    // sync into different shapes.
+    const mobile = platform() === 'android' || platform() === 'ios'
+    return mobile
+      ? new TauriFileSystem('', BaseDirectory.AppData, arxhub.logger)
+      : new TauriFileSystem('.arxhub', BaseDirectory.Home, arxhub.logger)
   }
   const { HttpFileSystem, VFS_NAMESPACE } = await import('@arxhub/vfs-http')
   return new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer }, arxhub.logger)
@@ -59,6 +66,15 @@ arxhub.plugins.register(PublishPlugin)
 // UI contribution, so the shell can still mount and the user can reach Settings to fix what broke
 // (a phrase the server does not know, an unreachable host). Failures are logged per plugin.
 await arxhub.start().catch((error) => arxhub.logger.error('Some plugins failed to start', error))
+
+// The instance is what knows which build this is, so it contributes About rather than a plugin —
+// otherwise the shell would have to depend on settings, which already depends on the shell.
+arxhub.extensions.get(SettingsExtension).register({
+  id: 'about',
+  title: 'About',
+  order: 900,
+  component: markRaw({ render: () => h(AboutSettingsPage, { version: __APP_VERSION__ }) }),
+})
 
 const shell = arxhub.extensions.get(ShellExtension)
 const { store } = arxhub.extensions.get(PanelStoreExtension)

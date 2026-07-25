@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --plum-1: #181118;
   --plum-2: #201320;
   --plum-3: #351a35;

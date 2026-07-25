@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --lime-1: #11130c;
   --lime-2: #151a10;
   --lime-3: #1f2917;

@@ -89,13 +89,17 @@ export async function openNavigation(page: Page): Promise<void> {
   await expect(page.getByRole('navigation', { name: 'Navigation' })).toBeVisible()
 }
 
-export async function openSecuritySettings(page: Page): Promise<void> {
+export async function openSettingsSection(page: Page, section: string): Promise<void> {
   await openNavigation(page)
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   // Picking a mini-app is itself a navigation step on the mobile frame, so the drawer closes and the
   // app's own section list has to be reopened. On desktop the rail is always there.
   await openNavigation(page)
-  await page.getByRole('button', { name: 'Security', exact: true }).click()
+  await page.getByRole('button', { name: section, exact: true }).click()
+}
+
+export async function openSecuritySettings(page: Page): Promise<void> {
+  await openSettingsSection(page, 'Security')
   await expect(page.getByRole('heading', { name: 'Device identity' })).toBeVisible()
 }
 

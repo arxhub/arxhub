@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --teal-1: #0d1514;
   --teal-2: #111c1b;
   --teal-3: #0d2d2a;

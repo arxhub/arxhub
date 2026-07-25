@@ -9,3 +9,6 @@ declare module '*.vue' {
 
 declare module '@arxhub/theme'
 declare module '@arxhub/theme-preset'
+
+// Injected at build time from the instance's package.json (toolchain-vite appVersionDefine).
+declare const __APP_VERSION__: string

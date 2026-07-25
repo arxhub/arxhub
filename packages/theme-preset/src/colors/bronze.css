@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --bronze-1: #141110;
   --bronze-2: #1c1917;
   --bronze-3: #262220;

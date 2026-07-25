@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --cyan-1: #0b161a;
   --cyan-2: #101b20;
   --cyan-3: #082c36;

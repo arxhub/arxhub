@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --crimson-1: #191114;
   --crimson-2: #201318;
   --crimson-3: #381525;

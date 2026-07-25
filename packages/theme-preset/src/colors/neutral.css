@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --neutral-1: #111111;
   --neutral-2: #191919;
   --neutral-3: #222222;

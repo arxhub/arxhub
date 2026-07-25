@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --orange-1: #17120e;
   --orange-2: #1e160f;
   --orange-3: #331e0b;

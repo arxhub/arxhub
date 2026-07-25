@@ -23,6 +23,7 @@ export const SyncConfigSchema = Type.Object({
 
 export class SyncPlugin extends Plugin {
   private syncTimer: ReturnType<typeof setInterval> | null = null
+  private onVisible: (() => void) | null = null
 
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -91,6 +92,14 @@ export class SyncPlugin extends Plugin {
     if (cfg.autoSyncSeconds > 0) {
       this.syncTimer = setInterval(() => void syncExt.sync(), cfg.autoSyncSeconds * 1000)
     }
+
+    // A phone suspends the app instead of closing it, so the interval stops firing while it is in
+    // the background and the user comes back to a stale vault. Coming to the foreground is the
+    // moment that matters — sync() no-ops if one is already running.
+    this.onVisible = () => {
+      if (document.visibilityState === 'visible') void syncExt.sync()
+    }
+    document.addEventListener('visibilitychange', this.onVisible)
   }
 
   // The repo store — snapshots, chunks and the rollback anchor — belongs to the identity that built
@@ -129,6 +138,10 @@ export class SyncPlugin extends Plugin {
     if (this.syncTimer != null) {
       clearInterval(this.syncTimer)
       this.syncTimer = null
+    }
+    if (this.onVisible != null) {
+      document.removeEventListener('visibilitychange', this.onVisible)
+      this.onVisible = null
     }
     await super.stop(ctx)
   }

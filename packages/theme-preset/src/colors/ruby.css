@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --ruby-1: #191113;
   --ruby-2: #1e1517;
   --ruby-3: #3a141e;

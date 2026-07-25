@@ -3,14 +3,18 @@
   "sideEffects": false,
   "version": "0.1.0",
   "description": "Global typed event bus",
-  "keywords": ["arxhub"],
+  "keywords": [
+    "arxhub"
+  ],
   "license": "AGPL-3.0-or-later",
   "author": "",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && vite build"
   },

@@ -1,4 +1,4 @@
-import { expect, openNavigation, test } from './fixtures'
+import { expect, openNavigation, openSettingsSection, test } from './fixtures'
 
 test.describe('application boot', () => {
   test('comes up with the shell and its mini-apps', async ({ app }) => {
@@ -15,5 +15,13 @@ test.describe('application boot', () => {
 
     const failed = app.waitForResponse((r) => r.url().includes('/api/vfs') && r.status() === 401, { timeout: 3000 })
     await expect(failed).rejects.toThrow()
+  })
+})
+
+test.describe('about', () => {
+  test('reports the running version', async ({ app }) => {
+    await openSettingsSection(app, 'About')
+    // FR-210: the version has to be nameable when reporting a problem.
+    await expect(app.getByTestId('app-version')).toHaveText(/^\d+\.\d+\.\d+/)
   })
 })

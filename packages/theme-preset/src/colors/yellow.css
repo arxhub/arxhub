@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --yellow-1: #14120b;
   --yellow-2: #1b180f;
   --yellow-3: #2d2305;

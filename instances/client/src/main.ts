@@ -11,13 +11,13 @@ import { KeyStorePlugin, LocalStorageKeyStore } from '@arxhub/plugin-keystore/ui
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
-import { SettingsPlugin } from '@arxhub/plugin-settings/ui'
-import { ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
+import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
+import { AboutSettingsPage, ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
 import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
 import { HttpFileSystem, VFS_NAMESPACE } from '@arxhub/vfs-http'
-import { createApp } from 'vue'
+import { createApp, h, markRaw } from 'vue'
 import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
 
@@ -46,6 +46,15 @@ arxhub.plugins.register(SyncPlugin)
 // UI contribution, so the shell can still mount and the user can reach Settings to fix what broke
 // (a phrase the server does not know, an unreachable host). Failures are logged per plugin.
 await arxhub.start().catch((error) => arxhub.logger.error('Some plugins failed to start', error))
+
+// The instance is what knows which build this is, so it contributes About rather than a plugin —
+// otherwise the shell would have to depend on settings, which already depends on the shell.
+arxhub.extensions.get(SettingsExtension).register({
+  id: 'about',
+  title: 'About',
+  order: 900,
+  component: markRaw({ render: () => h(AboutSettingsPage, { version: __APP_VERSION__ }) }),
+})
 
 const shell = arxhub.extensions.get(ShellExtension)
 const { store } = arxhub.extensions.get(PanelStoreExtension)

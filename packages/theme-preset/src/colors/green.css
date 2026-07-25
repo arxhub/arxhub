@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --green-1: #0e1512;
   --green-2: #121b17;
   --green-3: #132d21;

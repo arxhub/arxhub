@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --sand-1: #111110;
   --sand-2: #191918;
   --sand-3: #222221;

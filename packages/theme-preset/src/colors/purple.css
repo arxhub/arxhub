@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --purple-1: #18111b;
   --purple-2: #1e1523;
   --purple-3: #301c3b;

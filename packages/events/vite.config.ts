@@ -1,5 +1,5 @@
-import { createBrowserConfig } from '@arxhub/toolchain-vite'
 import { resolve } from 'node:path'
+import { createBrowserConfig } from '@arxhub/toolchain-vite'
 import { defineConfig, mergeConfig } from 'vite'
 
 export default defineConfig((env) =>
@@ -17,5 +17,5 @@ export default defineConfig((env) =>
         },
       },
     },
-  })
+  }),
 )

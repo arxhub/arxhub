@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --olive-1: #111210;
   --olive-2: #181917;
   --olive-3: #212220;

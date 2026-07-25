@@ -1,9 +1,9 @@
 import { createHasher, hash } from '@arxhub/crypto'
+import { infoFileAccess } from '../errors'
 import type { BaseInfoFields, InfoNamespace } from '../info-namespace'
 import { InfoNamespaceImpl } from '../info-namespace/impl'
-import { infoFileAccess } from '../errors'
-import type { VirtualFile } from './interface'
 import type { DeleteOptions, VirtualFileSystem } from '../virtual-file-system'
+import type { VirtualFile } from './interface'
 
 export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields> implements VirtualFile<T> {
   readonly kind = 'file' as const
@@ -38,7 +38,7 @@ export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields>
   async write(content: Uint8Array): Promise<void> {
     await this.vfs.lock(this.pathname, async () => {
       await this.vfs.write(this.pathname, content)
-      await this.info.set('hash' as never, await hash(content, 'sha256') as never, { flush: true })
+      await this.info.set('hash' as never, (await hash(content, 'sha256')) as never, { flush: true })
     })
   }
 

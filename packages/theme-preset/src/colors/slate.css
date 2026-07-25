@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --slate-1: #111113;
   --slate-2: #18191b;
   --slate-3: #212225;

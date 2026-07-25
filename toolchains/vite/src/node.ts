@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 import nodeExternalsPlugin from 'rollup-plugin-node-externals'
-import { type ConfigEnv, type UserConfig, mergeConfig } from 'vite'
+import { type ConfigEnv, mergeConfig, type UserConfig } from 'vite'
 import { createGenericConfig } from './generic'
 
 export function createNodeConfig(dirname: string, env: ConfigEnv, entries: string[] = []): UserConfig {
@@ -25,9 +25,7 @@ export function createNodeConfig(dirname: string, env: ConfigEnv, entries: strin
       },
     },
     optimizeDeps: {
-      include: [
-        '@arxhub/plugin-gateway',
-      ],
+      include: ['@arxhub/plugin-gateway'],
       force: true,
     },
     plugins: [

@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --jade-1: #0d1512;
   --jade-2: #121c18;
   --jade-3: #0f2e22;

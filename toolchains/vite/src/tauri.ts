@@ -1,4 +1,4 @@
-import { type ConfigEnv, type UserConfig, defineConfig, mergeConfig } from 'vite'
+import { type ConfigEnv, defineConfig, mergeConfig, type UserConfig } from 'vite'
 import { createVueConfig } from './vue'
 
 export function createTauriConfig(dirname: string, env: ConfigEnv): UserConfig {

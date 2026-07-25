@@ -6,6 +6,7 @@
   "permissions": [
     "core:default",
     "opener:default",
+    "os:default",
     "fs:default",
     "fs:allow-read-dir",
     "fs:allow-read-file",
@@ -15,7 +16,20 @@
     "fs:allow-exists",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$HOME/.arxhub" }, { "path": "$HOME/.arxhub/**" }]
+      "allow": [
+        {
+          "path": "$HOME/.arxhub"
+        },
+        {
+          "path": "$HOME/.arxhub/**"
+        },
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
     }
   ]
 }

@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --violet-1: #14121f;
   --violet-2: #1b1525;
   --violet-3: #291f43;

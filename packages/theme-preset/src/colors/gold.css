@@ -36,7 +36,7 @@
 }
 
 /* Dark Theme */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --gold-1: #121211;
   --gold-2: #1b1a17;
   --gold-3: #24231f;
