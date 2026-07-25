@@ -32,7 +32,6 @@ function vaultRoot(): string {
 export const test = base.extend<{ app: Page; vault: Vault }>({
   // biome-ignore lint/correctness/noEmptyPattern: Playwright's fixture signature requires the deps arg
   vault: async ({}, use, testInfo) => {
-    // One subdirectory per test so parallel workers never collide in a shared vault.
     // Unique filename per test rather than a subdirectory: parallel workers stay isolated and the
     // note still sits at the tree root, where it is visible without expanding anything.
     const prefix = testInfo.title
