@@ -40,22 +40,22 @@ export abstract class Plugin implements Named {
   // Runs first, for ALL plugins, before any context/DI-scope is built. Wire instance-level
   // infrastructure here via the narrow host (e.g. VfsPlugin binds a per-plugin VFS scope) — so a
   // contribution applies to every plugin, the declaring one included, independent of registration order.
-  setup(host: PluginHost): void {}
+  setup(_host: PluginHost): void {}
 
-  create(ctx: PluginContext): void {
+  create(_ctx: PluginContext): void {
     this.logger.info('Creating...')
   }
 
-  configure(ctx: PluginContext): void {
+  configure(_ctx: PluginContext): void {
     this.logger.info('Configuring...')
   }
 
-  start(ctx: PluginContext): Promise<void> {
+  start(_ctx: PluginContext): Promise<void> {
     this.logger.info('Starting...')
     return Promise.resolve()
   }
 
-  stop(ctx: PluginContext): Promise<void> {
+  stop(_ctx: PluginContext): Promise<void> {
     this.logger.info('Stopping...')
     return Promise.resolve()
   }

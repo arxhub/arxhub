@@ -1,4 +1,4 @@
-export interface PanelTabDragData extends Record<string, unknown> {
+export interface PanelTabDragData extends Record<string | symbol, unknown> {
   type: 'panel-tab'
   instanceId: string
   groupId: string
@@ -23,7 +23,7 @@ export function calculateDropZone(input: { clientX: number; clientY: number }, e
   return 'center'
 }
 
-export interface PanelGroupBodyDropData extends Record<string, unknown> {
+export interface PanelGroupBodyDropData extends Record<string | symbol, unknown> {
   type: 'panel-group-body'
   groupId: string
   zone: DropZone

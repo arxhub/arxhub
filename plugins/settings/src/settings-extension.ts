@@ -2,7 +2,7 @@ import type { PluginConfig } from '@arxhub/config'
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import type { PanelStore } from '@arxhub/plugin-panels/ui'
 import type { TObject } from '@sinclair/typebox'
-import { type Component, markRaw, ref } from 'vue'
+import { type Component, markRaw, ref, shallowRef } from 'vue'
 
 // A settings section is contributed by a plugin in its configure() step.
 // Provide EITHER a `schema` (auto-rendered into a form by SchemaSettingsPage) plus the owning
@@ -21,7 +21,10 @@ export interface SettingsSection {
 }
 
 export class SettingsExtension extends Extension {
-  readonly sections = ref<SettingsSection[]>([])
+  // shallowRef, not ref: deep unwrapping maps over SettingsSection.config, and a mapped type drops
+  // PluginConfig's private members — the unwrapped value then no longer matches PluginConfig where
+  // the form consumes it. Sections are always replaced wholesale, so shallow reactivity is enough.
+  readonly sections = shallowRef<SettingsSection[]>([])
   readonly activeId = ref<string | null>(null)
   // The settings content area's own panel store — assigned by SettingsPlugin.configure().
   store!: PanelStore
