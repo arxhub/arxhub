@@ -34,7 +34,7 @@ catalogs:
     '@elysiajs/node': ^1.2.6
     '@elysiajs/static': ^1.1.1
     elysia: ^1.4.28
-    esbuild: ^0.25.2
+    esbuild: ^0.28.1
   shared:
     '@signaldb/core': ^1.6.0
     async-lock: ^1.4.1
@@ -63,7 +63,7 @@ catalogs:
     rollup-plugin-node-externals: ^9.0.1
     type-fest: ^5.6.0
     typescript: ^6.0.3
-    vite: ^8.0.10
+    vite: ^8.0.16
     vite-node: ^6.0.0
     vite-plugin-dts: ^5.0.0
     vite-tsconfig-paths: ^6.1.1
@@ -81,3 +81,19 @@ catalogs:
 onlyBuiltDependencies:
   - '@biomejs/biome'
   - esbuild
+
+# Transitive build-time dependencies pinned forward past published advisories. None of these ship in
+# a built artifact — they are the toolchain (bundler, type generation, glob matching) — but the dev
+# stand runs on them, so they are worth keeping current. Each is the first patched version per the
+# advisory; drop an entry once the parent depends on a fixed range by itself.
+overrides:
+  ajv: ^8.20.0
+  brace-expansion: ^5.0.8
+  esbuild: ^0.28.1
+  file-type: ^21.3.4
+  lodash: ^4.18.1
+  minimatch: ^10.2.5
+  picomatch: ^4.0.5
+  postcss: ^8.5.23
+  rollup: ^4.62.2
+  srvx: ^0.12.4
