@@ -24,8 +24,22 @@ function readPort(): number {
   return port
 }
 
+// Comma-separated manifest names, e.g. ARXHUB_DISABLED_PLUGINS=publish,SyncServer.
+function readDisabledPlugins(): string[] {
+  return (process.env.ARXHUB_DISABLED_PLUGINS ?? '')
+    .split(',')
+    .map((it) => it.trim())
+    .filter(Boolean)
+}
+
 export async function createArxHub(): Promise<ArxHub> {
-  const arxhub = new ArxHub()
+  // The headless counterpart of the client's crash screen: there is nobody to click a button here, so
+  // the same two switches come from the environment. Essential plugins (the gateway and the auth
+  // guard) ignore both — a recovery boot must not be a way to expose an unprotected vault.
+  const arxhub = new ArxHub({
+    disabled: readDisabledPlugins(),
+    maintenance: process.env.ARXHUB_MAINTENANCE === '1',
+  })
   // The data root lives outside the artifact so updating the server never touches the vault.
   const dataDir = process.env.ARXHUB_DATA_DIR?.trim() || join(homedir(), '.arxhub')
   const vfs = new NodeFileSystem(dataDir, arxhub.logger)

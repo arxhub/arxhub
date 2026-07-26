@@ -12,6 +12,7 @@ import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { KeyStorePlugin, resolveKeyStore } from '@arxhub/plugin-keystore/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
+import { BootPolicy, MaintenancePlugin, startWithCrashScreen } from '@arxhub/plugin-maintenance/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
@@ -25,7 +26,10 @@ import { createApp, h, markRaw } from 'vue'
 import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
 
-const arxhub = new ArxHub()
+// Read before anything else: a plugin the owner switched off (or a maintenance boot) must not get as
+// far as being constructed. The policy is device-local storage on purpose — see BootPolicy.
+const policy = new BootPolicy()
+const arxhub = new ArxHub({ disabled: policy.disabled, maintenance: policy.maintenance })
 // Resolve the device identity from client-local storage (never the server VFS) and install it into the
 // signer BEFORE start(): the /vfs backend is protected, so every request must already be signed.
 // Blocks on the unlock prompt when the device is locked — nothing below can run without the secrets.
@@ -54,11 +58,12 @@ const themes: Theme[] = [
 arxhub.plugins.register(ThemePlugin, () => ({ themes }))
 arxhub.plugins.register(KeyStorePlugin, () => ({ keystore }))
 arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
+arxhub.plugins.register(MaintenancePlugin, () => ({ policy }))
 arxhub.plugins.register(SyncPlugin)
-// A plugin failing to start must not leave a blank page: configure() already registered every
-// UI contribution, so the shell can still mount and the user can reach Settings to fix what broke
-// (a phrase the server does not know, an unreachable host). Failures are logged per plugin.
-await arxhub.start().catch((error) => arxhub.logger.error('Some plugins failed to start', error))
+// A failed boot lands on the crash screen instead of a blank page: it names the plugin that broke and
+// offers to switch it off (or to boot the essentials only) and try again. When every failure happened
+// in start(), carrying on is still an option — configure() had already registered the whole UI.
+await startWithCrashScreen(arxhub, policy)
 
 // The instance is what knows which build this is, so it contributes About rather than a plugin —
 // otherwise the shell would have to depend on settings, which already depends on the shell.
@@ -72,12 +77,13 @@ arxhub.extensions.get(SettingsExtension).register({
 const shell = arxhub.extensions.get(ShellExtension)
 const { store } = arxhub.extensions.get(PanelStoreExtension)
 
-shell.sidebar.setActive('arxhub.explorer')
-
-const explorer = arxhub.extensions.get(ExplorerExtension)
+// Explorer is switchable, and a maintenance boot leaves it out — so the opening layout asks whether it
+// is there rather than assuming it. Shell, panels and settings are essential and always are.
+const explorer = arxhub.extensions.has(ExplorerExtension) ? arxhub.extensions.get(ExplorerExtension) : null
+if (explorer != null) shell.sidebar.setActive('arxhub.explorer')
 
 store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
-store.openPanel('arxhub.welcome', {}, 'Welcome', explorer.contentGroupId ?? undefined)
+store.openPanel('arxhub.welcome', {}, 'Welcome', explorer?.contentGroupId ?? undefined)
 
 const app = createApp(App)
 app.provide(ARXHUB_KEY, arxhub)

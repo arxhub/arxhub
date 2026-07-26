@@ -279,6 +279,9 @@ importers:
       '@arxhub/plugin-logger':
         specifier: workspace:*
         version: link:../../plugins/logger
+      '@arxhub/plugin-maintenance':
+        specifier: workspace:*
+        version: link:../../plugins/maintenance
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
@@ -388,6 +391,9 @@ importers:
       '@arxhub/plugin-logger':
         specifier: workspace:*
         version: link:../../plugins/logger
+      '@arxhub/plugin-maintenance':
+        specifier: workspace:*
+        version: link:../../plugins/maintenance
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
@@ -473,6 +479,9 @@ importers:
       '@arxhub/plugin-logger':
         specifier: workspace:*
         version: link:../../plugins/logger
+      '@arxhub/plugin-maintenance':
+        specifier: workspace:*
+        version: link:../../plugins/maintenance
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
@@ -1360,6 +1369,34 @@ importers:
       dayjs:
         specifier: catalog:shared
         version: 1.11.20
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+
+  plugins/maintenance:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/plugin-settings':
+        specifier: workspace:*
+        version: link:../settings
+      '@arxhub/plugin-shell':
+        specifier: workspace:*
+        version: link:../shell
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
       vue:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)

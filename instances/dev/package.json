@@ -15,6 +15,7 @@
     "@arxhub/plugin-config": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",
     "@arxhub/plugin-logger": "workspace:*",
+    "@arxhub/plugin-maintenance": "workspace:*",
     "@arxhub/plugin-explorer": "workspace:*",
     "@arxhub/plugin-keystore": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
