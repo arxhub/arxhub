@@ -25,9 +25,15 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "deb",
+      "rpm",
+      "app",
+      "dmg",
+      "nsis"
+    ],
     "publisher": "rougsig",
-    "copyright": "Copyright © rougsig",
+    "copyright": "Copyright \u00a9 rougsig",
     "category": "Productivity",
     "license": "AGPL-3.0-or-later",
     "shortDescription": "Modular personal knowledge base",
