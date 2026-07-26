@@ -38,6 +38,7 @@ catalogs:
     file-type: ^21.3.4
     esbuild: ^0.28.1
   shared:
+    '@electric-sql/pglite': ^0.5.4
     '@noble/ciphers': ^2.2.0
     '@noble/hashes': ^2.2.0
     '@scure/bip32': ^2.2.0

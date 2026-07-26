@@ -1,0 +1,48 @@
+{
+  "name": "@arxhub/sql",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Local SQL index for ArxHub — PGlite engine, schema and versioned migrations",
+  "keywords": [
+    "arxhub",
+    "sql"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/path": "workspace:*",
+    "@electric-sql/pglite": "catalog:shared",
+    "@sinclair/typebox": "catalog:shared"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs-node": "workspace:*",
+    "@types/node": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/stdlib": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
+    }
+  }
+}
