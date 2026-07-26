@@ -6,7 +6,8 @@
  */
 
 /* Light Theme (Default) */
-:root {
+:root,
+[data-theme="light"] {
   --jade-1: #fbfefd;
   --jade-2: #f4fbf7;
   --jade-3: #e6f7ed;

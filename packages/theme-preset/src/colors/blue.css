@@ -6,7 +6,8 @@
  */
 
 /* Light Theme (Default) */
-:root {
+:root,
+[data-theme="light"] {
   --blue-1: #fbfdff;
   --blue-2: #f4faff;
   --blue-3: #e6f4fe;

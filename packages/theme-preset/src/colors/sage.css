@@ -6,7 +6,8 @@
  */
 
 /* Light Theme (Default) */
-:root {
+:root,
+[data-theme="light"] {
   --sage-1: #fbfdfc;
   --sage-2: #f7f9f8;
   --sage-3: #eef1f0;

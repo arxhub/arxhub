@@ -6,7 +6,8 @@
  */
 
 /* Light Theme (Default) */
-:root {
+:root,
+[data-theme="light"] {
   --iris-1: #fdfdff;
   --iris-2: #f8f8ff;
   --iris-3: #f0f1fe;

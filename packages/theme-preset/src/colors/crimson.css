@@ -6,7 +6,8 @@
  */
 
 /* Light Theme (Default) */
-:root {
+:root,
+[data-theme="light"] {
   --crimson-1: #fffcfd;
   --crimson-2: #fef7f9;
   --crimson-3: #ffe9f0;

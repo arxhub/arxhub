@@ -3,6 +3,7 @@ import { expect, openSettingsSection, test } from './fixtures'
 const themeAttr = () => document.documentElement.getAttribute('data-arxhub-theme')
 const baseAttr = () => document.documentElement.getAttribute('data-theme')
 const bg = () => getComputedStyle(document.documentElement).getPropertyValue('--gray-1').trim()
+const danger = () => getComputedStyle(document.documentElement).getPropertyValue('--danger-2').trim()
 
 // The active theme is one setting in one shared config, so these cannot run beside each other — nor
 // beside the same file on the other project. Theme selection has nothing to do with the frame, so it
@@ -30,6 +31,8 @@ test.describe('themes', () => {
     // The theme declares its own base so the shared danger/warning scales follow it.
     await expect.poll(() => app.evaluate(baseAttr)).toBe('dark')
     await expect.poll(() => app.evaluate(bg)).not.toBe(before)
+    // Radix ships red-2 light and dark, keyed on that base — the light arm must not shadow the dark one.
+    await expect.poll(() => app.evaluate(danger)).toBe('#201314')
   })
 
   test('a light flavour reports a light base', async ({ app }) => {
@@ -37,6 +40,27 @@ test.describe('themes', () => {
 
     await expect.poll(() => app.evaluate(themeAttr)).toBe('catppuccin-latte')
     await expect.poll(() => app.evaluate(baseAttr)).toBe('light')
+  })
+
+  test('each card previews its own theme, not the one in force', async ({ app }) => {
+    const swatches = () =>
+      app.evaluate(() =>
+        [...document.querySelectorAll('[data-testid^="theme-"] [data-arxhub-theme]')].map((el) =>
+          getComputedStyle(el).getPropertyValue('--gray-1').trim(),
+        ),
+      )
+
+    const onLight = await swatches()
+    // Five themes with five different backgrounds — a preview reading the active theme collapses these.
+    expect(new Set(onLight).size).toBe(5)
+
+    await app.getByTestId('theme-catppuccin-mocha').click()
+    await expect.poll(() => app.evaluate(themeAttr)).toBe('catppuccin-mocha')
+
+    await expect.poll(swatches).toEqual(onLight)
+
+    await app.getByTestId('theme-default').click()
+    await expect.poll(() => app.evaluate(themeAttr)).toBe('default')
   })
 
   test('the choice survives a restart', async ({ app, vault }) => {

@@ -6,7 +6,8 @@
  */
 
 /* Light Theme (Default) */
-:root {
+:root,
+[data-theme="light"] {
   --sky-1: #f9feff;
   --sky-2: #f1fafd;
   --sky-3: #e1f6fd;

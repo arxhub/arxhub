@@ -6,7 +6,8 @@
  */
 
 /* Light Theme (Default) */
-:root {
+:root,
+[data-theme="light"] {
   --pink-1: #fffcfe;
   --pink-2: #fef7fb;
   --pink-3: #fee9f5;

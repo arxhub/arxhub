@@ -4,7 +4,10 @@
  * Licensed under MIT License
  */
 
-:root {
+/* The light arm names `[data-theme="light"]` as well as `:root` so a nested light island — a theme
+   preview swatch inside a dark app — overrides the dark values it would otherwise inherit. */
+:root,
+[data-theme="light"] {
   --shadow-xs: 0px 1px 2px var(--gray-a6), 0px 0px 1px var(--gray-a7);
   --shadow-sm: 0px 2px 4px var(--gray-a4), 0px 0px 1px var(--gray-a4);
   --shadow-md: 0px 4px 8px var(--gray-a4), 0px 0px 1px var(--gray-a4);

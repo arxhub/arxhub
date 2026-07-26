@@ -6,7 +6,8 @@
  */
 
 /* Light Theme (Default) */
-:root {
+:root,
+[data-theme="light"] {
   --gold-1: #fdfdfc;
   --gold-2: #faf9f2;
   --gold-3: #f2f0e7;

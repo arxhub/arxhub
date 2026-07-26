@@ -4,10 +4,13 @@
  * contrast order, so the step roles the interface relies on (6 border, 7 interactive border,
  * 4 hover, 9 solid, 11/12 text) land where they should. Catppuccin has a single accent colour, so
  * the accent ramp is mixed from it against the ramp's ends rather than invented.
+ *
+ * Not scoped to :root — a theme has to be applicable to a subtree too, so the picker can preview each
+ * theme in place.
  */
 
 /* Catppuccin Latte */
-:root[data-arxhub-theme="catppuccin-latte"] {
+[data-arxhub-theme="catppuccin-latte"] {
   --gray-1: #eff1f5;
   --gray-2: #e6e9ef;
   --gray-3: #dce0e8;
@@ -66,7 +69,7 @@
 }
 
 /* Catppuccin Frappé */
-:root[data-arxhub-theme="catppuccin-frappe"] {
+[data-arxhub-theme="catppuccin-frappe"] {
   --gray-1: #232634;
   --gray-2: #292c3c;
   --gray-3: #303446;
@@ -125,7 +128,7 @@
 }
 
 /* Catppuccin Macchiato */
-:root[data-arxhub-theme="catppuccin-macchiato"] {
+[data-arxhub-theme="catppuccin-macchiato"] {
   --gray-1: #181926;
   --gray-2: #1e2030;
   --gray-3: #24273a;
@@ -184,7 +187,7 @@
 }
 
 /* Catppuccin Mocha */
-:root[data-arxhub-theme="catppuccin-mocha"] {
+[data-arxhub-theme="catppuccin-mocha"] {
   --gray-1: #11111b;
   --gray-2: #181825;
   --gray-3: #1e1e2e;

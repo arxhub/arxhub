@@ -28,8 +28,9 @@ const active = computed(() => themes.activeId.value)
         @click="emit('select', theme.id)"
       >
         <!-- Swatches read from the theme's own scope, so each card previews itself rather than the
-             theme currently applied. -->
-        <span class="swatches" :data-arxhub-theme="theme.id" aria-hidden="true">
+             theme currently applied. Both attributes, exactly as apply() sets them on the root: a
+             theme that maps the shared scales rather than naming colours resolves them off the base. -->
+        <span class="swatches" :data-arxhub-theme="theme.id" :data-theme="theme.base" aria-hidden="true">
           <span class="swatch bg" />
           <span class="swatch surface" />
           <span class="swatch border" />

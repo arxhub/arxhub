@@ -1,6 +1,7 @@
-/* The theme that applies when nothing is selected — hence the :not() arm. */
+/* Not scoped to :root — a theme has to be applicable to a subtree too, so the picker can preview each
+   theme in place. The :not() arm is the theme that applies when nothing is selected. */
 :root:not([data-arxhub-theme]),
-:root[data-arxhub-theme="default"] {
+[data-arxhub-theme="default"] {
   --gray-1: var(--slate-1);
   --gray-2: var(--slate-2);
   --gray-3: var(--slate-3);

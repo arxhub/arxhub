@@ -6,7 +6,8 @@
  */
 
 /* Light Theme (Default) */
-:root {
+:root,
+[data-theme="light"] {
   --plum-1: #fefcff;
   --plum-2: #fdf7fd;
   --plum-3: #fbebfb;

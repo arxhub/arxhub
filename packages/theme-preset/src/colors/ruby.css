@@ -6,7 +6,8 @@
  */
 
 /* Light Theme (Default) */
-:root {
+:root,
+[data-theme="light"] {
   --ruby-1: #fffcfd;
   --ruby-2: #fff7f8;
   --ruby-3: #feeaed;
