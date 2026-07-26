@@ -4,6 +4,7 @@ const themeAttr = () => document.documentElement.getAttribute('data-arxhub-theme
 const baseAttr = () => document.documentElement.getAttribute('data-theme')
 const bg = () => getComputedStyle(document.documentElement).getPropertyValue('--gray-1').trim()
 const danger = () => getComputedStyle(document.documentElement).getPropertyValue('--danger-2').trim()
+const scheme = () => getComputedStyle(document.documentElement).colorScheme
 
 // The active theme is one setting in one shared config, so these cannot run beside each other — nor
 // beside the same file on the other project. Theme selection has nothing to do with the frame, so it
@@ -33,6 +34,8 @@ test.describe('themes', () => {
     await expect.poll(() => app.evaluate(bg)).not.toBe(before)
     // Radix ships red-2 light and dark, keyed on that base — the light arm must not shadow the dark one.
     await expect.poll(() => app.evaluate(danger)).toBe('#201314')
+    // Scrollbars and form-control internals are the browser's to paint, and only follow color-scheme.
+    await expect.poll(() => app.evaluate(scheme)).toBe('dark')
   })
 
   test('a light flavour reports a light base', async ({ app }) => {

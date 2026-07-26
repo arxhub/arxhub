@@ -144,3 +144,14 @@
   /* Legible foreground on the success-9 solid fill (green-9 → white per Radix). */
   --success-contrast: var(--white);
 }
+
+/* Scrollbars, form-control internals, the caret and autofill are painted by the browser from
+   `color-scheme`, not from our tokens — without this a dark theme keeps light scrollbars. */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
