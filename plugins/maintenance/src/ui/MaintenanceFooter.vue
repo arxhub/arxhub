@@ -21,13 +21,16 @@ function openPlugins(): void {
 
 <style scoped>
 .maintenance {
-  padding: 0 var(--space-2, 0.5rem);
+  align-self: center;
+  height: 24px;
+  padding: 0 8px;
   border: none;
-  border-radius: var(--radius-xs, 3px);
+  border-radius: var(--radius-md);
   background: var(--warning-3);
   color: var(--warning-11);
   font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
 }
 

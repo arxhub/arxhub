@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { StatusDot } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { LoggerExtension } from '../logger-extension'
@@ -20,9 +21,9 @@ const counts = computed(() => {
 
 // Error outranks warning — the dot reflects the most severe level present.
 const tone = computed(() => {
-  if (counts.value.error > 0) return 'error'
-  if (counts.value.warn > 0) return 'warn'
-  return 'clean'
+  if (counts.value.error > 0) return 'danger'
+  if (counts.value.warn > 0) return 'warning'
+  return 'neutral'
 })
 
 // Keep the bar narrow: counts past 999 add no signal, only width.
@@ -38,7 +39,7 @@ function openLogs(): void {
 
 <template>
   <button type="button" class="fx-item" aria-label="Open logs" title="Open logs" @click="openLogs">
-    <span class="dot" :class="`dot--${tone}`" />
+    <StatusDot :tone="tone" />
     <span>Logs</span>
     <span v-if="counts.warn > 0" class="count count--warn">{{ fmt(counts.warn) }}</span>
     <span v-if="counts.error > 0" class="count count--error">{{ fmt(counts.error) }}</span>
@@ -50,43 +51,34 @@ function openLogs(): void {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 100%;
+  align-self: center;
+  height: 24px;
   padding: 0 8px;
-  background: transparent;
   border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
   cursor: pointer;
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
   color: var(--gray-11);
   white-space: nowrap;
-  transition: color var(--duration-normal), background-color var(--duration-normal);
+  transition: color var(--duration-fast), background-color var(--duration-fast);
 }
 
 .fx-item:hover {
-  background-color: var(--gray-3);
+  background-color: var(--gray-4);
   color: var(--gray-12);
 }
 
 .fx-item:focus-visible {
-  outline: 2px solid var(--accent-9);
-  outline-offset: -2px;
+  outline: 2px solid var(--accent-8);
+  outline-offset: -1px;
 }
-
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-full);
-  background: var(--gray-8);
-  flex-shrink: 0;
-}
-
-.dot--warn { background: var(--warning-9); }
-.dot--error { background: var(--red-9); }
 
 .count {
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-medium);
 }
 
 .count--warn { color: var(--warning-11); }
-.count--error { color: var(--red-11); }
+.count--error { color: var(--danger-11); }
 </style>

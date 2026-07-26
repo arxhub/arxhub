@@ -19,17 +19,17 @@
 
 <style scoped>
 .app-header {
-  height: var(--size-md);
-  background-color: var(--gray-1);
+  height: 40px;
+  background-color: var(--gray-2);
   border-bottom: 1px solid var(--gray-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1rem;
+  padding: 0 8px;
   flex-shrink: 0;
   z-index: var(--z-index-docked);
   user-select: none;
-  font-size: var(--font-size-xs);
+  font-size: 13px;
 }
 
 .left-section, .center-section, .right-section {
@@ -39,18 +39,19 @@
 }
 
 .left-section {
-  gap: 0.75rem;
+  gap: 8px;
 }
 
 .center-section {
   justify-content: center;
-  gap: 0.5rem;
-  color: var(--gray-11);
+  gap: 8px;
+  color: var(--gray-10);
   font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
 }
 
 .right-section {
   justify-content: flex-end;
-  gap: 0.25rem;
+  gap: 4px;
 }
 </style>

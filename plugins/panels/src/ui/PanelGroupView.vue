@@ -14,6 +14,9 @@ const props = defineProps<{
 const store = usePanels()
 const group = computed(() => store.groups.value[props.groupId])
 const isActiveGroup = computed(() => store.activeGroupId.value === props.groupId)
+// With a single group there is nothing to be active *against*, and framing the whole editor says
+// nothing — the marker only earns its ink once the layout is split.
+const showsActiveMarker = computed(() => isActiveGroup.value && Object.keys(store.groups.value).length > 1)
 
 const panelContentEl = ref<HTMLElement | null>(null)
 const activeZone = ref<DropZone | null>(null)
@@ -68,7 +71,7 @@ function onClick() {
 <template>
   <div
     class="panel-group-view"
-    :class="{ 'is-active': isActiveGroup }"
+    :class="{ 'is-active': showsActiveMarker }"
     @click="onClick"
   >
     <PanelTabBar :group-id="groupId" />
@@ -99,7 +102,7 @@ function onClick() {
 }
 
 .panel-group-view.is-active {
-  border-color: var(--accent-7);
+  border-color: var(--gray-7);
 }
 
 .panel-content {

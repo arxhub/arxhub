@@ -126,34 +126,41 @@ function handleEnter() {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-top: 2px;
-  padding-bottom: 2px;
+  height: 28px;
+  margin-right: 4px;
   padding-right: 8px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
   overflow: hidden;
   font-size: 13px;
+  color: var(--gray-12);
 }
 
 .tree-node:hover {
   background-color: var(--gray-4);
 }
 
+/* The selected row is the one place in the tree that spends the accent — a wash and accent text,
+   so it stays legible against a plain hover fill on the row above it. */
 .tree-node.selected {
-  background-color: var(--gray-5);
+  background-color: var(--accent-3);
+  color: var(--accent-11);
+  font-weight: var(--font-weight-medium);
 }
 
 .tree-node:focus-visible {
-  outline: 1px solid var(--accent-9);
+  outline: 2px solid var(--accent-8);
   outline-offset: -1px;
 }
 
 .chevron {
-  width: 12px;
+  width: 16px;
   flex-shrink: 0;
-  font-size: 10px;
-  color: var(--gray-9);
+  text-align: center;
+  font-size: 9px;
+  color: var(--gray-10);
 }
 
 .name {
@@ -164,9 +171,10 @@ function handleEnter() {
 .rename-input {
   flex: 1;
   min-width: 0;
-  background: var(--gray-2);
-  border: 1px solid var(--accent-9);
-  border-radius: 2px;
+  height: 24px;
+  background: var(--gray-1);
+  border: 1px solid var(--accent-8);
+  border-radius: var(--radius-xs);
   color: var(--gray-12);
   font-size: 13px;
   font-family: var(--font-sans);

@@ -45,35 +45,35 @@ const bottomItems = computed(() =>
 
 <style scoped>
 .app-sidebar {
-  width: 3.5rem;
+  width: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0.75rem 0;
-  background-color: var(--gray-1);
+  padding: 8px 0;
+  background-color: var(--gray-2);
   border-right: 1px solid var(--gray-6);
   flex-shrink: 0;
   z-index: var(--z-index-docked);
 }
 
 .content-section {
-  margin-bottom: 1rem;
+  margin-bottom: 8px;
 }
 
 .nav-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 4px;
   width: 100%;
-  padding: 0 0.5rem;
 }
 
 .bottom-section {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 4px;
   width: 100%;
-  padding: 0 0.5rem 0.5rem;
 }
 </style>

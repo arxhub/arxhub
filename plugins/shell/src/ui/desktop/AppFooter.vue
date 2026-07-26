@@ -14,10 +14,11 @@
 
 <style scoped>
 .app-footer {
-  height: 1.75rem;
+  height: 32px;
   width: 100%;
-  background-color: var(--gray-1);
-  border-top: 1px solid var(--gray-6);
+  padding: 0 4px;
+  background-color: var(--gray-2);
+  border-top: 1px solid var(--gray-4);
   display: flex;
   align-items: stretch;
   justify-content: space-between;

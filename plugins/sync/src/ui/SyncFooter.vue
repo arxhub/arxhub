@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { Icon } from '@arxhub/uikit/core'
+import { Icon, StatusDot } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, onUnmounted, ref } from 'vue'
 import { SyncExtension } from '../sync-extension'
@@ -48,6 +48,20 @@ const statusLabel = computed(() => {
 
 const syncing = computed(() => state.value === 'syncing')
 
+// Never-synced is a nudge, not a failure: amber, the same tone an unsaved file uses.
+const dotTone = computed(() => {
+  switch (state.value) {
+    case 'syncing':
+      return 'accent'
+    case 'error':
+      return 'danger'
+    case 'synced':
+      return 'success'
+    default:
+      return 'warning'
+  }
+})
+
 function openSettings() {
   settings.open('sync')
   shell.sidebar.setActive('arxhub.settings')
@@ -57,7 +71,7 @@ function openSettings() {
 <template>
   <div class="sync-footer">
     <div class="fx-status" role="status" :aria-label="statusLabel">
-      <span class="dot" :class="`dot--${state}`" />
+      <StatusDot :tone="dotTone" :pulse="syncing" />
       {{ statusLabel }}
     </div>
     <button
@@ -89,8 +103,10 @@ function openSettings() {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 100%;
+  align-self: center;
+  height: 24px;
   padding: 0 8px;
+  border-radius: var(--radius-xs);
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
   color: var(--gray-11);
@@ -101,46 +117,26 @@ function openSettings() {
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color var(--duration-normal), background-color var(--duration-normal);
+  transition: color var(--duration-fast), background-color var(--duration-fast);
 }
 
 .fx-item:hover:not(:disabled) {
-  background-color: var(--gray-3);
+  background-color: var(--gray-4);
   color: var(--gray-12);
 }
 
 .fx-item:focus-visible {
-  outline: 2px solid var(--accent-9);
-  outline-offset: -2px;
+  outline: 2px solid var(--accent-8);
+  outline-offset: -1px;
 }
 
 .fx-item:disabled {
   cursor: default;
-  opacity: 0.6;
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-full);
-  background: var(--gray-8);
-  flex-shrink: 0;
-}
-
-.dot--synced { background: var(--green-9); }
-.dot--error { background: var(--red-9); }
-.dot--syncing {
-  background: var(--accent-9);
-  animation: pulse 1s infinite;
+  color: var(--gray-9);
 }
 
 .spin {
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
 }
 
 @keyframes spin {
@@ -148,7 +144,6 @@ function openSettings() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dot--syncing { animation: none; }
   .spin { animation: none; }
 }
 </style>

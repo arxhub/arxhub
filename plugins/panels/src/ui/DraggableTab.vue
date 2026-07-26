@@ -46,32 +46,45 @@ const { isDragging, closestEdge } = useDraggableTab({
 </template>
 
 <style scoped>
+/* Tabs are pills inside the strip rather than full-height cells divided by rules: the active one is
+   stated by its own fill, so the strip needs no vertical dividers and no accent underline. */
 .tab {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  height: 36px;
+  gap: 4px;
+  padding: 0 8px 0 12px;
+  height: 28px;
+  max-width: 220px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
   background: transparent;
-  border: none;
-  border-right: 1px solid var(--gray-4);
-  color: var(--gray-10);
-  font-size: var(--font-size-sm);
+  color: var(--gray-11);
+  font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .tab:hover {
-  background-color: var(--gray-3);
+  background-color: var(--gray-4);
   color: var(--gray-12);
 }
 
+.tab:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -1px;
+}
+
 .tab.active {
-  background-color: var(--gray-1);
+  background-color: var(--gray-3);
   color: var(--gray-12);
-  border-bottom: 2px solid var(--accent-9);
+  font-weight: var(--font-weight-medium);
+}
+
+.tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tab.preview .tab-title {
@@ -82,8 +95,7 @@ const { isDragging, closestEdge } = useDraggableTab({
   background-color: transparent;
   color: transparent;
   border-color: var(--accent-7);
-  border-bottom-style: dashed;
-  border-right-style: dashed;
+  border-style: dashed;
   opacity: 1;
 }
 

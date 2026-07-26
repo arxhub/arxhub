@@ -1,43 +1,30 @@
 <script setup lang="ts">
+import { PageLayout } from '@arxhub/uikit/core'
+
 defineProps<{ version: string }>()
 </script>
 
 <template>
-  <div class="about">
-    <h3 class="about-title">ArxHub</h3>
-    <p class="about-row">
+  <PageLayout
+    title="About"
+    description="Quote this version when reporting a problem — the session log records it too."
+  >
+    <div class="about-row">
       <span class="label">Version</span>
       <code class="value" data-testid="app-version">{{ version }}</code>
-    </p>
-    <p class="hint">Quote this version when reporting a problem — the session log records it too.</p>
-  </div>
+    </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.about {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
-  font-family: var(--font-sans);
-}
-
-.about-title {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--gray-12);
-}
-
 .about-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0;
+  gap: 8px;
 }
 
 .label {
-  font-size: var(--font-size-xs);
+  font-size: 13px;
   color: var(--gray-11);
 }
 
@@ -45,12 +32,5 @@ defineProps<{ version: string }>()
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   color: var(--gray-12);
-}
-
-.hint {
-  margin: 0;
-  max-width: 60ch;
-  font-size: var(--font-size-xs);
-  color: var(--gray-11);
 }
 </style>

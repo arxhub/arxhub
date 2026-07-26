@@ -79,8 +79,9 @@ function onSplit(direction: 'horizontal' | 'vertical') {
 .panel-tab-bar {
   display: flex;
   align-items: center;
-  height: 36px;
-  background-color: var(--gray-2);
+  height: 40px;
+  padding: 0 4px;
+  background-color: var(--gray-1);
   border-bottom: 1px solid var(--gray-4);
   flex-shrink: 0;
   overflow: hidden;
@@ -89,6 +90,7 @@ function onSplit(direction: 'horizontal' | 'vertical') {
 .tabs {
   display: flex;
   align-items: center;
+  gap: 4px;
   flex: 1;
   overflow-x: auto;
   scrollbar-width: none;
@@ -101,8 +103,7 @@ function onSplit(direction: 'horizontal' | 'vertical') {
 .actions {
   display: flex;
   align-items: center;
-  padding: 0 4px;
-  gap: 2px;
+  gap: 4px;
   flex-shrink: 0;
 }
 </style>

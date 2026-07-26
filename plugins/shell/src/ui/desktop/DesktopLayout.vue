@@ -58,24 +58,25 @@ import AppSidebar from './AppSidebar.vue'
   background-color: var(--gray-1);
 }
 
+/* Height tracks AppHeader — these sit on top of it, not beside it. */
 .traffic-lights {
   position: absolute;
   top: 0;
   left: 0;
-  height: var(--size-md);
+  height: 40px;
   display: flex;
   align-items: center;
-  padding: 0 1rem;
-  gap: 0.5rem;
+  padding: 0 12px;
+  gap: 8px;
   z-index: var(--z-index-docked);
   opacity: 0.8;
 }
 
 .light {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: 12px;
+  height: 12px;
   border-radius: var(--radius-full);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--black-a2);
 }
 
 .light.red { background-color: #E5484D; }
