@@ -25,7 +25,7 @@
   "dependencies": {
     "@arxhub/errors": "workspace:*",
     "@arxhub/path": "workspace:*",
-    "@noble/hashes": "^2.2.0"
+    "@noble/hashes": "catalog:shared"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

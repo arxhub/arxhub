@@ -45,10 +45,10 @@
   },
   "dependencies": {
     "@arxhub/errors": "workspace:*",
-    "@noble/ciphers": "^2.2.0",
-    "@noble/hashes": "^2.2.0",
-    "@scure/bip32": "^2.2.0",
-    "@scure/bip39": "^2.2.0",
+    "@noble/ciphers": "catalog:shared",
+    "@noble/hashes": "catalog:shared",
+    "@scure/bip32": "catalog:shared",
+    "@scure/bip39": "catalog:shared",
     "@sinclair/typebox": "catalog:shared",
     "wretch": "catalog:shared"
   }

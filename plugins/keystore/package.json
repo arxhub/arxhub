@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@arxhub/crypto": "workspace:*",
-    "@noble/hashes": "^2.2.0"
+    "@noble/hashes": "catalog:shared"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

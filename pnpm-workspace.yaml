@@ -19,6 +19,7 @@ catalogs:
     '@codemirror/view': ^6.39.1
     '@codemirror/commands': ^6.9.1
     '@codemirror/state': ^6.6.0
+    '@lezer/highlight': ^1.2.1
     prosemirror-model: ^1.24.0
     prosemirror-state: ^1.4.3
     prosemirror-view: ^1.38.0
@@ -34,8 +35,13 @@ catalogs:
     '@elysiajs/node': ^1.2.6
     '@elysiajs/static': ^1.1.1
     elysia: ^1.4.28
+    file-type: ^21.3.4
     esbuild: ^0.28.1
   shared:
+    '@noble/ciphers': ^2.2.0
+    '@noble/hashes': ^2.2.0
+    '@scure/bip32': ^2.2.0
+    '@scure/bip39': ^2.2.0
     '@signaldb/core': ^1.6.0
     async-lock: ^1.4.1
     eventemitter3: ^5.0.1
