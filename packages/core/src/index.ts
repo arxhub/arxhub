@@ -3,6 +3,7 @@
 export { ConsoleLogger, type Logger } from '@arxhub/logger'
 export * from './api'
 export * from './arxhub'
+export * from './boot'
 export * from './extension'
 export * from './plugin'
 export * from './plugin-context'

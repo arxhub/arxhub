@@ -6,6 +6,8 @@ const manifest: PluginManifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Tiling panel layout system',
+  // Settings renders its pages into a panel store.
+  essential: true,
 }
 
 export class PanelsPlugin extends Plugin {

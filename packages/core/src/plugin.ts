@@ -10,6 +10,10 @@ export interface PluginManifest {
   description?: string
   author: string
   minApi?: string
+  // An essential plugin cannot be switched off: the app has nothing to render (or no way to reach
+  // settings) without it, so it boots even in maintenance mode. Everything a user could conceivably
+  // live without leaves this unset.
+  essential?: boolean
   // Unique route namespace for a plugin that mounts HTTP routes. arxhub's gateway bakes it into an
   // `/api/<namespace>` prefix (see GatewayServerExtension.forPlugin), so the plugin names its routes
   // relatively and never hardcodes the prefix. Omit for plugins with no server routes.

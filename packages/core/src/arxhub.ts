@@ -1,8 +1,9 @@
 import { LazyContainer } from '@arxhub/di'
-import { aggregate, illegalState } from '@arxhub/errors'
+import { bootFailed, illegalState } from '@arxhub/errors'
 import type { EventBus, EventMap } from '@arxhub/events'
 import { createRootLogger, type LogBuffer, LogBufferKey, type Logger } from '@arxhub/logger'
 import EventEmitter from 'eventemitter3'
+import type { BootFailure, BootOptions, BootPhase, PluginInfo } from './boot'
 import { ExtensionContainer } from './extension'
 import { type Plugin, PluginContainer } from './plugin'
 import type { PluginContext, PluginHost, ScopeConfigureCallback } from './plugin-context'
@@ -18,15 +19,27 @@ export class ArxHub {
   // LogBufferKey so the logger plugin's panel/file writer resolve this exact instance.
   readonly logBuffer: LogBuffer
   readonly events: EventBus
+  // This boot runs the essential plugins only. Surfaced so the UI can say so (and offer a way out)
+  // instead of the app silently looking half-empty.
+  readonly maintenance: boolean
 
   private started = false
+  private readonly disabled: ReadonlySet<string>
+  // Filled by start(), right after instantiation and before any phase runs — so it is available even
+  // when the boot then fails, which is exactly when someone needs to see the roster.
+  private roster: PluginInfo[] = []
+  // The plugins this boot actually ran. stop() must walk these and no others: a skipped plugin never
+  // got a context, let alone a start().
+  private running: Plugin[] = []
   // One PluginContext per plugin instance, reused across all its lifecycle phases (and stop()).
   private readonly contexts = new Map<Plugin, PluginContext>()
   // Per-plugin DI-scope configurers (e.g. @arxhub/vfs binding a Vfs token). Run once per plugin when
   // its context is built — register them BEFORE start().
   private readonly scopeConfigurers: ScopeConfigureCallback[] = []
 
-  constructor() {
+  constructor(options: BootOptions = {}) {
+    this.maintenance = options.maintenance ?? false
+    this.disabled = new Set(options.disabled ?? [])
     const { logger, buffer } = createRootLogger()
     this.logger = logger
     this.logBuffer = buffer
@@ -38,6 +51,12 @@ export class ArxHub {
     this.plugins = new PluginContainer(this.logger)
     this.extensions = new ExtensionContainer({ logger: this.logger })
     this.events = new EventEmitter<EventMap>()
+  }
+
+  // Every registered plugin and whether this boot ran it. Empty until start() has instantiated them;
+  // a crash screen reads this to offer the roster even though the boot itself went nowhere.
+  get catalog(): readonly PluginInfo[] {
+    return this.roster
   }
 
   async start(configure?: ArxHubConfigureCallback): Promise<void> {
@@ -52,8 +71,21 @@ export class ArxHub {
     // instance is spent (`started` stays true) and the app must be restarted to recover — `stop()`
     // is the whole-app shutdown hook (dev hot-restart / process exit), not a runtime plugin-unload.
     // Initialization order:
-    // 1. Create instances of all registered plugins
-    const plugins = this.plugins.instantiate()
+    // 1. Create instances of all registered plugins, then drop the ones this boot must skip. The
+    // roster is recorded first so it survives a failure below.
+    const instances = this.instantiatePlugins()
+    this.roster = instances.map((it) => ({
+      name: it.manifest.name,
+      version: it.manifest.version,
+      description: it.manifest.description,
+      essential: it.manifest.essential ?? false,
+      enabled: this.isEnabled(it),
+    }))
+    const plugins = instances.filter((_, i) => this.roster[i].enabled)
+    this.running = plugins
+    for (const it of this.roster) {
+      if (!it.enabled) this.logger.warn(`Plugin '${it.name}' is switched off — skipping it`)
+    }
     // 1a. Setup phase: each plugin wires instance-level infrastructure via the narrow host (e.g.
     // VfsPlugin binds a per-plugin VFS scope). Runs before ANY context/scope is built, so a
     // contribution applies to every plugin — the declaring one included — independent of order.
@@ -75,20 +107,36 @@ export class ArxHub {
 
     // 5. Start every plugin; collect failures instead of letting one rejection abandon the rest.
     const results = await Promise.allSettled(plugins.map((it) => it.start(this.context(it))))
-    const failures = results.flatMap((r, i) => (r.status === 'rejected' ? [{ plugin: plugins[i], reason: r.reason }] : []))
+    const failures: BootFailure[] = results.flatMap((r, i) =>
+      r.status === 'rejected' ? [{ plugin: plugins[i].manifest.name, phase: 'start' as const, error: r.reason }] : [],
+    )
     if (failures.length > 0) {
-      for (const { plugin, reason } of failures) this.logger.error(`Plugin '${plugin.name}' failed during start()`, reason)
-      throw aggregate(
-        failures.map((f) => f.reason),
-        `${failures.length} plugin(s) failed to start`,
-      )
+      for (const { plugin, error } of failures) this.logger.error(`Plugin '${plugin}' failed during start()`, error)
+      throw bootFailed(failures, `${failures.length} plugin(s) failed to start`)
     }
   }
 
   async stop(): Promise<void> {
     // Stop in reverse registration order so dependents shut down before their dependencies.
-    await this.stopPlugins(this.plugins.instances().reverse())
+    await this.stopPlugins([...this.running].reverse())
     this.started = false
+  }
+
+  // A plugin constructor throwing takes the whole roster with it — the container builds them in one
+  // pass, so there are no instances left to name and nothing specific to offer switching off.
+  // Maintenance mode is the only way out of that one.
+  private instantiatePlugins(): Plugin[] {
+    try {
+      return this.plugins.instantiate()
+    } catch (error) {
+      this.logger.error('Failed to instantiate the registered plugins', error)
+      throw bootFailed([{ plugin: null, phase: 'instantiate', error }], 'Failed to instantiate the registered plugins')
+    }
+  }
+
+  private isEnabled(plugin: Plugin): boolean {
+    if (plugin.manifest.essential) return true
+    return !this.maintenance && !this.disabled.has(plugin.manifest.name)
   }
 
   // Lazily builds (and caches) the PluginContext handed to a plugin's lifecycle phases. Each plugin
@@ -118,13 +166,15 @@ export class ArxHub {
   // Runs a synchronous lifecycle phase across all plugins in registration order. A throw aborts
   // start() (the instance is spent — restart). The async phases (start/stop) run concurrently and
   // collect failures instead, so they don't go through here.
-  private runPhase(plugins: Plugin[], phase: 'setup' | 'create' | 'configure', action: (plugin: Plugin) => void): void {
+  private runPhase(plugins: Plugin[], phase: Extract<BootPhase, 'setup' | 'create' | 'configure'>, action: (plugin: Plugin) => void): void {
     for (const plugin of plugins) {
       try {
         action(plugin)
       } catch (error) {
         this.logger.error(`Plugin '${plugin.name}' failed during ${phase}()`, error)
-        throw error
+        // Wrapped rather than rethrown raw: whoever catches this has to know WHICH plugin died and
+        // where, or it cannot offer to switch that one off and try again.
+        throw bootFailed([{ plugin: plugin.manifest.name, phase, error }], `Plugin '${plugin.manifest.name}' failed during ${phase}()`)
       }
     }
   }

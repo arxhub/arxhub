@@ -6,6 +6,8 @@ const manifest: PluginManifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'App shell layout with sidebar navigation registry',
+  // Nothing renders without the frame.
+  essential: true,
 }
 
 export class ShellPlugin extends Plugin {

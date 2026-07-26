@@ -10,6 +10,7 @@ export const illegalStateErrorSchema = defineAppError('IllegalStateError', 500)
 export const keyErrorSchema = defineAppError('KeyError', 500)
 export const notImplementedErrorSchema = defineAppError('NotImplementedError', 500)
 export const aggregateErrorSchema = defineAppError('AggregateError', 500)
+export const bootFailedErrorSchema = defineAppError('BootFailedError', 500)
 
 // Union of the generic application errors. Per-domain packages define their own
 // schemas via defineAppError; compose unions at a boundary when validation is needed.
@@ -23,6 +24,7 @@ export const appErrorSchema = Type.Union([
   keyErrorSchema,
   notImplementedErrorSchema,
   aggregateErrorSchema,
+  bootFailedErrorSchema,
 ])
 
 export type AppErrorBody = Static<typeof appErrorSchema>
@@ -56,3 +58,9 @@ export const notImplemented = (message = 'Method not implemented', title = 'Not 
 // (an array), mirroring the native AggregateError's `errors` without the bare `new`.
 export const aggregate = (errors: unknown[], message = `${errors.length} error(s) occurred`, title = 'Aggregate Error') =>
   new AppError<Static<typeof aggregateErrorSchema>>({ code: 'AggregateError', statusCode: 500, title, message }, errors)
+
+// The app could not come up. `originalError` carries the per-plugin failures (core's BootFailure[]) so
+// a composition root can name the culprit and offer to switch it off; @arxhub/core reads them back
+// with bootFailures().
+export const bootFailed = (failures: unknown[], message = 'ArxHub failed to boot', title = 'Boot Failed') =>
+  new AppError<Static<typeof bootFailedErrorSchema>>({ code: 'BootFailedError', statusCode: 500, title, message }, failures)

@@ -5,4 +5,6 @@ export const manifest = definePluginManifest({
   version: '0.1.0',
   author: 'arxhub',
   description: 'Global settings screen with a per-plugin section registry',
+  // Where the plugin switches live.
+  essential: true,
 })
