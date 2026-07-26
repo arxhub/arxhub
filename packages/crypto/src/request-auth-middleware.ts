@@ -1,4 +1,5 @@
 import type { ConfiguredMiddleware } from 'wretch'
+import { authRejections } from './auth-rejections'
 import { AUTH_HEADERS, type RequestDescriptor, type RequestSigner } from './request-auth'
 
 // Turns a RequestSigner into a wretch middleware — the client-transport glue that lives here (with the
@@ -40,19 +41,34 @@ export function describeRequest(url: string, method: string, body: unknown): Req
 // wretch middleware that signs each request and attaches the auth headers. Runs at send time, so it
 // sees the fully-assembled URL (query included) and body. A signer with no identity yet is a no-op —
 // the request goes out unauthenticated.
+//
+// It also reports every 401 to `authRejections`. This is the one point every signed client passes
+// through, which is why the observation lives here rather than in each caller's error handling: a
+// server that refuses this device refuses ALL of them, and that is one condition to show the user, not
+// a failure for each of them to discover.
 export function signingMiddleware(signer: RequestSigner): ConfiguredMiddleware {
-  return (next) => (url, opts) => {
-    const headers = signer.sign(describeRequest(url, opts.method ?? 'GET', opts.body))
-    if (headers == null) return next(url, opts)
-    return next(url, {
-      ...opts,
-      headers: {
-        ...opts.headers,
-        [AUTH_HEADERS.timestamp]: headers.timestamp,
-        [AUTH_HEADERS.nonce]: headers.nonce,
-        [AUTH_HEADERS.signature]: headers.signature,
-        [AUTH_HEADERS.publicKey]: headers.publicKey,
-      },
-    })
+  return (next) => async (url, opts) => {
+    const method = opts.method ?? 'GET'
+    const desc = describeRequest(url, method, opts.body)
+    const headers = signer.sign(desc)
+    const response =
+      headers == null
+        ? await next(url, opts)
+        : await next(url, {
+            ...opts,
+            headers: {
+              ...opts.headers,
+              [AUTH_HEADERS.timestamp]: headers.timestamp,
+              [AUTH_HEADERS.nonce]: headers.nonce,
+              [AUTH_HEADERS.signature]: headers.signature,
+              [AUTH_HEADERS.publicKey]: headers.publicKey,
+            },
+          })
+    // An unsigned request is reported too: it 401s for a reason worth naming ('missing' — no identity
+    // was installed) rather than one worth hiding.
+    if (response.status === 401) {
+      authRejections.notify({ reason: response.headers.get(AUTH_HEADERS.reason), method, path: desc.path })
+    }
+    return response
   }
 }

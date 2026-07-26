@@ -118,6 +118,9 @@ export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Lo
     if (allowOrigin != null) {
       set.headers['access-control-allow-origin'] = allowOrigin
       if (allowOrigin !== '*') set.headers.vary = 'Origin'
+      // Without this the reason header below is invisible to a cross-origin client: browsers hide every
+      // non-safelisted response header from JS unless it is named here.
+      set.headers['access-control-expose-headers'] = AUTH_HEADERS.reason
     }
     // Preflight: answer BEFORE auth. An OPTIONS carries no signature (the browser sends it on its own
     // to negotiate the custom x-arx-* headers), so authenticating it would 401 every cross-origin
@@ -148,7 +151,11 @@ export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Lo
       if (result.pairedNow) logger?.info(`Paired client key ${result.publicKey.slice(0, 16)}…`)
       return
     }
-    logger?.warn(`Rejected request to ${new URL(request.url).pathname}: ${result.reason}`)
+    logger?.warn(`Rejected request to ${url.pathname}: ${result.reason}`)
+    // Name the reason on the wire, coarsely. The 401 already tells the caller it was refused; which of
+    // the five reasons it was tells nothing an attacker could not establish by trying, and it is what
+    // lets the client say "this device is not the paired one" (act on it) instead of "request failed".
+    set.headers[AUTH_HEADERS.reason] = result.reason
     set.status = 401
     return 'Unauthorized'
   })

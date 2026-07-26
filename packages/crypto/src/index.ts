@@ -1,6 +1,7 @@
 import type { CreateHasher, Hash } from './types'
 
 export * from './auth'
+export * from './auth-rejections'
 export * from './cipher'
 export * from './errors'
 export * from './kdf'

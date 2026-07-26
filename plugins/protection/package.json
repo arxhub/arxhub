@@ -39,6 +39,7 @@
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-keystore": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/uikit": "workspace:*"
   },
   "publishConfig": {

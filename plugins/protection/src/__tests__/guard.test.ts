@@ -1,4 +1,4 @@
-import { AUTH_HEADERS, keyringFromMnemonic, MutableRequestSigner, type RequestDescriptor } from '@arxhub/crypto'
+import { AUTH_HEADERS, keyringFromMnemonic, MutableRequestSigner, type RequestDescriptor, signRequest } from '@arxhub/crypto'
 import Elysia from 'elysia'
 import { describe, expect, it } from 'vitest'
 import { RequestAuthenticator } from '../authenticator'
@@ -92,6 +92,65 @@ describe('createAuthGuard (Elysia integration)', () => {
     const headers = authHeaderBag(signer, { method: 'GET', host: 'staging.example.com', path: '/vfs/list', query: 'prefix=' })
     const res = await app.handle(new Request('http://localhost/vfs/list?prefix=', { headers }))
     expect(res.status).toBe(401)
+  })
+})
+
+// The client cannot tell a stale pin apart from a wrong clock from the status alone, and those have
+// nothing to do with each other for the person holding the device. See AUTH_HEADERS.reason.
+describe('createAuthGuard (naming the reason on a 401)', () => {
+  it('says unknown-key when a second key is presented after one is pinned', async () => {
+    const auth = new RequestAuthenticator()
+    const app = makeApp(auth)
+    const signed = (mnemonic: string) =>
+      authHeaderBag(signerFor(mnemonic), { method: 'GET', host: 'localhost', path: '/vfs/list', query: 'prefix=' })
+    await app.handle(new Request('http://localhost/vfs/list?prefix=', { headers: signed(MNEMONIC) }))
+
+    const res = await app.handle(new Request('http://localhost/vfs/list?prefix=', { headers: signed(OTHER) }))
+    expect(res.status).toBe(401)
+    expect(res.headers.get(AUTH_HEADERS.reason)).toBe('unknown-key')
+  })
+
+  it('says missing when the request carries no signature at all', async () => {
+    const res = await makeApp().handle(new Request('http://localhost/vfs/list?prefix='))
+    expect(res.headers.get(AUTH_HEADERS.reason)).toBe('missing')
+  })
+
+  it('says stale when the signed timestamp is outside the freshness window', async () => {
+    const app = makeApp()
+    const keyring = keyringFromMnemonic(MNEMONIC)
+    const desc: RequestDescriptor = { method: 'GET', host: 'localhost', path: '/vfs/list', query: 'prefix=' }
+    const long = signRequest(keyring, desc, { timestamp: Math.floor(Date.now() / 1000) - 3600 })
+    const headers = {
+      [AUTH_HEADERS.timestamp]: long.timestamp,
+      [AUTH_HEADERS.nonce]: long.nonce,
+      [AUTH_HEADERS.signature]: long.signature,
+      [AUTH_HEADERS.publicKey]: long.publicKey,
+    }
+
+    const res = await app.handle(new Request('http://localhost/vfs/list?prefix=', { headers }))
+    expect(res.status).toBe(401)
+    expect(res.headers.get(AUTH_HEADERS.reason)).toBe('stale')
+  })
+
+  // A browser hides every non-safelisted response header from JS unless it is exposed, so without this
+  // a cross-origin client reads the 401 and learns nothing from it.
+  it('exposes the reason header to a cross-origin client', async () => {
+    const app = new Elysia()
+      .use(createAuthGuard(new RequestAuthenticator(), undefined, { corsOrigins: '*' }))
+      .get('/vfs/list', () => ({ ok: true }))
+      .compile()
+
+    const res = await app.handle(new Request('http://localhost/vfs/list', { headers: { origin: 'http://tauri.localhost' } }))
+    expect(res.status).toBe(401)
+    expect(res.headers.get('access-control-expose-headers')).toContain(AUTH_HEADERS.reason)
+  })
+
+  it('sets no reason on a request that succeeds', async () => {
+    const app = makeApp()
+    const headers = authHeaderBag(signerFor(MNEMONIC), { method: 'GET', host: 'localhost', path: '/vfs/list', query: 'prefix=' })
+    const res = await app.handle(new Request('http://localhost/vfs/list?prefix=', { headers }))
+    expect(res.status).toBe(200)
+    expect(res.headers.get(AUTH_HEADERS.reason)).toBeNull()
   })
 })
 

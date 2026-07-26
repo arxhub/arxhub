@@ -10,6 +10,9 @@ export const AUTH_HEADERS = {
   nonce: 'x-arx-nonce',
   signature: 'x-arx-signature',
   publicKey: 'x-arx-pubkey',
+  // Response-only, set by the server on a 401 (see AuthDenyReason). Never sent by the client, so it is
+  // deliberately absent from the CORS request allowlist — it needs exposing instead.
+  reason: 'x-arx-auth-reason',
 } as const
 
 // The client-attached authentication fields for one request.
