@@ -4,6 +4,7 @@ __tests__/runner/*
 
 # Ignore js files that are transpiled from ts files in src/
 lib/
+refs/
 
 # Rest of the file pulled from https://github.com/github/gitignore/blob/master/Node.gitignore
 # Logs
