@@ -4,11 +4,19 @@ import { randomBytes, utf8ToBytes } from '@noble/hashes/utils.js'
 const SALT_BYTES = 16
 const KEY_BYTES = 32 // AES-256
 
-// scrypt cost parameters. N = 2^15 targets ~tens of ms on a laptop — enough that brute-forcing a
-// stolen ciphertext vault is expensive, without making an interactive unlock feel slow. r/p are the
-// conventional defaults. These are baked in (not configurable) so a value derived on one device
-// reproduces on another from the same passphrase + salt.
-const SCRYPT_N = 1 << 15
+// scrypt cost parameters. N = 2^16 costs 64 MiB and ~130 ms on a 2026 laptop — the memory is the
+// point: it is what denies an attacker the massive parallelism of a GPU or ASIC. 64 MiB (not 128)
+// because this must also derive inside a low-end Android webview without being killed. r/p are the
+// conventional defaults. Baked in, not configurable, so a value derived on one device reproduces on
+// another from the same passphrase + salt.
+//
+// This cannot rescue a short numeric PIN on its own. At these parameters a full 6-digit sweep is
+// ~36 core-hours — hours, not years, on a machine an attacker can rent. A PIN therefore buys real
+// protection against someone who merely gets a copy of the storage (a synced browser profile, a
+// borrowed laptop) and no protection against someone who targets you and is willing to spend an
+// afternoon. Length is the only thing that closes that gap, which is why the unlock UI accepts a
+// full passphrase and says so.
+const SCRYPT_N = 1 << 16
 const SCRYPT_R = 8
 const SCRYPT_P = 1
 
