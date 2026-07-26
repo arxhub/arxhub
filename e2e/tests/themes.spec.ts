@@ -4,8 +4,14 @@ const themeAttr = () => document.documentElement.getAttribute('data-arxhub-theme
 const baseAttr = () => document.documentElement.getAttribute('data-theme')
 const bg = () => getComputedStyle(document.documentElement).getPropertyValue('--gray-1').trim()
 
+// The active theme is one setting in one shared config, so these cannot run beside each other — nor
+// beside the same file on the other project. Theme selection has nothing to do with the frame, so it
+// runs serially on one project instead of being made frame-aware.
+test.describe.configure({ mode: 'serial' })
+
 test.describe('themes', () => {
-  test.beforeEach(async ({ app }) => {
+  test.beforeEach(async ({ app }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'theme selection is not frame-specific')
     await openSettingsSection(app, 'Appearance')
   })
 
@@ -33,10 +39,13 @@ test.describe('themes', () => {
     await expect.poll(() => app.evaluate(baseAttr)).toBe('light')
   })
 
-  test('the choice survives a restart', async ({ app }) => {
+  test('the choice survives a restart', async ({ app, vault }) => {
     await app.getByTestId('theme-catppuccin-macchiato').click()
     await expect.poll(() => app.evaluate(themeAttr)).toBe('catppuccin-macchiato')
 
+    // The write is async and the plugin reads its config once at start, so reloading before the file
+    // lands would bring the app back on whatever was written last.
+    await expect.poll(() => vault.readData('storage/theme/config.toml').catch(() => '')).toContain('catppuccin-macchiato')
     await app.reload()
 
     // Persisted through the plugin's own config, so it travels with the vault rather than the device.
