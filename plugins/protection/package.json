@@ -35,6 +35,7 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-keystore": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",

@@ -6,6 +6,19 @@ import type { KeyStore } from './keystore'
 // re-derive the key on the next unlock. Hidden from list() so it never shows up as a user secret.
 const SALT_ENTRY = '__vault_salt__'
 
+// Reserved entry holding a known plaintext encrypted under the derived key. Its presence is also what
+// marks a store as locked. Without it a wrong code would only surface when something first read a real
+// secret — by which time the caller has already committed to booting with a store it cannot read.
+const CHECK_ENTRY = '__vault_check__'
+const CHECK_VALUE = 'arxhub-device-lock-v1'
+
+const RESERVED = new Set([SALT_ENTRY, CHECK_ENTRY])
+
+// Whether `inner` holds a lock that must be opened before its values can be read.
+export async function hasVerifier(inner: KeyStore): Promise<boolean> {
+  return inner.has(CHECK_ENTRY)
+}
+
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 
@@ -50,7 +63,32 @@ export class EncryptedKeyStore implements KeyStore {
   }
 
   async list(): Promise<string[]> {
-    return (await this.inner.list()).filter((name) => name !== SALT_ENTRY)
+    return (await this.inner.list()).filter((name) => !RESERVED.has(name))
+  }
+
+  // Stamp the known plaintext under this store's key. Call once, when the lock is first enabled.
+  async writeVerifier(): Promise<void> {
+    await this.set(CHECK_ENTRY, CHECK_VALUE)
+  }
+
+  // Confirm this store's code opens the lock, before anything relies on being able to read it.
+  // Resolves only when the verifier decrypts to the expected value; the caller turns a rejection into
+  // "wrong code" without learning which of the two failure shapes occurred.
+  async verifyCode(): Promise<boolean> {
+    try {
+      return (await this.get(CHECK_ENTRY)) === CHECK_VALUE
+    } catch {
+      // A wrong code fails the GCM tag rather than returning garbage — indistinguishable, by design,
+      // from ciphertext that was actually corrupted.
+      return false
+    }
+  }
+
+  // Drop the reserved entries so the inner store no longer reads as locked. The caller is responsible
+  // for having already written the real values back in the clear.
+  async removeVerifier(): Promise<void> {
+    await this.inner.delete(CHECK_ENTRY)
+    await this.inner.delete(SALT_ENTRY)
   }
 
   // Load-or-create the salt in the inner store, then derive the key. Cached so scrypt runs once.

@@ -21,7 +21,9 @@
   },
   "dependencies": {
     "@arxhub/crypto": "workspace:*",
-    "@noble/hashes": "catalog:shared"
+    "@noble/hashes": "catalog:shared",
+    "@sinclair/typebox": "catalog:shared",
+    "vue": "catalog:client"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

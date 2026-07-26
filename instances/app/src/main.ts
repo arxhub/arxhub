@@ -10,7 +10,7 @@ import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { ConfigPlugin } from '@arxhub/plugin-config/ui'
 import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
-import { KeyStorePlugin, LocalStorageKeyStore } from '@arxhub/plugin-keystore/ui'
+import { KeyStorePlugin, resolveKeyStore } from '@arxhub/plugin-keystore/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
@@ -31,7 +31,8 @@ const arxhub = new ArxHub()
 // Resolve the device identity from client-local storage and install it into the signer before start().
 // In browser mode this signs every /vfs request; under Tauri the native fs needs no signing, but the
 // same identity still drives sync encryption/auth.
-const keystore = new LocalStorageKeyStore()
+// Blocks on the unlock prompt when the device is locked — nothing below can run without the secrets.
+const keystore = await resolveKeyStore()
 const keyring = await loadOrCreateKeyring(keystore)
 const signer = new MutableRequestSigner()
 signer.install(keyring)

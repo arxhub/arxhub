@@ -1,15 +1,86 @@
 <script setup lang="ts">
 import { validateMnemonic } from '@arxhub/crypto'
-import { KeyStoreExtension } from '@arxhub/plugin-keystore/ui'
+import { hasErrorCode } from '@arxhub/errors'
+import {
+  changeUnlockCode,
+  disableDeviceLock,
+  enableDeviceLock,
+  isDeviceLocked,
+  KeyStoreExtension,
+  LocalStorageKeyStore,
+  MIN_UNLOCK_CODE_LENGTH,
+} from '@arxhub/plugin-keystore/ui'
 import { Button, modals } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { IDENTITY_MNEMONIC_KEY } from '../identity'
 import { KeyringExtension } from '../keyring-extension'
 
 const arxhub = useArxHub()
 const keystore = arxhub.extensions.get(KeyStoreExtension).keystore
 const keyring = arxhub.extensions.get(KeyringExtension).keyring
+
+// The lock operations rewrite the raw entries, so they need the undecorated localStorage view rather
+// than whatever decorated store the app booted on. A LocalStorageKeyStore holds no state of its own,
+// so a fresh one is the same store.
+const rawKeystore = new LocalStorageKeyStore()
+
+const locked = ref(false)
+const currentCode = ref('')
+const newCode = ref('')
+const lockBusy = ref(false)
+
+const newCodeLongEnough = computed(() => newCode.value.length >= MIN_UNLOCK_CODE_LENGTH)
+// Digits alone are brute-forceable offline in hours; say so rather than showing a green tick.
+const newCodeIsWeak = computed(() => newCodeLongEnough.value && /^\d+$/.test(newCode.value))
+
+onMounted(async () => {
+  locked.value = await isDeviceLocked(rawKeystore)
+})
+
+// Every lock change swaps the store the whole app reads secrets from, and that store is resolved
+// before ArxHub.start() — so, as with replacing the identity, the way to apply it is a fresh boot.
+async function applyLockChange(change: () => Promise<unknown>, success: string): Promise<void> {
+  lockBusy.value = true
+  try {
+    await change()
+    toaster.create({ title: success, type: 'success' })
+    window.location.reload()
+  } catch (error) {
+    lockBusy.value = false
+    const wrong = hasErrorCode(error, 'UnlockFailedError')
+    toaster.create({
+      title: wrong ? 'That code did not work' : 'Could not change the device lock',
+      description: wrong ? undefined : String(error),
+      type: 'error',
+    })
+  }
+}
+
+function confirmEnableLock(): void {
+  modals.openConfirmModal({
+    title: 'Lock this device',
+    content:
+      'Your keys will be encrypted with this code, and it will be asked for every time the app starts. There is no ' +
+      'way to recover it: forgetting it means erasing this device and restoring from your recovery phrase.',
+    labels: { confirm: 'Lock device', cancel: 'Cancel' },
+    onConfirm: () => void applyLockChange(() => enableDeviceLock(rawKeystore, newCode.value), 'Device locked'),
+  })
+}
+
+function confirmDisableLock(): void {
+  modals.openConfirmModal({
+    title: 'Remove the device lock',
+    content: 'Your recovery phrase goes back to being stored unencrypted. Anyone who can read this browser profile can take it.',
+    labels: { confirm: 'Remove lock', cancel: 'Cancel' },
+    confirmProps: { danger: true },
+    onConfirm: () => void applyLockChange(() => disableDeviceLock(rawKeystore, currentCode.value), 'Device lock removed'),
+  })
+}
+
+function submitChangeCode(): void {
+  void applyLockChange(() => changeUnlockCode(rawKeystore, currentCode.value, newCode.value), 'Unlock code changed')
+}
 
 const phrase = ref<string | null>(null)
 
@@ -83,6 +154,70 @@ function confirmReplace(): void {
     </section>
 
     <section class="block">
+      <h3 class="block-title">Device lock</h3>
+      <p v-if="locked" class="hint">
+        This device's keys are encrypted. The code is asked for each time the app starts and is never stored.
+      </p>
+      <p v-else class="hint">
+        <strong>This device's keys are stored unencrypted.</strong> Anyone who can read this browser profile — a
+        backup, a synced account, another program on this machine — can take your recovery phrase. A lock encrypts
+        them with a code only you know.
+      </p>
+
+      <template v-if="!locked">
+        <input
+          v-model="newCode"
+          class="entry code"
+          type="password"
+          autocomplete="new-password"
+          :placeholder="`Unlock code (at least ${MIN_UNLOCK_CODE_LENGTH} characters)`"
+          data-testid="new-unlock-code"
+        />
+        <p v-if="newCodeIsWeak" class="hint">
+          Digits only: someone who copies this profile can try every combination offline in a few hours. A phrase of a
+          few words is far stronger and no harder to remember.
+        </p>
+        <div class="row">
+          <Button size="sm" variant="secondary" :disabled="!newCodeLongEnough || lockBusy" @click="confirmEnableLock">
+            Lock this device
+          </Button>
+        </div>
+      </template>
+
+      <template v-else>
+        <input
+          v-model="currentCode"
+          class="entry code"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Current unlock code"
+          data-testid="current-unlock-code"
+        />
+        <input
+          v-model="newCode"
+          class="entry code"
+          type="password"
+          autocomplete="new-password"
+          placeholder="New unlock code (leave empty to only remove the lock)"
+          data-testid="new-unlock-code"
+        />
+        <div class="row">
+          <Button
+            size="sm"
+            variant="secondary"
+            :disabled="!newCodeLongEnough || currentCode.length === 0 || lockBusy"
+            @click="submitChangeCode"
+          >
+            Change code
+          </Button>
+          <Button size="sm" variant="danger" :disabled="currentCode.length === 0 || lockBusy" @click="confirmDisableLock">
+            Remove lock
+          </Button>
+        </div>
+      </template>
+    </section>
+
+    <section class="block">
       <h3 class="block-title">Recovery phrase</h3>
       <p class="hint">
         These twelve words are the only way to reach this vault from another device, and the only way back after losing
@@ -113,6 +248,7 @@ function confirmReplace(): void {
         spellcheck="false"
         autocomplete="off"
         placeholder="twelve words separated by spaces"
+        data-testid="recovery-phrase-entry"
       />
       <p v-if="normalized && !enteredValid" class="invalid">Not a valid recovery phrase — check the words and their order.</p>
       <div class="row">
@@ -183,6 +319,11 @@ function confirmReplace(): void {
   font-size: var(--font-size-xs);
   color: var(--gray-12);
   resize: vertical;
+}
+
+.code {
+  max-width: 24rem;
+  resize: none;
 }
 
 .entry:focus {

@@ -10,7 +10,7 @@ import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { ConfigPlugin } from '@arxhub/plugin-config/ui'
 import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
-import { KeyStorePlugin, LocalStorageKeyStore } from '@arxhub/plugin-keystore/ui'
+import { KeyStorePlugin, resolveKeyStore } from '@arxhub/plugin-keystore/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
@@ -28,7 +28,8 @@ import WelcomePanel from './panels/WelcomePanel.vue'
 const arxhub = new ArxHub()
 // Resolve the device identity from client-local storage (never the server VFS) and install it into the
 // signer BEFORE start(): the /vfs backend is protected, so every request must already be signed.
-const keystore = new LocalStorageKeyStore()
+// Blocks on the unlock prompt when the device is locked — nothing below can run without the secrets.
+const keystore = await resolveKeyStore()
 const keyring = await loadOrCreateKeyring(keystore)
 const signer = new MutableRequestSigner()
 signer.install(keyring)

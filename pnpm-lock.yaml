@@ -1320,6 +1320,12 @@ importers:
       '@noble/hashes':
         specifier: catalog:shared
         version: 2.2.0
+      '@sinclair/typebox':
+        specifier: catalog:shared
+        version: 0.34.48
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
@@ -1419,6 +1425,9 @@ importers:
       '@arxhub/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../gateway
