@@ -1,19 +1,32 @@
-import { type ComputedRef, computed, onScopeDispose, ref } from 'vue'
+import { type ComputedRef, computed, onScopeDispose, ref, useId } from 'vue'
 
 // The mobile frame has no permanent column for a mini-app's own navigation, so the mini-app teleports
-// its rail into the files panel instead. The frame has to know whether anything is in there before it
-// offers the key that opens it: an empty panel behind a live tab is worse than no tab at all.
+// its rail into a panel instead. The frame has to know two things before it offers the key that opens
+// it: whether anything is in there at all — an empty panel behind a live key is worse than no key —
+// and what to call it. The name comes from the mini-app, because only it knows: the same panel holds
+// files under Explorer and sections under Settings.
 export const MOBILE_RAIL_HOST_ID = 'arxhub-mobile-rail'
 
-const claims = ref(0)
+export interface RailClaim {
+  // Unset when the mini-app did not name its rail; the frame falls back to the mini-app's own title,
+  // which is never actively wrong.
+  title?: string
+  icon: string
+}
 
-export const railPresent: ComputedRef<boolean> = computed(() => claims.value > 0)
+// A stack rather than one slot: mini-apps overlap during a switch — the incoming one mounts before the
+// outgoing one is torn down — so the newest claim is the one on screen, and releasing a claim must not
+// depend on the order they leave in.
+const claims = ref<{ id: string; claim: RailClaim }[]>([])
 
-// Counted rather than a boolean: mini-apps overlap during a switch — the incoming one mounts before
-// the outgoing one is torn down — and a flag would be cleared by whichever left last.
-export function claimRailHost(): void {
-  claims.value++
+// Indexed rather than `.at(-1)`: the app instance's own tsconfig targets a lib without it, and this
+// file is typechecked through that instance.
+export const railClaim: ComputedRef<RailClaim | null> = computed(() => claims.value[claims.value.length - 1]?.claim ?? null)
+
+export function claimRailHost(claim: RailClaim): void {
+  const id = useId() ?? `rail-${claims.value.length}`
+  claims.value = [...claims.value, { id, claim }]
   onScopeDispose(() => {
-    claims.value--
+    claims.value = claims.value.filter((entry) => entry.id !== id)
   })
 }

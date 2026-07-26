@@ -8,6 +8,10 @@ const props = withDefaults(
     widthKey?: string
     // Force-hide the rail even when a #rail slot is provided.
     rail?: boolean
+    // Accepted for one shape across both frames, unused here: the rail is a column you can see, so
+    // nothing has to announce what is in it.
+    railTitle?: string
+    railIcon?: string
   }>(),
   { widthKey: 'default', rail: true },
 )

@@ -109,12 +109,13 @@ export async function isMobileFrame(page: Page): Promise<boolean> {
 }
 
 // On the mobile frame a mini-app's own navigation is a panel summoned from the bottom bar, not a
-// column that is always there.
+// column that is always there. Reached by test id because the key is named by whichever mini-app owns
+// the rail — "Files" under Explorer, "Sections" under Settings — so there is no one label to click.
 export async function openNavigation(page: Page): Promise<void> {
   if (!(await isMobileFrame(page))) return
   const panel = page.getByRole('region', { name: /navigation$/ })
   // Idempotent: some flows leave the panel open, and the key would close it again.
-  if (!(await panel.isVisible())) await page.getByRole('button', { name: 'Files' }).click()
+  if (!(await panel.isVisible())) await page.getByTestId('arxhub.shell.rail').click()
   await expect(panel).toBeVisible()
 }
 

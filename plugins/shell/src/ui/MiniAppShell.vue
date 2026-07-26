@@ -9,6 +9,10 @@ withDefaults(
     widthKey?: string
     // Force-hide the rail even when a #rail slot is provided.
     rail?: boolean
+    // What the rail holds — "Files", "Sections". The mobile frame puts this on the key that reveals it,
+    // so a mini-app that leaves it unset gets its own title rather than someone else's guess.
+    railTitle?: string
+    railIcon?: string
   }>(),
   { widthKey: 'default', rail: true },
 )
@@ -20,7 +24,7 @@ const impl = useShellFrame() === 'mobile' ? MobileMiniAppShell : DesktopMiniAppS
 </script>
 
 <template>
-  <component :is="impl" :width-key="widthKey" :rail="rail">
+  <component :is="impl" :width-key="widthKey" :rail="rail" :rail-title="railTitle" :rail-icon="railIcon">
     <template v-if="$slots.rail" #rail>
       <slot name="rail" />
     </template>

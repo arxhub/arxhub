@@ -5,10 +5,10 @@ import FileTreeView from './FileTreeView.vue'
 </script>
 
 <template>
-  <MiniAppShell>
+  <MiniAppShell rail-title="Files" rail-icon="lu:folder-open">
     <template #rail>
       <FileTreeView />
     </template>
-    <PanelsLayout />
+    <PanelsLayout tab="Notes" />
   </MiniAppShell>
 </template>

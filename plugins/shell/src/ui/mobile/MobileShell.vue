@@ -8,7 +8,7 @@ import MobileEdgeGestures from './MobileEdgeGestures.vue'
 import MobileFilesPanel from './MobileFilesPanel.vue'
 import MobileMoreSheet from './MobileMoreSheet.vue'
 import MobileTabBar from './MobileTabBar.vue'
-import { railPresent } from './rail-host'
+import { railClaim } from './rail-host'
 
 // The whole mobile frame, and the only place that says so: everything below reads the frame from
 // injection rather than measuring the window.
@@ -32,12 +32,14 @@ function toggle(which: 'files' | 'more'): void {
 // Two keys belong to the frame rather than to any plugin: the one that reveals the active mini-app's
 // own navigation, and the one holding everything not needed while reading.
 const frameTabs = computed((): MobileTab[] => [
-  ...(railPresent.value
+  ...(railClaim.value != null
     ? [
         {
-          id: 'arxhub.shell.files',
-          icon: 'lu:folder-open',
-          title: 'Files',
+          id: 'arxhub.shell.rail',
+          icon: railClaim.value.icon,
+          // The mini-app names its own rail: the same panel holds files under Explorer and sections
+          // under Settings, so the frame is in no position to label it.
+          title: railClaim.value.title ?? activeTitle.value,
           order: -100,
           gesture: 'left-edge' as const,
           active: () => layer.value === 'files',
@@ -55,10 +57,41 @@ const frameTabs = computed((): MobileTab[] => [
   },
 ])
 
-const tabs = computed(() => [...frameTabs.value, ...pluginTabs.value].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)))
+// A mini-app is a place you go, so it belongs on the bar rather than two taps deep inside More.
+// Only the primary ones: an item in the 'bottom' region is a utility — settings, logs — and stays in
+// the sheet, exactly as it sits at the bottom of the desktop rail rather than among the mini-apps.
+const miniAppTabs = computed((): MobileTab[] =>
+  sidebarItems.value
+    .filter((item) => !item.hidden && item.region !== 'bottom')
+    .map((item) => ({
+      id: item.id,
+      icon: item.icon,
+      title: item.title,
+      order: item.order ?? 0,
+      active: () => activeId.value === item.id,
+      onSelect: () => setActive(item.id),
+    })),
+)
 
-const leftEdge = computed(() => tabs.value.find((t) => t.gesture === 'left-edge'))
-const rightEdge = computed(() => tabs.value.find((t) => t.gesture === 'right-edge'))
+// Five keys is what the bar holds before they stop being tappable. More is never dropped — it is the
+// way to reach whatever did not fit, since the sheet lists every mini-app regardless.
+const MAX_TABS = 5
+
+const allTabs = computed(() => [...frameTabs.value, ...miniAppTabs.value, ...pluginTabs.value].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)))
+
+const tabs = computed(() => {
+  const all = allTabs.value
+  if (all.length <= MAX_TABS) return all
+  const more = all.filter((tab) => tab.id === 'arxhub.shell.more')
+  return [...all.filter((tab) => tab.id !== 'arxhub.shell.more').slice(0, MAX_TABS - more.length), ...more]
+})
+
+// Off the full set, not the bar: a gesture is a second way to reach a tab, and it must not disappear
+// because that tab was the one pushed off the end.
+const leftEdge = computed(() => allTabs.value.find((t) => t.gesture === 'left-edge'))
+const rightEdge = computed(() => allTabs.value.find((t) => t.gesture === 'right-edge'))
+
+const railTitle = computed(() => railClaim.value?.title ?? activeTitle.value)
 
 const status = computed(() => [...footerLeft.value, ...footerRight.value])
 </script>
@@ -72,7 +105,7 @@ const status = computed(() => [...footerLeft.value, ...footerRight.value])
         <component v-if="activeItem?.layout" :is="activeItem.layout" />
       </main>
 
-      <MobileFilesPanel :open="layer === 'files'" :title="activeTitle" @close="layer = null" />
+      <MobileFilesPanel :open="layer === 'files'" :title="railTitle" @close="layer = null" />
 
       <MobileEdgeGestures
         :left="leftEdge != null"

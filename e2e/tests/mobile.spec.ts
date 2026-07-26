@@ -4,8 +4,9 @@ test.describe('the frame is chosen once, by the bundle', () => {
   test('a phone-shaped client mounts the mobile frame and a desktop one the rail', async ({ app }) => {
     if (await isMobileFrame(app)) {
       await expect(app.getByRole('navigation', { name: 'Navigation' })).toBeVisible()
-      // The mini-app list is one level down, in the More sheet — not in a permanent column.
-      await expect(app.getByRole('button', { name: 'Explorer' })).toBeHidden()
+      // A mini-app is a key in the bottom bar, never a permanent column beside the content.
+      await expect(app.locator('.app-sidebar')).toHaveCount(0)
+      await expect(app.getByRole('navigation', { name: 'Navigation' }).getByRole('button', { name: 'Explorer' })).toBeVisible()
     } else {
       await expect(app.locator('.mobile-shell')).toHaveCount(0)
       await expect(app.getByRole('button', { name: 'Explorer' })).toBeVisible()
@@ -45,7 +46,9 @@ test.describe('mobile navigation', () => {
     await expect(app.getByRole('main')).toBeVisible()
   })
 
-  test('the mini-app list lives in the More sheet', async ({ app }) => {
+  // The bar holds five keys, so the sheet is what guarantees reachability: every mini-app is in there,
+  // including the utilities that never get a key and anything the bar could not fit.
+  test('every mini-app is reachable from the More sheet', async ({ app }) => {
     await app.getByRole('button', { name: 'More' }).click()
     const sheet = app.getByRole('dialog', { name: 'More' })
     await expect(sheet.getByRole('button', { name: 'Explorer', exact: true })).toBeVisible()
@@ -78,7 +81,7 @@ test.describe('mobile navigation', () => {
     await app.reload()
     await openNavigation(app)
     await app.getByRole('treeitem', { name: first }).click()
-    await expect(app.locator('.cm-content')).toContainText('first')
+    await expect(app.locator('.cm-content:visible')).toContainText('first')
 
     // A tap opens a preview tab, which the next tap would reuse. Editing pins it, so both documents
     // stay open — the same rule as the desktop frame.
@@ -87,10 +90,11 @@ test.describe('mobile navigation', () => {
 
     await openNavigation(app)
     await app.getByRole('treeitem', { name: second }).click()
-    await expect(app.locator('.cm-content')).toContainText('second')
+    await expect(app.locator('.cm-content:visible')).toContainText('second')
 
-    // Only the active document is rendered — no tiling on a narrow screen.
-    await expect(app.locator('.cm-content')).toHaveCount(1)
+    // One document on screen — no tiling on a narrow screen. The others stay mounted and hidden, so
+    // switching back does not throw away what the editor was holding.
+    await expect(app.locator('.cm-content:visible')).toHaveCount(1)
 
     // The count is on the key, because one document at a time hides how many are waiting.
     await app.getByRole('button', { name: /^Notes, \d+ open$/ }).click()
@@ -98,7 +102,7 @@ test.describe('mobile navigation', () => {
     await expect(sheet).toBeVisible()
 
     await sheet.getByRole('menuitem', { name: first }).click()
-    await expect(app.locator('.cm-content')).toContainText('first')
+    await expect(app.locator('.cm-content:visible')).toContainText('first')
   })
 
   test('back in a confirmation means cancel, never confirm', async ({ app, vault }) => {

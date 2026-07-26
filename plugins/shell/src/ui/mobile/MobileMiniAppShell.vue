@@ -8,16 +8,21 @@ const props = withDefaults(
     widthKey?: string
     // Force-hide the rail even when a #rail slot is provided.
     rail?: boolean
+    // What this mini-app's rail holds, for the key that reveals it — the frame falls back to the
+    // mini-app's own title, which is at least never wrong, unlike a frame-level guess like "Files".
+    railTitle?: string
+    railIcon?: string
   }>(),
-  { widthKey: 'default', rail: true },
+  { widthKey: 'default', rail: true, railIcon: 'lu:panel-left' },
 )
 
 const slots = useSlots()
 // A mini-app declares its #rail slot in its own template, so whether it has one is fixed for the life
 // of the component — settled once here rather than watched.
 const hasRail = props.rail && !!slots.rail
-// Tells the frame there is something behind the Files key. Without a claim the key does not render.
-if (hasRail) claimRailHost()
+// Tells the frame there is something behind the key, and what to call it. Without a claim the key does
+// not render at all.
+if (hasRail) claimRailHost({ title: props.railTitle, icon: props.railIcon })
 </script>
 
 <template>

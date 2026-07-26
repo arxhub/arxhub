@@ -20,6 +20,7 @@ function label(tab: MobileTab): string {
       type="button"
       class="tab"
       :class="{ active: tab.active?.() }"
+      :data-testid="tab.id"
       :aria-label="label(tab)"
       :aria-pressed="tab.active ? tab.active() : undefined"
       @click="tab.onSelect()"

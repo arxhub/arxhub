@@ -5,16 +5,42 @@ import { computed, onMounted, onUnmounted } from 'vue'
 import { type DropZone, isPanelTabDragData } from '../../composables/drag-types'
 import type { PanelStore } from '../../types'
 import LayoutRenderer from '../LayoutRenderer.vue'
+import PanelView from '../PanelView.vue'
 
-const props = defineProps<{ store: PanelStore }>()
+const props = withDefaults(
+  defineProps<{
+    store: PanelStore
+    mode?: 'tiled' | 'single'
+    // Accepted for one shape across both frames, unused here: nothing on this frame is behind a key.
+    tab?: string
+    tabIcon?: string
+  }>(),
+  { mode: 'tiled' },
+)
 
 const layout = computed(() => props.store.layout.value)
 
+// One page at a time: no strip, no splits, and the rail is what switches. Every instance stays mounted
+// and only the active one shows — a page keeps its state while it is off screen, which is what a staged
+// settings draft depends on.
+const pages = computed(() =>
+  Object.entries(props.store.groups.value).flatMap(([groupId, group]) =>
+    group.instances.map((instance) => ({
+      groupId,
+      instance,
+      active: group.activeInstanceId === instance.instanceId && groupId === props.store.activeGroupId.value,
+    })),
+  ),
+)
+
+const current = computed(() => pages.value.find((page) => page.active) ?? pages.value[0])
+
 let cleanup: (() => void) | null = null
 
-// Tiling is a pointer affordance, so the monitor belongs to the frame that has a pointer — on a phone
-// there is no tab strip to drag a document out of, and nothing here is loaded at all.
+// Tiling is a pointer affordance, so the monitor belongs to the frame that has a pointer — and to the
+// mode that has a tab strip to drag a document out of in the first place.
 onMounted(() => {
+  if (props.mode === 'single') return
   cleanup = monitorForElements({
     canMonitor: ({ source }) => source.data.type === 'panel-tab',
     onDrop: ({ source, location }) => {
@@ -54,10 +80,24 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <LayoutRenderer v-if="layout" :node="layout" />
-  <div v-else class="panels-empty">
-    <p>No panels open</p>
-  </div>
+  <template v-if="mode === 'single'">
+    <PanelView
+      v-for="page in pages"
+      :key="page.instance.instanceId"
+      :instance="page.instance"
+      :group-id="page.groupId"
+      :is-active="page.instance.instanceId === current?.instance.instanceId"
+    />
+    <div v-if="!current" class="panels-empty">
+      <p>Nothing open</p>
+    </div>
+  </template>
+  <template v-else>
+    <LayoutRenderer v-if="layout" :node="layout" />
+    <div v-else class="panels-empty">
+      <p>No panels open</p>
+    </div>
+  </template>
 </template>
 
 <style scoped>

@@ -1,11 +1,25 @@
 <script setup lang="ts">
+import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { BottomSheet, Icon } from '@arxhub/uikit/core'
-import { computed } from 'vue'
+import { useArxHub } from '@arxhub/uikit/hooks'
+import { computed, onMounted, onUnmounted, ref, useId } from 'vue'
 import type { PanelStore } from '../../types'
 import PanelView from '../PanelView.vue'
-import { notesSheetOpen } from './notes-tab'
 
-const props = defineProps<{ store: PanelStore }>()
+const props = withDefaults(
+  defineProps<{
+    store: PanelStore
+    // 'single' is one page at a time switched from the mini-app's rail: no key listing what is open and
+    // no context strip, because the rail is already that list and a settings section has nothing to close.
+    mode?: 'tiled' | 'single'
+    // Label for the bottom-bar key that lists this layout's open panels. Tiled mode only.
+    tab?: string
+    tabIcon?: string
+  }>(),
+  { mode: 'tiled' },
+)
+
+const sheetOpen = ref(false)
 
 // A narrow screen shows one document at a time. The layout tree built on a wide screen is left
 // untouched — every open instance is still there, so the same vault opened on a desktop still has the
@@ -31,29 +45,57 @@ function pathOf(instance: { props?: Record<string, unknown> }): string | null {
 function select(groupId: string, instanceId: string): void {
   props.store.activateGroup(groupId)
   props.store.activatePanel(instanceId, groupId)
-  notesSheetOpen.value = false
+  sheetOpen.value = false
+}
+
+// The key belongs to this layout rather than to the app: it arrives when the mini-app hosting it comes
+// on screen and leaves with it, so the bar always describes what is actually in front of you — and it
+// counts this layout's own store, not whatever the global one happens to hold.
+const title = props.tab
+if (props.mode === 'tiled' && title != null) {
+  const shell = useArxHub().extensions.get(ShellExtension)
+  // Per instance: mini-apps overlap during a switch, so a fixed id would have the outgoing layout
+  // unregister the incoming one's key.
+  const id = `arxhub.panels.tab.${useId()}`
+  onMounted(() =>
+    shell.tabs.register({
+      id,
+      icon: props.tabIcon ?? 'lu:file-text',
+      title,
+      order: 0,
+      gesture: 'right-edge',
+      badge: () => openTabs.value.length,
+      active: () => sheetOpen.value,
+      onSelect: () => {
+        sheetOpen.value = !sheetOpen.value
+      },
+    }),
+  )
+  onUnmounted(() => shell.tabs.unregister(id))
 }
 </script>
 
 <template>
   <div class="mobile-panels">
     <div class="panel-body">
-      <template v-for="tab in openTabs" :key="tab.instance.instanceId">
-        <PanelView
-          v-if="tab.instance.instanceId === current?.instance.instanceId"
-          :instance="tab.instance"
-          :group-id="tab.groupId"
-          :is-active="true"
-        />
-      </template>
+      <!-- All mounted, one shown: switching documents must not throw away an editor's state, and a
+           staged settings draft lives in the page until it is applied. -->
+      <PanelView
+        v-for="tab in openTabs"
+        :key="tab.instance.instanceId"
+        :instance="tab.instance"
+        :group-id="tab.groupId"
+        :is-active="tab.instance.instanceId === current?.instance.instanceId"
+      />
       <div v-if="!current" class="panels-empty">
         <p>No documents open</p>
       </div>
     </div>
 
     <!-- What a top app bar would have said, in the third of the screen a thumb reaches: which file
-         this is, where it came from, and the one control that closes it. -->
-    <div v-if="current" class="context-strip">
+         this is, where it came from, and the one control that closes it. A page switched from the rail
+         gets none of it — its own heading already names it, and closing it would leave nothing. -->
+    <div v-if="current && mode === 'tiled'" class="context-strip">
       <div class="context-text">
         <span class="context-name">{{ current.instance.title }}</span>
         <span v-if="pathOf(current.instance)" class="context-path">{{ pathOf(current.instance) }}</span>
@@ -70,10 +112,11 @@ function select(groupId: string, instanceId: string): void {
 
     <!-- Every open document is reachable, not only the ones that would have fitted in a tab strip. -->
     <BottomSheet
-      :open="notesSheetOpen"
+      v-if="mode === 'tiled'"
+      :open="sheetOpen"
       title="Open documents"
       label="Open documents"
-      @close="notesSheetOpen = false"
+      @close="sheetOpen = false"
     >
       <div class="tab-list" role="menu">
         <button

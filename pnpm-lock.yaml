@@ -1422,6 +1422,9 @@ importers:
       '@arxhub/events':
         specifier: workspace:*
         version: link:../../packages/events
+      '@arxhub/plugin-shell':
+        specifier: workspace:*
+        version: link:../shell
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
