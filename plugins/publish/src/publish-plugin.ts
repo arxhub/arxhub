@@ -6,6 +6,7 @@ import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { HttpSyncRemote } from '@arxhub/sync'
 import type { ActionItem } from '@arxhub/uikit/core'
+import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs } from '@arxhub/vfs'
 import { Type } from '@sinclair/typebox'
 import { manifest } from './manifest'
@@ -50,15 +51,42 @@ export class PublishPlugin extends Plugin {
           id: 'publish',
           label: publish.isPublished(path) ? 'Republish' : 'Publish',
           icon: 'lu:globe',
-          onSelect: () => run(publish.publish(path), `publish ${path}`),
+          onSelect: () =>
+            run(
+              publish.publish(path).then(() => {
+                toaster.create({ title: 'Published', description: publish.publicUrl(path) ?? path, type: 'success' })
+              }),
+              `publish ${path}`,
+            ),
         },
       ]
       if (publish.isPublished(path)) {
         actions.push({
+          id: 'copy-link',
+          label: 'Copy public link',
+          icon: 'lu:link',
+          onSelect: () => {
+            const url = publish.publicUrl(path)
+            if (url == null) return
+            run(
+              navigator.clipboard.writeText(url).then(() => {
+                toaster.create({ title: 'Link copied', description: url, type: 'success' })
+              }),
+              `copy link for ${path}`,
+            )
+          },
+        })
+        actions.push({
           id: 'unpublish',
           label: 'Unpublish',
           icon: 'lu:eye-off',
-          onSelect: () => run(publish.unpublish(path), `unpublish ${path}`),
+          onSelect: () =>
+            run(
+              publish.unpublish(path).then(() => {
+                toaster.create({ title: 'Unpublished', description: path, type: 'success' })
+              }),
+              `unpublish ${path}`,
+            ),
         })
       }
       return actions
@@ -95,6 +123,8 @@ export class PublishPlugin extends Plugin {
       logger: this.logger,
     })
     await publisher.load()
-    ctx.extensions.get(PublishExtension).publisher = publisher
+    const publish = ctx.extensions.get(PublishExtension)
+    publish.serverUrl = cfg.serverUrl
+    publish.publisher = publisher
   }
 }

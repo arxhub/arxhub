@@ -22,12 +22,19 @@ export interface Vault {
   write(relative: string, content: string): Promise<string>
   read(relative: string): Promise<string>
   remove(relative: string): Promise<void>
+  // Anything outside vault/ — plugin storage, local state. Relative to the data root.
+  readData(relative: string): Promise<string>
+  writeData(relative: string, content: string): Promise<void>
+}
+
+function dataRoot(): string {
+  const dir = process.env.ARXHUB_E2E_DATA_DIR
+  if (!dir) throw new Error('ARXHUB_E2E_DATA_DIR is unset — playwright.config.ts should have exported it')
+  return dir
 }
 
 function vaultRoot(): string {
-  const dir = process.env.ARXHUB_E2E_DATA_DIR
-  if (!dir) throw new Error('ARXHUB_E2E_DATA_DIR is unset — playwright.config.ts should have exported it')
-  return join(dir, 'vault')
+  return join(dataRoot(), 'vault')
 }
 
 export const test = base.extend<{ app: Page; vault: Vault }>({
@@ -49,6 +56,14 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
       },
       async read(relative) {
         return readFileSync(join(vaultRoot(), relative), 'utf8')
+      },
+      async readData(relative) {
+        return readFileSync(join(dataRoot(), relative), 'utf8')
+      },
+      async writeData(relative, content) {
+        const full = join(dataRoot(), relative)
+        mkdirSync(dirname(full), { recursive: true })
+        writeFileSync(full, content)
       },
       async remove(relative) {
         rmSync(join(vaultRoot(), relative), { force: true })
