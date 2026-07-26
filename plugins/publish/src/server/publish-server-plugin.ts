@@ -27,7 +27,8 @@ type PublishServerPluginArgs = PluginArgs & {
 //     protocol sync uses — but the client omits the encryption wrapper, so chunks/manifest land as
 //     plaintext. Reuses @arxhub/sync's objectStoreRoutes over an unencrypted VfsSyncRemote.
 //   - `/public/*` (anonymous GET, allowlisted in the guard via PUBLIC_READ_PATH): serves the raw
-//     published source bytes + manifest; the client reassembles and renders.
+//     published source bytes + manifest. The server reassembles files from their chunks; nothing
+//     renders them, so the reader receives the source.
 // Register alongside GatewayServerPlugin, and add PUBLIC_READ_PATH to ProtectionServerPlugin's
 // publicGetPrefixes so anonymous reads pass the guard.
 export class PublishServerPlugin extends Plugin {

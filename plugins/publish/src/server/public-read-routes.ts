@@ -19,9 +19,9 @@ export const PUBLIC_READ_PATH = `${apiBaseUrl('', PUBLISH_NAMESPACE)}${PUBLIC_RO
 // A folder URL with no source file of its own tries these in order before returning 404.
 const INDEX_CANDIDATES = ['index.md', 'index.arx', 'index.html']
 
-// Public read routes for published content: serves the RAW published source bytes + the manifest.
-// Publishing exposes public DATA, not server-rendered HTML — the client fetches ~manifest, reassembles
-// files from their chunks, and renders them itself.
+// Public read routes for published content. The server reassembles each file from its chunks and
+// serves the source bytes with a content type — it never converts anything to HTML, so a reader who
+// opens a `.md` link gets markdown, not a page. Whoever wants the file list can read `~manifest`.
 export function publicReadRoutes(vfs: VirtualFileSystem): AnyElysia {
   const reader = new PublishReader(vfs)
 
@@ -35,7 +35,7 @@ export function publicReadRoutes(vfs: VirtualFileSystem): AnyElysia {
         return 'Not Found'
       }
 
-      // Machine-readable manifest: the file tree the client reassembles + renders from.
+      // Machine-readable index of the published tree, for a reader that wants to enumerate it.
       if (path === '~manifest') return jsonResponse(manifest)
 
       const served = await resolve(reader, manifest, path)
@@ -43,7 +43,7 @@ export function publicReadRoutes(vfs: VirtualFileSystem): AnyElysia {
         set.status = 404
         return 'Not Found'
       }
-      // Raw source bytes with their content type — the client renders (md/.arx → HTML) itself.
+      // Source bytes as published, typed by extension — no rendering step anywhere in the path.
       return new Response(new Uint8Array(served.bytes), { headers: { 'content-type': contentTypeFor(served.pathname) } })
     } catch (e) {
       return failOrRethrow(e, set)
