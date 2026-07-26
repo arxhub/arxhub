@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PageLayout } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { ThemeExtension } from '../theme-extension'
@@ -11,10 +12,10 @@ const active = computed(() => themes.activeId.value)
 </script>
 
 <template>
-  <div class="themes">
-    <p class="hint">
-      A theme is a whole unit — a dark theme is a different theme, not a switch on this one.
-    </p>
+  <PageLayout
+    title="Appearance"
+    description="A theme is a whole unit — a dark theme is a different theme, not a switch on this one."
+  >
     <div class="grid" role="radiogroup" aria-label="Theme">
       <button
         v-for="theme in themes.themes.value"
@@ -40,25 +41,10 @@ const active = computed(() => themes.activeId.value)
         <span class="title">{{ theme.title }}</span>
       </button>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.themes {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-  font-family: var(--font-sans);
-}
-
-.hint {
-  margin: 0;
-  max-width: 60ch;
-  font-size: var(--font-size-xs);
-  color: var(--gray-11);
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));

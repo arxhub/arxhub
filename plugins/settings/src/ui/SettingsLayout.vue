@@ -4,6 +4,7 @@ import { MiniAppShell } from '@arxhub/plugin-shell/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted } from 'vue'
 import { SettingsExtension } from '../settings-extension'
+import SettingsChangesBar from './SettingsChangesBar.vue'
 import SettingsNav from './SettingsNav.vue'
 
 const arxhub = useArxHub()
@@ -18,10 +19,27 @@ onMounted(() => {
 </script>
 
 <template>
-  <MiniAppShell>
+  <MiniAppShell rail-title="Sections" rail-icon="lu:list">
     <template #rail>
       <SettingsNav />
     </template>
-    <PanelsLayout :store="settings.store" />
+    <div class="settings-content">
+      <PanelsLayout :store="settings.store" mode="single" />
+      <SettingsChangesBar />
+    </div>
   </MiniAppShell>
 </template>
+
+<style scoped>
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-content > :first-child {
+  flex: 1;
+  min-height: 0;
+}
+</style>

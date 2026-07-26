@@ -10,7 +10,7 @@ import {
   LocalStorageKeyStore,
   MIN_UNLOCK_CODE_LENGTH,
 } from '@arxhub/plugin-keystore/ui'
-import { Button, modals } from '@arxhub/uikit/core'
+import { Badge, Button, Card, modals, PageLayout } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { computed, onMounted, ref } from 'vue'
 import { IDENTITY_MNEMONIC_KEY } from '../identity'
@@ -138,7 +138,8 @@ function confirmReplace(): void {
 </script>
 
 <template>
-  <div class="security">
+  <PageLayout title="Security" description="Keys live on this device only. Nothing here is sent anywhere unless you set up sync.">
+    <div class="security">
     <section class="block">
       <h3 class="block-title">Device identity</h3>
       <p v-if="!keyring" class="hint">This device has no identity. Sync and publishing stay idle until one exists.</p>
@@ -154,7 +155,10 @@ function confirmReplace(): void {
     </section>
 
     <section class="block">
-      <h3 class="block-title">Device lock</h3>
+      <div class="block-heading">
+        <h3 class="block-title">Device lock</h3>
+        <Badge :variant="locked ? 'success' : 'warning'" dot>{{ locked ? 'Locked' : 'Unlocked' }}</Badge>
+      </div>
       <p v-if="locked" class="hint">
         This device's keys are encrypted. The code is asked for each time the app starts and is never stored.
       </p>
@@ -235,8 +239,7 @@ function confirmReplace(): void {
       </template>
     </section>
 
-    <section class="block">
-      <h3 class="block-title">Use an existing recovery phrase</h3>
+    <Card variant="danger" label="Irreversible" title="Use an existing recovery phrase">
       <p class="hint">
         Enter the phrase from another device to make this one the same owner. Save the current phrase first — replacing
         it cannot be undone from here.
@@ -254,28 +257,34 @@ function confirmReplace(): void {
       <div class="row">
         <Button size="sm" variant="danger" :disabled="!enteredValid" @click="confirmReplace">Replace identity</Button>
       </div>
-    </section>
-  </div>
+    </Card>
+    </div>
+  </PageLayout>
 </template>
 
 <style scoped>
 .security {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1rem;
-  font-family: var(--font-sans);
+  gap: 32px;
 }
 
 .block {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.block-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .block-title {
   margin: 0;
-  font-size: var(--font-size-sm);
+  font-size: 15px;
   font-weight: var(--font-weight-medium);
   color: var(--gray-12);
 }
@@ -283,23 +292,28 @@ function confirmReplace(): void {
 .hint {
   margin: 0;
   max-width: 60ch;
-  font-size: var(--font-size-xs);
+  font-size: 13px;
+  line-height: var(--line-height-relaxed);
   color: var(--gray-11);
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
+/* Same measure as .hint, so the key card and the prose it explains share one left-and-right edge. */
 .value {
-  padding: var(--space-2);
+  width: 100%;
+  max-width: 60ch;
+  padding: 12px 16px;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);
   background: var(--gray-2);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
   color: var(--gray-12);
   overflow-wrap: anywhere;
 }
@@ -310,26 +324,28 @@ function confirmReplace(): void {
 }
 
 .entry {
+  width: 100%;
   max-width: 60ch;
-  padding: 0.5rem;
+  padding: 8px 12px;
   border: 1px solid var(--gray-7);
   border-radius: var(--radius-sm);
   background: var(--gray-1);
   font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
+  font-size: 13px;
   color: var(--gray-12);
   resize: vertical;
 }
 
 .code {
+  height: 32px;
   max-width: 24rem;
   resize: none;
 }
 
-.entry:focus {
-  border-color: var(--accent-9);
-  box-shadow: 0 0 0 1px var(--accent-a2);
-  outline: none;
+.entry:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -1px;
+  border-color: var(--accent-8);
 }
 
 .invalid {

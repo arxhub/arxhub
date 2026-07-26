@@ -1,8 +1,10 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { createPanelStore } from '@arxhub/plugin-panels/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { markRaw } from 'vue'
 import { manifest } from './manifest'
 import { SettingsExtension } from './settings-extension'
+import SettingsFooter from './ui/SettingsFooter.vue'
 import SettingsLayout from './ui/SettingsLayout.vue'
 import SettingsPageHost from './ui/SettingsPageHost.vue'
 
@@ -32,5 +34,7 @@ export class SettingsPlugin extends Plugin {
       region: 'bottom',
       order: 100,
     })
+    // Staged settings edits are app-wide, so the status bar reports them even when Settings is closed.
+    shell.footer.register({ id: 'arxhub.settings.pending', component: markRaw(SettingsFooter), region: 'right' })
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, modals, Switch } from '@arxhub/uikit/core'
+import { Button, modals, PageLayout, Switch } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, reactive, ref } from 'vue'
 import { MaintenanceExtension } from '../maintenance-extension'
@@ -50,7 +50,7 @@ function reset(): void {
 </script>
 
 <template>
-  <div class="plugins-page">
+  <PageLayout title="Plugins" description="Which plugins this device loads. A switch takes effect on the next start.">
     <section v-if="arxhub.maintenance" class="banner">
       <div>
         <p class="banner-title">Maintenance mode is on</p>
@@ -113,16 +113,13 @@ function reset(): void {
         </Button>
       </div>
     </section>
-  </div>
+  </PageLayout>
 </template>
 
 <style scoped>
-.plugins-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: 1rem;
-  font-family: var(--font-sans);
+.banner + .block,
+.block + .block {
+  margin-top: 24px;
 }
 
 .block {

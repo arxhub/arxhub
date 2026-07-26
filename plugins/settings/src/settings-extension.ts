@@ -3,6 +3,7 @@ import { Extension, type ExtensionArgs } from '@arxhub/core'
 import type { PanelStore } from '@arxhub/plugin-panels/ui'
 import type { TObject } from '@sinclair/typebox'
 import { type Component, markRaw, ref, shallowRef } from 'vue'
+import { createPendingChanges, type PendingChanges } from './pending-changes'
 
 // A settings section is contributed by a plugin in its configure() step.
 // Provide EITHER a `schema` (auto-rendered into a form by SchemaSettingsPage) plus the owning
@@ -28,9 +29,12 @@ export class SettingsExtension extends Extension {
   readonly activeId = ref<string | null>(null)
   // The settings content area's own panel store — assigned by SettingsPlugin.configure().
   store!: PanelStore
+  // Edits from every section, staged together and applied by one Save. See pending-changes.ts.
+  readonly changes: PendingChanges
 
   constructor(args: ExtensionArgs) {
     super(args)
+    this.changes = createPendingChanges((sectionId, error) => this.logger.error(`[settings] could not save ${sectionId}:`, error))
   }
 
   register(section: SettingsSection): void {
