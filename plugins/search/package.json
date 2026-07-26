@@ -1,0 +1,57 @@
+{
+  "name": "@arxhub/plugin-search",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Search plugin for ArxHub — owns the lifecycle of the local SQL index",
+  "keywords": [
+    "arxhub"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./ui": "./src/ui.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@arxhub/config": "workspace:*",
+    "@arxhub/path": "workspace:*",
+    "@sinclair/typebox": "catalog:shared",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/di": "workspace:*",
+    "@arxhub/events": "workspace:*",
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs-node": "workspace:*",
+    "@types/node": "catalog:toolchain",
+    "eventemitter3": "catalog:shared"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/plugin-codemirror": "workspace:*",
+    "@arxhub/plugin-panels": "workspace:*",
+    "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/sql": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      }
+    }
+  }
+}

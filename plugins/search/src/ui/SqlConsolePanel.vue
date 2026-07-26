@@ -1,0 +1,349 @@
+<script setup lang="ts">
+import { CodeEditor } from '@arxhub/plugin-codemirror/ui'
+import { Button, modals, PageLayout } from '@arxhub/uikit/core'
+import { useArxHub } from '@arxhub/uikit/hooks'
+import { computed, ref } from 'vue'
+import { SearchExtension } from '../search-extension'
+import { createSqlConsoleController, formatCell, type SqlCell } from './sql-console-controller'
+import { SQL_CONSOLE_EXAMPLE, useConsoleQuery } from './sql-console-state'
+
+const arxhub = useArxHub()
+const search = arxhub.extensions.get(SearchExtension)
+
+// The text survives the panel: closing the console must not cost a half-written question (FR-236).
+const query = useConsoleQuery()
+const controller = createSqlConsoleController({ readOnly: (sql) => search.readOnly(sql) })
+const schemaOpen = ref(false)
+
+const limits = computed(() => search.settings.value)
+const meta = computed(() => ['read only', `${limits.value.maxRows} row limit`, `${limits.value.timeoutMs} ms limit`])
+
+const canRun = computed(() => !controller.running.value && query.value.trim() !== '')
+
+function run(): void {
+  if (!canRun.value) return
+  void controller.run(query.value)
+}
+
+// An example over typed text is a loss the owner did not ask for, so it is confirmed first (FE 8). An
+// empty editor — or one that already holds the example — has nothing to lose and is filled straight in.
+function useExample(): void {
+  const current = query.value.trim()
+  if (current === '' || current === SQL_CONSOLE_EXAMPLE) {
+    query.value = SQL_CONSOLE_EXAMPLE
+    return
+  }
+  modals.openConfirmModal({
+    title: 'Replace the query?',
+    children: 'The example replaces what is in the editor. The query you typed is not kept.',
+    labels: { confirm: 'Replace', cancel: 'Keep mine' },
+    onConfirm: () => {
+      query.value = SQL_CONSOLE_EXAMPLE
+    },
+  })
+}
+
+// Formatted once per run rather than per cell per render: calling formatCell from the template would run it
+// three times for every value on screen, on every unrelated re-render.
+const table = computed((): { fields: { name: string; type: string }[]; rows: SqlCell[][] } | null => {
+  const result = controller.result.value
+  if (result == null) return null
+  return {
+    fields: result.fields.map((field) => ({ name: field.name, type: field.type })),
+    rows: result.rows.map((row) => result.fields.map((field) => formatCell(row[field.name]))),
+  }
+})
+
+const summary = computed(() => {
+  const result = controller.result.value
+  if (result == null) return null
+  const rows = result.rowCount === 1 ? '1 row' : `${result.rowCount} rows`
+  return `${rows} · ${result.durationMs.toFixed(0)} ms`
+})
+</script>
+
+<template>
+  <!-- The test id is on the frame, not the body: the Run / Example / Schema controls live in the page
+       header, so a scope that started below it would not contain them. -->
+  <PageLayout
+    data-testid="sql-console"
+    title="SQL console"
+    description="Ask the index a question in SQL. A query runs inside a read-only transaction, so nothing here can change the index — the files of the content store are the source of truth either way."
+    :meta="meta"
+  >
+    <template #actions>
+      <!-- Inert while a query runs: a second one over the first is refused rather than queued (FE 6). -->
+      <Button size="sm" :disabled="!canRun" @click="run">{{ controller.running.value ? 'Running…' : 'Run' }}</Button>
+      <Button size="sm" variant="secondary" @click="useExample">Example</Button>
+      <Button size="sm" variant="secondary" :active="schemaOpen" :aria-pressed="schemaOpen" @click="schemaOpen = !schemaOpen">Schema</Button>
+    </template>
+
+    <div class="console">
+      <div class="editor">
+        <CodeEditor
+          v-model="query"
+          language="sql"
+          aria-label="Query"
+          placeholder="SELECT path, title FROM document LIMIT 10"
+          submit-on-mod-enter
+          @submit="run"
+        />
+      </div>
+
+      <!-- Under the editor, with the offset the DBMS gave, and the query text left exactly as it was: a
+           refusal is something to fix in place, not a reason to retype (FE 2.2). -->
+      <div v-if="controller.failure.value" class="failure" role="alert" data-testid="sql-console-error">
+        <span class="failure-message">{{ controller.failure.value.message }}</span>
+        <span v-if="controller.failure.value.position != null" class="failure-where">
+          at character {{ controller.failure.value.position }}
+        </span>
+        <span v-if="controller.failure.value.code" class="failure-code">{{ controller.failure.value.code }}</span>
+      </div>
+
+      <section v-if="schemaOpen" class="schema" aria-label="Index schema">
+        <!-- The whole point of the control: the tables and their columns, so a query can be written without
+             reading the source (FR-236). -->
+        <article v-for="table in search.schema" :key="table.name" class="schema-table">
+          <h2 class="schema-name">{{ table.name }}</h2>
+          <p class="schema-description">{{ table.description }}</p>
+          <ul class="schema-columns">
+            <li v-for="column in table.columns" :key="column.name" class="schema-column">
+              <code class="schema-column-name">{{ column.name }}</code>
+              <code class="schema-column-type">{{ column.type }}</code>
+              <span class="schema-column-description">{{ column.description }}</span>
+            </li>
+          </ul>
+        </article>
+      </section>
+
+      <div v-if="table" class="result">
+        <div v-if="table.rows.length === 0" class="empty" data-testid="sql-console-empty">
+          The query ran and matched nothing. Not a refusal — there is simply no row like that.
+        </div>
+        <div v-else class="table-scroll">
+          <table class="result-table">
+            <thead>
+              <tr>
+                <th v-for="field in table.fields" :key="field.name" scope="col">
+                  <span class="field-name">{{ field.name }}</span>
+                  <span class="field-type">{{ field.type }}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, index) in table.rows" :key="index">
+                <!-- Interpolated as text, never as markup: every value here came out of a document. -->
+                <td v-for="(cell, column) in row" :key="column">
+                  <span :class="{ null: cell.nullish, blank: cell.blank }">{{ cell.text }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div v-else-if="!controller.answered.value" class="idle">Write a query and run it. Nothing has been asked yet.</div>
+    </div>
+
+    <template #footer>
+      <span v-if="summary" class="summary">{{ summary }}</span>
+      <!-- Rows past the limit are gone, and a table that says nothing about it reads as the whole answer. -->
+      <span v-if="controller.result.value?.truncated" class="truncated" data-testid="sql-console-truncated">
+        cut at {{ limits.maxRows }} rows — the query matched more
+      </span>
+      <span v-else-if="!summary" class="summary muted">no result yet</span>
+    </template>
+  </PageLayout>
+</template>
+
+<style scoped>
+.console {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+/* Tall enough for a query with a join in it, and no taller: the result is what the panel is for. */
+.editor {
+  height: 180px;
+  flex-shrink: 0;
+}
+
+.failure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--danger-6);
+  border-radius: var(--radius-sm);
+  background: var(--danger-2);
+  color: var(--danger-11);
+  font-size: 13px;
+  line-height: var(--line-height-normal);
+}
+
+.failure-message {
+  font-family: var(--font-mono);
+}
+
+.failure-where,
+.failure-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--danger-11);
+  opacity: 0.85;
+}
+
+/* Capped and scrolled inside itself: the schema sits where the query is written, and five tables' worth of
+   columns would otherwise push the answer clean off the screen. */
+.schema {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-sm);
+  background: var(--gray-2);
+}
+
+.schema-name {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-12);
+}
+
+.schema-description {
+  margin: 4px 0 8px;
+  max-width: 62ch;
+  font-size: 11px;
+  line-height: var(--line-height-normal);
+  color: var(--gray-11);
+}
+
+.schema-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schema-column {
+  display: grid;
+  grid-template-columns: 160px 96px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  min-height: 20px;
+  font-size: 11px;
+}
+
+.schema-column-name {
+  font-family: var(--font-mono);
+  color: var(--gray-12);
+}
+
+.schema-column-type {
+  font-family: var(--font-mono);
+  color: var(--gray-10);
+}
+
+.schema-column-description {
+  color: var(--gray-11);
+  line-height: var(--line-height-normal);
+}
+
+/* A wide result scrolls inside its own box; the page itself never scrolls sideways. */
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-sm);
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.result-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-6);
+  background: var(--gray-3);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.field-name {
+  display: block;
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-12);
+}
+
+.field-type {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  color: var(--gray-10);
+}
+
+.result-table td {
+  max-width: 420px;
+  height: 28px;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--gray-4);
+  overflow-wrap: anywhere;
+  color: var(--gray-12);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  vertical-align: top;
+}
+
+.result-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* NULL and an empty string both draw as nothing otherwise, and a query cannot be debugged when the two
+   look the same. */
+.null,
+.blank {
+  color: var(--gray-9);
+  font-style: italic;
+}
+
+.empty,
+.idle {
+  padding: 16px;
+  border: 1px dashed var(--gray-6);
+  border-radius: var(--radius-sm);
+  color: var(--gray-11);
+  font-size: 13px;
+  line-height: var(--line-height-relaxed);
+}
+
+.summary {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gray-11);
+}
+
+.summary.muted {
+  color: var(--gray-9);
+}
+
+.truncated {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--warning-11);
+}
+</style>

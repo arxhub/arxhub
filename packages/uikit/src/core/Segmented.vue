@@ -8,6 +8,9 @@ defineProps<{
   options: SelectOption[]
   disabled?: boolean
   ariaLabel?: string
+  // Fill the width available and split it evenly between the segments. For a control in a rail or a
+  // toolbar, where the intrinsic width of three labels is more than the column has.
+  stretch?: boolean
 }>()
 
 defineEmits<(e: 'update:modelValue', value: string) => void>()
@@ -16,6 +19,7 @@ defineEmits<(e: 'update:modelValue', value: string) => void>()
 <template>
   <SegmentGroup.Root
     class="root"
+    :class="{ stretch }"
     :model-value="modelValue"
     :disabled="disabled"
     :aria-label="ariaLabel"
@@ -47,6 +51,18 @@ defineEmits<(e: 'update:modelValue', value: string) => void>()
 .root[data-disabled] {
   background: var(--gray-2);
   border-color: var(--gray-6);
+}
+
+.root.stretch {
+  display: flex;
+  width: 100%;
+}
+
+.root.stretch .item {
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+  padding: 0 8px;
 }
 
 .item {

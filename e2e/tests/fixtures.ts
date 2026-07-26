@@ -155,12 +155,32 @@ export async function openMiniApp(page: Page, name: string): Promise<void> {
   await expect(sheet).toBeHidden()
 }
 
+// One registration reaches both frames, so the Search mini-app is opened the way each frame opens
+// mini-apps: a rail section on the desktop, a bottom-bar key on a phone. Reaching for the key by test id
+// is also what proves it is there — a mobile frame with no Search key fails here rather than silently
+// falling back. Shared, because both the search and the SQL-console specs start from this screen.
+export async function openSearchApp(page: Page): Promise<void> {
+  if (await isMobileFrame(page)) {
+    await page.getByTestId('arxhub.search').click()
+    // The rail lives in the panel the frame summons, and activating a result closes it again.
+    const panel = page.getByRole('region', { name: /navigation$/ })
+    if (!(await panel.isVisible())) await page.getByTestId('arxhub.shell.rail').click()
+    await expect(panel).toBeVisible()
+  } else {
+    await openMiniApp(page, 'Search')
+  }
+  await expect(page.getByRole('textbox', { name: 'Search' }).first()).toBeVisible()
+}
+
 export async function openSettingsSection(page: Page, section: string): Promise<void> {
   await openMiniApp(page, 'Settings')
   // The section list is the mini-app's own rail, which on the mobile frame has to be summoned. On
   // desktop it is already beside the content.
   await openNavigation(page)
-  await page.getByRole('button', { name: section, exact: true }).click()
+  // Scoped to the section list: a section may share its name with a mini-app (both the Search plugin's
+  // rail entry and its settings section are called "Search"), and an unscoped lookup then matches the
+  // permanent desktop rail key as well.
+  await page.locator('.settings-nav').getByRole('button', { name: section, exact: true }).click()
 }
 
 export async function openSecuritySettings(page: Page): Promise<void> {

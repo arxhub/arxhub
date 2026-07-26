@@ -57,4 +57,7 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  // PGlite carries its Postgres build as .wasm and .tar.gz assets it resolves with new URL(...).
+  // esbuild's dependency pre-bundling rewrites those URLs and the index then fails to start.
+  optimizeDeps: { exclude: ['@electric-sql/pglite'] },
 })

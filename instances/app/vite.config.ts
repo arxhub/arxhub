@@ -20,6 +20,10 @@ export default defineConfig(async () => ({
   plugins: [vue()],
   define: { __APP_VERSION__: JSON.stringify(version), __ARXHUB_FRAME__: JSON.stringify(frame) },
 
+  // PGlite carries its Postgres build as .wasm and .tar.gz assets it resolves with new URL(...).
+  // esbuild's dependency pre-bundling rewrites those URLs and the index then fails to start.
+  optimizeDeps: { exclude: ['@electric-sql/pglite'] },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

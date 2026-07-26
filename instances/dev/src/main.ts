@@ -16,6 +16,7 @@ import { BootPolicy, MaintenancePlugin, startWithCrashScreen } from '@arxhub/plu
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { PublishPlugin } from '@arxhub/plugin-publish/ui'
+import { SearchPlugin } from '@arxhub/plugin-search/ui'
 import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
 import { AboutSettingsPage, ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
@@ -49,6 +50,9 @@ arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
 arxhub.plugins.register(EditorPlugin)
 arxhub.plugins.register(SettingsPlugin)
+// The index is device-local and lives in the browser's own storage — never in the content store, so
+// sync never walks it (FR-214). A headless server has no index at all (FR-218).
+arxhub.plugins.register(SearchPlugin, () => ({ dataDir: 'idb://arxhub-sql' }))
 const themes: Theme[] = [
   { id: 'default', title: 'ArxHub', base: 'light' },
   { id: 'catppuccin-latte', title: 'Catppuccin Latte', base: 'light' },
