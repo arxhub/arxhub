@@ -1,6 +1,7 @@
 import type { Plugin, ServiceScope } from '@arxhub/core'
 import { createKey } from '@arxhub/di'
 import { ScopedFileSystem } from './scoped-file-system'
+import type { VfsChangeSource } from './vfs-watcher'
 import type { VirtualFileSystem } from './virtual-file-system'
 
 // Root VFS — the real filesystem root (the whole tree). DI key resolving directly to the backend the
@@ -11,6 +12,11 @@ export const RootVfs = createKey<VirtualFileSystem>('RootVfs')
 // Vault VFS — the user's content (everything under vault/). DI key, one shared instance. This is what
 // content plugins (explorer, editors) read and write.
 export const VaultVfs = createKey<VirtualFileSystem>('VaultVfs')
+
+// Vault watcher — what changed in the user's content, in the vault view's own coordinates. DI key, one
+// shared instance, fed by the ObservedFileSystem that VfsPlugin wraps VaultVfs in. Read-only on purpose:
+// a plugin subscribes to what happened, it never announces a change of its own.
+export const VaultWatcher = createKey<VfsChangeSource>('VaultWatcher')
 
 // Plugin VFS — a single plugin's OWN files, each bucket prefix-scoped to `<bucket>/<id>/`. Neither the
 // whole tree (that's RootVfs) nor user content (that's VaultVfs):
