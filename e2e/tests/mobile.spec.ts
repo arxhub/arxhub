@@ -1,4 +1,4 @@
-import { expect, isMobileViewport, openNavigation, test } from './fixtures'
+import { expect, isMobileViewport, openNavigation, openNote, test } from './fixtures'
 
 test.describe('the frame follows the viewport', () => {
   test('a narrow viewport gets the mobile frame, a wide one the desktop frame', async ({ app }) => {
@@ -100,5 +100,38 @@ test.describe('mobile navigation', () => {
 
     // The irreversible action must not have happened.
     await expect.poll(() => vault.read(path)).toBe('keep me\n')
+  })
+})
+
+test.describe('the on-screen keyboard', () => {
+  test.beforeEach(({ app }) => {
+    test.skip(!isMobileViewport(app), 'only meaningful on the mobile frame')
+  })
+
+  // A real soft keyboard cannot be raised from a test, so this drives the signal the app actually
+  // reacts to: an Android WebView shrinks the visual viewport without touching the layout viewport,
+  // which is exactly why 100dvh alone leaves the toolbar under the keyboard.
+  test('gives up the height the keyboard covers', async ({ app, vault }) => {
+    const path = await vault.write('typing.md', 'line\n')
+    await openNote(app, path)
+
+    const shell = app.locator('.mobile-shell')
+    await expect(shell).toHaveCSS('padding-bottom', '0px')
+
+    await app.evaluate(() => {
+      const vv = window.visualViewport
+      if (vv == null) throw new Error('visualViewport is unavailable')
+      Object.defineProperty(vv, 'height', { configurable: true, get: () => window.innerHeight - 300 })
+      vv.dispatchEvent(new Event('resize'))
+    })
+
+    await expect(shell).toHaveCSS('padding-bottom', '300px')
+
+    // The formatting toolbar has to stay above the keyboard, not behind it.
+    const toolbar = app.getByRole('toolbar', { name: 'Formatting' })
+    const box = await toolbar.boundingBox()
+    const viewport = app.viewportSize()
+    expect(box).not.toBeNull()
+    if (box && viewport) expect(box.y + box.height).toBeLessThanOrEqual(viewport.height - 300)
   })
 })

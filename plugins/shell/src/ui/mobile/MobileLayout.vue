@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { Icon, Toaster } from '@arxhub/uikit/core'
+import { useKeyboardInset } from '@arxhub/uikit/hooks'
 
 const props = defineProps<{
   title: string
   drawerOpen: boolean
 }>()
 const emit = defineEmits<{ 'toggle-navigation': [] }>()
+
+// The frame gives up the height the keyboard takes instead of letting it cover the bottom of the
+// app. What is at the bottom is the editor and its toolbar, so this is the difference between
+// typing blind and seeing what you type.
+const keyboardInset = useKeyboardInset()
 </script>
 
 <template>
-  <div class="mobile-shell">
+  <div class="mobile-shell" :style="{ paddingBottom: keyboardInset ? `${keyboardInset}px` : undefined }">
     <header class="mobile-header">
       <button
         type="button"
@@ -90,6 +96,7 @@ const emit = defineEmits<{ 'toggle-navigation': [] }>()
   gap: 0.5rem;
   min-height: var(--size-sm);
   padding: 0 0.5rem;
+  /* Only when no keyboard is up: the shell already gave up that height. */
   padding-bottom: env(safe-area-inset-bottom);
   border-top: 1px solid var(--gray-6);
   background: var(--gray-2);
