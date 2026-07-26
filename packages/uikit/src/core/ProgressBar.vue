@@ -21,8 +21,8 @@ withDefaults(
 <style scoped>
 .track {
   width: 100%;
-  height: 0.5rem;
-  background-color: var(--gray-3);
+  height: 4px;
+  background-color: var(--gray-4);
   border-radius: var(--radius-full);
   overflow: hidden;
 }
@@ -33,5 +33,9 @@ withDefaults(
   border-radius: var(--radius-full);
   width: var(--percent);
   transition: width var(--duration-slow) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .range { transition: none; }
 }
 </style>

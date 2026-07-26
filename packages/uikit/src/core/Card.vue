@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import Icon from './Icon.vue'
+import SectionLabel from './SectionLabel.vue'
 
 defineProps<{
-  title: string
+  title?: string
   icon?: string
+  // Micro-label above the title, naming the class of card rather than its subject ("Irreversible").
+  label?: string
+  variant?: 'default' | 'danger'
 }>()
 </script>
 
 <template>
-  <div class="card">
-    <div class="card-header">
+  <div class="card" :class="variant ?? 'default'">
+    <SectionLabel v-if="label" :tone="variant === 'danger' ? 'danger' : 'muted'" class="card-label">
+      {{ label }}
+    </SectionLabel>
+    <div v-if="title || $slots.actions" class="card-header">
       <div class="title-wrapper">
         <Icon v-if="icon" :name="icon" :size="14" />
-        <span class="title">{{ title }}</span>
+        <span v-if="title" class="title">{{ title }}</span>
       </div>
       <div v-if="$slots.actions" class="card-actions">
         <slot name="actions" />
@@ -26,48 +33,58 @@ defineProps<{
 
 <style scoped>
 .card {
-  background-color: var(--gray-2);
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-sm);
+  background-color: var(--gray-2);
+  font-family: var(--font-sans);
+}
+
+.card.danger {
+  border-color: var(--danger-6);
+  background-color: var(--danger-2);
+}
+
+.card-label {
+  margin-bottom: 4px;
 }
 
 .card-header {
-  height: var(--size-sm);
-  padding: 0 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--gray-6);
-  background-color: var(--gray-1);
-  flex-shrink: 0;
+  gap: 8px;
+  min-height: 20px;
 }
 
 .title-wrapper {
-  font-size: 0.625rem;
-  font-weight: var(--font-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-widest);
-  color: var(--gray-11);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
+  color: var(--gray-12);
 }
 
 .title {
-  line-height: var(--line-height-none);
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
 }
 
 .card-actions {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 8px;
 }
 
 .card-content {
-  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  flex: 1;
+  gap: 12px;
+  font-size: 13px;
+  line-height: var(--line-height-relaxed);
+  color: var(--gray-11);
 }
 </style>

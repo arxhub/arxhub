@@ -21,7 +21,9 @@ const props = withDefaults(
   { size: 'sm', type: 'button', tooltipPlacement: 'top' },
 )
 
-const iconSize = computed(() => ({ xs: 12, sm: 16, md: 20 })[props.size])
+// One optical size across the set: a single-weight glyph at ~14px inside a larger hit box, so chrome
+// icons read as labels rather than as buttons of their own.
+const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16 })[props.size])
 </script>
 
 <template>
@@ -63,37 +65,38 @@ const iconSize = computed(() => ({ xs: 12, sm: 16, md: 20 })[props.size])
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   color: var(--gray-11);
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
+  line-height: var(--line-height-none);
   cursor: pointer;
-  transition: all var(--duration-normal);
+  transition: background-color var(--duration-fast), color var(--duration-fast);
 }
 
 .icon-button:hover:not(:disabled) {
-  background-color: var(--gray-3);
+  background-color: var(--gray-4);
   color: var(--gray-12);
 }
 
 .icon-button.active {
-  background-color: var(--gray-5);
-  color: var(--gray-12);
+  background-color: var(--accent-3);
+  color: var(--accent-11);
 }
 
 .icon-button:disabled {
-  opacity: 0.4;
-  cursor: default;
+  color: var(--gray-8);
+  cursor: not-allowed;
 }
 
 .icon-button:focus-visible {
-  outline: 2px solid var(--accent-9);
+  outline: 2px solid var(--accent-8);
   outline-offset: -1px;
 }
 
 .size-xs {
-  width: var(--size-xs-half);
-  height: var(--size-xs-half);
+  width: 20px;
+  height: 20px;
 }
 
 .size-sm {
@@ -102,7 +105,7 @@ const iconSize = computed(() => ({ xs: 12, sm: 16, md: 20 })[props.size])
 }
 
 .size-md {
-  width: var(--size-xs);
-  height: var(--size-xs);
+  width: 28px;
+  height: 28px;
 }
 </style>

@@ -23,13 +23,15 @@ withDefaults(
 .toolbar {
   display: flex;
   align-items: center;
-  padding: 4px 8px;
+  min-height: 32px;
+  padding: 4px;
   flex-shrink: 0;
-  background: var(--gray-1);
+  background: var(--gray-2);
 }
 
+/* A hairline, not a structural rule: a toolbar sits inside a region, it doesn't divide two of them. */
 .toolbar.bordered {
-  border-bottom: 1px solid var(--gray-6);
+  border-bottom: 1px solid var(--gray-4);
 }
 
 .toolbar.wrap {

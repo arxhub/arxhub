@@ -33,8 +33,7 @@ withDefaults(
 .menu-content {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  min-width: 140px;
+  min-width: 168px;
   padding: 4px;
   background: var(--gray-2);
   border: 1px solid var(--gray-6);

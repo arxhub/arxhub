@@ -140,7 +140,7 @@ onBeforeUnmount(() => {
   z-index: var(--z-index-dropdown);
   display: flex;
   flex-direction: column;
-  min-width: 160px;
+  min-width: 168px;
   padding: 4px;
   background: var(--gray-2);
   border: 1px solid var(--gray-6);
@@ -153,13 +153,14 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 4px 12px;
+  height: 28px;
+  padding: 0 12px;
   text-align: left;
   background: none;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   color: var(--gray-12);
-  font-size: var(--font-size-xs);
+  font-size: 13px;
   font-family: var(--font-sans);
   cursor: pointer;
 }
@@ -168,17 +169,22 @@ onBeforeUnmount(() => {
   background: var(--gray-4);
 }
 
+.action-item:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -2px;
+}
+
 .action-item:disabled {
-  opacity: 0.5;
+  color: var(--gray-9);
   cursor: default;
 }
 
 .action-item.danger {
-  color: var(--danger-9);
+  color: var(--danger-11);
 }
 
 .action-item.danger:hover:not(:disabled) {
-  background: var(--danger-a3);
+  background: var(--danger-3);
 }
 
 .action-label {
@@ -198,18 +204,23 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 12px;
+  min-height: 56px;
+  padding: 0 12px;
   text-align: left;
   background: none;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   color: var(--gray-12);
-  font-size: var(--font-size-sm);
+  font-size: 15px;
   font-family: var(--font-sans);
   cursor: pointer;
 }
 
+.action-sheet-item:disabled {
+  color: var(--gray-9);
+}
+
 .action-sheet-item.danger {
-  color: var(--danger-9);
+  color: var(--danger-11);
 }
 </style>

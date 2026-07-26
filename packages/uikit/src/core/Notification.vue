@@ -30,46 +30,51 @@ defineEmits<(e: 'close') => void>()
 <style scoped>
 .notification {
   width: 100%;
-  background-color: var(--gray-1);
+  background-color: var(--gray-2);
   border: 1px solid var(--gray-6);
-  border-radius: var(--radius-lg);
-  padding: 0.75rem;
-  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  box-shadow: var(--shadow-md);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 12px;
+  font-family: var(--font-sans);
 }
 
 .notification.info .icon-wrapper {
-  color: var(--info-9);
+  color: var(--info-11);
 }
 .notification.success .icon-wrapper {
-  color: var(--success-9);
+  color: var(--success-11);
 }
 .notification.warning .icon-wrapper {
-  color: var(--warning-9);
+  color: var(--warning-11);
 }
 .notification.danger .icon-wrapper {
-  color: var(--danger-9);
+  color: var(--danger-11);
 }
 
 .content {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
+  min-width: 0;
 }
 
 .text-content {
-  font-size: var(--font-size-xs);
+  min-width: 0;
 }
 
 .title {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
   color: var(--gray-12);
-  font-weight: var(--font-weight-bold);
 }
 
 .subtitle {
-  color: var(--gray-10);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--gray-11);
 }
 </style>

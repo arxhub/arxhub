@@ -58,17 +58,18 @@ function handleConfirm() {
 .confirm-modal {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 20px;
 }
 
 .confirm-body {
-  font-size: var(--font-size-sm);
+  font-size: 13px;
+  line-height: var(--line-height-relaxed);
   color: var(--gray-11);
 }
 
 .confirm-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 8px;
 }
 </style>

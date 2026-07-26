@@ -21,29 +21,32 @@ defineProps<{
 <style scoped>
 .input {
   width: 100%;
-  height: var(--size-sm);
+  height: 32px;
   background-color: var(--gray-1);
   border: 1px solid var(--gray-7);
   border-radius: var(--radius-sm);
-  padding: 0 0.75rem;
-  font-size: var(--font-size-xs);
+  padding: 0 12px;
+  font-size: 13px;
   color: var(--gray-12);
   outline: none;
   font-family: var(--font-sans);
-  transition: all var(--duration-normal);
+  transition: border-color var(--duration-fast), background-color var(--duration-fast);
 }
 
-.input:focus {
-  border-color: var(--accent-9);
-  box-shadow: 0 0 0 1px var(--accent-a2);
+/* A single focus ring shared with every other control — no border tint stacked under an outline. */
+.input:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -1px;
+  border-color: var(--accent-8);
 }
 
 .input::placeholder {
-  color: var(--gray-11);
+  color: var(--gray-10);
 }
 
 .input:disabled {
-  opacity: 0.5;
+  background-color: var(--gray-2);
+  color: var(--gray-9);
   cursor: not-allowed;
 }
 </style>

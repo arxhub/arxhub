@@ -1,5 +1,5 @@
-import { onMounted, onUnmounted, ref } from 'vue'
 import type { Ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 // How many pixels the on-screen keyboard covers at the bottom of the window.
 //

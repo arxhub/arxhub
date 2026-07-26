@@ -25,11 +25,12 @@ const emit = defineEmits<{ select: [] }>()
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 12px;
-  font-size: var(--font-size-xs);
+  height: 28px;
+  padding: 0 12px;
+  font-size: 13px;
   font-family: var(--font-sans);
   color: var(--gray-12);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   cursor: pointer;
   user-select: none;
 }
@@ -40,15 +41,15 @@ const emit = defineEmits<{ select: [] }>()
 }
 
 .menu-item.danger {
-  color: var(--danger-9);
+  color: var(--danger-11);
 }
 
 .menu-item.danger[data-highlighted] {
-  background: var(--danger-a3);
+  background: var(--danger-3);
 }
 
 .menu-item[data-disabled] {
-  opacity: 0.5;
+  color: var(--gray-9);
   cursor: default;
 }
 </style>

@@ -31,11 +31,12 @@ withDefaults(
 .tooltip-content {
   padding: 4px 8px;
   font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
   font-family: var(--font-sans);
   color: var(--gray-1);
   background: var(--gray-12);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-sm);
   z-index: var(--z-index-tooltip);
 }
 </style>

@@ -72,7 +72,7 @@ function onPointerUp(): void {
   z-index: var(--z-index-modal);
   display: flex;
   align-items: flex-end;
-  background: var(--black-a6);
+  background: var(--black-a4);
 }
 
 .sheet {
@@ -80,11 +80,11 @@ function onPointerUp(): void {
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  border-top-left-radius: var(--radius-lg);
-  border-top-right-radius: var(--radius-lg);
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
   background: var(--gray-1);
   color: var(--gray-12);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-xl);
 }
 
 .grabber-area {
@@ -96,9 +96,9 @@ function onPointerUp(): void {
 
 .grabber {
   width: 2.25rem;
-  height: 0.25rem;
+  height: 4px;
   margin: 0 auto;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
   background: var(--gray-7);
 }
 
@@ -106,7 +106,8 @@ function onPointerUp(): void {
   margin: 0.5rem 0 0;
   text-align: center;
   font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
   color: var(--gray-11);
 }
 

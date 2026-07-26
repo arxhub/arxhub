@@ -34,47 +34,57 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
 .root {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
   cursor: pointer;
   user-select: none;
 }
 
 .root[data-disabled] {
-  opacity: 0.5;
   cursor: not-allowed;
+}
+
+.root[data-disabled] .label {
+  color: var(--gray-9);
 }
 
 .control {
   width: var(--size-xs-half);
   height: var(--size-xs-half);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--gray-7);
-  background-color: var(--gray-3);
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--gray-7);
+  background-color: var(--gray-1);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all var(--duration-normal);
+  transition: background-color var(--duration-fast), border-color var(--duration-fast);
 }
 
+/* Done is a filled box, not a tinted one — a checked row has to be readable at a glance down a list. */
 .control[data-state='checked'] {
   border-color: var(--accent-9);
-  background-color: var(--accent-a4);
+  background-color: var(--accent-9);
+}
+
+.control[data-disabled] {
+  border-color: var(--gray-6);
+  background-color: var(--gray-3);
 }
 
 .control[data-focus-visible] {
-  box-shadow: 0 0 0 2px var(--gray-1), 0 0 0 4px var(--accent-9);
+  outline: 2px solid var(--accent-8);
+  outline-offset: 1px;
 }
 
 .indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent-9);
+  color: var(--accent-contrast);
 }
 
 .label {
-  font-size: var(--font-size-xs);
+  font-size: 13px;
   color: var(--gray-12);
   font-family: var(--font-sans);
 }

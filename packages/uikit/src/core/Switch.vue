@@ -34,17 +34,20 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
 }
 
 .root[data-disabled] {
-  opacity: 0.5;
   cursor: not-allowed;
+}
+
+.root[data-disabled] .label {
+  color: var(--gray-9);
 }
 
 .control {
   width: var(--size-xs);
   height: var(--size-xs-half);
-  background-color: var(--gray-5);
+  background-color: var(--gray-6);
   border-radius: var(--radius-full);
   position: relative;
-  transition: background-color var(--duration-normal);
+  transition: background-color var(--duration-fast);
   border: none;
   padding: 0;
   display: inline-flex;
@@ -55,8 +58,12 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
   background-color: var(--accent-9);
 }
 
+.control[data-disabled] {
+  background-color: var(--gray-4);
+}
+
 .control[data-focus-visible] {
-  outline: 2px solid var(--accent-9);
+  outline: 2px solid var(--accent-8);
   outline-offset: 2px;
 }
 
@@ -65,19 +72,23 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
   height: 0.75rem;
   background-color: var(--white);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-xs);
   position: absolute;
   top: 0.125rem;
   left: 0.125rem;
-  transition: transform var(--duration-normal);
+  transition: transform var(--duration-fast);
 }
 
 .control[data-state='checked'] .thumb {
   transform: translateX(1rem);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .thumb { transition: none; }
+}
+
 .label {
-  font-size: var(--font-size-xs);
+  font-size: 13px;
   color: var(--gray-12);
   font-family: var(--font-sans);
   cursor: pointer;

@@ -30,31 +30,32 @@ import { toaster } from '../hooks/useToast'
   align-items: flex-start;
   gap: 8px;
   width: 320px;
-  padding: 10px 12px;
+  padding: 12px;
   background: var(--gray-2);
   border: 1px solid var(--gray-6);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-3, 0 4px 16px rgba(0, 0, 0, 0.18));
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
   font-family: var(--font-sans);
   color: var(--gray-12);
 }
 
-/* A left accent bar keyed to the toast type. */
-.toast[data-type='error'] { border-color: var(--red-6); }
-.toast[data-type='error'] .toast-title { color: var(--red-11); }
-.toast[data-type='success'] .toast-title { color: var(--green-11); }
+/* The border and the title tint carry the type — semantic scales, not the raw hues, so a theme that
+   remaps danger/success stays consistent here. */
+.toast[data-type='error'] { border-color: var(--danger-6); }
+.toast[data-type='error'] .toast-title { color: var(--danger-11); }
+.toast[data-type='success'] .toast-title { color: var(--success-11); }
 
 .toast-body {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .toast-title {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
 }
 
 .toast-desc {
@@ -71,10 +72,10 @@ import { toaster } from '../hooks/useToast'
   cursor: pointer;
   font-size: var(--font-size-xs);
   line-height: 1;
-  padding: 2px;
-  border-radius: var(--radius-sm);
+  padding: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .toast-close:hover { color: var(--gray-12); background: var(--gray-4); }
-.toast-close:focus-visible { outline: 2px solid var(--accent-9); outline-offset: -1px; }
+.toast-close:focus-visible { outline: 2px solid var(--accent-8); outline-offset: -1px; }
 </style>

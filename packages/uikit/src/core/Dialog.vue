@@ -53,7 +53,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 .dialog-backdrop {
   position: fixed;
   inset: 0;
-  background: var(--black-a6);
+  background: var(--black-a4);
   z-index: var(--z-index-overlay);
 }
 
@@ -81,7 +81,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   background: var(--gray-2);
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-xl);
 }
 
 .size-sm {
@@ -99,15 +99,17 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 .dialog-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--gray-6);
+  gap: 8px;
+  height: 40px;
+  flex-shrink: 0;
+  padding: 0 8px 0 16px;
+  border-bottom: 1px solid var(--gray-4);
 }
 
 .dialog-title {
   flex: 1;
   margin: 0;
-  font-size: var(--font-size-sm);
+  font-size: 14px;
   font-family: var(--font-sans);
   font-weight: var(--font-weight-medium);
   color: var(--gray-12);
@@ -121,7 +123,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   height: var(--size-xl-half);
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   color: var(--gray-11);
   cursor: pointer;
 }
@@ -131,10 +133,16 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   color: var(--gray-12);
 }
 
+.dialog-close:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -1px;
+}
+
 .dialog-body {
-  padding: 1rem;
+  padding: 16px;
   overflow-y: auto;
-  font-size: var(--font-size-sm);
+  font-size: 13px;
+  line-height: var(--line-height-relaxed);
   font-family: var(--font-sans);
   color: var(--gray-12);
 }
@@ -142,8 +150,9 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-top: 1px solid var(--gray-6);
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--gray-4);
 }
 </style>
