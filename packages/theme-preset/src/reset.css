@@ -17,6 +17,14 @@
   }
 }
 
+/* The shell only covers the viewport. Anything the browser paints outside it — the overscroll
+   rubber band, the gap left when a keyboard inset shrinks the layout, the first frame before the app
+   mounts — comes from here, and would otherwise be UA white under a dark theme. */
+html {
+  background-color: var(--gray-1);
+  color: var(--gray-12);
+}
+
 body {
   /* 4. Add accessible line-height */
   line-height: 1.5;
