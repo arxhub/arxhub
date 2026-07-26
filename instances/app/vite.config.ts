@@ -8,10 +8,17 @@ const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.ur
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST
 
+// Which frame this bundle ships. Tauri exports the target platform for both `tauri dev` and
+// `tauri build`, so an Android package carries the mobile shell and nothing else. A plain `vite dev`
+// (browser development, no Tauri) leaves it unset and is a desktop bundle.
+// @ts-expect-error process is a nodejs global
+const tauriPlatform = process.env.TAURI_ENV_PLATFORM
+const frame = tauriPlatform === 'android' || tauriPlatform === 'ios' ? 'mobile' : 'desktop'
+
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [vue()],
-  define: { __APP_VERSION__: JSON.stringify(version) },
+  define: { __APP_VERSION__: JSON.stringify(version), __ARXHUB_FRAME__: JSON.stringify(frame) },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //

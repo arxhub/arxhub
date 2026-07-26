@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 
 // Matches LocalStorageKeyStore's namespace and the identity entry name.
@@ -97,25 +97,67 @@ export async function openNote(page: Page, path: string): Promise<void> {
   await expect(page.locator('.cm-content')).toBeVisible()
 }
 
-// True while the viewport is narrow enough for the mobile frame — mirrors MOBILE_BREAKPOINT.
-export function isMobileViewport(page: Page): boolean {
-  return (page.viewportSize()?.width ?? 0) <= 640
+// Which frame the bundle under test mounted. The stand probes the viewport and the pointer once at
+// boot (detectShellFrame), so the two Playwright projects each get exactly one frame and it never
+// changes mid-test — this asks the page which one it got rather than re-deriving the rule.
+export async function isMobileFrame(page: Page): Promise<boolean> {
+  // The app mounts asynchronously — the identity is resolved, then the frame itself is imported — so
+  // reading the DOM straight after a reload would race the mount and report the wrong frame. Both
+  // frames render a <main>, so that is the signal that there is a frame to ask about at all.
+  await expect(page.getByRole('main')).toBeVisible()
+  return (await page.locator('.mobile-shell').count()) > 0
 }
 
-// On the mobile frame the mini-app list and each mini-app's own navigation live behind the menu.
+// On the mobile frame a mini-app's own navigation is a panel summoned from the bottom bar, not a
+// column that is always there.
 export async function openNavigation(page: Page): Promise<void> {
-  if (!isMobileViewport(page)) return
-  const drawer = page.getByRole('navigation', { name: 'Navigation' })
-  // Idempotent: some flows leave the drawer open, and clicking the menu again would close it.
-  if (!(await drawer.isVisible())) await page.getByRole('button', { name: 'Open navigation' }).click()
-  await expect(drawer).toBeVisible()
+  if (!(await isMobileFrame(page))) return
+  const panel = page.getByRole('region', { name: /navigation$/ })
+  // Idempotent: some flows leave the panel open, and the key would close it again.
+  if (!(await panel.isVisible())) await page.getByRole('button', { name: 'Files' }).click()
+  await expect(panel).toBeVisible()
+}
+
+// The mini-app list and the status widgets: a permanent rail and strip on the desktop frame, both one
+// level down in the More sheet on a phone — everything not needed while reading is behind one key,
+// which is the whole point of the bar. Hands the scope they are in to `read`, so a test looks in the
+// right place without knowing which frame it got, and leaves the frame as it found it: a sheet left
+// open would swallow the next click.
+export async function withShellChrome<T>(page: Page, read: (chrome: Locator) => Promise<T>): Promise<T> {
+  if (!(await isMobileFrame(page))) return read(page.locator('body'))
+
+  const sheet = page.getByRole('dialog', { name: 'More' })
+  const wasOpen = await sheet.isVisible()
+  if (!wasOpen) await page.getByRole('button', { name: 'More' }).click()
+  await expect(sheet).toBeVisible()
+  try {
+    return await read(sheet)
+  } finally {
+    // Back, not the key again: the sheet covers the bar it opened from.
+    if (!wasOpen) {
+      await page.goBack()
+      await expect(sheet).toBeHidden()
+    }
+  }
+}
+
+export async function openMiniApp(page: Page, name: string): Promise<void> {
+  if (!(await isMobileFrame(page))) {
+    await page.getByRole('button', { name, exact: true }).click()
+    return
+  }
+  const sheet = page.getByRole('dialog', { name: 'More' })
+  if (!(await sheet.isVisible())) await page.getByRole('button', { name: 'More' }).click()
+  await expect(sheet).toBeVisible()
+  await sheet.getByRole('button', { name, exact: true }).click()
+  // Picking one is a navigation step, so the sheet that offered it gets out of the way.
+  await expect(sheet).toBeHidden()
 }
 
 export async function openSettingsSection(page: Page, section: string): Promise<void> {
-  await openNavigation(page)
-  await page.getByRole('button', { name: 'Settings', exact: true }).click()
-  // Picking a mini-app is itself a navigation step on the mobile frame, so the drawer closes and the
-  // app's own section list has to be reopened. On desktop the rail is always there.
+  await openMiniApp(page, 'Settings')
+  // The section list is the mini-app's own rail, which on the mobile frame has to be summoned. On
+  // desktop it is already beside the content.
   await openNavigation(page)
   await page.getByRole('button', { name: section, exact: true }).click()
 }

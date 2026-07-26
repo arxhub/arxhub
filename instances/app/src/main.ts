@@ -25,7 +25,6 @@ import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { isTauri } from '@tauri-apps/api/core'
 import { createApp, h, markRaw } from 'vue'
-import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
 
 // Read before anything else: a plugin the owner switched off (or a maintenance boot) must not get as
@@ -105,6 +104,13 @@ if (explorer != null) shell.sidebar.setActive('arxhub.explorer')
 store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
 store.openPanel('arxhub.welcome', {}, 'Welcome', explorer?.contentGroupId ?? undefined)
 
-const app = createApp(App)
+// The frame is a build decision, not a runtime one: a phone package mounts the mobile shell and never
+// ships the desktop one. __ARXHUB_FRAME__ comes from TAURI_ENV_PLATFORM — see vite.config.ts.
+const Shell =
+  __ARXHUB_FRAME__ === 'mobile'
+    ? (await import('@arxhub/plugin-shell/ui-mobile')).MobileShell
+    : (await import('@arxhub/plugin-shell/ui-desktop')).DesktopShell
+
+const app = createApp(Shell)
 app.provide(ARXHUB_KEY, arxhub)
 app.mount('#app')

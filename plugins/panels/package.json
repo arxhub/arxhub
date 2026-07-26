@@ -38,6 +38,7 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/errors": "workspace:*",
     "@arxhub/events": "workspace:*",
+    "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/uikit": "workspace:*"
   },
   "publishConfig": {

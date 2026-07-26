@@ -1,10 +1,13 @@
-import { expect, openNavigation, openSettingsSection, test } from './fixtures'
+import { expect, openSettingsSection, test, withShellChrome } from './fixtures'
 
 test.describe('application boot', () => {
   test('comes up with the shell and its mini-apps', async ({ app }) => {
-    await openNavigation(app)
-    await expect(app.getByRole('button', { name: 'Explorer' })).toBeVisible()
-    await expect(app.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
+    // The list is a permanent rail on desktop and lives behind the More key on a phone; the fixture
+    // hands back whichever scope holds it.
+    await withShellChrome(app, async (chrome) => {
+      await expect(chrome.getByRole('button', { name: 'Explorer' })).toBeVisible()
+      await expect(chrome.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
+    })
   })
 
   test('reaches the working tree over the protected API', async ({ app }) => {

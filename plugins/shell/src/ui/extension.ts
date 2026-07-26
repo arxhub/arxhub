@@ -1,6 +1,6 @@
 import { Extension } from '@arxhub/core'
 import { type Component, markRaw, reactive, shallowRef } from 'vue'
-import type { SidebarItem } from './desktop/types'
+import type { SidebarItem } from './types'
 
 export type { SidebarItem }
 
@@ -13,6 +13,26 @@ export interface ShellItem {
 
 export type HeaderItem = ShellItem & { region: 'left' | 'center' | 'right' }
 export type FooterItem = ShellItem & { region: 'left' | 'right' }
+
+// A key in the mobile frame's bottom bar. The bar is the only navigation a phone gets, so a plugin
+// that owns something reachable there contributes a tab instead of a strip widget — the desktop frame
+// ignores these entirely.
+export interface MobileTab {
+  id: string
+  // Icon spec string resolved by uikit's Icon registry.
+  icon: string
+  title: string
+  order?: number
+  // Read on every render: a count the tab carries (open documents, unread logs). 0 shows no badge.
+  badge?: () => number
+  // Selecting a tab is an action, not a route — it may activate a mini-app, raise a sheet, or open a
+  // panel. The frame only asks whether the tab reads as active, which is the tab's own business.
+  active?: () => boolean
+  onSelect: () => void
+  // Binds a screen-edge drag to this tab, so the two layers reachable one-handed do not cost a trip
+  // to the bar. At most one tab per edge; a later claim on a taken edge is ignored.
+  gesture?: 'left-edge' | 'right-edge'
+}
 
 export class ShellExtension extends Extension {
   readonly content = shallowRef<Component | null>(null)
@@ -53,6 +73,16 @@ export class ShellExtension extends Extension {
     },
     unregister(id: string): void {
       this.items = this.items.filter((i) => i.id !== id)
+    },
+  })
+
+  readonly tabs = reactive({
+    items: [] as MobileTab[],
+    register(tab: MobileTab): void {
+      this.items = [...this.items, tab]
+    },
+    unregister(id: string): void {
+      this.items = this.items.filter((t) => t.id !== id)
     },
   })
 

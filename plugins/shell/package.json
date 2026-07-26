@@ -11,7 +11,9 @@
   "type": "module",
   "exports": {
     "./manifest": "./src/manifest.ts",
-    "./ui": "./src/ui.ts"
+    "./ui": "./src/ui.ts",
+    "./ui-desktop": "./src/ui-desktop.ts",
+    "./ui-mobile": "./src/ui-mobile.ts"
   },
   "files": [
     "dist"
@@ -40,6 +42,14 @@
       "./ui": {
         "import": "./dist/ui.js",
         "types": "./dist/ui.d.ts"
+      },
+      "./ui-desktop": {
+        "import": "./dist/ui-desktop.js",
+        "types": "./dist/ui-desktop.d.ts"
+      },
+      "./ui-mobile": {
+        "import": "./dist/ui-mobile.js",
+        "types": "./dist/ui-mobile.d.ts"
       }
     }
   }

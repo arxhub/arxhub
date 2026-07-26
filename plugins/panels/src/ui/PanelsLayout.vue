@@ -1,72 +1,24 @@
 <script setup lang="ts">
-import { useIsMobile } from '@arxhub/uikit/hooks'
-import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
-import { computed, onMounted, onUnmounted, provide } from 'vue'
-import { type DropZone, isPanelTabDragData } from '../composables/drag-types'
+import { useShellFrame } from '@arxhub/uikit/hooks'
+import { provide } from 'vue'
 import type { PanelStore } from '../types'
 import { PanelStoreKey, usePanels } from '../use-panels'
-import LayoutRenderer from './LayoutRenderer.vue'
-import MobilePanels from './MobilePanels.vue'
+import DesktopPanels from './desktop/DesktopPanels.vue'
+import MobilePanels from './mobile/MobilePanels.vue'
 
 // A mini-app can pass its own independent store; otherwise fall back to the global singleton.
 const props = defineProps<{ store?: PanelStore }>()
 const panelStore = props.store ?? usePanels()
 provide(PanelStoreKey, panelStore)
 
-const layout = computed(() => panelStore.layout.value)
-const isMobile = useIsMobile()
-
-let cleanup: (() => void) | null = null
-
-onMounted(() => {
-  cleanup = monitorForElements({
-    canMonitor: ({ source }) => source.data.type === 'panel-tab',
-    onDrop: ({ source, location }) => {
-      if (!isPanelTabDragData(source.data)) return
-
-      // pdnd orders dropTargets innermost-first. Expected priority:
-      // 1. panel-tab  — specific tab edge, provides insertion index
-      // 2. tab-bar    — empty bar area, appends to end of group
-      // 3. panel-group-body — panel content area, appends to end of group
-      const dest = location.current.dropTargets[0]
-      if (!dest) return
-
-      const { instanceId, groupId: fromGroupId } = source.data
-
-      if (dest.data.type === 'panel-tab') {
-        if (!isPanelTabDragData(dest.data)) return
-        const { groupId: destGroupId, index: destIndex } = dest.data
-        const edge = extractClosestEdge(dest.data)
-        const insertIndex = edge === 'left' ? destIndex : destIndex + 1
-        panelStore.movePanel(instanceId, fromGroupId, destGroupId, insertIndex)
-      } else if (dest.data.type === 'tab-bar') {
-        const destGroupId = dest.data.groupId as string
-        const destGroup = panelStore.groups.value[destGroupId]
-        panelStore.movePanel(instanceId, fromGroupId, destGroupId, destGroup?.instances.length ?? 0)
-      } else if (dest.data.type === 'panel-group-body') {
-        const destGroupId = dest.data.groupId as string
-        const zone = (dest.data.zone as DropZone) ?? 'center'
-        panelStore.movePanelToZone(instanceId, fromGroupId, destGroupId, zone)
-      }
-    },
-  })
-})
-
-onUnmounted(() => {
-  cleanup?.()
-})
+// Tiled groups and one-document-at-a-time are different layouts, not one layout at two widths — so
+// this picks between two components rather than reshaping either of them.
+const impl = useShellFrame() === 'mobile' ? MobilePanels : DesktopPanels
 </script>
 
 <template>
   <div class="panels-layout">
-    <MobilePanels v-if="isMobile" :store="panelStore" />
-    <template v-else>
-      <LayoutRenderer v-if="layout" :node="layout" />
-      <div v-else class="panels-empty">
-        <p>No panels open</p>
-      </div>
-    </template>
+    <component :is="impl" :store="panelStore" />
   </div>
 </template>
 
@@ -75,15 +27,5 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-}
-
-.panels-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  color: var(--gray-8);
-  font-size: var(--font-size-sm);
 }
 </style>

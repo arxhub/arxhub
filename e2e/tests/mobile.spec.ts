@@ -1,45 +1,58 @@
-import { expect, isMobileViewport, openNavigation, openNote, test } from './fixtures'
+import { expect, isMobileFrame, openNavigation, openNote, test } from './fixtures'
 
-test.describe('the frame follows the viewport', () => {
-  test('a narrow viewport gets the mobile frame, a wide one the desktop frame', async ({ app }) => {
-    if (isMobileViewport(app)) {
-      await expect(app.getByRole('button', { name: 'Open navigation' })).toBeVisible()
-      // The mini-app list is behind the menu, not in a permanent column.
+test.describe('the frame is chosen once, by the bundle', () => {
+  test('a phone-shaped client mounts the mobile frame and a desktop one the rail', async ({ app }) => {
+    if (await isMobileFrame(app)) {
+      await expect(app.getByRole('navigation', { name: 'Navigation' })).toBeVisible()
+      // The mini-app list is one level down, in the More sheet — not in a permanent column.
       await expect(app.getByRole('button', { name: 'Explorer' })).toBeHidden()
     } else {
-      await expect(app.getByRole('button', { name: 'Open navigation' })).toHaveCount(0)
+      await expect(app.locator('.mobile-shell')).toHaveCount(0)
       await expect(app.getByRole('button', { name: 'Explorer' })).toBeVisible()
     }
   })
 
-  test('resizing the window switches the frame without a reload', async ({ app }) => {
+  // The frames are two component trees now, not one tree reacting to a media query. Width is no
+  // longer a signal, and this is what stops the app from ending up half in one frame and half in the
+  // other at some intermediate size.
+  test('resizing does not swap frames mid-session', async ({ app }) => {
     const original = app.viewportSize()
     if (!original) test.skip()
-
-    await app.setViewportSize({ width: 400, height: 800 })
-    await expect(app.getByRole('button', { name: 'Open navigation' })).toBeVisible()
+    const mobile = await isMobileFrame(app)
 
     await app.setViewportSize({ width: 1200, height: 800 })
-    await expect(app.getByRole('button', { name: 'Open navigation' })).toHaveCount(0)
-    await expect(app.getByRole('button', { name: 'Explorer' })).toBeVisible()
+    expect(await isMobileFrame(app)).toBe(mobile)
+
+    await app.setViewportSize({ width: 400, height: 800 })
+    expect(await isMobileFrame(app)).toBe(mobile)
 
     if (original) await app.setViewportSize(original)
   })
 })
 
 test.describe('mobile navigation', () => {
-  // These describe the mobile frame specifically; the desktop project has no drawer or sheets.
-  test.beforeEach(({ app }) => {
-    test.skip(!isMobileViewport(app), 'only meaningful on the mobile frame')
+  // These describe the mobile frame specifically; the desktop project has no bottom bar or sheets.
+  test.beforeEach(async ({ app }) => {
+    test.skip(!(await isMobileFrame(app)), 'only meaningful on the mobile frame')
   })
 
-  test('back closes the drawer instead of leaving the app', async ({ app }) => {
+  test('back closes the files panel instead of leaving the app', async ({ app }) => {
     await openNavigation(app)
     await app.goBack()
 
-    await expect(app.getByRole('navigation', { name: 'Navigation' })).toBeHidden()
+    await expect(app.getByRole('region', { name: /navigation$/ })).toBeHidden()
     // Still the app, not a blank tab or the previous page.
     await expect(app.getByRole('main')).toBeVisible()
+  })
+
+  test('the mini-app list lives in the More sheet', async ({ app }) => {
+    await app.getByRole('button', { name: 'More' }).click()
+    const sheet = app.getByRole('dialog', { name: 'More' })
+    await expect(sheet.getByRole('button', { name: 'Explorer', exact: true })).toBeVisible()
+    await expect(sheet.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
+
+    await app.goBack()
+    await expect(sheet).toBeHidden()
   })
 
   test('node actions open as a bottom sheet, and back dismisses it', async ({ app, vault }) => {
@@ -57,7 +70,7 @@ test.describe('mobile navigation', () => {
     await expect(sheet).toBeHidden()
   })
 
-  test('shows one document at a time and lists the rest in a sheet', async ({ app, vault }) => {
+  test('shows one document at a time and lists the rest behind the Notes key', async ({ app, vault }) => {
     const first = await vault.write('one.md', 'first\n')
     const second = await vault.write('two.md', 'second\n')
 
@@ -79,7 +92,8 @@ test.describe('mobile navigation', () => {
     // Only the active document is rendered — no tiling on a narrow screen.
     await expect(app.locator('.cm-content')).toHaveCount(1)
 
-    await app.getByRole('button', { name: /Open documents/ }).click()
+    // The count is on the key, because one document at a time hides how many are waiting.
+    await app.getByRole('button', { name: /^Notes, \d+ open$/ }).click()
     const sheet = app.getByRole('dialog', { name: 'Open documents' })
     await expect(sheet).toBeVisible()
 
@@ -104,8 +118,8 @@ test.describe('mobile navigation', () => {
 })
 
 test.describe('the on-screen keyboard', () => {
-  test.beforeEach(({ app }) => {
-    test.skip(!isMobileViewport(app), 'only meaningful on the mobile frame')
+  test.beforeEach(async ({ app }) => {
+    test.skip(!(await isMobileFrame(app)), 'only meaningful on the mobile frame')
   })
 
   // A real soft keyboard cannot be raised from a test, so this drives the signal the app actually

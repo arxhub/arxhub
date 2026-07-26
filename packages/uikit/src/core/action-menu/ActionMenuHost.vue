@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useIsMobile } from '../../hooks/useIsMobile'
+import { useShellFrame } from '../../hooks/useShellFrame'
 import BottomSheet from '../BottomSheet.vue'
 import Icon from '../Icon.vue'
 import { actionMenu, useActionMenuState } from './action-menu'
 
 const state = useActionMenuState()
-const isMobile = useIsMobile()
+// Two presentations of one action list: a popover under the pointer, or a sheet in thumb reach.
+const isMobile = useShellFrame() === 'mobile'
 const menuEl = ref<HTMLElement | null>(null)
 
 function run(item: { disabled?: boolean; onSelect: () => void }) {
@@ -45,7 +46,7 @@ function onMenuKeydown(event: KeyboardEvent) {
 watch(
   () => state.value.open,
   (open) => {
-    if (open && !isMobile.value) nextTick(() => focusItem(0))
+    if (open && !isMobile) nextTick(() => focusItem(0))
   },
 )
 
@@ -53,7 +54,7 @@ function onGlobalPointerDown(event: PointerEvent) {
   if (!state.value.open) return
   // The sheet dismisses itself (backdrop, drag, back), and it lives outside menuEl — leaving it to
   // this handler would close it on the very tap meant to pick an item.
-  if (isMobile.value) return
+  if (isMobile) return
   if (menuEl.value?.contains(event.target as Node)) return
   actionMenu.close()
 }
@@ -65,7 +66,7 @@ function onGlobalKeydown(event: KeyboardEvent) {
 // Scroll/resize/blur reposition or invalidate a pointer-anchored menu; a sheet is anchored to the
 // screen edge and survives all three.
 function onCloseIfAnchored() {
-  if (!isMobile.value) actionMenu.close()
+  if (!isMobile) actionMenu.close()
 }
 
 onMounted(() => {

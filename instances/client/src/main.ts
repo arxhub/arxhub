@@ -20,10 +20,9 @@ import { AboutSettingsPage, ShellExtension, ShellPlugin } from '@arxhub/plugin-s
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
 import { type Theme, ThemePlugin } from '@arxhub/plugin-theme/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
-import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
+import { ARXHUB_KEY, detectShellFrame } from '@arxhub/uikit/hooks'
 import { HttpFileSystem, VFS_NAMESPACE } from '@arxhub/vfs-http'
 import { createApp, h, markRaw } from 'vue'
-import App from './App.vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
 
 // Read before anything else: a plugin the owner switched off (or a maintenance boot) must not get as
@@ -85,6 +84,14 @@ if (explorer != null) shell.sidebar.setActive('arxhub.explorer')
 store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
 store.openPanel('arxhub.welcome', {}, 'Welcome', explorer?.contentGroupId ?? undefined)
 
-const app = createApp(App)
+// One browser build is served to phones and desktops alike, so this bundle cannot know its frame and
+// probes once, here, at boot. Everything below the shell reads the answer from injection — nothing in
+// the app measures the window again.
+const Shell =
+  detectShellFrame() === 'mobile'
+    ? (await import('@arxhub/plugin-shell/ui-mobile')).MobileShell
+    : (await import('@arxhub/plugin-shell/ui-desktop')).DesktopShell
+
+const app = createApp(Shell)
 app.provide(ARXHUB_KEY, arxhub)
 app.mount('#app')
