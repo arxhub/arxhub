@@ -5,7 +5,7 @@ import { PluginConfig } from '@arxhub/config'
 import { ExtensionContainer, type PluginContext } from '@arxhub/core'
 import { LazyContainer } from '@arxhub/di'
 import { illegalState } from '@arxhub/errors'
-import type { EventMap } from '@arxhub/events'
+import { createEventBus, type EventMap } from '@arxhub/events'
 import {
   ScopedFileSystem,
   VaultVfs,
@@ -16,7 +16,6 @@ import {
   type VirtualFileSystem,
 } from '@arxhub/vfs'
 import { NodeFileSystem } from '@arxhub/vfs-node'
-import EventEmitter from 'eventemitter3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { SearchExtension } from '../search-extension'
 import { SearchPlugin } from '../search-plugin'
@@ -88,7 +87,7 @@ function build(dataDir = 'memory://', gate?: (storage: VirtualFileSystem) => Vir
   const services = new LazyContainer<object>('Service')
   services.bind(VaultVfs, () => new ScopedFileSystem(root, 'vault'))
   services.bind(VaultWatcher, () => watcher)
-  ctx = { extensions, events: new EventEmitter<EventMap>(), services }
+  ctx = { extensions, events: createEventBus<EventMap>(), services }
 
   plugin = new SearchPlugin({ logger, dataDir })
   plugin.create(ctx)

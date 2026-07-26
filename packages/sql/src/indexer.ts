@@ -1,3 +1,4 @@
+import { createEventBus, type TypedEventBus, type Unsubscribe } from '@arxhub/events'
 import type { Logger } from '@arxhub/logger'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import type { VirtualFileSystem } from '@arxhub/vfs'
@@ -46,7 +47,7 @@ export interface Indexer {
   // The walk in flight, if there is one. Something shutting down cancels and then awaits this: the walk
   // holds transactions, and closing the index under it would fail them.
   readonly running: Promise<unknown> | null
-  subscribe(listener: (status: IndexerStatus) => void): () => void
+  subscribe(listener: (status: IndexerStatus) => void): Unsubscribe
   // Catches the index up with the content store, resuming an unfinished walk. Calling it while a walk is
   // running joins that walk rather than starting a second one (FR-226).
   scan(): Promise<IndexerStatus>
@@ -65,6 +66,13 @@ export interface Indexer {
 
 export interface CreateIndexerOptions extends IndexerOptions {
   logger: Logger
+}
+
+// The indexer's own event map. Local rather than the application-wide bus: a status belongs to the walk
+// that produced it, and an app that opened a second index would otherwise have its two indexers
+// overwriting each other's status in every subscriber.
+interface IndexerEvents {
+  status: IndexerStatus
 }
 
 // The walk over the content store. `vfs` must be the view of the content store, never the whole tree:
@@ -94,7 +102,11 @@ class VaultIndexer implements Indexer {
     lastScanStartedAt: null,
     lastScanFinishedAt: null,
   }
-  private readonly listeners = new Set<(status: IndexerStatus) => void>()
+  // A subscriber that throws is reported and skipped: the walk announces its status from inside a
+  // transaction it still has to finish, and a status listener is a UI concern that must not fail it.
+  private readonly events: TypedEventBus<IndexerEvents> = createEventBus<IndexerEvents>({
+    onError: (error) => this.logger.error({ err: error }, 'An indexer status listener threw'),
+  })
   private inflight: Promise<IndexerStatus> | null = null
   private cancelled = false
 
@@ -123,11 +135,8 @@ class VaultIndexer implements Indexer {
     return this.inflight
   }
 
-  subscribe(listener: (status: IndexerStatus) => void): () => void {
-    this.listeners.add(listener)
-    return () => {
-      this.listeners.delete(listener)
-    }
+  subscribe(listener: (status: IndexerStatus) => void): Unsubscribe {
+    return this.events.on('status', listener)
   }
 
   scan(): Promise<IndexerStatus> {
@@ -357,9 +366,7 @@ class VaultIndexer implements Indexer {
 
   private patch(changes: Partial<IndexerStatus>): void {
     this.snapshot = { ...this.snapshot, ...changes }
-    for (const listener of this.listeners) {
-      listener(this.snapshot)
-    }
+    this.events.emit('status', this.snapshot)
   }
 }
 

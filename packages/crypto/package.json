@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@arxhub/errors": "workspace:*",
+    "@arxhub/events": "workspace:*",
     "@noble/ciphers": "catalog:shared",
     "@noble/hashes": "catalog:shared",
     "@scure/bip32": "catalog:shared",

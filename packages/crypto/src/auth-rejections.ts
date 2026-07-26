@@ -7,6 +7,8 @@
 // signed client added later that forgets to pass it goes back to failing silently, which is the whole
 // thing this exists to prevent.
 
+import { createEventBus, type Unsubscribe } from '@arxhub/events'
+
 export interface AuthRejection {
   // Why the server refused, from its `x-arx-auth-reason` header; null when it said nothing — an older
   // server, or a 401 raised by something that is not the auth guard.
@@ -18,27 +20,27 @@ export interface AuthRejection {
 
 export type AuthRejectionListener = (rejection: AuthRejection) => void
 
-class AuthRejections {
-  private readonly listeners = new Set<AuthRejectionListener>()
+// This bus is module-scoped, not the application-wide one: `signingMiddleware` is a plain function with
+// no plugin context to take a bus from, and a rejection has to be reportable from a client constructed
+// before (or without) an ArxHub.
+interface AuthRejectionEvents {
+  rejected: AuthRejection
+}
 
-  subscribe(listener: AuthRejectionListener): () => void {
-    this.listeners.add(listener)
-    return () => {
-      this.listeners.delete(listener)
-    }
+class AuthRejections {
+  private readonly events = createEventBus<AuthRejectionEvents>({
+    // This runs mid-request: a listener that throws must not reject the response promise its caller is
+    // already awaiting, nor stop the other listeners. The console is the only place to say so — a logger
+    // would mean depending on @arxhub/core, which this package deliberately does not.
+    onError: (error) => console.error('[crypto] an auth-rejection listener threw', error),
+  })
+
+  subscribe(listener: AuthRejectionListener): Unsubscribe {
+    return this.events.on('rejected', listener)
   }
 
   notify(rejection: AuthRejection): void {
-    for (const listener of this.listeners) {
-      try {
-        listener(rejection)
-      } catch (error) {
-        // This runs mid-request: a listener that throws must not reject the response promise its caller
-        // is already awaiting, nor stop the other listeners. The console is the only place to say so —
-        // a logger would mean depending on @arxhub/core, which this package deliberately does not.
-        console.error('[crypto] an auth-rejection listener threw', error)
-      }
-    }
+    this.events.emit('rejected', rejection)
   }
 }
 

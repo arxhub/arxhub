@@ -26,6 +26,7 @@
     "@arxhub/crypto": "workspace:*",
     "@arxhub/di": "workspace:*",
     "@arxhub/errors": "workspace:*",
+    "@arxhub/events": "workspace:*",
     "@arxhub/path": "workspace:*",
     "async-lock": "catalog:shared"
   },

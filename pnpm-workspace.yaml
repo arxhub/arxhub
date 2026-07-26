@@ -45,7 +45,6 @@ catalogs:
     '@scure/bip39': ^2.2.0
     '@signaldb/core': ^1.6.0
     async-lock: ^1.4.1
-    eventemitter3: ^5.0.1
     memoirist: ^0.3.0
     nanoid: ^5.1.5
     pino: ^9.6.0

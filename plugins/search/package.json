@@ -31,8 +31,7 @@
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
     "@arxhub/vfs-node": "workspace:*",
-    "@types/node": "catalog:toolchain",
-    "eventemitter3": "catalog:shared"
+    "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",

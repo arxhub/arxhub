@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@arxhub/di": "workspace:*",
-    "eventemitter3": "catalog:shared",
+    "@arxhub/events": "workspace:*",
     "pino": "catalog:shared"
   },
   "devDependencies": {

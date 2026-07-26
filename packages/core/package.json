@@ -21,8 +21,7 @@
   },
   "dependencies": {
     "@arxhub/events": "workspace:*",
-    "@arxhub/logger": "workspace:*",
-    "eventemitter3": "catalog:shared"
+    "@arxhub/logger": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

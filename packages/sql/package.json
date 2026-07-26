@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@arxhub/errors": "workspace:*",
+    "@arxhub/events": "workspace:*",
     "@arxhub/path": "workspace:*",
     "@electric-sql/pglite": "catalog:shared",
     "@sinclair/typebox": "catalog:shared"

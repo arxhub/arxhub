@@ -1,3 +1,5 @@
+import { createEventBus, type TypedEventBus, type Unsubscribe } from '@arxhub/events'
+
 // Suffix of the metadata sidecar a content write leaves next to the file (see InfoNamespaceImpl.flush).
 // A sidecar is written by the write machinery itself, one per content write, and is not a file anyone
 // asked to store — so it never reaches a watcher.
@@ -20,7 +22,14 @@ export type VfsChangeListener = (change: VfsChange) => void
 // changes; it does not announce them, because only the view that performed the operation knows one
 // happened.
 export interface VfsChangeSource {
-  subscribe(listener: VfsChangeListener): () => void
+  subscribe(listener: VfsChangeListener): Unsubscribe
+}
+
+// This watcher's own event map. Local rather than the application-wide bus: there is one watcher per
+// file-system view, and a subscriber holds the view it cares about — on a shared bus it would have to
+// filter every other view's traffic back out.
+interface VfsWatcherEvents {
+  change: VfsChange
 }
 
 export interface VfsWatcherOptions {
@@ -33,29 +42,21 @@ export interface VfsWatcherOptions {
 // runs inside the operation that notified it (often under that path's lock), so it may only record what
 // happened and return — anything slower belongs on the listener's own queue.
 export class VfsWatcher implements VfsChangeSource {
-  private readonly listeners = new Set<VfsChangeListener>()
-  private readonly onError: ((error: unknown, change: VfsChange) => void) | undefined
+  private readonly events: TypedEventBus<VfsWatcherEvents>
 
   constructor(options: VfsWatcherOptions = {}) {
-    this.onError = options.onError
+    // Always a handler, even when the caller gave none: a listener runs inside an operation that has
+    // already succeeded, so its failure may be reported but must never be raised at the writer.
+    this.events = createEventBus<VfsWatcherEvents>({
+      onError: (error, _event, change) => options.onError?.(error, change),
+    })
   }
 
-  subscribe(listener: VfsChangeListener): () => void {
-    this.listeners.add(listener)
-    return () => {
-      this.listeners.delete(listener)
-    }
+  subscribe(listener: VfsChangeListener): Unsubscribe {
+    return this.events.on('change', listener)
   }
 
   notify(change: VfsChange): void {
-    // A snapshot: a listener that unsubscribes (or subscribes) while being notified must not mutate the
-    // set being iterated.
-    for (const listener of Array.from(this.listeners)) {
-      try {
-        listener(change)
-      } catch (error) {
-        this.onError?.(error, change)
-      }
-    }
+    this.events.emit('change', change)
   }
 }

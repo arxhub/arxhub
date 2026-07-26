@@ -2,7 +2,7 @@
   "name": "@arxhub/events",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "Global typed event bus",
+  "description": "Typed event bus — the application-wide one and the local ones",
   "keywords": [
     "arxhub"
   ],
@@ -16,10 +16,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
-  },
-  "dependencies": {
-    "eventemitter3": "catalog:shared"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

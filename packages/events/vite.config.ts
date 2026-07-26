@@ -10,7 +10,6 @@ export default defineConfig((env) =>
         entry: resolve(__dirname, 'src/index.ts'),
       },
       rollupOptions: {
-        external: ['eventemitter3'],
         output: {
           preserveModules: true,
           preserveModulesRoot: `${__dirname}/src`,

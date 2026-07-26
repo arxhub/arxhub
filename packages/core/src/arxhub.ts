@@ -1,8 +1,7 @@
 import { LazyContainer } from '@arxhub/di'
 import { bootFailed, illegalState } from '@arxhub/errors'
-import type { EventBus, EventMap } from '@arxhub/events'
+import { createEventBus, type EventBus, type EventMap } from '@arxhub/events'
 import { createRootLogger, type LogBuffer, LogBufferKey, type Logger } from '@arxhub/logger'
-import EventEmitter from 'eventemitter3'
 import type { BootFailure, BootOptions, BootPhase, PluginInfo } from './boot'
 import { ExtensionContainer } from './extension'
 import { type Plugin, PluginContainer } from './plugin'
@@ -50,7 +49,12 @@ export class ArxHub {
     this.services.bind(LogBufferKey, () => this.logBuffer)
     this.plugins = new PluginContainer(this.logger)
     this.extensions = new ExtensionContainer({ logger: this.logger })
-    this.events = new EventEmitter<EventMap>()
+    // A listener that throws is reported and skipped rather than left to unwind the emitter's caller: an
+    // event is announced from the middle of an operation that has already happened (a panel is open, a
+    // group is gone), and one plugin's bad listener must not abandon that operation half-applied.
+    this.events = createEventBus<EventMap>({
+      onError: (error, event) => this.logger.error(`A listener for '${event}' threw`, error),
+    })
   }
 
   // Every registered plugin and whether this boot ran it. Empty until start() has instantiated them;
