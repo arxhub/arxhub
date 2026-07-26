@@ -19,14 +19,16 @@ function onRootContextMenu(event: MouseEvent) {
   actionMenu.open(actions.getRootActions(), { x: event.clientX, y: event.clientY })
 }
 
-async function newFile() {
+// Through runAction, like the context menu: these buttons awaited the write with nothing to catch it, so
+// a refused create was an unhandled rejection in the console and a button that appeared to do nothing.
+function newFile() {
   const parent = explorer.selectedPath.value ?? explorer.root
-  await explorer.createFile(parent, 'untitled.md')
+  actions.runAction(explorer.createFile(parent, 'untitled.md'), 'create the file')
 }
 
-async function newFolder() {
+function newFolder() {
   const parent = explorer.selectedPath.value ?? explorer.root
-  await explorer.createDir(parent, 'new-folder')
+  actions.runAction(explorer.createDir(parent, 'new-folder'), 'create the folder')
 }
 </script>
 

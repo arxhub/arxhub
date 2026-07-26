@@ -1,8 +1,16 @@
 import { basename, dirname, extname } from '@arxhub/path'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
+
+// The toast's second line. A VFS error carries the useful part in its message ('Unauthorized' for a
+// server that refused this device, 'Not Found' for a path that vanished under us); anything without one
+// still has to say something rather than render 'undefined'.
+function reasonOf(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error ?? '')
+  return message.trim() || 'The reason was not reported — see the log.'
+}
 
 export function useFileActions() {
   const arxhub = useArxHub()
@@ -12,8 +20,16 @@ export function useFileActions() {
   // Action descriptors are fire-and-forget (the menu/modal invokers don't await onSelect/onConfirm),
   // so every async action routes through here: a rejection is logged, not left to surface as an
   // unhandled promise rejection.
+  //
+  // It also toasts. Every one of these actions was started by a click and changes what the tree shows,
+  // so a failure that only reached the log left the user watching a tree that silently did not change —
+  // a rejected write reads exactly like a button that does nothing.
+  // `context` is a verb phrase ('create the file', 'rename to notes.md') so it reads in both places.
   function runAction(action: Promise<void>, context: string): void {
-    action.catch((error) => arxhub.logger.error(`[explorer] ${context} failed:`, error))
+    action.catch((error) => {
+      arxhub.logger.error(`[explorer] failed to ${context}:`, error)
+      toaster.create({ title: `Could not ${context}`, description: reasonOf(error), type: 'error' })
+    })
   }
 
   function openFile(node: TreeNode, preview: boolean): void {
@@ -56,7 +72,7 @@ export function useFileActions() {
       content: `Delete "${name}"? This action cannot be undone.`,
       labels: { confirm: 'Delete', cancel: 'Cancel' },
       confirmProps: { danger: true },
-      onConfirm: () => runAction(explorer.deleteEntry(node.entry.pathname), `delete ${node.entry.pathname}`),
+      onConfirm: () => runAction(explorer.deleteEntry(node.entry.pathname), `delete ${name}`),
     })
   }
 
@@ -74,8 +90,8 @@ export function useFileActions() {
       ]
     }
     return [
-      { id: 'new-file', label: 'New File', icon: 'lu:file-plus', onSelect: () => runAction(newFile(node), 'new file') },
-      { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => runAction(newFolder(node), 'new folder') },
+      { id: 'new-file', label: 'New File', icon: 'lu:file-plus', onSelect: () => runAction(newFile(node), 'create the file') },
+      { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => runAction(newFolder(node), 'create the folder') },
       { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
       { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
       ...explorer.getContributedActions(node),
@@ -88,16 +104,18 @@ export function useFileActions() {
         id: 'new-file',
         label: 'New File',
         icon: 'lu:file-plus',
-        onSelect: () => runAction(explorer.createFile(explorer.root, 'untitled.md'), 'new file'),
+        onSelect: () => runAction(explorer.createFile(explorer.root, 'untitled.md'), 'create the file'),
       },
       {
         id: 'new-folder',
         label: 'New Folder',
         icon: 'lu:folder-plus',
-        onSelect: () => runAction(explorer.createDir(explorer.root, 'new-folder'), 'new folder'),
+        onSelect: () => runAction(explorer.createDir(explorer.root, 'new-folder'), 'create the folder'),
       },
     ]
   }
 
-  return { openFile, newFile, newFolder, startRename, confirmDelete, getNodeActions, getRootActions }
+  // runAction is part of the surface: the toolbar and the inline rename start the same actions from a
+  // plain click, and each one that reported failures on its own is one that could stop.
+  return { openFile, newFile, newFolder, startRename, confirmDelete, getNodeActions, getRootActions, runAction }
 }

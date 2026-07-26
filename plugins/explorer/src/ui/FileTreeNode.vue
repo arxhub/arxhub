@@ -32,12 +32,12 @@ watch(renaming, async (active) => {
   renameInput.value?.select()
 })
 
-async function commitRename() {
+function commitRename() {
   if (!renaming.value) return
   const newName = renameValue.value.trim()
   explorer.renamingPath.value = null
   if (newName && newName !== basename(props.node.entry.pathname)) {
-    await explorer.renameEntry(props.node.entry.pathname, newName)
+    actions.runAction(explorer.renameEntry(props.node.entry.pathname, newName), `rename to ${newName}`)
   }
 }
 
