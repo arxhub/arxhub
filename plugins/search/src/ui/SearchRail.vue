@@ -36,9 +36,18 @@ const SORT_OPTIONS: SelectOption[] = [
   { value: 'modified', label: 'Modified' },
 ]
 
-// The qualifiers come from the parser's own list, so the hint cannot promise a filter the parser does not
-// understand.
-const QUALIFIER_HINT = SEARCH_QUALIFIERS.map((name) => `${name}:`).join(' ')
+// What each qualifier narrows by. Driven off the parser's own list, so the hint cannot promise a filter
+// the parser does not understand — and a qualifier added there without a line here shows up unexplained
+// rather than silently missing.
+const QUALIFIER_DOES: Record<(typeof SEARCH_QUALIFIERS)[number], string> = {
+  title: 'match the heading only',
+  path: 'match the file path',
+  tag: 'a #tag in the note',
+  ext: 'a file extension',
+  in: 'a folder to look inside',
+}
+
+const QUALIFIER_HINTS = SEARCH_QUALIFIERS.map((name) => ({ name, does: QUALIFIER_DOES[name] }))
 
 // One flat list of what the arrow keys move over: a row per document, then a row per snippet under it.
 // Flat because that is what a listbox is — the grouping is what the rows look like, not how they nest.
@@ -213,7 +222,6 @@ onMounted(focusInput)
         @keydown.down.prevent="enterList"
         @keydown.esc.prevent="reset"
       />
-      <p class="qualifier-hint">{{ QUALIFIER_HINT }}</p>
 
       <!-- What the parser could not make sense of, and what the expression is wrong about: both belong at
            the input, because both are about the string that is being typed. -->
@@ -316,7 +324,18 @@ onMounted(focusInput)
     <p v-else-if="controller.answered.value !== '' && !controller.resultsError.value" class="empty">
       Nothing matches <span class="term">{{ controller.answered.value }}</span>
     </p>
-    <div v-else class="results-filler" />
+    <!-- Nothing has been asked yet. This space held an empty filler, with the qualifier list dumped
+         under the field as a bare "title: path: tag: ext: in:" — which names the filters without saying
+         what any of them does. Same facts, in the space that was already going spare. -->
+    <div v-else class="results-filler">
+      <SectionLabel>Narrow a search</SectionLabel>
+      <dl class="qualifiers">
+        <div v-for="qualifier in QUALIFIER_HINTS" :key="qualifier.name" class="qualifier">
+          <dt>{{ qualifier.name }}:</dt>
+          <dd>{{ qualifier.does }}</dd>
+        </div>
+      </dl>
+    </div>
 
     <div class="index-status">
       <!-- Stops here, because a rebuild is not navigation: the mobile frame dismisses its rail panel when
@@ -355,13 +374,6 @@ onMounted(focusInput)
 }
 
 /* The qualifiers, spelled the way they are typed — mono, because they are syntax rather than prose. */
-.qualifier-hint {
-  margin: 0;
-  color: var(--gray-10);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: var(--line-height-tight);
-}
 
 .message {
   margin: 0;
@@ -421,9 +433,41 @@ onMounted(focusInput)
   outline-offset: -1px;
 }
 
+/* The space before anything has been asked. It still takes the slack — the index status stays pinned to
+   the bottom of the rail — but it now spends it on the syntax rather than on nothing. */
 .results-filler {
   flex: 1;
   min-height: 0;
+  padding: 12px 8px;
+  overflow-y: auto;
+}
+
+.qualifiers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.qualifier {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--font-size-xs);
+}
+
+/* Fixed width so the descriptions line up as a column; mono because it is text you type verbatim. */
+.qualifier dt {
+  flex-shrink: 0;
+  width: 44px;
+  color: var(--gray-11);
+  font-family: var(--font-mono);
+}
+
+.qualifier dd {
+  margin: 0;
+  color: var(--gray-10);
+  line-height: var(--line-height-snug);
 }
 
 .row {
