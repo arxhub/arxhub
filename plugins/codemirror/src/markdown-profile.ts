@@ -33,14 +33,22 @@ const noteHighlight = HighlightStyle.define([
 ])
 
 const noteTheme = EditorView.theme({
-  '&': { fontSize: 'var(--font-size-sm)' },
+  // A note is content, not chrome, so it is the one thing in the app allowed to be comfortable —
+  // a step above the interface around it rather than the same size as a button label.
+  '&': { fontSize: 'var(--font-size-md)' },
   '.cm-content': {
     fontFamily: 'var(--font-sans)',
     lineHeight: '1.7',
-    maxWidth: '80ch',
-    padding: '1rem 0',
+    // A measure without a margin is just a narrow column pinned to the left edge, which is what this
+    // was: the note hugged the gutter and left a third of a wide window empty to its right.
+    maxWidth: '720px',
+    marginInline: 'auto',
+    padding: '2rem 0 30vh',
   },
   '.cm-line': { padding: '0 1rem' },
+  // Line numbers and a fold margin are for reading code. In prose they are decoration that costs the
+  // measure 40px and tells you the paragraph you are writing is on line 37.
+  '.cm-gutters': { display: 'none' },
 })
 
 export function markdownProfile(): Extension {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Icon } from '@arxhub/uikit/core'
 import type { EditorView } from '@codemirror/view'
 import {
   insertLink,
@@ -19,49 +20,75 @@ function run(command: (view: EditorView) => boolean): void {
   command(props.view)
   props.view.focus()
 }
+
+// One icon system, declared as data so the row cannot drift into a mix of letters and glyphs again.
+// It previously ran "H1 H2 H3 · B I S </> · • ☑ ❝ 🔗" — three notations at once, the last of them a
+// colour emoji that no theme can restyle and that reads as a foreign object on a dark base.
+const GROUPS: { label: string; icon: string; run: (view: EditorView) => boolean }[][] = [
+  [
+    { label: 'Heading 1', icon: 'lu:heading-1', run: (v) => toggleHeading(v, 1) },
+    { label: 'Heading 2', icon: 'lu:heading-2', run: (v) => toggleHeading(v, 2) },
+    { label: 'Heading 3', icon: 'lu:heading-3', run: (v) => toggleHeading(v, 3) },
+  ],
+  [
+    { label: 'Bold', icon: 'lu:bold', run: toggleBold },
+    { label: 'Italic', icon: 'lu:italic', run: toggleItalic },
+    { label: 'Strikethrough', icon: 'lu:strikethrough', run: toggleStrikethrough },
+    { label: 'Inline code', icon: 'lu:code', run: toggleInlineCode },
+  ],
+  [
+    { label: 'Bulleted list', icon: 'lu:list', run: toggleBullet },
+    { label: 'Task list', icon: 'lu:list-todo', run: toggleTask },
+    { label: 'Quote', icon: 'lu:quote', run: toggleQuote },
+    { label: 'Link', icon: 'lu:link', run: insertLink },
+  ],
+]
 </script>
 
 <template>
   <!-- mousedown is prevented so pressing a button never moves focus out of the editor: losing focus
        collapses the selection, and the marker would land at the caret instead of around the text. -->
   <div class="md-toolbar" role="toolbar" aria-label="Formatting" @mousedown.prevent>
-    <button type="button" title="Heading 1" aria-label="Heading 1" @click="run((v) => toggleHeading(v, 1))">H1</button>
-    <button type="button" title="Heading 2" aria-label="Heading 2" @click="run((v) => toggleHeading(v, 2))">H2</button>
-    <button type="button" title="Heading 3" aria-label="Heading 3" @click="run((v) => toggleHeading(v, 3))">H3</button>
-    <span class="sep" />
-    <button type="button" class="b" title="Bold" aria-label="Bold" @click="run(toggleBold)">B</button>
-    <button type="button" class="i" title="Italic" aria-label="Italic" @click="run(toggleItalic)">I</button>
-    <button type="button" class="s" title="Strikethrough" aria-label="Strikethrough" @click="run(toggleStrikethrough)">S</button>
-    <button type="button" class="mono" title="Inline code" aria-label="Inline code" @click="run(toggleInlineCode)">&lt;/&gt;</button>
-    <span class="sep" />
-    <button type="button" title="Bulleted list" aria-label="Bulleted list" @click="run(toggleBullet)">•</button>
-    <button type="button" title="Task list" aria-label="Task list" @click="run(toggleTask)">☑</button>
-    <button type="button" title="Quote" aria-label="Quote" @click="run(toggleQuote)">❝</button>
-    <button type="button" title="Link" aria-label="Link" @click="run(insertLink)">🔗</button>
+    <template v-for="(group, index) in GROUPS" :key="index">
+      <span v-if="index > 0" class="sep" />
+      <button
+        v-for="action in group"
+        :key="action.label"
+        type="button"
+        :title="action.label"
+        :aria-label="action.label"
+        @click="run(action.run)"
+      >
+        <Icon :name="action.icon" :size="14" />
+      </button>
+    </template>
   </div>
 </template>
 
 <style scoped>
+/* A group inside a strip, not a strip of its own: no surface, no rule, no wrapping — the row it sits
+   in owns all three. It used to be a full-width band with its own bottom border, which is how the
+   editor came to have three stacked bars above the first line of a note. */
 .md-toolbar {
   display: flex;
   align-items: center;
-  gap: 0.125rem;
-  padding: 0.25rem 0.5rem;
-  border-bottom: 1px solid var(--gray-6);
-  background: var(--gray-2);
-  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 2px;
 }
 
+/* A 14px glyph in a 32px box — the control height, so a formatting key lines up with every other
+   control in the app rather than being sized by whatever letter it used to hold. */
 .md-toolbar button {
-  min-width: var(--size-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-xs);
   height: var(--size-xs);
-  padding: 0 0.375rem;
+  padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   background: transparent;
   color: var(--gray-11);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
   cursor: pointer;
 }
 
@@ -73,22 +100,6 @@ function run(command: (view: EditorView) => boolean): void {
 .md-toolbar button:focus-visible {
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
-}
-
-.b {
-  font-weight: 700;
-}
-
-.i {
-  font-style: italic;
-}
-
-.s {
-  text-decoration: line-through;
-}
-
-.mono {
-  font-family: var(--font-mono);
 }
 
 .sep {

@@ -5,6 +5,7 @@ import { EditorState, type Extension, Prec } from '@codemirror/state'
 import { EditorView, keymap, placeholder as placeholderExtension } from '@codemirror/view'
 import { basicSetup } from 'codemirror'
 import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { editorTheme } from '../editor-theme'
 
 // A code editor over a plain string — no file, no panel, no save. The file-backed editor next to it owns
 // a document's lifecycle; this one is the control another surface embeds (the SQL console is the first),
@@ -45,6 +46,7 @@ async function extensions(): Promise<Extension[]> {
     // adds a line instead of running the query.
     ...(props.submitOnModEnter ? [Prec.highest(keymap.of([{ key: 'Mod-Enter', run: submit }]))] : []),
     basicSetup,
+    editorTheme(),
     ...(support == null ? [] : [support]),
     ...(props.placeholder == null ? [] : [placeholderExtension(props.placeholder)]),
     ...(props.readonly ? [EditorState.readOnly.of(true)] : []),
@@ -114,11 +116,5 @@ defineExpose({
 .code-editor :deep(.cm-scroller) {
   overflow: auto;
   font-family: var(--font-mono);
-}
-
-.code-editor :deep(.cm-gutters) {
-  border-right: 1px solid var(--gray-4);
-  background: var(--gray-2);
-  color: var(--gray-9);
 }
 </style>

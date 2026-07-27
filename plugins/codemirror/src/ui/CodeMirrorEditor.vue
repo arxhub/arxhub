@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usePanelInstance } from '@arxhub/plugin-panels/ui'
+import { Button } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { LanguageDescription } from '@codemirror/language'
@@ -8,6 +9,7 @@ import { EditorState } from '@codemirror/state'
 import { keymap } from '@codemirror/view'
 import { basicSetup, EditorView } from 'codemirror'
 import { computed, onUnmounted, ref, shallowRef, toRef } from 'vue'
+import { editorTheme } from '../editor-theme'
 import { insertLink, toggleBold, toggleInlineCode, toggleItalic } from '../markdown-commands'
 import { isMarkdown, markdownProfile } from '../markdown-profile'
 import MarkdownToolbar from './MarkdownToolbar.vue'
@@ -40,6 +42,9 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
     doc,
     extensions: [
       basicSetup,
+      // A note is prose: no band on the caret's line. Passed rather than overridden downstream, so
+      // there is one rule and no precedence race between two themes setting the same property.
+      editorTheme({ activeLine: !note }),
       ...(note ? [markdownProfile(), keymap.of(markdownKeymap)] : []),
       ...(langSupport ? [langSupport] : []),
       // First real edit promotes a VSCode-style preview tab to permanent (mirrors the ProseMirror
@@ -87,14 +92,16 @@ onUnmounted(() => {
 
 <template>
   <div class="codemirror-wrapper" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
+    <!-- One strip, not two. The path and the formatting keys used to sit on separate rows, which put
+         three bands of chrome (tab strip, path, toolbar) above every note before a word of it showed. -->
     <div class="codemirror-toolbar">
       <span class="codemirror-path">{{ path }}</span>
-      <button class="save-btn" :disabled="!canSave" @click="save">Save</button>
+      <MarkdownToolbar v-if="note && !loadError" :view="view" />
+      <Button size="sm" variant="secondary" :disabled="!canSave" @click="save">Save</Button>
     </div>
-    <MarkdownToolbar v-if="note && !loadError" :view="view" />
     <div v-if="loadError" class="codemirror-error">
       <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
-      <button class="save-btn" @click="reload(path)">Retry</button>
+      <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>
     </div>
     <div v-show="!loadError" ref="editorEl" class="codemirror-editor" />
   </div>
@@ -109,39 +116,29 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
+/* A strip, at the strip height — the same band as the tab bar above it and the status bar below. */
 .codemirror-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 4px 8px;
-  border-bottom: 1px solid var(--gray-4);
-  background: var(--gray-1);
+  gap: 8px;
+  height: var(--size-md);
   flex-shrink: 0;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--gray-6);
+  background: var(--gray-2);
 }
 
+/* The path takes the slack, so the formatting keys and Save stay put as the file name changes length
+   rather than sliding along the strip from note to note. */
 .codemirror-path {
-  font-size: 11px;
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-xs);
   color: var(--gray-9);
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.save-btn {
-  padding: 2px 10px;
-  font-size: 12px;
-  border: 1px solid var(--gray-5);
-  border-radius: 4px;
-  background: var(--gray-2);
-  color: var(--gray-11);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .codemirror-error {
@@ -150,15 +147,10 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  font-size: 12px;
-  color: var(--red-11);
-  background: var(--red-2);
-  border-bottom: 1px solid var(--red-6);
-}
-
-.save-btn:hover {
-  background: var(--gray-3);
-  color: var(--gray-12);
+  font-size: var(--font-size-xs);
+  color: var(--danger-11);
+  background: var(--danger-2);
+  border-bottom: 1px solid var(--danger-6);
 }
 
 .codemirror-editor {
