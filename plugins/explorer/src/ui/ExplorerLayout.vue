@@ -5,7 +5,7 @@ import FileTreeView from './FileTreeView.vue'
 </script>
 
 <template>
-  <MiniAppShell rail-title="Files" rail-icon="lu:folder-open">
+  <MiniAppShell rail-title="Files">
     <template #rail>
       <FileTreeView />
     </template>

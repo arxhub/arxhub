@@ -19,7 +19,7 @@ function label(tab: MobileTab): string {
       :key="tab.id"
       type="button"
       class="tab"
-      :class="{ active: tab.active?.() }"
+      :class="[`is-${tab.role ?? 'place'}`, { active: tab.active?.() }]"
       :data-testid="tab.id"
       :aria-label="label(tab)"
       :aria-pressed="tab.active ? tab.active() : undefined"
@@ -61,9 +61,24 @@ function label(tab: MobileTab): string {
   cursor: pointer;
 }
 
-/* The accent is spent on selection, so an open layer is what colours its key. */
-.tab.active {
+/* Where you are: the accent, like every other selected thing in the app. Exactly one at a time. */
+.tab.is-place.active {
   color: var(--accent-11);
+}
+
+/* What is open on top of it: a raised fill behind the glyph rather than a second accent. Reads as a
+   pressed key, which is what it is — tapping it again puts the layer away. */
+.tab.is-layer.active {
+  color: var(--gray-12);
+}
+
+.tab.is-layer.active .tab-glyph::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -6px -10px;
+  border-radius: var(--radius-full);
+  background: var(--gray-4);
 }
 
 .tab:focus-visible {
@@ -71,8 +86,11 @@ function label(tab: MobileTab): string {
   outline-offset: -1px;
 }
 
+/* z-index establishes a stacking context so the layer-open pill below can sit at -1: behind the glyph
+   and the badge, but still in front of the bar's own surface. */
 .tab-glyph {
   position: relative;
+  z-index: 0;
   display: flex;
   align-items: center;
   justify-content: center;

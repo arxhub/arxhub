@@ -7,7 +7,7 @@ import SearchRail from './SearchRail.vue'
 <template>
   <!-- The same shape as the explorer, and for the same reason: a result is read where documents are read.
        Searching does not take the owner somewhere else and then hand them back. -->
-  <MiniAppShell rail-title="Search" rail-icon="lu:search">
+  <MiniAppShell rail-title="Search">
     <template #rail>
       <SearchRail />
     </template>

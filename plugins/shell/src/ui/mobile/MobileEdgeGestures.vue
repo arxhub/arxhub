@@ -77,8 +77,10 @@ function onClick(edge: 'left' | 'right'): void {
   touch-action: none;
   cursor: pointer;
   transition: opacity var(--duration-fast);
-  /* Quiet at rest: enough to say the edge does something, not enough to frame the content. */
-  opacity: 0.5;
+  /* Quiet at rest: enough to say the edge does something, not enough to frame the content. Two strips
+     at half strength on a near-white page read as a pair of smudges rather than as affordances, so at
+     rest this is a hint and the accent only arrives under the finger. */
+  opacity: 0.35;
 }
 
 .edge:active,

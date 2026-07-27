@@ -19,7 +19,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <MiniAppShell rail-title="Sections" rail-icon="lu:list">
+  <MiniAppShell rail-title="Sections">
     <template #rail>
       <SettingsNav />
     </template>

@@ -29,6 +29,16 @@ export interface MobileTab {
   // panel. The frame only asks whether the tab reads as active, which is the tab's own business.
   active?: () => boolean
   onSelect: () => void
+  // What being active MEANS for this key, which decides how the bar states it.
+  //
+  // A 'place' is where you are — one of the mini-apps — and exactly one is ever active, so it takes
+  // the accent, the same as a selected row or tab anywhere else in the app.
+  //
+  // A 'layer' is something open on top of where you are: the navigation panel, the More sheet. It can
+  // be active at the same time as a place, and when both wore the accent the bar showed two selected
+  // keys and answered neither "where am I" nor "what is open". A layer states itself with a raised
+  // fill instead.
+  role?: 'place' | 'layer'
   // Binds a screen-edge drag to this tab, so the two layers reachable one-handed do not cost a trip
   // to the bar. At most one tab per edge; a later claim on a taken edge is ignored.
   gesture?: 'left-edge' | 'right-edge'

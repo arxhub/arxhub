@@ -13,7 +13,7 @@ const props = withDefaults(
     railTitle?: string
     railIcon?: string
   }>(),
-  { widthKey: 'default', rail: true, railIcon: 'lu:panel-left' },
+  { widthKey: 'default', rail: true, railIcon: 'lu:panel-bottom' },
 )
 
 const slots = useSlots()

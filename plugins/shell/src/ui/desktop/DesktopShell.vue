@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ActionMenuHost, ModalsProvider } from '@arxhub/uikit/core'
 import { provideShellFrame } from '@arxhub/uikit/hooks'
+import { computed } from 'vue'
 import { useShell } from '../use-shell'
 import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
@@ -12,6 +13,12 @@ import DesktopLayout from './DesktopLayout.vue'
 provideShellFrame('desktop')
 
 const { content, activeItem, activeId, sidebarItems, headerLeft, headerCenter, headerRight, footerLeft, footerRight, setActive } = useShell()
+
+// The header is an extension point nothing currently extends, and an empty strip of chrome is still
+// 40px of the window: it reads as a title bar that forgot its title. So it exists when a plugin has
+// put something in it and not otherwise — the mobile frame makes the same call permanently ("the top
+// of the screen is content"), and this is the desktop version of it.
+const hasHeader = computed(() => headerLeft.value.length + headerCenter.value.length + headerRight.value.length > 0)
 </script>
 
 <template>
@@ -19,7 +26,7 @@ const { content, activeItem, activeId, sidebarItems, headerLeft, headerCenter, h
     <template #sidebar>
       <AppSidebar :content="content" :items="sidebarItems" :active-id="activeId" @item-select="setActive($event)" />
     </template>
-    <template #header>
+    <template v-if="hasHeader" #header>
       <AppHeader>
         <template #left>
           <component v-for="item in headerLeft" :key="item.id" :is="item.component" />

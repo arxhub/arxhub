@@ -42,6 +42,7 @@ const frameTabs = computed((): MobileTab[] => [
           title: railClaim.value.title ?? activeTitle.value,
           order: -100,
           gesture: 'left-edge' as const,
+          role: 'layer' as const,
           active: () => layer.value === 'files',
           onSelect: () => toggle('files'),
         },
@@ -52,6 +53,7 @@ const frameTabs = computed((): MobileTab[] => [
     icon: 'lu:ellipsis',
     title: 'More',
     order: 100,
+    role: 'layer' as const,
     active: () => layer.value === 'more',
     onSelect: () => toggle('more'),
   },
@@ -107,9 +109,11 @@ const status = computed(() => [...footerLeft.value, ...footerRight.value])
 
       <MobileFilesPanel :open="layer === 'files'" :title="railTitle" @close="layer = null" />
 
+      <!-- Only while nothing is open. An edge that opens the panel says nothing once the panel is up,
+           and the strip went on painting over the scrim, which read as a rendering fault. -->
       <MobileEdgeGestures
-        :left="leftEdge != null"
-        :right="rightEdge != null"
+        :left="leftEdge != null && layer == null"
+        :right="rightEdge != null && layer == null"
         @left="leftEdge?.onSelect()"
         @right="rightEdge?.onSelect()"
       />
