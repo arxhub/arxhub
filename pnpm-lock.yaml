@@ -321,6 +321,9 @@ importers:
       '@arxhub/theme-preset':
         specifier: workspace:*
         version: link:../../packages/theme-preset
+      '@arxhub/theme-slate':
+        specifier: workspace:*
+        version: link:../../themes/slate
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
@@ -436,6 +439,9 @@ importers:
       '@arxhub/theme-preset':
         specifier: workspace:*
         version: link:../../packages/theme-preset
+      '@arxhub/theme-slate':
+        specifier: workspace:*
+        version: link:../../themes/slate
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
@@ -536,6 +542,9 @@ importers:
       '@arxhub/theme-preset':
         specifier: workspace:*
         version: link:../../packages/theme-preset
+      '@arxhub/theme-slate':
+        specifier: workspace:*
+        version: link:../../themes/slate
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
@@ -1865,6 +1874,12 @@ importers:
         version: link:../../packages/theme-preset
 
   themes/default:
+    dependencies:
+      '@arxhub/theme-preset':
+        specifier: workspace:*
+        version: link:../../packages/theme-preset
+
+  themes/slate:
     dependencies:
       '@arxhub/theme-preset':
         specifier: workspace:*

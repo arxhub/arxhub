@@ -38,7 +38,8 @@
     "lucide-vue-next": "catalog:client",
     "vue": "catalog:client",
     "@arxhub/plugin-theme": "workspace:*",
-    "@arxhub/theme-catppuccin": "workspace:*"
+    "@arxhub/theme-catppuccin": "workspace:*",
+    "@arxhub/theme-slate": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

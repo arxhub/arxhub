@@ -2,6 +2,7 @@ import '@arxhub/theme-preset'
 // Every theme the instance offers ships loaded and scoped to its own attribute; ThemePlugin flips
 // the attribute. Adding a theme here is what makes it selectable.
 import '@arxhub/theme'
+import '@arxhub/theme-slate'
 import '@arxhub/theme-catppuccin'
 
 import { ArxHub, apiBaseUrl } from '@arxhub/core'
@@ -54,7 +55,10 @@ arxhub.plugins.register(SettingsPlugin)
 // sync never walks it (FR-214). A headless server has no index at all (FR-218).
 arxhub.plugins.register(SearchPlugin, () => ({ dataDir: 'idb://arxhub-sql' }))
 const themes: Theme[] = [
-  { id: 'default', title: 'ArxHub', base: 'light' },
+  { id: 'default', title: 'ArxHub Light', base: 'light' },
+  { id: 'default-dark', title: 'ArxHub Dark', base: 'dark' },
+  { id: 'slate', title: 'ArxHub Slate', base: 'light' },
+  { id: 'slate-dark', title: 'ArxHub Slate Dark', base: 'dark' },
   { id: 'catppuccin-latte', title: 'Catppuccin Latte', base: 'light' },
   { id: 'catppuccin-frappe', title: 'Catppuccin Frappé', base: 'dark' },
   { id: 'catppuccin-macchiato', title: 'Catppuccin Macchiato', base: 'dark' },

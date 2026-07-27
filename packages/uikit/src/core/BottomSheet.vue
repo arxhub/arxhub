@@ -72,7 +72,7 @@ function onPointerUp(): void {
   z-index: var(--z-index-modal);
   display: flex;
   align-items: flex-end;
-  background: var(--black-a4);
+  background: var(--scrim-modal);
 }
 
 .sheet {

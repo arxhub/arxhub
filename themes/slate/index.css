@@ -1,0 +1,76 @@
+/* ArxHub Slate — the cool arm of the house palette: Radix Slate under the same cyan accent, in a light
+ * and a dark realization.
+ *
+ * This is the neutral ArxHub shipped before the default turned warm, kept as a theme rather than
+ * dropped: the choice between a warm and a cool grey is taste, and a screen someone has stared at for
+ * a year is not something to take away in a redesign.
+ *
+ * Light and dark share one declaration block — `var(--slate-6)` resolves per `data-theme`, which
+ * ThemeExtension sets from the theme's declared `base`.
+ *
+ * Not scoped to :root — a theme has to be applicable to a subtree too, so the picker can preview each
+ * theme in place. There is no `:not([data-arxhub-theme])` arm here: exactly one theme may be the
+ * nothing-selected-yet fallback, and that is the default family's job.
+ */
+
+[data-arxhub-theme="slate"],
+[data-arxhub-theme="slate-dark"] {
+  --gray-1: var(--slate-1);
+  --gray-2: var(--slate-2);
+  --gray-3: var(--slate-3);
+  --gray-4: var(--slate-4);
+  --gray-5: var(--slate-5);
+  --gray-6: var(--slate-6);
+  --gray-7: var(--slate-7);
+  --gray-8: var(--slate-8);
+  --gray-9: var(--slate-9);
+  --gray-10: var(--slate-10);
+  --gray-11: var(--slate-11);
+  --gray-12: var(--slate-12);
+
+  --gray-a1: var(--slate-a1);
+  --gray-a2: var(--slate-a2);
+  --gray-a3: var(--slate-a3);
+  --gray-a4: var(--slate-a4);
+  --gray-a5: var(--slate-a5);
+  --gray-a6: var(--slate-a6);
+  --gray-a7: var(--slate-a7);
+  --gray-a8: var(--slate-a8);
+  --gray-a9: var(--slate-a9);
+  --gray-a10: var(--slate-a10);
+  --gray-a11: var(--slate-a11);
+  --gray-a12: var(--slate-a12);
+
+  /* Legible foreground on the gray-9 solid fill. Theme-owned (depends on the neutral hue); slate-9 is
+     designed for white foreground text (per Radix). */
+  --gray-contrast: var(--white);
+
+  --accent-1: var(--cyan-1);
+  --accent-2: var(--cyan-2);
+  --accent-3: var(--cyan-3);
+  --accent-4: var(--cyan-4);
+  --accent-5: var(--cyan-5);
+  --accent-6: var(--cyan-6);
+  --accent-7: var(--cyan-7);
+  --accent-8: var(--cyan-8);
+  --accent-9: var(--cyan-9);
+  --accent-10: var(--cyan-10);
+  --accent-11: var(--cyan-11);
+  --accent-12: var(--cyan-12);
+
+  --accent-a1: var(--cyan-a1);
+  --accent-a2: var(--cyan-a2);
+  --accent-a3: var(--cyan-a3);
+  --accent-a4: var(--cyan-a4);
+  --accent-a5: var(--cyan-a5);
+  --accent-a6: var(--cyan-a6);
+  --accent-a7: var(--cyan-a7);
+  --accent-a8: var(--cyan-a8);
+  --accent-a9: var(--cyan-a9);
+  --accent-a10: var(--cyan-a10);
+  --accent-a11: var(--cyan-a11);
+  --accent-a12: var(--cyan-a12);
+
+  /* Legible foreground on the accent-9 solid fill — cyan-9 is designed for white per Radix. */
+  --accent-contrast: var(--white);
+}

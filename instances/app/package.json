@@ -41,7 +41,8 @@
     "vue": "catalog:client",
     "@tauri-apps/plugin-os": "catalog:tauri",
     "@arxhub/plugin-theme": "workspace:*",
-    "@arxhub/theme-catppuccin": "workspace:*"
+    "@arxhub/theme-catppuccin": "workspace:*",
+    "@arxhub/theme-slate": "workspace:*"
   },
   "devDependencies": {
     "@tauri-apps/cli": "catalog:tauri",

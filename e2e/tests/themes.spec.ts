@@ -18,7 +18,16 @@ test.describe('themes', () => {
   })
 
   test('offers every theme the instance ships', async ({ app }) => {
-    for (const id of ['default', 'catppuccin-latte', 'catppuccin-frappe', 'catppuccin-macchiato', 'catppuccin-mocha']) {
+    for (const id of [
+      'default',
+      'default-dark',
+      'slate',
+      'slate-dark',
+      'catppuccin-latte',
+      'catppuccin-frappe',
+      'catppuccin-macchiato',
+      'catppuccin-mocha',
+    ]) {
       await expect(app.getByTestId(`theme-${id}`)).toBeVisible()
     }
   })
@@ -38,6 +47,24 @@ test.describe('themes', () => {
     await expect.poll(() => app.evaluate(scheme)).toBe('dark')
   })
 
+  // The house theme's own dark arm, which shares one declaration block with its light arm — the mapping
+  // is base-agnostic and resolves per `data-theme`, so this is what proves the dark arm resolves at all
+  // rather than quietly serving the light values.
+  test('the default family ships a dark arm that is genuinely dark', async ({ app }) => {
+    const onLight = await app.evaluate(bg)
+
+    await app.getByTestId('theme-default-dark').click()
+
+    await expect.poll(() => app.evaluate(themeAttr)).toBe('default-dark')
+    await expect.poll(() => app.evaluate(baseAttr)).toBe('dark')
+    await expect.poll(() => app.evaluate(scheme)).toBe('dark')
+    // Same tokens, different base: if the mapping had been pinned to the light scales this would match.
+    await expect.poll(() => app.evaluate(bg)).not.toBe(onLight)
+
+    await app.getByTestId('theme-default').click()
+    await expect.poll(() => app.evaluate(themeAttr)).toBe('default')
+  })
+
   test('a light flavour reports a light base', async ({ app }) => {
     await app.getByTestId('theme-catppuccin-latte').click()
 
@@ -54,8 +81,12 @@ test.describe('themes', () => {
       )
 
     const onLight = await swatches()
-    // Five themes with five different backgrounds — a preview reading the active theme collapses these.
-    expect(new Set(onLight).size).toBe(5)
+    // One distinct background per card. A preview that read the active theme instead of its own would
+    // collapse them all onto a single value, which is the bug under test — so the invariant is
+    // "as many backgrounds as cards", not a count of the themes that happened to ship the day this was
+    // written.
+    expect(onLight.length).toBeGreaterThan(1)
+    expect(new Set(onLight).size).toBe(onLight.length)
 
     await app.getByTestId('theme-catppuccin-mocha').click()
     await expect.poll(() => app.evaluate(themeAttr)).toBe('catppuccin-mocha')

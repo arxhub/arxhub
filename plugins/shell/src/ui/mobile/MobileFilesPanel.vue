@@ -46,7 +46,7 @@ function onActivate(event: MouseEvent): void {
   z-index: var(--z-index-overlay);
   display: flex;
   align-items: flex-end;
-  background: var(--black-a3);
+  background: var(--scrim);
 }
 
 .files-panel {

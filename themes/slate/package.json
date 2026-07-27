@@ -1,0 +1,9 @@
+{
+  "name": "@arxhub/theme-slate",
+  "version": "0.1.0",
+  "description": "ArxHub Slate themes — the cool neutral under the cyan accent (light and dark)",
+  "main": "index.css",
+  "peerDependencies": {
+    "@arxhub/theme-preset": "workspace:*"
+  }
+}

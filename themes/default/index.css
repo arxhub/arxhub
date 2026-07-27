@@ -1,35 +1,74 @@
-/* Not scoped to :root — a theme has to be applicable to a subtree too, so the picker can preview each
-   theme in place. The :not() arm is the theme that applies when nothing is selected. */
+/* ArxHub — the default theme family: a warm neutral under a cyan accent, in a light and a dark
+ * realization.
+ *
+ * The neutral is Radix Sand with a little Amber mixed into its surfaces. Sand on its own is Radix's
+ * warm grey, but only barely — one unit of blue separates sand-1 from slate-1, which is not warmth
+ * anyone feels across a whole screen.
+ *
+ * Two things decide where the amber goes:
+ *
+ *   Only steps 1-8. Those are the fills and borders — flat areas large enough to read as a colour
+ *   rather than a tint. Steps 9-12 are left as pure Sand, which means every text and solid-fill
+ *   colour keeps exactly the contrast Radix measured, and warming a glyph (as opposed to the paper
+ *   behind it) only ever makes it look dirty. Sand's ink is already warm on its own account —
+ *   sand-12 is #21201c, within a couple of units of the paper palette this was matched against.
+ *
+ *   Amber rather than Bronze. Bronze is Radix's other warm neutral and the obvious pick, but it is
+ *   rose-leaning: at any strength you can actually see, the surfaces go pink. The warmth of paper is
+ *   yellow-leaning — blue lowest, green between — which is Amber's axis. 12% is where it reads as
+ *   cream; past roughly 18% the hover fills turn khaki and the whole thing goes sepia.
+ *
+ * Mixed step-for-step (sand-6 with amber-6, never sand-6 with amber-3) because Radix aligns the
+ * lightness of a given step across every scale. Same-step mixing therefore moves the colour sideways
+ * and leaves the ramp's contrast relationships alone — which is what lets the step roles the
+ * interface relies on (6 border, 7 interactive border, 4 hover, 9 solid, 11/12 text) go on meaning
+ * the same thing, and what makes one mapping correct for both bases.
+ *
+ * Light and dark share that one declaration block. `var(--sand-6)` resolves per `data-theme`, which
+ * ThemeExtension sets from the theme's declared `base` — so the mapping is base-agnostic and a fix to
+ * one arm cannot forget the other. The `:not()` arm is the theme that applies when nothing has been
+ * selected yet.
+ *
+ * Not scoped to :root — a theme has to be applicable to a subtree too, so the picker can preview each
+ * theme in place.
+ */
+
 :root:not([data-arxhub-theme]),
-[data-arxhub-theme="default"] {
-  --gray-1: var(--slate-1);
-  --gray-2: var(--slate-2);
-  --gray-3: var(--slate-3);
-  --gray-4: var(--slate-4);
-  --gray-5: var(--slate-5);
-  --gray-6: var(--slate-6);
-  --gray-7: var(--slate-7);
-  --gray-8: var(--slate-8);
-  --gray-9: var(--slate-9);
-  --gray-10: var(--slate-10);
-  --gray-11: var(--slate-11);
-  --gray-12: var(--slate-12);
+[data-arxhub-theme="default"],
+[data-arxhub-theme="default-dark"] {
+  --gray-1: color-mix(in oklab, var(--sand-1) 88%, var(--amber-1));
+  --gray-2: color-mix(in oklab, var(--sand-2) 88%, var(--amber-2));
+  --gray-3: color-mix(in oklab, var(--sand-3) 88%, var(--amber-3));
+  --gray-4: color-mix(in oklab, var(--sand-4) 88%, var(--amber-4));
+  --gray-5: color-mix(in oklab, var(--sand-5) 88%, var(--amber-5));
+  --gray-6: color-mix(in oklab, var(--sand-6) 88%, var(--amber-6));
+  --gray-7: color-mix(in oklab, var(--sand-7) 88%, var(--amber-7));
+  --gray-8: color-mix(in oklab, var(--sand-8) 88%, var(--amber-8));
 
-  --gray-a1: var(--slate-a1);
-  --gray-a2: var(--slate-a2);
-  --gray-a3: var(--slate-a3);
-  --gray-a4: var(--slate-a4);
-  --gray-a5: var(--slate-a5);
-  --gray-a6: var(--slate-a6);
-  --gray-a7: var(--slate-a7);
-  --gray-a8: var(--slate-a8);
-  --gray-a9: var(--slate-a9);
-  --gray-a10: var(--slate-a10);
-  --gray-a11: var(--slate-a11);
-  --gray-a12: var(--slate-a12);
+  /* Pure Sand from here up: these are ink and solid fills, and their contrast is measured. */
+  --gray-9: var(--sand-9);
+  --gray-10: var(--sand-10);
+  --gray-11: var(--sand-11);
+  --gray-12: var(--sand-12);
 
-  /* Legible foreground on the gray-9 solid fill. Theme-owned (depends on the
-     neutral hue); slate-9 is designed for white foreground text (per Radix). */
+  /* The alpha ramp is spent on shadows and scrims — areas read as depth rather than as colour — so it
+     takes Sand's own alphas rather than a blend. A warm shadow is a smudge. */
+  --gray-a1: var(--sand-a1);
+  --gray-a2: var(--sand-a2);
+  --gray-a3: var(--sand-a3);
+  --gray-a4: var(--sand-a4);
+  --gray-a5: var(--sand-a5);
+  --gray-a6: var(--sand-a6);
+  --gray-a7: var(--sand-a7);
+  --gray-a8: var(--sand-a8);
+  --gray-a9: var(--sand-a9);
+  --gray-a10: var(--sand-a10);
+  --gray-a11: var(--sand-a11);
+  --gray-a12: var(--sand-a12);
+
+  /* Legible foreground on the gray-9 solid fill. Theme-owned (depends on the neutral hue); the warm
+     grey at step 9 is a mid tone in both bases, and Radix designs step 9 of every neutral for white
+     foreground text. */
   --gray-contrast: var(--white);
 
   --accent-1: var(--cyan-1);
@@ -58,9 +97,8 @@
   --accent-a11: var(--cyan-a11);
   --accent-a12: var(--cyan-a12);
 
-  /* Legible foreground on the accent-9 solid fill. Theme-owned because it
-     depends on the accent hue: cyan-9 is designed for white foreground text
-     (per Radix), but a theme mapping the accent onto Sky/Mint/Lime/Yellow/Amber
-     would override this to a dark value. */
+  /* Legible foreground on the accent-9 solid fill. Theme-owned because it depends on the accent hue:
+     cyan-9 is designed for white foreground text (per Radix), but a theme mapping the accent onto
+     Sky/Mint/Lime/Yellow/Amber would override this to a dark value. */
   --accent-contrast: var(--white);
 }

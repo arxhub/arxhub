@@ -53,7 +53,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 .dialog-backdrop {
   position: fixed;
   inset: 0;
-  background: var(--black-a4);
+  background: var(--scrim-modal);
   z-index: var(--z-index-overlay);
 }
 

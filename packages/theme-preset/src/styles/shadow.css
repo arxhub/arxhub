@@ -15,6 +15,16 @@
   --shadow-xl: 0px 16px 24px var(--gray-a4), 0px 0px 1px var(--gray-a4);
   --shadow-2xl: 0px 24px 40px var(--gray-a4), 0px 0px 1px var(--gray-a4);
   --shadow-inset: inset 8px 0 12px -8px var(--gray-a4);
+
+  /* What sits behind a layer to say the thing under it is inert. Base-dependent for the same reason the
+     shadows above are: a wash that reads as depth on white is invisible on near-black, and three
+     components had each picked their own alpha to work around it.
+
+     Two levels, because the two jobs differ. A panel keeps what is behind it readable — the note stays
+     legible above the mobile file browser, which is what makes it a panel and not a page. A modal does
+     not: while it is up, nothing else is available. */
+  --scrim: var(--black-a4);
+  --scrim-modal: var(--black-a5);
 }
 
 [data-theme="dark"] {
@@ -25,4 +35,9 @@
   --shadow-xl: 0px 16px 24px var(--black-a8), 0px 0px 1px inset var(--gray-a8);
   --shadow-2xl: 0px 24px 40px var(--black-a8), 0px 0px 1px inset var(--gray-a8);
   --shadow-inset: inset 8px 0 12px -8px var(--black-a6);
+
+  /* Deeper than the light arm: the page is already near-black, so the wash has to take much more out of
+     it before the difference registers at all. */
+  --scrim: var(--black-a7);
+  --scrim-modal: var(--black-a9);
 }
