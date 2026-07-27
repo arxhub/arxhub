@@ -1,12 +1,34 @@
 <script setup lang="ts">
 import { basename, dirname } from '@arxhub/path'
-import { actionMenu } from '@arxhub/uikit/core'
+import { actionMenu, Icon } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, watch } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
 import { useFileActions } from './use-file-actions'
 
 const props = withDefaults(defineProps<{ node: TreeNode; depth?: number }>(), { depth: 0 })
+
+// Which kind of thing a row is, at a glance. Without this a folder and a note differ only by the
+// presence of a chevron, which is 16px of empty space on every leaf row — you have to read the
+// extension to know what you are looking at.
+//
+// TODO(06-explorer F-12): this mapping belongs in a swappable icon set, not in the tree. The pack
+// layer already exists (`registerIconPack` in uikit); what is hardcoded here is the *matching* rule,
+// so an icon for a new file type means editing this component. Extract it the way themes were —
+// a registry a set registers into, chosen from Appearance — and add matching by exact filename and
+// by folder name while doing it.
+const PROSE = new Set(['md', 'markdown', 'txt', 'arx'])
+const CODE = new Set(['ts', 'tsx', 'js', 'jsx', 'vue', 'json', 'css', 'html', 'sh', 'py', 'rs', 'go', 'toml', 'yml', 'yaml', 'sql'])
+const IMAGE = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'avif'])
+
+const typeIcon = computed((): string => {
+  if (props.node.entry.kind === 'dir') return props.node.expanded ? 'lu:folder-open' : 'lu:folder'
+  const ext = basename(props.node.entry.pathname).split('.').pop()?.toLowerCase() ?? ''
+  if (PROSE.has(ext)) return 'lu:file-text'
+  if (CODE.has(ext)) return 'lu:file-code'
+  if (IMAGE.has(ext)) return 'lu:file-image'
+  return 'lu:file'
+})
 
 const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
@@ -93,7 +115,10 @@ function handleEnter() {
     @keydown.enter.prevent="handleEnter"
   >
     <span class="chevron">
-      <template v-if="node.entry.kind === 'dir'">{{ node.expanded ? '▾' : '▸' }}</template>
+      <Icon v-if="node.entry.kind === 'dir'" :name="node.expanded ? 'lu:chevron-down' : 'lu:chevron-right'" :size="14" />
+    </span>
+    <span class="type-glyph">
+      <Icon :name="typeIcon" :size="14" />
     </span>
 
     <input
@@ -155,12 +180,21 @@ function handleEnter() {
   outline-offset: -1px;
 }
 
-.chevron {
-  width: 16px;
+.chevron,
+.type-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-xs-half);
   flex-shrink: 0;
-  text-align: center;
-  font-size: 9px;
   color: var(--gray-10);
+}
+
+/* The glyph follows the row's own colour when selected, so a selected row reads as one object rather
+   than as accent text next to a grey icon. */
+.tree-node.selected .type-glyph,
+.tree-node.selected .chevron {
+  color: var(--accent-11);
 }
 
 .name {

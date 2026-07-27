@@ -171,12 +171,15 @@ onUnmounted(() => {
   margin: 0.75em 0;
   background: var(--gray-2);
 }
-.editor-content :deep(.callout[data-type="info"]) { border-color: var(--blue-8, #3b82f6); background: var(--blue-2, #eff6ff); }
-.editor-content :deep(.callout[data-type="warning"]) { border-color: var(--yellow-8, #f59e0b); background: var(--yellow-2, #fffbeb); }
-.editor-content :deep(.callout[data-type="danger"]) { border-color: var(--red-8, #ef4444); background: var(--red-2, #fef2f2); }
-.editor-content :deep(.callout[data-type="success"]) { border-color: var(--green-8, #10b981); background: var(--green-2, #f0fdf4); }
+/* The semantic aliases, not the raw scales they happen to resolve to: a theme remaps info/warning/
+   danger/success, and naming blue/yellow/red/green here would opt a callout out of that. */
+.editor-content :deep(.callout[data-type="info"]) { border-color: var(--info-8); background: var(--info-2); }
+.editor-content :deep(.callout[data-type="warning"]) { border-color: var(--warning-8); background: var(--warning-2); }
+.editor-content :deep(.callout[data-type="danger"]) { border-color: var(--danger-8); background: var(--danger-2); }
+.editor-content :deep(.callout[data-type="success"]) { border-color: var(--success-8); background: var(--success-2); }
 .editor-content :deep(s) { text-decoration: line-through; }
 .editor-content :deep(u) { text-decoration: underline; }
-.editor-content :deep(mark) { background: var(--yellow-4, #fef08a); border-radius: 2px; padding: 0 2px; }
-.editor-content :deep(a) { color: var(--blue-9, #2563eb); text-decoration: underline; cursor: pointer; }
+.editor-content :deep(mark) { background: var(--warning-4); border-radius: var(--radius-xs); padding: 0 2px; }
+/* A link is the second of the two things the accent is spent on, and accent text is step 11. */
+.editor-content :deep(a) { color: var(--accent-11); text-decoration: underline; cursor: pointer; }
 </style>

@@ -76,9 +76,13 @@ const { isDragging, closestEdge } = useDraggableTab({
   outline-offset: -1px;
 }
 
+/* A tab IS a selection, so it takes the app's one selection treatment — an accent wash plus accent
+   text, no border. It used to state itself with a grey fill, which made the active document the only
+   selected thing in the app that did not look selected: the tree row that opened it, the settings
+   section beside it and the search result above it all read as accent. */
 .tab.active {
-  background-color: var(--gray-3);
-  color: var(--gray-12);
+  background-color: var(--accent-3);
+  color: var(--accent-11);
   font-weight: var(--font-weight-medium);
 }
 

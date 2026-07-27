@@ -263,10 +263,15 @@ function confirmReplace(): void {
 </template>
 
 <style scoped>
+/* One measure for the whole page, set once here rather than repeated per element. Every block already
+   asked for 60ch except the danger card, which had none — so the most consequential control on the page
+   was also the only one running the full width of the window, which reads as a layout fault rather than
+   as emphasis. */
 .security {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  max-width: 60ch;
 }
 
 .block {
@@ -291,8 +296,7 @@ function confirmReplace(): void {
 
 .hint {
   margin: 0;
-  max-width: 60ch;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   color: var(--gray-11);
 }
@@ -303,10 +307,8 @@ function confirmReplace(): void {
   gap: 8px;
 }
 
-/* Same measure as .hint, so the key card and the prose it explains share one left-and-right edge. */
 .value {
   width: 100%;
-  max-width: 60ch;
   padding: 12px 16px;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);
@@ -325,7 +327,6 @@ function confirmReplace(): void {
 
 .entry {
   width: 100%;
-  max-width: 60ch;
   padding: 8px 12px;
   border: 1px solid var(--gray-7);
   border-radius: var(--radius-sm);
