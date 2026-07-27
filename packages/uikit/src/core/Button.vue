@@ -106,6 +106,6 @@ defineProps<{
 .btn-md {
   height: 32px;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 </style>

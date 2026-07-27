@@ -78,7 +78,7 @@ function onActivate(event: MouseEvent): void {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--gray-12);
-  font-size: 15px;
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
 }
 

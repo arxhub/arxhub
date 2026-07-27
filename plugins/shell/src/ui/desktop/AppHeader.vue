@@ -29,7 +29,7 @@
   flex-shrink: 0;
   z-index: var(--z-index-docked);
   user-select: none;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .left-section, .center-section, .right-section {

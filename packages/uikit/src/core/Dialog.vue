@@ -109,7 +109,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 .dialog-title {
   flex: 1;
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-family: var(--font-sans);
   font-weight: var(--font-weight-medium);
   color: var(--gray-12);
@@ -141,7 +141,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 .dialog-body {
   padding: 16px;
   overflow-y: auto;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   font-family: var(--font-sans);
   color: var(--gray-12);

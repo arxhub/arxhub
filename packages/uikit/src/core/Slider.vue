@@ -104,7 +104,7 @@ function onValueChange(details: { value: number[] }): void {
   min-width: 24px;
   text-align: right;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--gray-12);
 }
 

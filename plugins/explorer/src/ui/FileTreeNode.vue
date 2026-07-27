@@ -134,7 +134,7 @@ function handleEnter() {
   user-select: none;
   white-space: nowrap;
   overflow: hidden;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--gray-12);
 }
 
@@ -176,7 +176,7 @@ function handleEnter() {
   border: 1px solid var(--accent-8);
   border-radius: var(--radius-xs);
   color: var(--gray-12);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-family: var(--font-sans);
   padding: 0 4px;
   outline: none;

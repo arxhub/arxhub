@@ -98,7 +98,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
 
 .label {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--gray-12);
 }
 

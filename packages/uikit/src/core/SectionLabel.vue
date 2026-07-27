@@ -11,7 +11,7 @@ defineProps<{ tone?: 'muted' | 'danger' }>()
 <style scoped>
 .section-label {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-none);
   letter-spacing: 0.045em;

@@ -158,7 +158,7 @@ if (props.mode === 'tiled' && title != null) {
   justify-content: center;
   height: 100%;
   color: var(--gray-10);
-  font-size: 15px;
+  font-size: var(--font-size-md);
 }
 
 .context-strip {
@@ -184,7 +184,7 @@ if (props.mode === 'tiled' && title != null) {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--gray-12);
-  font-size: 15px;
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-tight);
 }
@@ -196,7 +196,7 @@ if (props.mode === 'tiled' && title != null) {
   white-space: nowrap;
   color: var(--gray-10);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   line-height: var(--line-height-tight);
 }
 
@@ -237,7 +237,7 @@ if (props.mode === 'tiled' && title != null) {
   background: transparent;
   color: var(--gray-12);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: var(--font-size-md);
   text-align: left;
   cursor: pointer;
 }
@@ -264,6 +264,6 @@ if (props.mode === 'tiled' && title != null) {
   white-space: nowrap;
   color: var(--gray-10);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
 }
 </style>

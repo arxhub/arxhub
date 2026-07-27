@@ -284,7 +284,7 @@ function confirmReplace(): void {
 
 .block-title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   color: var(--gray-12);
 }
@@ -331,7 +331,7 @@ function confirmReplace(): void {
   border-radius: var(--radius-sm);
   background: var(--gray-1);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--gray-12);
   resize: vertical;
 }

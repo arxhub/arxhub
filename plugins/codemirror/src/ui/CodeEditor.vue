@@ -103,7 +103,7 @@ defineExpose({
 
 .code-editor :deep(.cm-editor) {
   height: 100%;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .code-editor :deep(.cm-editor.cm-focused) {

@@ -61,7 +61,7 @@ defineProps<{
 
 .title {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--letter-spacing-tight);
   color: var(--gray-12);
@@ -76,7 +76,7 @@ defineProps<{
 .description {
   margin: 8px 0 0;
   max-width: 62ch;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   color: var(--gray-11);
 }
@@ -87,7 +87,7 @@ defineProps<{
   gap: 8px;
   margin-top: 12px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--gray-9);
 }
 

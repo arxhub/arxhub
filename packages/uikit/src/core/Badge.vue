@@ -25,7 +25,7 @@ defineProps<{
   padding: 0 8px;
   border-radius: var(--radius-md);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-normal);
   white-space: nowrap;

@@ -365,7 +365,7 @@ onMounted(focusInput)
 
 .message {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   line-height: var(--line-height-tight);
 }
 
@@ -398,7 +398,7 @@ onMounted(focusInput)
   height: 28px;
   padding: 0 8px;
   color: var(--gray-11);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
 }
 
 .summary .muted {
@@ -468,7 +468,7 @@ onMounted(focusInput)
   text-overflow: ellipsis;
   white-space: nowrap;
   color: inherit;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }
 
@@ -482,7 +482,7 @@ onMounted(focusInput)
   white-space: nowrap;
   color: var(--gray-10);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
 }
 
 /* Indented under the document it belongs to: the grouping is visual, so a row still reads as one of the
@@ -492,7 +492,7 @@ onMounted(focusInput)
   padding-top: 4px;
   padding-bottom: 4px;
   color: var(--gray-11);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   line-height: var(--line-height-relaxed);
 }
 
@@ -509,7 +509,7 @@ onMounted(focusInput)
   min-height: 0;
   margin: 8px;
   color: var(--gray-11);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
 }
 
@@ -527,7 +527,7 @@ onMounted(focusInput)
   padding: 8px;
   border-top: 1px solid var(--gray-4);
   color: var(--gray-11);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
 }
 
 .index-actions {

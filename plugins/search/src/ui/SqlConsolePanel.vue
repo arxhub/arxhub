@@ -179,7 +179,7 @@ const summary = computed(() => {
   border-radius: var(--radius-sm);
   background: var(--danger-2);
   color: var(--danger-11);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
 }
 
@@ -190,7 +190,7 @@ const summary = computed(() => {
 .failure-where,
 .failure-code {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--danger-11);
   opacity: 0.85;
 }
@@ -212,7 +212,7 @@ const summary = computed(() => {
 .schema-name {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--gray-12);
 }
@@ -220,7 +220,7 @@ const summary = computed(() => {
 .schema-description {
   margin: 4px 0 8px;
   max-width: 62ch;
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   line-height: var(--line-height-normal);
   color: var(--gray-11);
 }
@@ -240,7 +240,7 @@ const summary = computed(() => {
   gap: 8px;
   align-items: baseline;
   min-height: 20px;
-  font-size: 11px;
+  font-size: var(--font-size-xs);
 }
 
 .schema-column-name {
@@ -268,7 +268,7 @@ const summary = computed(() => {
 .result-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .result-table th {
@@ -292,7 +292,7 @@ const summary = computed(() => {
 .field-type {
   display: block;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-regular);
   color: var(--gray-10);
 }
@@ -305,7 +305,7 @@ const summary = computed(() => {
   overflow-wrap: anywhere;
   color: var(--gray-12);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   vertical-align: top;
 }
 
@@ -327,13 +327,13 @@ const summary = computed(() => {
   border: 1px dashed var(--gray-6);
   border-radius: var(--radius-sm);
   color: var(--gray-11);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
 }
 
 .summary {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--gray-11);
 }
 
@@ -343,7 +343,7 @@ const summary = computed(() => {
 
 .truncated {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--warning-11);
 }
 </style>

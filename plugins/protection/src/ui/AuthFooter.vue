@@ -26,7 +26,7 @@ const copy = computed(() => describeRejection(rejection.value?.reason ?? null))
   background: var(--danger-3);
   color: var(--danger-11);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
 }

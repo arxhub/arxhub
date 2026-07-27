@@ -54,7 +54,7 @@ import { toaster } from '../hooks/useToast'
 }
 
 .toast-title {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }
 

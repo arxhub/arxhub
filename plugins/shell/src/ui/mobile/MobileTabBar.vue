@@ -87,14 +87,14 @@ function label(tab: MobileTab): string {
   border-radius: var(--radius-full);
   background: var(--accent-9);
   color: var(--accent-contrast);
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   line-height: 16px;
   text-align: center;
 }
 
 /* Below the token scale on purpose: a key's label is a hint under a glyph, not body text. */
 .tab-label {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   line-height: var(--line-height-none);
 }
 </style>

@@ -74,7 +74,7 @@ function onValueChange(details: { valueAsNumber: number }): void {
   background: transparent;
   color: var(--gray-11);
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-none);
   cursor: pointer;
 }
@@ -98,7 +98,7 @@ function onValueChange(details: { valueAsNumber: number }): void {
   background: transparent;
   text-align: center;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--gray-12);
   outline: none;
 }

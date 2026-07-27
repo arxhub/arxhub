@@ -84,7 +84,7 @@ function openSecurity(): void {
 .auth-meta dt {
   flex: 0 0 88px;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--gray-10);
 }
 

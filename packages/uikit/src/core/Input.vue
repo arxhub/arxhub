@@ -26,7 +26,7 @@ defineProps<{
   border: 1px solid var(--gray-7);
   border-radius: var(--radius-sm);
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--gray-12);
   outline: none;
   font-family: var(--font-sans);

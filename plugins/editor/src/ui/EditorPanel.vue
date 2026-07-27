@@ -113,7 +113,7 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--red-11);
   background: var(--red-2);
   border-bottom: 1px solid var(--red-6);
@@ -129,7 +129,7 @@ onUnmounted(() => {
 .editor-content :deep(.ProseMirror) {
   outline: none;
   min-height: 200px;
-  font-size: 15px;
+  font-size: var(--font-size-md);
   line-height: 1.7;
   color: var(--gray-12);
 }

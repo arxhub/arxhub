@@ -160,7 +160,7 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: var(--radius-xs);
   color: var(--gray-12);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-family: var(--font-sans);
   cursor: pointer;
 }
@@ -211,7 +211,7 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: var(--radius-xs);
   color: var(--gray-12);
-  font-size: 15px;
+  font-size: var(--font-size-md);
   font-family: var(--font-sans);
   cursor: pointer;
 }

@@ -60,7 +60,7 @@ const { isDragging, closestEdge } = useDraggableTab({
   border-radius: var(--radius-xs);
   background: transparent;
   color: var(--gray-11);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;

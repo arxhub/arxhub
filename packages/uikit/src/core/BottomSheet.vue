@@ -106,7 +106,7 @@ function onPointerUp(): void {
   margin: 0.5rem 0 0;
   text-align: center;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--gray-11);
 }

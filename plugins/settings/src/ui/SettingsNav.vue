@@ -42,7 +42,7 @@ const sorted = computed(() => [...settings.sections.value].sort((a, b) => (a.ord
   background: transparent;
   color: var(--gray-11);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   transition: background-color var(--duration-fast), color var(--duration-fast);
 }

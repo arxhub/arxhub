@@ -84,7 +84,7 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
 }
 
 .label {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--gray-12);
   font-family: var(--font-sans);
 }

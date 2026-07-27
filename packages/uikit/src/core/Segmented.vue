@@ -73,7 +73,7 @@ defineEmits<(e: 'update:modelValue', value: string) => void>()
   border-right: 1px solid var(--gray-4);
   color: var(--gray-11);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   user-select: none;
 }

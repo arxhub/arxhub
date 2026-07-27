@@ -169,7 +169,7 @@ onUnmounted(() => {
 
 .codemirror-editor :deep(.cm-editor) {
   height: 100%;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .codemirror-editor :deep(.cm-scroller) {

@@ -120,7 +120,7 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
   gap: 8px;
   min-width: 0;
   color: var(--gray-11);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .state-line span {
@@ -139,7 +139,7 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
   border-radius: var(--radius-sm);
   background: var(--danger-2);
   color: var(--danger-11);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
 }
 </style>

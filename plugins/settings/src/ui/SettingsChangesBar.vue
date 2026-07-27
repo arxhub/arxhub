@@ -81,13 +81,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 }
 
 .headline {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--gray-12);
 }
 
 .detail {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--gray-10);
   white-space: nowrap;
   overflow: hidden;
@@ -101,7 +101,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
 .shortcut {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--gray-9);
 }
 

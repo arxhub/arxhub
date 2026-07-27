@@ -93,7 +93,7 @@ function select(id: string): void {
   background: transparent;
   color: var(--gray-12);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: var(--font-size-md);
   text-align: left;
   cursor: pointer;
 }

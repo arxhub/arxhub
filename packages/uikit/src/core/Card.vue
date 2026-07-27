@@ -68,7 +68,7 @@ defineProps<{
 }
 
 .title {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-tight);
 }
@@ -83,7 +83,7 @@ defineProps<{
   display: flex;
   flex-direction: column;
   gap: 12px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   color: var(--gray-11);
 }

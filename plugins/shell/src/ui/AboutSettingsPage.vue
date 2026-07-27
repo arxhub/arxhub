@@ -24,7 +24,7 @@ defineProps<{ version: string }>()
 }
 
 .label {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--gray-11);
 }
 

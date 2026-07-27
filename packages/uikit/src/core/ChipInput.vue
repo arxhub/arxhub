@@ -97,7 +97,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   border-radius: var(--radius-xs);
   background: transparent;
   color: var(--gray-10);
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   line-height: var(--line-height-none);
   cursor: pointer;
 }
@@ -127,7 +127,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   border: none;
   background: transparent;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--gray-12);
   outline: none;
 }

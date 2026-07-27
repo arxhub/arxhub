@@ -41,7 +41,7 @@ defineProps<{
   background-color: var(--gray-3);
   color: var(--gray-11);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }
 </style>
