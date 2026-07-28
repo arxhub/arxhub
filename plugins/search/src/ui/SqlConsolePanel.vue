@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CodeEditor } from '@arxhub/plugin-codemirror/ui'
-import { Button, modals, PageLayout } from '@arxhub/uikit/core'
+import { Button, modals, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { SearchExtension } from '../search-extension'
@@ -63,22 +63,26 @@ const summary = computed(() => {
 </script>
 
 <template>
-  <!-- The test id is on the frame, not the body: the Run / Example / Schema controls live in the page
-       header, so a scope that started below it would not contain them. -->
-  <PageLayout
-    data-testid="sql-console"
-    title="SQL console"
-    description="Ask the index a question in SQL. A query runs inside a read-only transaction, so nothing here can change the index — the files of the content store are the source of truth either way."
-    :meta="meta"
-  >
-    <template #actions>
-      <!-- Inert while a query runs: a second one over the first is refused rather than queued (FE 6). -->
-      <Button size="sm" :disabled="!canRun" @click="run">{{ controller.running.value ? 'Running…' : 'Run' }}</Button>
-      <Button size="sm" variant="secondary" @click="useExample">Example</Button>
-      <Button size="sm" variant="secondary" :active="schemaOpen" :aria-pressed="schemaOpen" @click="schemaOpen = !schemaOpen">Schema</Button>
-    </template>
+  <!-- A panel of the workspace is not a page: it starts with a strip, like every other panel, so
+       switching tabs does not move where content begins. The page frame it used to wear cost 180px of
+       header against a note's 40px. The limits stay in the strip — they are state a query is read
+       against — and the description moved into the body, which is read once. -->
+  <div class="sql-console" data-testid="sql-console">
+    <Strip title="SQL console">
+      <span class="limits">{{ meta.join(' · ') }}</span>
+      <template #actions>
+        <!-- Inert while a query runs: a second one over the first is refused rather than queued (FE 6). -->
+        <Button size="sm" :disabled="!canRun" @click="run">{{ controller.running.value ? 'Running…' : 'Run' }}</Button>
+        <Button size="sm" variant="secondary" @click="useExample">Example</Button>
+        <Button size="sm" variant="secondary" :active="schemaOpen" :aria-pressed="schemaOpen" @click="schemaOpen = !schemaOpen">Schema</Button>
+      </template>
+    </Strip>
 
     <div class="console">
+      <p class="about">
+        Ask the index a question in SQL. A query runs inside a read-only transaction, so nothing here can change the
+        index — the files of the content store are the source of truth either way.
+      </p>
       <div class="editor">
         <CodeEditor
           v-model="query"
@@ -142,25 +146,60 @@ const summary = computed(() => {
         </div>
       </div>
       <div v-else-if="!controller.answered.value" class="idle">Write a query and run it. Nothing has been asked yet.</div>
-    </div>
 
-    <template #footer>
-      <span v-if="summary" class="summary">{{ summary }}</span>
-      <!-- Rows past the limit are gone, and a table that says nothing about it reads as the whole answer. -->
-      <span v-if="controller.result.value?.truncated" class="truncated" data-testid="sql-console-truncated">
-        cut at {{ limits.maxRows }} rows — the query matched more
-      </span>
-      <span v-else-if="!summary" class="summary muted">no result yet</span>
-    </template>
-  </PageLayout>
+      <!-- The page frame used to carry this in a pinned footer. A panel has no footer, and the run
+           summary belongs next to the result it describes rather than at the bottom of the panel. -->
+      <div class="run-summary">
+        <span v-if="summary" class="summary">{{ summary }}</span>
+        <!-- Rows past the limit are gone, and a table that says nothing about it reads as the whole answer. -->
+        <span v-if="controller.result.value?.truncated" class="truncated" data-testid="sql-console-truncated">
+          cut at {{ limits.maxRows }} rows — the query matched more
+        </span>
+        <span v-else-if="!summary" class="summary muted">no result yet</span>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
+.sql-console {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--gray-1);
+}
+
+/* Read once, so it sits in the body rather than in the strip. 62ch is this page's own measure — a
+   reading limit belongs to the one surface that needs it, not to a token. */
+.about {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--gray-11);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.run-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.limits {
+  color: var(--gray-10);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
 .console {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-top: 4px;
 }
 
 /* Tall enough for a query with a join in it, and no taller: the result is what the panel is for. */
@@ -299,7 +338,7 @@ const summary = computed(() => {
 
 .result-table td {
   max-width: 420px;
-  height: 28px;
+  height: var(--size-2xs);
   padding: 4px 12px;
   border-bottom: 1px solid var(--gray-4);
   overflow-wrap: anywhere;
