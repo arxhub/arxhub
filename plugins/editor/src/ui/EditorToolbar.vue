@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, IconButton, Separator, Toolbar } from '@arxhub/uikit/core'
+import { Button, IconButton, Separator, Strip } from '@arxhub/uikit/core'
 import { setBlockType, toggleMark, wrapIn } from 'prosemirror-commands'
 import { redo, undo } from 'prosemirror-history'
 import type { MarkType } from 'prosemirror-model'
@@ -22,28 +22,74 @@ function isMarkActive(markType: MarkType): boolean {
   if (empty) return !!markType.isInSet(props.view.state.storedMarks ?? $from.marks())
   return props.view.state.doc.rangeHasMark(from, to, markType)
 }
+
+// One icon system, declared as data so the row cannot drift back into a mix of notations. It used to run
+// "B I S U ` H1 H2 H3 ¶ • 1. ❝ ↩ ↪" — letters, typographic marks, and two COLOUR EMOJI for undo/redo that
+// carry their own blue tiles and follow no theme. The markdown editor showed the same actions as lucide
+// icons already, so one product drew one job two ways.
+const MARKS: { label: string; icon: string; mark: MarkType }[] = [
+  { label: 'Bold', icon: 'lu:bold', mark: schema.marks.bold },
+  { label: 'Italic', icon: 'lu:italic', mark: schema.marks.italic },
+  { label: 'Strikethrough', icon: 'lu:strikethrough', mark: schema.marks.strike },
+  { label: 'Underline', icon: 'lu:underline', mark: schema.marks.underline },
+  { label: 'Inline code', icon: 'lu:code', mark: schema.marks.code },
+]
+
+const BLOCKS: { label: string; icon: string; run: () => Command }[] = [
+  { label: 'Heading 1', icon: 'lu:heading-1', run: () => setBlockType(schema.nodes.heading, { level: 1 }) },
+  { label: 'Heading 2', icon: 'lu:heading-2', run: () => setBlockType(schema.nodes.heading, { level: 2 }) },
+  { label: 'Heading 3', icon: 'lu:heading-3', run: () => setBlockType(schema.nodes.heading, { level: 3 }) },
+  { label: 'Paragraph', icon: 'lu:pilcrow', run: () => setBlockType(schema.nodes.paragraph) },
+]
+
+const LISTS: { label: string; icon: string; run: () => Command }[] = [
+  { label: 'Bulleted list', icon: 'lu:list', run: () => wrapInList(schema.nodes.bullet_list) },
+  { label: 'Numbered list', icon: 'lu:list-ordered', run: () => wrapInList(schema.nodes.ordered_list) },
+  { label: 'Quote', icon: 'lu:quote', run: () => wrapIn(schema.nodes.blockquote) },
+]
+
+const HISTORY: { label: string; icon: string; run: Command }[] = [
+  { label: 'Undo', icon: 'lu:undo', run: undo },
+  { label: 'Redo', icon: 'lu:redo', run: redo },
+]
 </script>
 
 <template>
-  <Toolbar :gap="2" wrap>
-    <IconButton :active="isMarkActive(schema.marks.bold)" tooltip="Bold" @click="cmd(toggleMark(schema.marks.bold))"><strong>B</strong></IconButton>
-    <IconButton :active="isMarkActive(schema.marks.italic)" tooltip="Italic" @click="cmd(toggleMark(schema.marks.italic))"><em>I</em></IconButton>
-    <IconButton :active="isMarkActive(schema.marks.strike)" tooltip="Strikethrough" @click="cmd(toggleMark(schema.marks.strike))"><s>S</s></IconButton>
-    <IconButton :active="isMarkActive(schema.marks.underline)" tooltip="Underline" @click="cmd(toggleMark(schema.marks.underline))"><u>U</u></IconButton>
-    <IconButton :active="isMarkActive(schema.marks.code)" tooltip="Code" @click="cmd(toggleMark(schema.marks.code))">`</IconButton>
+  <Strip>
+    <IconButton
+      v-for="action in MARKS"
+      :key="action.label"
+      :icon="action.icon"
+      :tooltip="action.label"
+      :active="isMarkActive(action.mark)"
+      @click="cmd(toggleMark(action.mark))"
+    />
     <Separator />
-    <IconButton tooltip="Heading 1" @click="cmd(setBlockType(schema.nodes.heading, { level: 1 }))">H1</IconButton>
-    <IconButton tooltip="Heading 2" @click="cmd(setBlockType(schema.nodes.heading, { level: 2 }))">H2</IconButton>
-    <IconButton tooltip="Heading 3" @click="cmd(setBlockType(schema.nodes.heading, { level: 3 }))">H3</IconButton>
-    <IconButton tooltip="Paragraph" @click="cmd(setBlockType(schema.nodes.paragraph))">¶</IconButton>
+    <IconButton
+      v-for="action in BLOCKS"
+      :key="action.label"
+      :icon="action.icon"
+      :tooltip="action.label"
+      @click="cmd(action.run())"
+    />
     <Separator />
-    <IconButton tooltip="Bullet list" @click="cmd(wrapInList(schema.nodes.bullet_list))">•</IconButton>
-    <IconButton tooltip="Ordered list" @click="cmd(wrapInList(schema.nodes.ordered_list))">1.</IconButton>
-    <IconButton tooltip="Blockquote" @click="cmd(wrapIn(schema.nodes.blockquote))">❝</IconButton>
+    <IconButton
+      v-for="action in LISTS"
+      :key="action.label"
+      :icon="action.icon"
+      :tooltip="action.label"
+      @click="cmd(action.run())"
+    />
     <Separator />
-    <IconButton tooltip="Undo" @click="cmd(undo)">↩</IconButton>
-    <IconButton tooltip="Redo" @click="cmd(redo)">↪</IconButton>
-    <Separator grow />
-    <Button variant="secondary" size="sm" @click="onSave?.()">Save</Button>
-  </Toolbar>
+    <IconButton
+      v-for="action in HISTORY"
+      :key="action.label"
+      :icon="action.icon"
+      :tooltip="action.label"
+      @click="cmd(action.run)"
+    />
+    <template #actions>
+      <Button variant="secondary" size="sm" @click="onSave?.()">Save</Button>
+    </template>
+  </Strip>
 </template>
