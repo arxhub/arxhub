@@ -55,7 +55,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   align-items: center;
   gap: 12px;
   min-width: 148px;
-  height: 28px;
+  height: var(--size-2xs);
   cursor: pointer;
   user-select: none;
 }

@@ -68,7 +68,7 @@ defineEmits<(e: 'update:modelValue', value: string) => void>()
 .item {
   display: flex;
   align-items: center;
-  height: 32px;
+  height: var(--size-xs);
   padding: 0 16px;
   border-right: 1px solid var(--gray-4);
   color: var(--gray-11);

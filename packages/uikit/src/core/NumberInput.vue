@@ -48,7 +48,7 @@ function onValueChange(details: { valueAsNumber: number }): void {
 .control {
   display: inline-flex;
   align-items: stretch;
-  height: 32px;
+  height: var(--size-xs);
   border: 1px solid var(--gray-7);
   border-radius: var(--radius-xs);
   background: var(--gray-1);

@@ -51,7 +51,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
-  min-height: 32px;
+  min-height: var(--size-xs);
   padding: 4px;
   border: 1px solid var(--gray-7);
   border-radius: var(--radius-xs);

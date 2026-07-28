@@ -153,7 +153,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   width: 100%;
-  height: 28px;
+  height: var(--size-2xs);
   padding: 0 12px;
   text-align: left;
   background: none;

@@ -25,7 +25,7 @@ const emit = defineEmits<{ select: [] }>()
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 28px;
+  height: var(--size-2xs);
   padding: 0 12px;
   font-size: var(--font-size-sm);
   font-family: var(--font-sans);

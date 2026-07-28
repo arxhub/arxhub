@@ -28,7 +28,7 @@ defineProps<{
 <style scoped>
 .nav-item {
   width: 32px;
-  height: 32px;
+  height: var(--size-xs);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -21,7 +21,7 @@ defineProps<{
 <style scoped>
 .input {
   width: 100%;
-  height: 32px;
+  height: var(--size-xs);
   background-color: var(--gray-1);
   border: 1px solid var(--gray-7);
   border-radius: var(--radius-sm);

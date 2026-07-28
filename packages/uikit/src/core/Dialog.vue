@@ -3,6 +3,8 @@
 import { Dialog } from '@ark-ui/vue'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import Icon from './Icon.vue'
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import Strip from './Strip.vue'
 
 withDefaults(
   defineProps<{
@@ -30,13 +32,17 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
       <Dialog.Backdrop class="dialog-backdrop" />
       <Dialog.Positioner class="dialog-positioner" :class="{ centered }">
         <Dialog.Content class="dialog-content" :class="`size-${size}`">
-          <header v-if="title || $slots.header" class="dialog-header">
-            <Dialog.Title v-if="title" class="dialog-title">{{ title }}</Dialog.Title>
+          <Strip v-if="title || $slots.header">
+            <template v-if="title" #title>
+              <Dialog.Title class="dialog-title">{{ title }}</Dialog.Title>
+            </template>
             <slot name="header" />
-            <Dialog.CloseTrigger class="dialog-close" aria-label="Close">
-              <Icon name="lu:x" :size="16" />
-            </Dialog.CloseTrigger>
-          </header>
+            <template #actions>
+              <Dialog.CloseTrigger class="dialog-close" aria-label="Close">
+                <Icon name="lu:x" :size="14" />
+              </Dialog.CloseTrigger>
+            </template>
+          </Strip>
           <div class="dialog-body">
             <slot />
           </div>
@@ -96,23 +102,11 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   max-width: 640px;
 }
 
-.dialog-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 40px;
-  flex-shrink: 0;
-  padding: 0 8px 0 16px;
-  border-bottom: 1px solid var(--gray-4);
-}
-
+/* The strip owns the box; this only undoes the heading's own margin. */
 .dialog-title {
-  flex: 1;
   margin: 0;
-  font-size: var(--font-size-sm);
-  font-family: var(--font-sans);
-  font-weight: var(--font-weight-medium);
-  color: var(--gray-12);
+  font: inherit;
+  color: inherit;
 }
 
 .dialog-close {
