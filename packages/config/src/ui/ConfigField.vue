@@ -215,7 +215,7 @@ async function copy(): Promise<void> {
 
 .label {
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   color: var(--gray-12);
 }
 
@@ -225,7 +225,7 @@ async function copy(): Promise<void> {
 
 .tag {
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   letter-spacing: 0.045em;
   text-transform: uppercase;
@@ -251,7 +251,7 @@ async function copy(): Promise<void> {
 
 .signature {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--gray-9);
   overflow-wrap: anywhere;
 }
@@ -301,7 +301,7 @@ async function copy(): Promise<void> {
   border-radius: var(--radius-sm);
   background: var(--gray-1);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
   color: var(--gray-12);
   resize: vertical;
@@ -323,7 +323,7 @@ async function copy(): Promise<void> {
 .counter {
   align-self: flex-end;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--gray-9);
 }
 

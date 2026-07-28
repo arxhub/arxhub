@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { LogRecord } from '@arxhub/logger'
-import { Button, IconButton, Input } from '@arxhub/uikit/core'
+import { Button, IconButton, Input, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import dayjs from 'dayjs'
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
@@ -98,7 +98,7 @@ onMounted(loadSessions)
 
 <template>
   <div class="log-panel">
-    <div class="toolbar">
+    <Strip>
       <div class="levels">
         <button
           v-for="lvl in LEVELS"
@@ -118,9 +118,11 @@ onMounted(loadSessions)
         <option value="">Live</option>
         <option v-for="s in sessions" :key="s" :value="s">{{ s.replace('logs/', '') }}</option>
       </select>
-      <IconButton icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
-      <Button variant="secondary" size="sm" :disabled="source !== ''" @click="ext.clear()">Clear</Button>
-    </div>
+      <template #actions>
+        <IconButton icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
+        <Button variant="secondary" size="sm" :disabled="source !== ''" @click="ext.clear()">Clear</Button>
+      </template>
+    </Strip>
 
     <div ref="scroller" class="rows" @scroll="onScroll">
       <div v-if="visible.length === 0" class="empty">No log entries.</div>
@@ -142,15 +144,6 @@ onMounted(loadSessions)
   height: 100%;
   background: var(--gray-1);
   color: var(--gray-12);
-}
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--gray-4);
-  flex-shrink: 0;
 }
 
 .levels {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconButton } from '@arxhub/uikit/core'
+import { IconButton, Strip } from '@arxhub/uikit/core'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { usePanels } from '../use-panels'
@@ -52,7 +52,7 @@ function onSplit(direction: 'horizontal' | 'vertical') {
 </script>
 
 <template>
-  <div class="panel-tab-bar" :class="{ 'is-active-group': isActiveGroup }">
+  <Strip class="panel-tab-bar" :class="{ 'is-active-group': isActiveGroup }">
     <div ref="tabsEl" class="tabs">
       <DraggableTab
         v-for="(instance, index) in group?.instances"
@@ -68,22 +68,17 @@ function onSplit(direction: 'horizontal' | 'vertical') {
         @close="onCloseTab(instance.instanceId)"
       />
     </div>
-    <div class="actions">
+    <template #actions>
       <IconButton icon="lu:columns-2" tooltip="Split right" @click="onSplit('horizontal')" />
       <IconButton icon="lu:rows-2" tooltip="Split down" @click="onSplit('vertical')" />
-    </div>
-  </div>
+    </template>
+  </Strip>
 </template>
 
 <style scoped>
+/* Geometry, surface and border come from the strip. Only the overflow rule is this bar's own: tabs
+   scroll sideways rather than pushing the split controls off the edge. */
 .panel-tab-bar {
-  display: flex;
-  align-items: center;
-  height: 40px;
-  padding: 0 4px;
-  background-color: var(--gray-1);
-  border-bottom: 1px solid var(--gray-4);
-  flex-shrink: 0;
   overflow: hidden;
 }
 
@@ -98,12 +93,5 @@ function onSplit(direction: 'horizontal' | 'vertical') {
 
 .tabs::-webkit-scrollbar {
   display: none;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
 }
 </style>

@@ -133,6 +133,9 @@ onUnmounted(() => {
   line-height: 1.7;
   color: var(--gray-12);
 }
+/* design-ignore DS type ramp: this is the CONTENT of a note, not chrome. A heading inside a document
+   scales with the body it sits in, so these are relative to --font-size-md rather than steps of the
+   chrome ramp — the ramp has no note-heading step and should not grow one. */
 .editor-content :deep(h1) { font-size: 2em; font-weight: 700; margin: 0.67em 0; }
 .editor-content :deep(h2) { font-size: 1.5em; font-weight: 600; margin: 0.75em 0; }
 .editor-content :deep(h3) { font-size: 1.17em; font-weight: 600; margin: 0.83em 0; }
@@ -149,6 +152,7 @@ onUnmounted(() => {
   padding: 0.1em 0.35em;
   border-radius: 3px;
   font-family: var(--font-mono, monospace);
+  /* design-ignore DS type ramp: inline code inside note content, relative to the note body. */
   font-size: 0.875em;
 }
 .editor-content :deep(pre) {
@@ -159,6 +163,7 @@ onUnmounted(() => {
   overflow-x: auto;
   margin: 0.5em 0;
 }
+/* design-ignore DS type ramp: code block inside note content, relative to the note body. */
 .editor-content :deep(pre code) { background: none; padding: 0; border-radius: 0; font-size: 0.9em; }
 .editor-content :deep(hr) { border: none; border-top: 1px solid var(--gray-5); margin: 1.5em 0; }
 .editor-content :deep(ul[data-type="task_list"]) { list-style: none; padding-left: 0.25em; }

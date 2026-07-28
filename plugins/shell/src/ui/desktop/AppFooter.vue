@@ -14,7 +14,7 @@
 
 <style scoped>
 .app-footer {
-  height: 32px;
+  height: var(--size-xs);
   width: 100%;
   padding: 0 4px;
   background-color: var(--gray-2);

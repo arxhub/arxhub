@@ -106,7 +106,7 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 48px;
+  min-height: var(--size-xl);
   margin-top: 4px;
   padding: 8px 16px;
   border: 1px solid var(--gray-6);

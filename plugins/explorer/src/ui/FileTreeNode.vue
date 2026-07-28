@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { basename, dirname } from '@arxhub/path'
-import { actionMenu, Icon } from '@arxhub/uikit/core'
+import { actionMenu, Icon, Row } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, watch } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
@@ -97,10 +97,10 @@ function handleEnter() {
 </script>
 
 <template>
-  <div
+  <Row
     class="tree-node"
-    :class="{ selected: explorer.selectedPath.value === node.entry.pathname }"
-    :style="{ paddingLeft: `${depth * 16 + 8}px` }"
+    :selected="explorer.selectedPath.value === node.entry.pathname"
+    :depth="depth"
     :data-path="node.entry.pathname"
     role="treeitem"
     :aria-label="basename(node.entry.pathname)"
@@ -134,7 +134,7 @@ function handleEnter() {
       @dblclick.stop
     />
     <span v-else class="name">{{ basename(node.entry.pathname) || node.entry.pathname }}</span>
-  </div>
+  </Row>
 
   <template v-if="node.expanded && node.children">
     <FileTreeNode
@@ -148,37 +148,16 @@ function handleEnter() {
 
 <style scoped>
 .tree-node {
-  display: flex;
-  align-items: center;
   gap: 4px;
-  height: 28px;
-  margin-right: 4px;
-  padding-right: 8px;
-  border-radius: var(--radius-xs);
-  cursor: pointer;
   user-select: none;
   white-space: nowrap;
   overflow: hidden;
-  font-size: var(--font-size-sm);
-  color: var(--gray-12);
 }
 
-.tree-node:hover {
-  background-color: var(--gray-4);
-}
 
 /* The selected row is the one place in the tree that spends the accent — a wash and accent text,
    so it stays legible against a plain hover fill on the row above it. */
-.tree-node.selected {
-  background-color: var(--accent-3);
-  color: var(--accent-11);
-  font-weight: var(--font-weight-medium);
-}
 
-.tree-node:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -1px;
-}
 
 .chevron,
 .type-glyph {

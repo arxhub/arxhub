@@ -54,7 +54,7 @@ const { isDragging, closestEdge } = useDraggableTab({
   align-items: center;
   gap: 4px;
   padding: 0 8px 0 12px;
-  height: 28px;
+  height: var(--size-2xs);
   max-width: 220px;
   border: 1px solid transparent;
   border-radius: var(--radius-xs);

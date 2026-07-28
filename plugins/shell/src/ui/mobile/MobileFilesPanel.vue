@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon } from '@arxhub/uikit/core'
+import { Icon, Strip } from '@arxhub/uikit/core'
 import { useBackStack } from '@arxhub/uikit/hooks'
 import { MOBILE_RAIL_HOST_ID } from './rail-host'
 
@@ -26,12 +26,13 @@ function onActivate(event: MouseEvent): void {
        with the panel tears the teleport apart the first time it is opened. -->
   <div v-show="open" class="files-scrim" @click.self="emit('close')">
     <section class="files-panel" :aria-label="`${title} navigation`" @click="onActivate">
-      <header class="files-bar">
-        <span class="files-title">{{ title }}</span>
-        <button type="button" class="files-close" aria-label="Close navigation" @click="emit('close')">
-          <Icon name="lu:x" :size="16" />
-        </button>
-      </header>
+      <Strip :title="title">
+        <template #actions>
+          <button type="button" class="files-close" aria-label="Close navigation" @click="emit('close')">
+            <Icon name="lu:x" :size="14" />
+          </button>
+        </template>
+      </Strip>
       <div :id="MOBILE_RAIL_HOST_ID" class="files-body" />
     </section>
   </div>
@@ -60,26 +61,6 @@ function onActivate(event: MouseEvent): void {
   border-top-right-radius: var(--radius-md);
   background: var(--gray-2);
   box-shadow: var(--shadow-xl);
-}
-
-.files-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  height: var(--size-md);
-  padding: 0 8px 0 16px;
-  border-bottom: 1px solid var(--gray-4);
-}
-
-.files-title {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--gray-12);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
 }
 
 .files-close {

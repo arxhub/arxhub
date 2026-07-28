@@ -338,7 +338,7 @@ function confirmReplace(): void {
 }
 
 .code {
-  height: 32px;
+  height: var(--size-xs);
   max-width: 24rem;
   resize: none;
 }

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { Strip } from '@arxhub/uikit/core'
 </script>
 
 <template>
-  <header class="app-header">
+  <Strip class="app-header">
     <div class="left-section">
       <slot name="left" />
     </div>
@@ -14,22 +16,16 @@
     <div class="right-section">
       <slot name="right" />
     </div>
-  </header>
+  </Strip>
 </template>
 
 <style scoped>
+/* Height, surface, border, inset and text size come from the strip. What stays is this header's own
+   layout — three equal sections, so the mono middle reads as centred on the window rather than on
+   whatever the left section happens to hold. */
 .app-header {
-  height: 40px;
-  background-color: var(--gray-2);
-  border-bottom: 1px solid var(--gray-6);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 8px;
-  flex-shrink: 0;
   z-index: var(--z-index-docked);
   user-select: none;
-  font-size: var(--font-size-sm);
 }
 
 .left-section, .center-section, .right-section {

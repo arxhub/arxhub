@@ -407,7 +407,7 @@ onMounted(focusInput)
   justify-content: space-between;
   gap: 8px;
   flex-shrink: 0;
-  height: 28px;
+  height: var(--size-2xs);
   padding: 0 8px;
   color: var(--gray-11);
   font-size: var(--font-size-xs);
@@ -502,7 +502,7 @@ onMounted(focusInput)
   flex-direction: column;
   gap: 4px;
   justify-content: center;
-  min-height: 28px;
+  min-height: var(--size-2xs);
   padding-top: 4px;
   padding-bottom: 4px;
 }

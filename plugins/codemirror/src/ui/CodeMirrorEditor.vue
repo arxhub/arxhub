@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePanelInstance } from '@arxhub/plugin-panels/ui'
-import { Button } from '@arxhub/uikit/core'
+import { Button, Strip } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { LanguageDescription } from '@codemirror/language'
@@ -94,11 +94,13 @@ onUnmounted(() => {
   <div class="codemirror-wrapper" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
     <!-- One strip, not two. The path and the formatting keys used to sit on separate rows, which put
          three bands of chrome (tab strip, path, toolbar) above every note before a word of it showed. -->
-    <div class="codemirror-toolbar">
+    <Strip>
       <span class="codemirror-path">{{ path }}</span>
       <MarkdownToolbar v-if="note && !loadError" :view="view" />
-      <Button size="sm" variant="secondary" :disabled="!canSave" @click="save">Save</Button>
-    </div>
+      <template #actions>
+        <Button size="sm" variant="secondary" :disabled="!canSave" @click="save">Save</Button>
+      </template>
+    </Strip>
     <div v-if="loadError" class="codemirror-error">
       <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
       <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>
@@ -117,17 +119,6 @@ onUnmounted(() => {
 }
 
 /* A strip, at the strip height — the same band as the tab bar above it and the status bar below. */
-.codemirror-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: var(--size-md);
-  flex-shrink: 0;
-  padding: 0 8px;
-  border-bottom: 1px solid var(--gray-6);
-  background: var(--gray-2);
-}
-
 /* The path takes the slack, so the formatting keys and Save stay put as the file name changes length
    rather than sliding along the strip from note to note. */
 .codemirror-path {

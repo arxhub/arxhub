@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { actionMenu, Button, Toolbar } from '@arxhub/uikit/core'
+import { actionMenu, Button, Icon, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted } from 'vue'
 import { ExplorerExtension } from '../explorer-extension'
@@ -34,10 +34,14 @@ function newFolder() {
 
 <template>
   <div class="file-tree-wrap">
-    <Toolbar :gap="4">
-      <Button variant="secondary" size="sm" title="New File" @click="newFile">＋ File</Button>
-      <Button variant="secondary" size="sm" title="New Folder" @click="newFolder">＋ Folder</Button>
-    </Toolbar>
+    <Strip>
+      <Button variant="secondary" size="sm" title="New File" @click="newFile">
+        <Icon name="lu:file-plus" :size="14" />File
+      </Button>
+      <Button variant="secondary" size="sm" title="New Folder" @click="newFolder">
+        <Icon name="lu:folder-plus" :size="14" />Folder
+      </Button>
+    </Strip>
 
     <div class="file-tree" role="tree" aria-label="Files" @contextmenu.prevent="onRootContextMenu">
       <FileTreeNode
