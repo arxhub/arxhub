@@ -50,7 +50,7 @@ test.describe('a server that refuses this device', () => {
     })
 
     await openNavigation(app)
-    await app.getByRole('button', { name: '＋ File' }).click()
+    await app.getByRole('button', { name: 'File', exact: true }).click()
 
     // The action that failed says so on its own, naming what the server said about it.
     await expect(app.locator('.toast-title')).toHaveText('Could not create the file')

@@ -5,7 +5,7 @@ import { expect, openNavigation, test } from './fixtures'
 test.describe('keeping the tree in order', () => {
   test('creates a note as markdown', async ({ app, vault }) => {
     await openNavigation(app)
-    await app.getByRole('button', { name: '＋ File' }).click()
+    await app.getByRole('button', { name: 'File', exact: true }).click()
 
     // Markdown is the default because the vault has to stay readable outside the product, and the
     // seed must match the extension — a note seeded with a document tree opens as JSON text.

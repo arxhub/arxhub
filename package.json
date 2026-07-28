@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "format": "biome check --write .",
-    "lint": "biome check ."
+    "lint": "biome check .",
+    "check:design": "node scripts/check-design.mjs"
   },
   "keywords": [
     "wiki",
