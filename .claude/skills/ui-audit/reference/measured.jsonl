@@ -1,0 +1,16 @@
+{"label":"desktop shell header","selector":".app-header","found":false}
+{"label":"desktop status bar","selector":".app-footer","found":true,"height":32,"padding":"0px 4px","background":"oklab(0.982284 -0.000734723 0.00395202)","borderBottom":"0px rgb(99, 99, 94)","fontSize":"12px"}
+{"label":"panel tab bar","selector":".panel-tab-bar","found":true,"height":40,"padding":"0px 4px","background":"oklab(0.993822 -0.000249789 0.00147103)","borderBottom":"1px oklab(0.932819 -0.00142367 0.0148495)","fontSize":"14px"}
+{"label":"panel tab","selector":".tab","found":true,"height":28,"padding":"0px 8px 0px 12px","background":"rgb(222, 247, 249)","borderBottom":"1px rgba(0, 0, 0, 0)","fontSize":"14px"}
+{"label":"file tree row","selector":".tree-node","found":false}
+{"label":"codemirror note strip","selector":".codemirror-toolbar","found":true,"height":40,"padding":"0px 8px","background":"oklab(0.982284 -0.000734723 0.00395202)","borderBottom":"1px oklab(0.884652 -0.000928664 0.0184926)","fontSize":"14px"}
+{"label":"markdown format row","selector":".md-toolbar","found":true,"height":32,"padding":"0px","background":"rgba(0, 0, 0, 0)","borderBottom":"0px rgb(33, 32, 28)","fontSize":"14px"}
+{"label":"prosemirror toolbar","selector":".toolbar","found":true,"height":33,"padding":"4px","background":"oklab(0.982284 -0.000734723 0.00395202)","borderBottom":"1px oklab(0.932819 -0.00142367 0.0148495)","fontSize":"14px"}
+{"label":"search rail head","selector":".search-head","found":true,"height":194,"padding":"8px","background":"rgba(0, 0, 0, 0)","borderBottom":"1px oklab(0.932819 -0.00142367 0.0148495)","fontSize":"14px"}
+{"label":"search result row","selector":".row","found":false}
+{"label":"sql console page header","selector":"[data-testid=\"sql-console\"] .header","found":true,"height":180,"padding":"24px 24px 20px","background":"rgba(0, 0, 0, 0)","borderBottom":"0px rgb(33, 32, 28)","fontSize":"14px"}
+{"label":"settings page header","selector":".page > .header","found":true,"padding":"24px 24px 20px","background":"rgba(0, 0, 0, 0)","borderBottom":"0px rgb(33, 32, 28)","fontSize":"14px"}
+{"label":"settings nav row","selector":".settings-nav .nav-item","found":true,"height":32,"padding":"0px 12px","background":"rgba(0, 0, 0, 0)","borderBottom":"0px rgb(99, 99, 94)","fontSize":"14px"}
+{"label":"dialog header","selector":".dialog-header","found":true,"height":40,"padding":"0px 8px 0px 16px","background":"rgba(0, 0, 0, 0)","borderBottom":"1px oklab(0.932819 -0.00142367 0.0148495)","fontSize":"16px"}
+{"label":"mobile bottom bar","selector":".tab-bar","found":true,"height":53,"padding":"4px 0px 0px","background":"oklab(0.982284 -0.000734723 0.00395202)","borderBottom":"0px rgb(33, 32, 28)","fontSize":"14px"}
+{"label":"mobile files panel bar","selector":".files-bar","found":true,"height":40,"padding":"0px 8px 0px 16px","background":"rgba(0, 0, 0, 0)","borderBottom":"1px oklab(0.932819 -0.00142367 0.0148495)","fontSize":"14px"}
