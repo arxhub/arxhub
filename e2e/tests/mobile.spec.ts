@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openNavigation, openNote, test } from './fixtures'
+import { expect, isMobileFrame, openMiniApp, openNavigation, openNote, test } from './fixtures'
 
 test.describe('the frame is chosen once, by the bundle', () => {
   test('a phone-shaped client mounts the mobile frame and a desktop one the rail', async ({ app }) => {
@@ -103,6 +103,20 @@ test.describe('mobile navigation', () => {
 
     await sheet.getByRole('menuitem', { name: first }).click()
     await expect(app.locator('.cm-content:visible')).toContainText('first')
+  })
+
+  // Explorer and Search each host their own PanelsLayout(tab="Notes"), and switching mini-apps now
+  // deactivates the outgoing one under KeepAlive instead of destroying it — a component that registers
+  // its bottom-bar key on mount and never sees onUnmounted leaves a stale key behind, and the incoming
+  // mini-app's own instance then registers a second one.
+  test('switching mini-apps does not duplicate the Notes key', async ({ app, vault }) => {
+    const path = await vault.write('kept.md', 'kept\n')
+    await openNote(app, path)
+
+    await openMiniApp(app, 'Search')
+    await openMiniApp(app, 'Explorer')
+
+    await expect(app.getByRole('button', { name: /^Notes, \d+ open$/ })).toHaveCount(1)
   })
 
   test('back in a confirmation means cancel, never confirm', async ({ app, vault }) => {

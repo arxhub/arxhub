@@ -2,7 +2,7 @@
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { BottomSheet, IconButton, Row } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
-import { computed, onMounted, onUnmounted, ref, useId } from 'vue'
+import { computed, onActivated, onDeactivated, onUnmounted, ref, useId } from 'vue'
 import type { PanelStore } from '../../types'
 import PanelView from '../PanelView.vue'
 
@@ -51,13 +51,22 @@ function select(groupId: string, instanceId: string): void {
 // The key belongs to this layout rather than to the app: it arrives when the mini-app hosting it comes
 // on screen and leaves with it, so the bar always describes what is actually in front of you — and it
 // counts this layout's own store, not whatever the global one happens to hold.
+//
+// onActivated/onDeactivated, not onMounted/onUnmounted: the mini-app switch above this is wrapped in
+// KeepAlive, so leaving a mini-app deactivates its component tree rather than destroying it — onUnmounted
+// never ran, the outgoing layout's key stayed registered, and the next mini-app's own MobilePanels
+// registered a SECOND one, both reading "Notes" at once. onActivated already fires once on the initial
+// mount (right after onMounted would have), so registering only there — never in onMounted — covers both
+// the first appearance and every later return. onUnmounted stays as a defensive fallback for the (today
+// hypothetical) case of this component mounting outside any KeepAlive ancestor, where onActivated/
+// onDeactivated never fire at all.
 const title = props.tab
 if (props.mode === 'tiled' && title != null) {
   const shell = useArxHub().extensions.get(ShellExtension)
   // Per instance: mini-apps overlap during a switch, so a fixed id would have the outgoing layout
   // unregister the incoming one's key.
   const id = `arxhub.panels.tab.${useId()}`
-  onMounted(() =>
+  const register = () =>
     shell.tabs.register({
       id,
       icon: props.tabIcon ?? 'lu:file-text',
@@ -69,9 +78,12 @@ if (props.mode === 'tiled' && title != null) {
       onSelect: () => {
         sheetOpen.value = !sheetOpen.value
       },
-    }),
-  )
-  onUnmounted(() => shell.tabs.unregister(id))
+    })
+  const unregister = () => shell.tabs.unregister(id)
+
+  onActivated(register)
+  onDeactivated(unregister)
+  onUnmounted(unregister)
 }
 </script>
 
