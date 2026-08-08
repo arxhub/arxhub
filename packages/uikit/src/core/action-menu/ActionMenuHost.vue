@@ -3,6 +3,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useShellFrame } from '../../hooks/useShellFrame'
 import BottomSheet from '../BottomSheet.vue'
 import Icon from '../Icon.vue'
+import Row from '../Row.vue'
 import { actionMenu, useActionMenuState } from './action-menu'
 
 const state = useActionMenuState()
@@ -98,11 +99,13 @@ onBeforeUnmount(() => {
       @contextmenu.prevent
       @keydown="onMenuKeydown"
     >
-      <button
+      <Row
         v-for="item in state.items"
         :key="item.id"
+        as="button"
+        type="button"
         class="action-item"
-        :class="{ danger: item.variant === 'danger' }"
+        :tone="item.variant === 'danger' ? 'danger' : 'neutral'"
         role="menuitem"
         tabindex="-1"
         :disabled="item.disabled"
@@ -110,26 +113,27 @@ onBeforeUnmount(() => {
       >
         <Icon v-if="item.icon" :name="item.icon" :size="14" />
         <span class="action-label">{{ item.label }}</span>
-      </button>
+      </Row>
     </div>
-
   </Teleport>
 
   <!-- Narrow screens get the same items as a bottom sheet: one list of actions, declared once. -->
   <BottomSheet :open="state.open && isMobile" :title="state.title" label="Actions" @close="actionMenu.close()">
     <div class="action-sheet" role="menu">
-      <button
+      <Row
         v-for="item in state.items"
         :key="item.id"
+        as="button"
+        type="button"
         class="action-sheet-item"
-        :class="{ danger: item.variant === 'danger' }"
+        :tone="item.variant === 'danger' ? 'danger' : 'neutral'"
         role="menuitem"
         :disabled="item.disabled"
         @click="run(item)"
       >
-        <Icon v-if="item.icon" :name="item.icon" :size="18" />
+        <Icon v-if="item.icon" :name="item.icon" :size="16" />
         <span>{{ item.label }}</span>
-      </button>
+      </Row>
     </div>
   </BottomSheet>
 </template>
@@ -148,45 +152,6 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-md);
 }
 
-.action-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  height: var(--size-2xs);
-  padding: 0 12px;
-  text-align: left;
-  background: none;
-  border: none;
-  border-radius: var(--radius-xs);
-  color: var(--gray-12);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-sans);
-  cursor: pointer;
-}
-
-.action-item:hover:not(:disabled) {
-  background: var(--gray-4);
-}
-
-.action-item:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -2px;
-}
-
-.action-item:disabled {
-  color: var(--gray-9);
-  cursor: default;
-}
-
-.action-item.danger {
-  color: var(--danger-11);
-}
-
-.action-item.danger:hover:not(:disabled) {
-  background: var(--danger-3);
-}
-
 .action-label {
   flex: 1;
 }
@@ -196,31 +161,6 @@ onBeforeUnmount(() => {
 .action-sheet {
   display: flex;
   flex-direction: column;
-  padding: 0 0.5rem;
-}
-
-.action-sheet-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 56px;
-  padding: 0 12px;
-  text-align: left;
-  background: none;
-  border: none;
-  border-radius: var(--radius-xs);
-  color: var(--gray-12);
-  font-size: var(--font-size-md);
-  font-family: var(--font-sans);
-  cursor: pointer;
-}
-
-.action-sheet-item:disabled {
-  color: var(--gray-9);
-}
-
-.action-sheet-item.danger {
-  color: var(--danger-11);
+  padding: 0 8px;
 }
 </style>

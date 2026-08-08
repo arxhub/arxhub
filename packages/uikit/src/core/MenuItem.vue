@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { Menu } from '@ark-ui/vue'
+import Row from './Row.vue'
 
 withDefaults(
   defineProps<{
@@ -15,41 +16,12 @@ const emit = defineEmits<{ select: [] }>()
 </script>
 
 <template>
-  <Menu.Item :value="value" :disabled="disabled" class="menu-item" :class="variant" @select="emit('select')">
-    <slot />
+  <!-- as-child, so the state machine, the keyboard model and the ARIA stay with Ark while the box is the
+       row role rather than a second implementation of it: Ark merges its item props onto the element Row
+       renders. The highlight arrives as data-highlighted, which Row answers alongside :hover. -->
+  <Menu.Item as-child :value="value" :disabled="disabled" @select="emit('select')">
+    <Row :disabled="disabled" :tone="variant === 'danger' ? 'danger' : 'neutral'">
+      <slot />
+    </Row>
   </Menu.Item>
 </template>
-
-<style scoped>
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: var(--size-2xs);
-  padding: 0 12px;
-  font-size: var(--font-size-sm);
-  font-family: var(--font-sans);
-  color: var(--gray-12);
-  border-radius: var(--radius-xs);
-  cursor: pointer;
-  user-select: none;
-}
-
-.menu-item[data-highlighted] {
-  background: var(--gray-4);
-  outline: none;
-}
-
-.menu-item.danger {
-  color: var(--danger-11);
-}
-
-.menu-item.danger[data-highlighted] {
-  background: var(--danger-3);
-}
-
-.menu-item[data-disabled] {
-  color: var(--gray-9);
-  cursor: default;
-}
-</style>

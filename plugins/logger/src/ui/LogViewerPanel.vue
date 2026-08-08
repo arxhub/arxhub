@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { LogRecord } from '@arxhub/logger'
-import { Button, IconButton, Input, Strip } from '@arxhub/uikit/core'
+import { Button, IconButton, Input, Row, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import dayjs from 'dayjs'
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
@@ -20,6 +20,14 @@ function levelName(level: number): LevelName {
   if (level >= 40) return 'warn'
   if (level >= 30) return 'info'
   return 'debug'
+}
+
+// What the row role calls a condition. The level is the entry's own vocabulary; danger/warning is the
+// product's, and it is what puts the marker on the leading edge of the line that failed.
+function levelTone(level: number): 'neutral' | 'danger' | 'warning' {
+  if (level >= 50) return 'danger'
+  if (level >= 40) return 'warning'
+  return 'neutral'
 }
 
 const arxhub = useArxHub()
@@ -126,13 +134,14 @@ onMounted(loadSessions)
 
     <div ref="scroller" class="rows" @scroll="onScroll">
       <div v-if="visible.length === 0" class="empty">No log entries.</div>
-      <div v-for="(r, i) in visible" :key="i" class="row" :class="levelName(r.level)">
+      <!-- An entry is read and copied, never activated, and a long message grows the line downwards. -->
+      <Row v-for="(r, i) in visible" :key="i" plain wrap class="log-row" :tone="levelTone(r.level)">
         <span class="time">{{ dayjs(r.time).format('HH:mm:ss.SSS') }}</span>
         <span class="level" :class="levelName(r.level)">{{ levelName(r.level) }}</span>
         <span v-if="r.name" class="scope">{{ r.name }}</span>
         <span class="msg">{{ r.msg }}</span>
         <span v-if="extras(r)" class="extras">{{ extras(r) }}</span>
-      </div>
+      </Row>
     </div>
   </div>
 </template>
@@ -170,7 +179,7 @@ onMounted(loadSessions)
 .chip.debug { border-color: var(--gray-7); color: var(--gray-11); }
 .chip.info { border-color: var(--accent-7); color: var(--accent-11); }
 .chip.warn { border-color: var(--warning-7); color: var(--warning-11); }
-.chip.error { border-color: var(--red-7); color: var(--red-11); }
+.chip.error { border-color: var(--danger-7); color: var(--danger-11); }
 
 .search {
   flex: 1;
@@ -203,17 +212,17 @@ onMounted(loadSessions)
   text-align: center;
 }
 
-.row {
-  display: flex;
-  gap: 8px;
-  padding: 1px 8px;
+.log-row {
   white-space: pre-wrap;
   word-break: break-word;
-  border-left: 2px solid transparent;
 }
 
-.row.warn { border-left-color: var(--warning-9); }
-.row.error { border-left-color: var(--red-9); background: var(--red-a2); }
+/* A log line is a mono fact, not a label, so it keeps the ramp's xs step in both frames rather than the
+   row role's text size — at 16px a message breaks mid-word in a phone-width column. Set on the columns
+   rather than on the row, so the role still owns the row's own type. */
+.log-row > span {
+  font-size: var(--font-size-xs);
+}
 
 .time { color: var(--gray-10); flex-shrink: 0; }
 
@@ -226,7 +235,7 @@ onMounted(loadSessions)
 .level.debug { color: var(--gray-10); }
 .level.info { color: var(--accent-11); }
 .level.warn { color: var(--warning-11); }
-.level.error { color: var(--red-11); }
+.level.error { color: var(--danger-11); }
 
 .scope { color: var(--accent-11); flex-shrink: 0; }
 .msg { color: var(--gray-12); }

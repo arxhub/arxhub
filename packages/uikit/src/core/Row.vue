@@ -20,8 +20,11 @@ const props = withDefaults(
     // A row whose content legitimately wraps (a result with a title and a path, a log line) grows DOWN
     // from the role's height instead of being clipped by it.
     wrap?: boolean
+    // A row that is only read, never activated — a log entry. Both the pointer cursor and the hover fill
+    // promise a click, and a log has nothing to handle one with.
+    plain?: boolean
   }>(),
-  { as: 'div', selected: false, disabled: false, depth: 0, tone: 'neutral', wrap: false },
+  { as: 'div', selected: false, disabled: false, depth: 0, tone: 'neutral', wrap: false, plain: false },
 )
 
 // inject() only runs during setup, and the frame never changes while the app is up — so this is read
@@ -34,7 +37,7 @@ const indent = computed(() => ({ paddingLeft: `calc(8px + ${props.depth} * var(-
   <component
     :is="as"
     class="row"
-    :class="[tone, { selected, disabled, wrap, touch }]"
+    :class="[tone, { selected, disabled, wrap, plain, touch }]"
     :style="indent"
     :disabled="as === 'button' && disabled ? true : undefined"
   >
@@ -79,8 +82,16 @@ const indent = computed(() => ({ paddingLeft: `calc(8px + ${props.depth} * var(-
   min-height: var(--size-xl);
 }
 
-.row:hover:not(.disabled):not(.selected) {
+/* One highlight under two names: :hover for a row the pointer is over, and data-highlighted for a menu
+   row, which Ark marks that way for the pointer AND for the roving focus. */
+.row:hover:not(.disabled):not(.selected):not(.plain),
+.row[data-highlighted]:not(.disabled):not(.selected) {
   background: var(--gray-4);
+}
+
+/* Read, not activated — see the `plain` prop. */
+.row.plain {
+  cursor: auto;
 }
 
 .row:focus-visible {
@@ -95,12 +106,28 @@ const indent = computed(() => ({ paddingLeft: `calc(8px + ${props.depth} * var(-
   font-weight: var(--font-weight-medium);
 }
 
+/* A row that reports a condition — an entry logged at error level, an action that destroys something —
+   says so twice: in its text and on its leading edge. In a dense list the colour of one word is not
+   enough to find the line that failed. The edge is an inset shadow rather than a border so it costs no
+   layout and the row's inset stays on the grid. */
 .row.danger {
   color: var(--danger-11);
+  box-shadow: inset 2px 0 0 var(--danger-9);
 }
 
 .row.warning {
   color: var(--warning-11);
+  box-shadow: inset 2px 0 0 var(--warning-9);
+}
+
+.row.danger:hover:not(.disabled):not(.selected):not(.plain),
+.row.danger[data-highlighted]:not(.disabled):not(.selected) {
+  background: var(--danger-3);
+}
+
+.row.warning:hover:not(.disabled):not(.selected):not(.plain),
+.row.warning[data-highlighted]:not(.disabled):not(.selected) {
+  background: var(--warning-3);
 }
 
 /* Flat, not faded — an unavailable row must not read as a dimmed available one. */

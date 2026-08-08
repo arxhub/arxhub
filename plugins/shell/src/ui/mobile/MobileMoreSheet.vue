@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BottomSheet, Icon } from '@arxhub/uikit/core'
+import { BottomSheet, Icon, Row } from '@arxhub/uikit/core'
 import { type Component, computed } from 'vue'
 import type { SidebarItem } from '../types'
 
@@ -30,33 +30,33 @@ function select(id: string): void {
     </div>
 
     <nav class="more-list" aria-label="Mini-apps">
-      <button
+      <Row
         v-for="item in primary"
         :key="item.id"
+        as="button"
         type="button"
-        class="more-row"
-        :class="{ active: item.id === activeId }"
+        :selected="item.id === activeId"
         :aria-current="item.id === activeId ? 'page' : undefined"
         @click="select(item.id)"
       >
         <Icon :name="item.icon" :size="16" />
         <span>{{ item.title }}</span>
-      </button>
+      </Row>
 
       <div v-if="secondary.length && primary.length" class="more-divider" />
 
-      <button
+      <Row
         v-for="item in secondary"
         :key="item.id"
+        as="button"
         type="button"
-        class="more-row"
-        :class="{ active: item.id === activeId }"
+        :selected="item.id === activeId"
         :aria-current="item.id === activeId ? 'page' : undefined"
         @click="select(item.id)"
       >
         <Icon :name="item.icon" :size="16" />
         <span>{{ item.title }}</span>
-      </button>
+      </Row>
     </nav>
   </BottomSheet>
 </template>
@@ -79,33 +79,6 @@ function select(id: string): void {
   display: flex;
   flex-direction: column;
   padding: 0 8px;
-}
-
-.more-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  /* Sheet rows are the largest targets in the app: this is the list you hit without looking. */
-  height: 56px;
-  padding: 0 16px;
-  border: none;
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--gray-12);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-md);
-  text-align: left;
-  cursor: pointer;
-}
-
-.more-row.active {
-  background: var(--accent-3);
-  color: var(--accent-11);
-}
-
-.more-row:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -1px;
 }
 
 .more-divider {

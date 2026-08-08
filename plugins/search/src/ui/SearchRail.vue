@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DEFAULT_SEARCH_LIMIT, SEARCH_QUALIFIERS, type SearchSnippet, type SearchSort, snippetSegments } from '@arxhub/sql'
-import { Button, Input, SectionLabel, Segmented, type SelectOption, StatusDot, Switch } from '@arxhub/uikit/core'
+import { Button, Input, Row, SectionLabel, Segmented, type SelectOption, StatusDot, Switch } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { SearchExtension } from '../search-extension'
@@ -285,37 +285,50 @@ onMounted(focusInput)
       <template v-for="(entry, index) in entries" :key="entry.key">
         <!-- A real button, so the mobile frame's rail panel recognises the one click that IS navigation and
              gets out of the way. The keyboard model stays on the list, hence tabindex -1. -->
-        <button
+        <Row
           v-if="entry.kind === 'document'"
           :id="optionId(index)"
+          as="button"
           type="button"
+          wrap
           tabindex="-1"
-          class="row document"
-          :class="{ selected: index === selected }"
+          class="document"
+          :selected="index === selected"
           role="option"
           :aria-selected="index === selected"
           @click="selectAndOpen(index)"
         >
-          <span class="doc-title">{{ entry.title }}</span>
-          <span class="doc-path">{{ entry.path }}</span>
-        </button>
-        <button
+          <span class="doc-text">
+            <span class="doc-title">{{ entry.title }}</span>
+            <span class="doc-path">{{ entry.path }}</span>
+          </span>
+        </Row>
+        <!-- A snippet sits one level in under the document it belongs to: the grouping is what the rows
+             look like, not how they nest, so it is the row role's own indent rather than a margin. -->
+        <Row
           v-else
           :id="optionId(index)"
+          as="button"
           type="button"
+          wrap
+          :depth="1"
           tabindex="-1"
-          class="row snippet"
-          :class="{ selected: index === selected }"
+          class="snippet"
+          :selected="index === selected"
           role="option"
           :aria-selected="index === selected"
           @click="selectAndOpen(index)"
         >
           <!-- Interpolated, segment by segment: the snippet arrives with control characters around each
-               match, so anything in the note that looks like markup stays text on the way to the page. -->
-          <span v-for="(segment, position) in snippetSegments(entry.snippet?.text ?? '')" :key="position" :class="{ match: segment.match }">{{
-            segment.text
-          }}</span>
-        </button>
+               match, so anything in the note that looks like markup stays text on the way to the page.
+               One wrapper around the lot, because the row role puts a gap between its children and a
+               snippet is one run of text. -->
+          <span class="snippet-text"
+            ><span v-for="(segment, position) in snippetSegments(entry.snippet?.text ?? '')" :key="position" :class="{ match: segment.match }">{{
+              segment.text
+            }}</span></span
+          >
+        </Row>
       </template>
     </div>
 
@@ -470,41 +483,14 @@ onMounted(focusInput)
   line-height: var(--line-height-snug);
 }
 
-.row {
-  display: block;
-  width: 100%;
-  padding: 0 8px;
-  border: none;
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--gray-11);
-  font-family: var(--font-sans);
-  text-align: left;
-  cursor: pointer;
-}
-
-.row:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -1px;
-}
-
-.row.selected {
-  background: var(--accent-3);
-  color: var(--accent-11);
-}
-
-.row:hover:not(.selected) {
-  background: var(--gray-3);
-}
-
-.document {
+/* The two lines of a result, stacked inside the row's box: the row owns its height and inset, this owns
+   how a title and a path sit in it. */
+.doc-text {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  justify-content: center;
-  min-height: var(--size-2xs);
-  padding-top: 4px;
-  padding-bottom: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .doc-title {
@@ -516,10 +502,6 @@ onMounted(focusInput)
   font-weight: var(--font-weight-medium);
 }
 
-.document:not(.selected) .doc-title {
-  color: var(--gray-12);
-}
-
 .doc-path {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -529,15 +511,16 @@ onMounted(focusInput)
   font-size: var(--font-size-xs);
 }
 
-/* Indented under the document it belongs to: the grouping is visual, so a row still reads as one of the
-   flat list the arrow keys walk. */
-.snippet {
-  margin-left: 12px;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  color: var(--gray-11);
+/* Quoted note content, not a label: a step down the ramp and a step down the greys, so the titles stay
+   the structure of the list. Only while the row is not the selected one — selection owns its colour. */
+.snippet-text {
+  min-width: 0;
   font-size: var(--font-size-xs);
   line-height: var(--line-height-relaxed);
+}
+
+.snippet:not(.selected) .snippet-text {
+  color: var(--gray-11);
 }
 
 /* The accent is spent on selection, so a match inside a snippet is weight and a wash, not another colour
