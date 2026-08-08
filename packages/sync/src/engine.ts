@@ -2,10 +2,11 @@ import { hasErrorCode, illegalState } from '@arxhub/errors'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import AsyncLock from 'async-lock'
 import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
+import { syncHeadMoved } from './errors'
 import type { SyncRemote } from './remote/sync-remote'
 import type { Repo } from './repo'
 import { snapshotHash } from './snapshot-hash'
-import type { Snapshot } from './types'
+import type { MergeResult, Snapshot } from './types'
 
 export type SyncEngineOptions = {
   local: Repo
@@ -18,6 +19,11 @@ export type SyncEngineOptions = {
 const GET_BATCH = 32
 const STAT_BATCH = 512
 const PUT_BATCH_BYTES = 16 * 1024 * 1024
+
+// A lost head CAS is self-healing (see push()) — retrying the whole round picks up whatever the
+// winner just committed. Bounded so genuine, sustained contention (or a bug that always loses the
+// race) surfaces as an error instead of spinning forever.
+const MAX_HEAD_MOVED_RETRIES = 3
 
 const decoder = new TextDecoder()
 
@@ -49,59 +55,76 @@ export class SyncEngine {
     await this.local.add(path)
   }
 
-  async sync(): Promise<void> {
-    await this.lock.acquire('sync', async () => {
-      await this.local.prepare()
-
-      // The head we sync AGAINST — also the CAS token: if another device moves the remote head
-      // while we work, the final setHead fails and this sync throws instead of overwriting them.
-      const syncedHead = await this.remote.getHead()
-
-      // Rollback detection. The head is an unauthenticated pointer the server fully controls, so a
-      // malicious/compromised remote could serve an OLD head and quietly unwind other devices'
-      // pushes. Anchor: the head of the last successful sync must be the new head itself or one of
-      // its ancestors (the server cannot forge snapshots — they're encrypted and hash-verified — so
-      // descent is provable from real objects only). First sync has no anchor: trust-on-first-sync,
-      // like the server's TOFU pairing. Deleting repo/last-synced re-enters that mode deliberately.
-      const lastSyncedFile = this.local.getLastSyncedFile()
-      const lastSynced = (await lastSyncedFile.exists()) ? (await lastSyncedFile.readText()).trim() || null : null
-      if (lastSynced != null && syncedHead == null) {
-        throw illegalState(
-          'Remote head is gone but this device has synced before — the remote was wiped or rolled back. ' +
-            'If intentional, delete repo/last-synced from local sync state and sync again.',
-        )
+  // Returns whatever conflicts THIS round's merge produced (empty when there were none) — a caller
+  // (SyncExtension) surfaces it to the user instead of it being knowable only by browsing the vault
+  // for a `conflict-*` file that quietly appeared.
+  //
+  // A SyncHeadMovedError from a losing round is retried here, whole, rather than left for the caller
+  // to notice and re-invoke — the condition already says exactly what fixes it ("run sync again"), so
+  // doing that automatically means a UI only ever sees a real failure, not a race it can't tell apart
+  // from one.
+  async sync(): Promise<MergeResult> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.lock.acquire('sync', () => this.syncOnce())
+      } catch (error) {
+        if (!hasErrorCode(error, 'SyncHeadMovedError') || attempt >= MAX_HEAD_MOVED_RETRIES) throw error
       }
+    }
+  }
 
-      if (syncedHead != null) await this.fetch(syncedHead)
+  private async syncOnce(): Promise<MergeResult> {
+    await this.local.prepare()
 
-      // Checked AFTER fetch: the remote chain is now replicated locally, so failing to reach the
-      // anchor from the new head means the chain genuinely does not descend from it.
-      if (lastSynced != null && syncedHead != null && !(await this.local.isAncestor(lastSynced, syncedHead))) {
-        throw illegalState(
-          `Remote head ${syncedHead} does not descend from the last synced head ${lastSynced} — possible rollback or fork by the remote. ` +
-            'If the remote was reset intentionally, delete repo/last-synced from local sync state and sync again.',
-        )
-      }
+    // The head we sync AGAINST — also the CAS token: if another device moves the remote head
+    // while we work, the final setHead fails and this sync throws instead of overwriting them.
+    const syncedHead = await this.remote.getHead()
 
-      const localSnapshot = await this.local.snapshot()
-      // A remote that has never been pushed to stands at the empty snapshot (prepare() guarantees
-      // it exists locally), so merge/base-finding need no special null case.
-      const remoteSnapshot = await this.local.getSnapshotFile(syncedHead ?? EMPTY_SNAPSHOT_HASH).readJSON<Snapshot>()
-      const baseSnapshot = await this.local.findBaseSnapshot(localSnapshot.hash, remoteSnapshot.hash)
+    // Rollback detection. The head is an unauthenticated pointer the server fully controls, so a
+    // malicious/compromised remote could serve an OLD head and quietly unwind other devices'
+    // pushes. Anchor: the head of the last successful sync must be the new head itself or one of
+    // its ancestors (the server cannot forge snapshots — they're encrypted and hash-verified — so
+    // descent is provable from real objects only). First sync has no anchor: trust-on-first-sync,
+    // like the server's TOFU pairing. Deleting repo/last-synced re-enters that mode deliberately.
+    const lastSyncedFile = this.local.getLastSyncedFile()
+    const lastSynced = (await lastSyncedFile.exists()) ? (await lastSyncedFile.readText()).trim() || null : null
+    if (lastSynced != null && syncedHead == null) {
+      throw illegalState(
+        'Remote head is gone but this device has synced before — the remote was wiped or rolled back. ' +
+          'If intentional, delete repo/last-synced from local sync state and sync again.',
+      )
+    }
 
-      await this.local.merge(baseSnapshot?.files ?? {}, localSnapshot.files, remoteSnapshot.files)
+    if (syncedHead != null) await this.fetch(syncedHead)
 
-      // Rebase: point the local head at the remote head before snapshotting the merged tree, so the
-      // new snapshot's parent chain contains syncedHead and remote history stays linear.
-      await this.local.getHeadFile().writeText(remoteSnapshot.hash)
-      const latest = await this.local.snapshot()
+    // Checked AFTER fetch: the remote chain is now replicated locally, so failing to reach the
+    // anchor from the new head means the chain genuinely does not descend from it.
+    if (lastSynced != null && syncedHead != null && !(await this.local.isAncestor(lastSynced, syncedHead))) {
+      throw illegalState(
+        `Remote head ${syncedHead} does not descend from the last synced head ${lastSynced} — possible rollback or fork by the remote. ` +
+          'If the remote was reset intentionally, delete repo/last-synced from local sync state and sync again.',
+      )
+    }
 
-      await this.push(syncedHead, latest)
+    const localSnapshot = await this.local.snapshot()
+    // A remote that has never been pushed to stands at the empty snapshot (prepare() guarantees
+    // it exists locally), so merge/base-finding need no special null case.
+    const remoteSnapshot = await this.local.getSnapshotFile(syncedHead ?? EMPTY_SNAPSHOT_HASH).readJSON<Snapshot>()
+    const baseSnapshot = await this.local.findBaseSnapshot(localSnapshot.hash, remoteSnapshot.hash)
 
-      // Only after a fully-committed sync: `latest` is now the remote head (push CAS'd it, or it
-      // already WAS the head in the no-op case), so it becomes the next rollback anchor.
-      await lastSyncedFile.writeText(latest.hash)
-    })
+    const result = await this.local.merge(baseSnapshot?.files ?? {}, localSnapshot.files, remoteSnapshot.files)
+
+    // Rebase: point the local head at the remote head before snapshotting the merged tree, so the
+    // new snapshot's parent chain contains syncedHead and remote history stays linear.
+    await this.local.getHeadFile().writeText(remoteSnapshot.hash)
+    const latest = await this.local.snapshot()
+
+    await this.push(syncedHead, latest)
+
+    // Only after a fully-committed sync: `latest` is now the remote head (push CAS'd it, or it
+    // already WAS the head in the no-op case), so it becomes the next rollback anchor.
+    await lastSyncedFile.writeText(latest.hash)
+    return result
   }
 
   // Pull the remote head's ancestry into the local store. Snapshot JSONs are fetched down to the
@@ -129,6 +152,15 @@ export class SyncEngine {
     // at a hole in the local chain.
     for (const { snapshot, bytes } of chain.reverse()) {
       await this.local.getSnapshotFile(snapshot.hash).write(bytes)
+    }
+
+    // Unlike a missing ANCESTOR further back (handled above as a pruned chain), a missing HEAD is not
+    // survivable: `getHead()` said this object exists, and if the loop above still couldn't produce it
+    // locally, the remote is lying about or has lost the very thing it just pointed at. Reading it
+    // unconditionally next would throw a raw FileNotFound with no context — this names what actually
+    // went wrong.
+    if (!(await this.local.getSnapshotFile(head).exists())) {
+      throw illegalState(`Remote head ${head} could not be fetched — the remote reports it but does not serve it.`)
     }
 
     const headSnapshot = await this.local.getSnapshotFile(head).readJSON<Snapshot>()
@@ -245,7 +277,7 @@ export class SyncEngine {
 
     const committed = await this.remote.setHead(syncedHead, latest.hash)
     if (!committed) {
-      throw illegalState('Remote head moved during sync — run sync again to converge')
+      throw syncHeadMoved()
     }
   }
 }

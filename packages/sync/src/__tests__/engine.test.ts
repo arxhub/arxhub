@@ -1,4 +1,5 @@
 import { ConsoleLogger } from '@arxhub/core'
+import { hasErrorCode } from '@arxhub/errors'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 import { beforeEach, describe, expect, test } from 'vitest'
@@ -217,6 +218,144 @@ describe('SyncEngine', () => {
       expect(await aVfs.file('b.txt').readText()).toEqual('from b')
       expect(await bVfs.file('a.txt').readText()).toEqual('from a')
     })
+
+    test('sync() reports the conflict copy it wrote, not just the log', async () => {
+      await aVfs.file('shared.txt').writeText('original')
+      await a.add('shared.txt')
+      await a.sync()
+      await b.sync()
+
+      await aVfs.file('shared.txt').writeText('local modified')
+      await a.add('shared.txt')
+
+      await bVfs.file('shared.txt').writeText('remote modified')
+      await b.add('shared.txt')
+      await b.sync()
+
+      const result = await a.sync()
+
+      expect(result.conflicts).toEqual(['conflict-af216312-shared.txt'])
+    })
+
+    test('deleting a file locally and syncing again does not throw, even though the remote is unchanged', async () => {
+      // The exact shape of the original bug: create, sync, then delete with nobody else touching the
+      // file — Repo.merge's "only remote exists, unchanged since base" branch used to call
+      // tree.delete() with no {force: true} on a path already gone from the tree, aborting the whole
+      // sync with an unhandled FileNotFound.
+      await aVfs.file('one.txt').writeText('content')
+      await a.add('one.txt')
+      await a.sync()
+      await b.sync()
+
+      await aVfs.delete('one.txt')
+
+      await expect(a.sync()).resolves.toBeDefined()
+      expect(await aVfs.file('one.txt').exists()).toBe(false)
+    })
+
+    test('remote edits a file the local side deleted — the edit survives instead of silently vanishing', async () => {
+      // FR-152 requires "deleted on one side, modified on the other" to preserve the edit either way.
+      // The "local modified, remote deleted" direction already worked (the tree already holds the
+      // edit); this is the other direction, which used to do nothing at all — the delete won by
+      // omission, and a genuine, non-conflicting remote edit was lost with no trace, no conflict file,
+      // nothing. This is also the core of a rename-vs-edit race: from the merge's point of view, "A
+      // renamed a file away" and "A deleted a file" look identical, so fixing this direction is what
+      // keeps a concurrent edit from disappearing when it races a rename.
+      await aVfs.file('shared.txt').writeText('original')
+      await a.add('shared.txt')
+      await a.sync()
+      await b.sync()
+
+      await bVfs.file('shared.txt').writeText('remote modified')
+      await b.add('shared.txt')
+      await b.sync()
+
+      // A deletes its own copy without having seen B's edit yet.
+      await aVfs.delete('shared.txt')
+
+      await a.sync()
+
+      expect(await aVfs.file('shared.txt').readText()).toEqual('remote modified')
+    })
+
+    test('the same content diverging a second time never overwrites what the user made of the first conflict copy', async () => {
+      // Round 1: an ordinary conflict, resolved and synced like the existing "create conflict" test.
+      await aVfs.file('shared.txt').writeText('original')
+      await a.add('shared.txt')
+      await a.sync()
+      await b.sync()
+
+      await aVfs.file('shared.txt').writeText('local modified')
+      await a.add('shared.txt')
+
+      await bVfs.file('shared.txt').writeText('remote modified')
+      await b.add('shared.txt')
+      await b.sync()
+
+      const first = await a.sync()
+      expect(first.conflicts).toEqual(['conflict-af216312-shared.txt'])
+
+      // The user keeps the conflict copy as their own note from here on, and it gets synced like any
+      // other file.
+      await aVfs.file('conflict-af216312-shared.txt').writeText('my own notes')
+      await a.add('conflict-af216312-shared.txt')
+      await a.sync()
+      await b.sync()
+
+      // The SAME remote content ("remote modified") diverges again from a new local edit — the
+      // conflict copy this round would naturally take the exact same name, since it's a pure function
+      // of the content hash.
+      await aVfs.file('shared.txt').writeText('local modified again')
+      await a.add('shared.txt')
+
+      await bVfs.file('shared.txt').writeText('remote modified')
+      await b.add('shared.txt')
+      await b.sync()
+
+      const second = await a.sync()
+
+      // Never overwritten: the user's note from round 1 is exactly what it was.
+      expect(await aVfs.file('conflict-af216312-shared.txt').readText()).toEqual('my own notes')
+      // The new divergence still gets a real conflict copy — just versioned instead of colliding.
+      expect(second.conflicts).toEqual(['conflict-af216312-shared-2.txt'])
+      expect(await aVfs.file('conflict-af216312-shared-2.txt').readText()).toEqual('remote modified')
+    })
+
+    test('two engines syncing the same remote at the same time never corrupt the head — one wins, the other retries', async () => {
+      // A real concurrent interleaving rather than the strictly-sequential calls every other test in
+      // this file makes: both engines read the remote head, race to push, and the compare-and-swap in
+      // SyncEngine.push must ensure exactly one of them commits per round while the other fails loudly
+      // (never silently drops the loser's work) instead of a torn/corrupted remote head.
+      await aVfs.file('a.txt').writeText('from a')
+      await a.add('a.txt')
+      await bVfs.file('b.txt').writeText('from b')
+      await b.add('b.txt')
+
+      const results = await Promise.allSettled([a.sync(), b.sync()])
+      const fulfilled = results.filter((r) => r.status === 'fulfilled')
+      const rejected = results.filter((r) => r.status === 'rejected')
+
+      // Both may legitimately succeed (async-lock only serializes calls on the SAME engine — these are
+      // two different engines, so both bodies can interleave for real) — the property that matters is
+      // that the remote head is never left pointing at a snapshot that fails its own integrity check.
+      expect(fulfilled.length).toBeGreaterThanOrEqual(1)
+      for (const r of rejected) expect((r as PromiseRejectedResult).reason).toBeInstanceOf(Error)
+
+      const head = await readRemoteHeadSnapshot()
+      expect(head.hash).toEqual(expect.any(String))
+
+      // Which engine wins the CAS is genuinely nondeterministic (real async I/O timing decides it, not
+      // this test) — so the loser needs a round to pull the winner's commit and push its own on top,
+      // and THEN the original winner needs one more round to pull that. Two full rounds each converges
+      // regardless of who won; asserting after only one (in a fixed a-then-b order) is what made an
+      // earlier version of this test flaky depending on which side happened to win.
+      await a.sync()
+      await b.sync()
+      await a.sync()
+      await b.sync()
+      expect(await aVfs.file('b.txt').readText()).toEqual('from b')
+      expect(await bVfs.file('a.txt').readText()).toEqual('from a')
+    })
   })
 
   describe('protocol shape', () => {
@@ -274,8 +413,10 @@ describe('SyncEngine', () => {
       expect(await bRepo.getChunkFile(chunkHash).exists()).toBe(false)
     })
 
-    test('a lost head compare-and-swap fails the sync instead of overwriting', async () => {
-      // A remote whose head is moved by "another device" between getHead and setHead.
+    test('a lost head compare-and-swap retries, then fails instead of overwriting once contention never clears', async () => {
+      // A remote whose head is moved by "another device" between getHead and setHead, every single
+      // time — sync() retries the whole round a bounded number of times (this condition is normally
+      // self-healing) before finally giving up and surfacing it.
       class RacedRemote extends CountingRemote {
         override setHead(): Promise<boolean> {
           return Promise.resolve(false)
@@ -286,7 +427,29 @@ describe('SyncEngine', () => {
       await aVfs.file('note.txt').writeText('hello world')
       await raced.add('note.txt')
 
-      await expect(raced.sync()).rejects.toThrow(/Remote head moved during sync/)
+      const error = await raced.sync().catch((e) => e)
+      expect(hasErrorCode(error, 'SyncHeadMovedError')).toBe(true)
+    })
+
+    test('a lost head compare-and-swap that clears on retry converges without the caller ever seeing it', async () => {
+      // The SAME race, but only the FIRST attempt loses — exactly what a real losing device sees when
+      // the winner has already committed by the time it retries. sync() must resolve normally, not
+      // throw, because this is the case the retry exists for.
+      let calls = 0
+      class FlakyOnceRemote extends CountingRemote {
+        override async setHead(expected: string | null, next: string): Promise<boolean> {
+          calls++
+          if (calls === 1) return false
+          return super.setHead(expected, next)
+        }
+      }
+      const flaky = new SyncEngine({ local: aRepo, remote: new FlakyOnceRemote(store) })
+
+      await aVfs.file('note.txt').writeText('hello world')
+      await flaky.add('note.txt')
+
+      await expect(flaky.sync()).resolves.toBeDefined()
+      expect(calls).toBeGreaterThanOrEqual(2)
     })
   })
 })

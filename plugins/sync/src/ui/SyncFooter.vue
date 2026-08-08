@@ -2,14 +2,29 @@
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { Icon, StatusDot } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
-import { computed, onUnmounted, ref } from 'vue'
+import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { SyncExtension } from '../sync-extension'
 
 const arxhub = useArxHub()
 const sync = arxhub.extensions.get(SyncExtension)
 const shell = arxhub.extensions.get(ShellExtension)
 const settings = arxhub.extensions.get(SettingsExtension)
+
+// The only place a conflict copy becomes visible without browsing the vault for a file that quietly
+// appeared. One toast per round, naming every copy this round wrote — merge() resolves conflicts
+// automatically and without asking, so this is the announcement, not a confirmation dialog.
+watch(sync.lastConflicts, (conflicts) => {
+  if (conflicts.length === 0) return
+  toaster.create({
+    title: conflicts.length === 1 ? 'A sync conflict was resolved' : `${conflicts.length} sync conflicts were resolved`,
+    description:
+      conflicts.length === 1
+        ? `Your version was kept; the other device's edit is at "${conflicts[0]}".`
+        : `Your versions were kept; the other device's edits are in: ${conflicts.join(', ')}.`,
+    type: 'warning',
+  })
+})
 
 // Tick so relative "synced Ns ago" advances on its own instead of freezing at render time.
 const now = ref(Date.now())

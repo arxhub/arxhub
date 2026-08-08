@@ -8,7 +8,7 @@ import dayjs from 'dayjs'
 import { Chunker } from './chunker'
 import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
 import { snapshotHash } from './snapshot-hash'
-import type { FileStatus, Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
+import type { FileStatus, MergeResult, Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 
 export class Repo {
   // The working tree being versioned (user content). Read for status/snapshot, written on merge.
@@ -196,11 +196,15 @@ export class Repo {
     return null
   }
 
+  // Reports every conflict copy this merge wrote, as the vault path it landed at — what a caller
+  // surfaces to the user (a toast, a marker in the file tree), never the original path, since that one
+  // never moved.
   async merge(
     baseFiles: Record<string, SnapshotFile>,
     localFiles: Record<string, SnapshotFile>,
     remoteFiles: Record<string, SnapshotFile>,
-  ): Promise<void> {
+  ): Promise<MergeResult> {
+    const conflicts: string[] = []
     const pathnames = new Set([...Object.keys(baseFiles), ...Object.keys(localFiles), ...Object.keys(remoteFiles)])
     for (const pathname of pathnames) {
       const baseFile = baseFiles[pathname]
@@ -216,9 +220,13 @@ export class Repo {
         if (!base) {
           await this.writeFile(localFile)
         } else if (localFile.hash === baseFile.hash) {
-          await this.tree.delete(pathname)
+          // Remote no longer lists this path and local hasn't touched it since — safe to drop. Forced:
+          // this path may already be gone from the tree (e.g. the local side deleted it independently
+          // of what this stale snapshot entry still claims), and that must converge, not crash the sync.
+          await this.tree.delete(pathname, { force: true })
         }
-        // else: local modified, remote deleted -> silently keep local (no conflict)
+        // else: local modified, remote deleted -> silently keep local (no conflict; the tree already
+        // holds the modified content, so there is nothing to write).
         continue
       }
 
@@ -227,9 +235,17 @@ export class Repo {
         if (!base) {
           await this.writeFile(remoteFile)
         } else if (remoteFile.hash === baseFile.hash) {
-          await this.tree.delete(pathname)
+          await this.tree.delete(pathname, { force: true })
+        } else {
+          // Remote modified, local deleted (or renamed away) it — the edit wins, exactly like the
+          // symmetric branch above, so it has to be materialized here: unlike "local modified, remote
+          // deleted", the tree does NOT already hold this content (the local side has nothing at this
+          // path right now). Skipping this write used to silently drop the remote edit entirely —
+          // FR-152 requires it survive, and a rename-vs-edit race is the sharpest case: the edit
+          // resurfaces under its old name instead of landing inside the rename, which is a duplicate
+          // for the user to reconcile rather than the data loss it was.
+          await this.writeFile(remoteFile)
         }
-        // else: remote modified, local deleted -> silently keep remote (no conflict)
         continue
       }
 
@@ -241,11 +257,12 @@ export class Repo {
 
       // Both exist
       if (localFile.hash !== remoteFile.hash) {
-        await this.writeConflictFile(remoteFile)
+        conflicts.push(await this.writeConflictFile(remoteFile))
       }
 
       // else: same content -> no-op
     }
+    return { conflicts }
   }
 
   private async writeFile(file: SnapshotFile): Promise<void> {
@@ -255,14 +272,30 @@ export class Repo {
     await this.add(file.pathname)
   }
 
-  private async writeConflictFile(remote: SnapshotFile): Promise<void> {
+  // Names the copy after the remote content's own hash, so two DIFFERENT conflicting versions never
+  // collide — but the SAME hash recurring (a revert on one side lands back on a version that already
+  // has a conflict copy) would, and the file sitting there by then may be the user's own edits made
+  // to what was originally just a copy. Never overwrite blind: an existing file with the same hash is
+  // this same conflict already materialized (nothing to do); anything else earns a versioned suffix
+  // instead of losing whatever is actually there. Returns the path it actually wrote to.
+  private async writeConflictFile(remote: SnapshotFile): Promise<string> {
     const { path, name, ext } = splitPathname(remote.pathname)
-    const file = this.tree.file(join(path, `conflict-${remote.hash.slice(0, 8)}-${name}.${ext}`))
+    const stem = `conflict-${remote.hash.slice(0, 8)}-${name}`
+    const nameAt = (suffix: string) => (ext ? `${stem}${suffix}.${ext}` : `${stem}${suffix}`)
 
+    let pathname = join(path, nameAt(''))
+    for (let n = 2; await this.tree.file(pathname).exists(); n++) {
+      const existingHash = await this.tree.file(pathname).info.get('hash')
+      if (existingHash === remote.hash) return pathname
+      pathname = join(path, nameAt(`-${n}`))
+    }
+
+    const file = this.tree.file(pathname)
     const writable = await file.writable()
     const readable = this.chunker.merge(remote.chunks.map((it) => this.getChunkFile(it.hash)))
     await readable.pipeTo(writable)
     await this.add(file.pathname)
+    return file.pathname
   }
 
   async prepare(): Promise<void> {

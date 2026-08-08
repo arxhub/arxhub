@@ -26,6 +26,7 @@
     "@arxhub/http": "workspace:*",
     "@arxhub/path": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
+    "@sinclair/typebox": "catalog:shared",
     "async-lock": "catalog:shared",
     "dayjs": "catalog:shared",
     "elysia": "catalog:server",

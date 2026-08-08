@@ -1,6 +1,7 @@
 export * from './chunker'
 export * from './empty-snapshot-hash'
 export * from './engine'
+export * from './errors'
 export * from './namespace'
 export * from './remote'
 export * from './repo'
