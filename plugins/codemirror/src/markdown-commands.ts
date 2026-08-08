@@ -67,6 +67,47 @@ export const toggleQuote = (view: EditorView): boolean => setLinePrefix(view, '>
 export const toggleBullet = (view: EditorView): boolean => setLinePrefix(view, '- ', BULLET)
 export const toggleTask = (view: EditorView): boolean => setLinePrefix(view, '- [ ] ', TASK)
 
+// Active-state detection for the toolbar. ProseMirror can answer "is bold active" by reading a mark off
+// the document at the caret; markdown-as-text has no such structure, so this asks the narrower question
+// the toggle commands above already answer for themselves — "would running this again undo it" — by
+// re-running their own adjacency check rather than parsing the line into markdown.
+
+// Mirrors wrapSelection's own toggle-off condition: the selection (or, if empty, the caret) sits
+// immediately between two copies of `marker`. A real markdown parse would also catch a caret resting
+// anywhere *inside* a longer marked run without the run itself selected; this narrower check only
+// catches the exact shape the toggle command itself would unwrap.
+export function isWrapped(view: EditorView, marker: string): boolean {
+  const { from, to } = view.state.selection.main
+  const before = view.state.sliceDoc(Math.max(0, from - marker.length), from)
+  const after = view.state.sliceDoc(to, Math.min(view.state.doc.length, to + marker.length))
+  return before === marker && after === marker
+}
+
+// Italic's marker (`*`) is also the tail of bold's (`**`), so a plain isWrapped(view, '*') would light
+// up on a bold selection too. One more character on each side tells the two apart.
+export function isItalicActive(view: EditorView): boolean {
+  if (!isWrapped(view, '*')) return false
+  const { from, to } = view.state.selection.main
+  const outerBefore = view.state.sliceDoc(Math.max(0, from - 2), from - 1)
+  const outerAfter = view.state.sliceDoc(to + 1, Math.min(view.state.doc.length, to + 2))
+  return outerBefore !== '*' && outerAfter !== '*'
+}
+
+export const isBoldActive = (view: EditorView): boolean => isWrapped(view, '**')
+export const isStrikethroughActive = (view: EditorView): boolean => isWrapped(view, '~~')
+export const isInlineCodeActive = (view: EditorView): boolean => isWrapped(view, '`')
+
+function currentLine(view: EditorView): string {
+  return view.state.doc.lineAt(view.state.selection.main.head).text
+}
+
+export const isHeadingActive = (view: EditorView, level: number): boolean => currentLine(view).startsWith(`${'#'.repeat(level)} `)
+export const isQuoteActive = (view: EditorView): boolean => QUOTE.test(currentLine(view))
+// A task line also matches BULLET (it is a bullet with a checkbox), so the plain-bullet button only
+// lights up when the checkbox is absent.
+export const isBulletActive = (view: EditorView): boolean => BULLET.test(currentLine(view)) && !TASK.test(currentLine(view))
+export const isTaskActive = (view: EditorView): boolean => TASK.test(currentLine(view))
+
 export function insertLink(view: EditorView): boolean {
   const range = view.state.selection.main
   const text = view.state.sliceDoc(range.from, range.to)
