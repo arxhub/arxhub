@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button, StatusDot } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { SettingsExtension } from '../settings-extension'
 
 const arxhub = useArxHub()
@@ -26,8 +26,18 @@ async function apply(): Promise<void> {
   const applied = fields.value
   await changes.saveAll()
   if (changes.sectionCount.value === 0) toaster.create({ title: `Applied ${applied} change${applied === 1 ? '' : 's'}`, type: 'success' })
-  else toaster.create({ title: 'Some changes could not be applied', description: 'They are still pending — see the log.', type: 'error' })
 }
+
+// A save failure is a condition on the shared pending-changes state, not an outcome only this
+// function's caller finds out about — `SettingsExtension` already logs it, and this is the one place
+// it also reaches the user, so any future path that calls saveAll() is covered too.
+watch(
+  () => changes.lastError.value,
+  (failure) => {
+    if (!failure) return
+    toaster.create({ title: `Could not save ${failure.title}`, description: String(failure.error), type: 'error' })
+  },
+)
 
 // ⌘S applies the whole pending set from anywhere in settings, which is the point of staging them.
 function onKeydown(event: KeyboardEvent): void {

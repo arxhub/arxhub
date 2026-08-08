@@ -93,6 +93,45 @@ describe('pending changes', () => {
     expect(pending.staged.value.map((c) => c.sectionId)).toEqual(['b', 'c'])
   })
 
+  it('exposes the failing section on lastError, not just through onError — the UI has no other way to see it', async () => {
+    const pending = createPendingChanges()
+    const boom = new Error('disk full')
+    pending.stage(
+      change({
+        sectionId: 'b',
+        title: 'Publishing',
+        commit: vi.fn(async () => {
+          throw boom
+        }),
+      }),
+    )
+
+    await pending.saveAll()
+
+    expect(pending.lastError.value).toEqual({ sectionId: 'b', title: 'Publishing', error: boom })
+  })
+
+  it('clears lastError at the start of the next save attempt, so a fixed retry does not still read as failed', async () => {
+    const pending = createPendingChanges()
+    const boom = new Error('disk full')
+    pending.stage(
+      change({
+        sectionId: 'b',
+        commit: vi.fn(async () => {
+          throw boom
+        }),
+      }),
+    )
+    await pending.saveAll()
+    expect(pending.lastError.value).toBeDefined()
+
+    pending.clear('b')
+    pending.stage(change({ sectionId: 'c' }))
+    await pending.saveAll()
+
+    expect(pending.lastError.value).toBeUndefined()
+  })
+
   it('reverts every section and empties the set', () => {
     const pending = createPendingChanges()
     const sync = change({ sectionId: 'sync' })

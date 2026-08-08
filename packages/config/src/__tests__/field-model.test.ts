@@ -1,6 +1,6 @@
 import { Type } from '@sinclair/typebox'
 import { describe, expect, it } from 'vitest'
-import { buildFields, controlFor, groupFields, signatureFor, validate } from '../ui/field-model'
+import { buildFields, controlFor, groupFields, hasBlockingErrors, signatureFor, validate } from '../ui/field-model'
 
 describe('controlFor', () => {
   it('reads a boolean as a switch', () => {
@@ -169,5 +169,35 @@ describe('validate', () => {
 
   it('stays quiet on a disabled field — an inert control cannot be fixed', () => {
     expect(validate({ ...required, disabled: true }, '')).toBeNull()
+  })
+})
+
+describe('hasBlockingErrors', () => {
+  // The exact shape of the reported bug: a required field that is simply what shipped on disk, in a
+  // section the user opened to edit something else entirely and never touched this one.
+  const fields = buildFields(Type.Object({ url: Type.String({ title: 'Server URL' }) }), {})
+
+  it('does not block a save over a required field nobody has touched', () => {
+    expect(hasBlockingErrors(fields, { url: '' }, new Set())).toBe(false)
+  })
+
+  it('blocks a save once the untouched field is touched and left empty', () => {
+    expect(hasBlockingErrors(fields, { url: '' }, new Set(['url']))).toBe(true)
+  })
+
+  it('unblocks the save once the touched field is given a valid value', () => {
+    expect(hasBlockingErrors(fields, { url: 'notes.example.com' }, new Set(['url']))).toBe(false)
+  })
+
+  it('does not let one untouched-and-invalid field hide a different field that actually is blocking', () => {
+    const two = buildFields(
+      Type.Object({
+        url: Type.String({ title: 'Server URL' }),
+        port: Type.Integer({ minimum: 1, maximum: 65535 }),
+      }),
+      {},
+    )
+    // 'url' is untouched and empty (fine); 'port' was touched and left out of range (blocks).
+    expect(hasBlockingErrors(two, { url: '', port: 0 }, new Set(['port']))).toBe(true)
   })
 })

@@ -3,7 +3,7 @@ import { SectionLabel } from '@arxhub/uikit/core'
 import type { TObject } from '@sinclair/typebox'
 import { computed, reactive, ref, watch } from 'vue'
 import ConfigField from './ConfigField.vue'
-import { buildFields, groupFields, validate } from './field-model'
+import { buildFields, groupFields, hasBlockingErrors, validate } from './field-model'
 
 const props = defineProps<{
   schema: TObject
@@ -64,11 +64,16 @@ const changedKeys = computed(() =>
   fields.value.filter((f) => JSON.stringify(local[f.key]) !== JSON.stringify(props.values[f.key])).map((f) => f.key),
 )
 
-watch(
-  [changedKeys, errors],
-  ([keys, found]) => emit('change', { values: { ...local }, changedKeys: [...keys], invalid: Object.keys(found).length > 0 }),
-  { immediate: true },
-)
+// Gates the shared save button (see pending-changes.ts's `invalid`), so it has to ask the identical
+// question the template asks before drawing a red border: has this field actually been touched. An
+// `errors`-only gate would let a section with one required-but-still-blank field nobody has visited —
+// legitimate on a form that saves per section — permanently block every OTHER section's save, with a
+// message pointing at nothing actually highlighted on screen.
+const invalid = computed(() => hasBlockingErrors(fields.value, local, touched.value))
+
+watch([changedKeys, invalid], ([keys, blocked]) => emit('change', { values: { ...local }, changedKeys: [...keys], invalid: blocked }), {
+  immediate: true,
+})
 
 function edit(key: string, value: unknown): void {
   local[key] = value

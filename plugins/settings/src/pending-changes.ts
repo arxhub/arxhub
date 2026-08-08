@@ -18,12 +18,25 @@ export interface StagedChange {
   revert: () => void
 }
 
+// A commit that threw, and which section it was. `SettingsExtension` logs this (plugin layer has no
+// toaster), and `saveAll` also parks it here so the UI layer — which does have one — can tell the
+// user, not just the log. A fresh object every failure, so a `watch` on `lastError` fires even when
+// the same section fails the same way twice in a row.
+export interface SaveFailure {
+  sectionId: string
+  title: string
+  error: unknown
+}
+
 export interface PendingChanges {
   readonly staged: ComputedRef<StagedChange[]>
   readonly fieldCount: ComputedRef<number>
   readonly sectionCount: ComputedRef<number>
   readonly invalid: ComputedRef<boolean>
   readonly saving: ComputedRef<boolean>
+  // The most recent commit failure, if the last saveAll() ended in one. Reset at the start of every
+  // saveAll() run, so a retry that succeeds clears it without anyone having to remember to.
+  readonly lastError: ComputedRef<SaveFailure | undefined>
   // Called by a section on every edit. Passing no changed keys clears the section.
   stage(change: StagedChange): void
   clear(sectionId: string): void
@@ -42,6 +55,7 @@ export interface PendingChanges {
 export function createPendingChanges(onError?: (sectionId: string, error: unknown) => void): PendingChanges {
   const entries = ref(new Map<string, StagedChange>())
   const saving = ref(false)
+  const lastError = ref<SaveFailure | undefined>(undefined)
 
   const staged = computed(() => [...entries.value.values()])
   const fieldCount = computed(() => staged.value.reduce((total, change) => total + change.keys.length, 0))
@@ -69,6 +83,7 @@ export function createPendingChanges(onError?: (sectionId: string, error: unknow
   async function saveAll(): Promise<void> {
     if (saving.value || invalid.value) return
     saving.value = true
+    lastError.value = undefined
     try {
       // Sequential, and a failure stops the run: sections write to separate files, so carrying on
       // after one fails would leave a half-applied change set with no record of where it stopped.
@@ -78,6 +93,7 @@ export function createPendingChanges(onError?: (sectionId: string, error: unknow
           await change.commit()
         } catch (error) {
           onError?.(change.sectionId, error)
+          lastError.value = { sectionId: change.sectionId, title: change.title, error }
           return
         }
         clear(change.sectionId)
@@ -98,6 +114,7 @@ export function createPendingChanges(onError?: (sectionId: string, error: unknow
     sectionCount,
     invalid,
     saving: computed(() => saving.value),
+    lastError: computed(() => lastError.value),
     stage,
     clear,
     draftFor,

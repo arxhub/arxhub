@@ -194,6 +194,15 @@ export function groupFields(fields: FieldModel[]): { title?: string; fields: Fie
   return groups
 }
 
+// Whether the current values contain a validation failure that should block a save — the same rule
+// `ConfigForm` uses to decide whether to draw a field's error message under it, asked here instead of
+// inline so the save gate cannot drift from what is actually highlighted. A required field that is
+// simply what shipped on disk is not a mistake until someone has touched it, so an untouched field
+// never counts here even when `validate` would reject its (still unedited) value.
+export function hasBlockingErrors(fields: FieldModel[], values: Record<string, unknown>, touched: ReadonlySet<string>): boolean {
+  return fields.some((field) => touched.has(field.key) && validate(field, values[field.key]) != null)
+}
+
 // Returns the message to show under the control, or null when the value passes. Mirrors the subset
 // of JSON Schema the controls can produce — the file on disk is still validated by TypeBox on write.
 export function validate(field: FieldModel, value: unknown): string | null {
