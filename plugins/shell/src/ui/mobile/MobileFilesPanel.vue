@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon, Strip } from '@arxhub/uikit/core'
+import { IconButton, Strip } from '@arxhub/uikit/core'
 import { useBackStack } from '@arxhub/uikit/hooks'
 import { MOBILE_RAIL_HOST_ID } from './rail-host'
 
@@ -28,9 +28,7 @@ function onActivate(event: MouseEvent): void {
     <section class="files-panel" :aria-label="`${title} navigation`" @click="onActivate">
       <Strip :title="title">
         <template #actions>
-          <button type="button" class="files-close" aria-label="Close navigation" @click="emit('close')">
-            <Icon name="lu:x" :size="14" />
-          </button>
+          <IconButton icon="lu:x" size="xs" aria-label="Close navigation" @click="emit('close')" />
         </template>
       </Strip>
       <div :id="MOBILE_RAIL_HOST_ID" class="files-body" />
@@ -61,25 +59,6 @@ function onActivate(event: MouseEvent): void {
   border-top-right-radius: var(--radius-md);
   background: var(--gray-2);
   box-shadow: var(--shadow-xl);
-}
-
-.files-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: var(--size-md);
-  height: var(--size-md);
-  border: none;
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--gray-11);
-  cursor: pointer;
-}
-
-.files-close:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -1px;
 }
 
 .files-body {

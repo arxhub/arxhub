@@ -55,14 +55,17 @@ function label(tab: MobileTab): string {
   gap: 4px;
   height: var(--size-xl);
   border: none;
+  border-radius: var(--radius-xs);
   background: transparent;
   color: var(--gray-11);
   font-family: var(--font-sans);
   cursor: pointer;
 }
 
-/* Where you are: the accent, like every other selected thing in the app. Exactly one at a time. */
+/* Where you are: the accent wash plus accent text, the same selection treatment every row and tab in
+   the app uses. Exactly one at a time. */
 .tab.is-place.active {
+  background: var(--accent-3);
   color: var(--accent-11);
 }
 
