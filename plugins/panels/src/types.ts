@@ -49,10 +49,17 @@ export interface PanelStore {
   activatePanel(instanceId: string, groupId: string): void
   promotePanel(instanceId: string, groupId: string): void
   closePanel(instanceId: string, groupId: string): void
+  // Updates an already-open panel's identity in place — the file it shows moved (a vault rename), it did
+  // not become a different document. Same instanceId, so PanelView (keyed by instanceId, not path) never
+  // remounts the hosted component; only its `props`/`title` change reactively.
+  retargetPanel(instanceId: string, groupId: string, props: Record<string, unknown>, title: string): void
   activateGroup(groupId: string): void
   splitGroup(groupId: string, direction: 'horizontal' | 'vertical'): string
   closeGroup(groupId: string): void
   setRatio(splitId: string, ratio: number): void
+  // Leaf groups in layout tree order (pre-order: a split's first branch before its second) — how a
+  // tab's keyboard "move to next/previous split" finds its neighbour without walking the tree itself.
+  getOrderedGroupIds(): string[]
   movePanel(instanceId: string, fromGroupId: string, toGroupId: string, toIndex: number): void
   movePanelToZone(instanceId: string, fromGroupId: string, targetGroupId: string, zone: DropZone): void
 }

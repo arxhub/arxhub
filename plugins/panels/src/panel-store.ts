@@ -34,7 +34,7 @@ function findSplitById(node: LayoutNode, splitId: string): LayoutSplit | null {
   return findSplitById(node.first, splitId) ?? findSplitById(node.second, splitId)
 }
 
-function getAllGroupIds(node: LayoutNode): string[] {
+export function getAllGroupIds(node: LayoutNode): string[] {
   if (node.type === 'leaf') return [node.groupId]
   return [...getAllGroupIds(node.first), ...getAllGroupIds(node.second)]
 }
@@ -151,6 +151,17 @@ export function createPanelStore(bus: EventBus): PanelStore {
       }
     },
 
+    retargetPanel(instanceId: string, groupId: string, props: Record<string, unknown>, title: string): void {
+      const group = groups.value[groupId]
+      if (!group) return
+      const exists = group.instances.some((i) => i.instanceId === instanceId)
+      if (!exists) return
+      groups.value[groupId] = {
+        ...group,
+        instances: group.instances.map((i) => (i.instanceId === instanceId ? { ...i, props, title } : i)),
+      }
+    },
+
     closePanel(instanceId: string, groupId: string): void {
       const group = groups.value[groupId]
       if (!group) return
@@ -236,6 +247,10 @@ export function createPanelStore(bus: EventBus): PanelStore {
       if (!split) return
       const newSplit: LayoutSplit = { ...split, ratio: Math.max(0.1, Math.min(0.9, ratio)) }
       layout.value = findAndReplace(layout.value, split, newSplit)
+    },
+
+    getOrderedGroupIds(): string[] {
+      return layout.value ? getAllGroupIds(layout.value) : []
     },
 
     movePanel(instanceId: string, fromGroupId: string, toGroupId: string, toIndex: number): void {

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { IconButton } from '@arxhub/uikit/core'
+import { type ActionItem, actionMenu, IconButton } from '@arxhub/uikit/core'
 import { ref } from 'vue'
 import { useDraggableTab } from '../composables/use-draggable-tab'
+import { usePanels } from '../use-panels'
 import TabDropIndicator from './TabDropIndicator.vue'
 
 const props = defineProps<{
@@ -25,6 +26,72 @@ const { isDragging, closestEdge } = useDraggableTab({
   el: tabEl,
   getData: () => ({ instanceId: props.instanceId, groupId: props.groupId, index: props.index }),
 })
+
+// Keyboard/right-click equivalent of the drag-and-drop reorder and cross-split move — same
+// `movePanel` mutation the drop handler calls, reached through the project's one contextual-action-list
+// pattern (`actionMenu`) instead of a bespoke shortcut. A native `contextmenu` event also fires for the
+// keyboard "Menu"/Shift+F10 key on the focused element, so this needs no separate keydown handler.
+const store = usePanels()
+
+function onContextMenu(event: MouseEvent) {
+  const group = store.groups.value[props.groupId]
+  const index = group?.instances.findIndex((i) => i.instanceId === props.instanceId) ?? -1
+  if (!group || index === -1) return
+
+  const orderedGroupIds = store.getOrderedGroupIds()
+  const groupIndex = orderedGroupIds.indexOf(props.groupId)
+  const previousGroupId = groupIndex > 0 ? orderedGroupIds[groupIndex - 1] : undefined
+  const nextGroupId = groupIndex >= 0 && groupIndex < orderedGroupIds.length - 1 ? orderedGroupIds[groupIndex + 1] : undefined
+
+  const items: ActionItem[] = [
+    {
+      id: 'move-left',
+      label: 'Move left',
+      icon: 'lu:arrow-left',
+      disabled: index === 0,
+      // toIndex === index - 1 swaps this tab with its left neighbour (movePanel treats toIndex as an
+      // insertion point, not a final position — see panel-store.ts movePanel for the arithmetic).
+      onSelect: () => store.movePanel(props.instanceId, props.groupId, props.groupId, index - 1),
+    },
+    {
+      id: 'move-right',
+      label: 'Move right',
+      icon: 'lu:arrow-right',
+      disabled: index === group.instances.length - 1,
+      // toIndex === index + 2 swaps this tab with its right neighbour, for the same reason.
+      onSelect: () => store.movePanel(props.instanceId, props.groupId, props.groupId, index + 2),
+    },
+  ]
+
+  if (orderedGroupIds.length > 1) {
+    items.push(
+      {
+        id: 'move-to-previous-split',
+        label: 'Move to previous split',
+        icon: 'lu:arrow-left-to-line',
+        disabled: !previousGroupId,
+        onSelect: () => {
+          if (!previousGroupId) return
+          const target = store.groups.value[previousGroupId]
+          store.movePanel(props.instanceId, props.groupId, previousGroupId, target?.instances.length ?? 0)
+        },
+      },
+      {
+        id: 'move-to-next-split',
+        label: 'Move to next split',
+        icon: 'lu:arrow-right-to-line',
+        disabled: !nextGroupId,
+        onSelect: () => {
+          if (!nextGroupId) return
+          const target = store.groups.value[nextGroupId]
+          store.movePanel(props.instanceId, props.groupId, nextGroupId, target?.instances.length ?? 0)
+        },
+      },
+    )
+  }
+
+  actionMenu.open(items, { x: event.clientX, y: event.clientY, title: props.title })
+}
 </script>
 
 <template>
@@ -36,6 +103,7 @@ const { isDragging, closestEdge } = useDraggableTab({
     :class="{ active: isActive, 'is-dragging': isDragging, preview: isPreview }"
     @click="emit('click')"
     @dblclick="emit('promote')"
+    @contextmenu.prevent.stop="onContextMenu"
     @keydown.enter.prevent="emit('click')"
     @keydown.space.prevent="emit('click')"
   >

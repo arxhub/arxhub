@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { BottomSheet, Icon } from '@arxhub/uikit/core'
+import { BottomSheet, IconButton, Row } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, onMounted, onUnmounted, ref, useId } from 'vue'
 import type { PanelStore } from '../../types'
@@ -96,18 +96,16 @@ if (props.mode === 'tiled' && title != null) {
          this is, where it came from, and the one control that closes it. A page switched from the rail
          gets none of it — its own heading already names it, and closing it would leave nothing. -->
     <div v-if="current && mode === 'tiled'" class="context-strip">
-      <div class="context-text">
-        <span class="context-name">{{ current.instance.title }}</span>
-        <span v-if="pathOf(current.instance)" class="context-path">{{ pathOf(current.instance) }}</span>
-      </div>
-      <button
-        type="button"
-        class="context-close"
+      <span class="entry-text">
+        <span class="entry-name">{{ current.instance.title }}</span>
+        <span v-if="pathOf(current.instance)" class="entry-path">{{ pathOf(current.instance) }}</span>
+      </span>
+      <IconButton
+        icon="lu:x"
+        size="xs"
         aria-label="Close document"
         @click="props.store.closePanel(current.instance.instanceId, current.groupId)"
-      >
-        <Icon name="lu:x" :size="16" />
-      </button>
+      />
     </div>
 
     <!-- Every open document is reachable, not only the ones that would have fitted in a tab strip. -->
@@ -119,18 +117,22 @@ if (props.mode === 'tiled' && title != null) {
       @close="sheetOpen = false"
     >
       <div class="tab-list" role="menu">
-        <button
+        <Row
           v-for="tab in openTabs"
           :key="tab.instance.instanceId"
+          as="button"
           type="button"
+          wrap
           class="tab-entry"
-          :class="{ active: tab.active }"
+          :selected="tab.active"
           role="menuitem"
           @click="select(tab.groupId, tab.instance.instanceId)"
         >
-          <span class="entry-name">{{ tab.instance.title }}</span>
-          <span v-if="pathOf(tab.instance)" class="entry-path">{{ pathOf(tab.instance) }}</span>
-        </button>
+          <span class="entry-text">
+            <span class="entry-name">{{ tab.instance.title }}</span>
+            <span v-if="pathOf(tab.instance)" class="entry-path">{{ pathOf(tab.instance) }}</span>
+          </span>
+        </Row>
       </div>
     </BottomSheet>
   </div>
@@ -171,91 +173,28 @@ if (props.mode === 'tiled' && title != null) {
   background: var(--gray-2);
 }
 
-.context-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.context-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--gray-12);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-tight);
-}
-
-/* Mono for a path, always: it makes the separators legible and stops the name from reading as prose. */
-.context-path {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--gray-10);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-tight);
-}
-
-.context-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: var(--size-md);
-  height: var(--size-md);
-  border: none;
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--gray-11);
-  cursor: pointer;
-}
-
-.context-close:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -1px;
-}
-
 .tab-list {
   display: flex;
   flex-direction: column;
   padding: 0 8px;
 }
 
-.tab-entry {
+/* The two lines of a document's identity — name over path — used both inside a Row's box (the row owns
+   its height and inset) and directly in the context strip above the bottom bar; one block, so the two
+   never drift apart the way a `Row`-owned copy and a hand-rolled one already had (gap, weight). */
+.entry-text {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  height: 56px;
-  padding: 0 16px;
-  border: none;
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--gray-12);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-md);
-  text-align: left;
-  cursor: pointer;
-}
-
-.tab-entry.active {
-  background: var(--accent-3);
-  color: var(--accent-11);
-}
-
-.tab-entry:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -1px;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .entry-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: var(--font-size-md);
 }
 
 .entry-path {

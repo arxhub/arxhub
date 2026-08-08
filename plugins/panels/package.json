@@ -19,9 +19,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/path": "workspace:*",
     "@atlaskit/pragmatic-drag-and-drop": "catalog:client",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "catalog:client",
     "lucide-vue-next": "catalog:client",
@@ -29,6 +31,7 @@
     "vue": "catalog:client"
   },
   "devDependencies": {
+    "@arxhub/di": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
     "@types/node": "catalog:toolchain",
@@ -38,8 +41,10 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/errors": "workspace:*",
     "@arxhub/events": "workspace:*",
+    "@arxhub/logger": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
-    "@arxhub/uikit": "workspace:*"
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
   },
   "publishConfig": {
     "exports": {

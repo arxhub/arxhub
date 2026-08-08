@@ -20,7 +20,7 @@ defineProps<{
   pointer-events: none;
   z-index: 20;
   border: 2px solid var(--accent-9);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
 }
 
 .zone-top    { inset: 0 0 50% 0; }

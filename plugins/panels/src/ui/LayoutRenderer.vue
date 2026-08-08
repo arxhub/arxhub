@@ -28,7 +28,7 @@ function onResize(ratio: number) {
     <div class="split-pane" :style="sizeStyle(node.ratio, node.direction)">
       <LayoutRenderer :node="node.first" />
     </div>
-    <ResizeHandle :direction="node.direction" @resize="onResize" />
+    <ResizeHandle :direction="node.direction" :ratio="node.ratio" @resize="onResize" />
     <div class="split-pane" :style="sizeStyle(1 - node.ratio, node.direction)">
       <LayoutRenderer :node="node.second" />
     </div>

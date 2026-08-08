@@ -18,7 +18,7 @@ defineProps<{
   bottom: 2px;
   width: 2px;
   background-color: var(--accent-9);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   pointer-events: none;
   z-index: 10;
   box-shadow: 0 0 4px var(--accent-7);
