@@ -104,6 +104,14 @@ const status = computed(() => [...footerLeft.value, ...footerRight.value])
     <!-- No app bar. The top of the screen is content, and the title it would have shown is either in
          the note itself or on the key that opened it. -->
     <div class="mobile-stage">
+      <!-- Inside the stage, not beside it: MobileFilesPanel's scrim covers this whole area (inset: 0
+           relative to .mobile-stage), so the dock rides under the panel along with the content — only
+           the tab row below stays visible, exactly as it did before the dock existed. Leaving the dock
+           as a sibling of .mobile-stage would have doubled the dead strip beneath an open panel to
+           dock+row instead of the row alone, and left the panel floating further from the true bottom
+           edge than the sheet role anywhere else in the app does. -->
+      <MobileDock v-if="nav != null" :icon="nav.icon" :title="nav.title" :active="nav.active" @open="toggle('files')" />
+
       <main class="mobile-content">
         <!-- Switching mini-apps used to fully unmount the outgoing one — a phone will do this dozens
              of times a session (Notes -> Search -> back), and every return was a freshly-mounted
@@ -127,7 +135,6 @@ const status = computed(() => [...footerLeft.value, ...footerRight.value])
       />
     </div>
 
-    <MobileDock v-if="nav != null" :icon="nav.icon" :title="nav.title" :active="nav.active" @open="toggle('files')" />
     <MobileTabBar :tabs="tabs" />
     <Toaster />
   </div>
@@ -157,16 +164,19 @@ const status = computed(() => [...footerLeft.value, ...footerRight.value])
   font-size: var(--font-size-sm);
 }
 
-/* Anchors the panel and the edge strips: they cover the content they belong to, and leave the keys
-   below them live. */
+/* Anchors the panel and the edge strips: they cover the content they belong to (the dock included —
+   it is a normal flex child here, not a sibling), and leave the tab row below them live. */
 .mobile-stage {
   position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
 }
 
 .mobile-content {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   /* The device's own status bar is above us and nothing is allowed to hide under it. */
   padding-top: env(safe-area-inset-top);
