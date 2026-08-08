@@ -172,8 +172,10 @@ function reset(): void {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.625rem 0;
-  border-bottom: 1px solid var(--gray-6);
+  padding: 0.5rem 0;
+  /* Hairline INSIDE one region (the plugin list), not a border BETWEEN regions — --gray-4 per
+     .claude/rules/design.md, not --gray-6. */
+  border-bottom: 1px solid var(--gray-4);
 }
 
 .row:last-child {

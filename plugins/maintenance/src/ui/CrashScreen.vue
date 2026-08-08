@@ -143,7 +143,15 @@ function copyReport(): void {
         <ul class="plugins">
           <li v-for="plugin in catalog" :key="plugin.name" class="plugin" :class="{ 'plugin--blamed': culprits.has(plugin.name) }">
             <label class="plugin-label">
-              <input v-model="enabled[plugin.name]" type="checkbox" :disabled="plugin.essential || busy" />
+              <!-- Not the themed `Switch` (@arxhub/uikit/core): that barrel has no per-component export,
+                   so pulling it in means the whole `core` entry — the full lucide icon set registered as
+                   an import side effect, Ark UI's modal stack, everything — for one control on the screen
+                   that exists to still work when something else already didn't. Its own CSS also has no
+                   literal fallbacks for its custom properties, unlike every rule below, so it would go
+                   invisible in exactly the scenario this screen is written to survive (tokens not painted
+                   yet). Styled native input instead, with the same fallback discipline as the rest of the
+                   file. -->
+              <input v-model="enabled[plugin.name]" class="plugin-toggle" type="checkbox" :disabled="plugin.essential || busy" />
               <span class="plugin-name">{{ pluginLabel(plugin.name) }}</span>
               <span v-if="plugin.essential" class="tag">essential</span>
               <span v-if="culprits.has(plugin.name)" class="tag tag--danger">failed</span>
@@ -212,7 +220,7 @@ function copyReport(): void {
 
 .title {
   margin: 0;
-  font-size: var(--font-size-xl, 1.375rem);
+  font-size: var(--font-size-xl, 1.25rem);
   font-weight: var(--font-weight-medium, 500);
 }
 
@@ -220,7 +228,7 @@ function copyReport(): void {
 .hint,
 .note {
   margin: 0;
-  font-size: var(--font-size-xs, 0.8125rem);
+  font-size: var(--font-size-xs, 0.75rem);
   color: var(--gray-11, #666);
 }
 
@@ -260,20 +268,20 @@ function copyReport(): void {
 
 .phase {
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs, 0.8125rem);
+  font-size: var(--font-size-xs, 0.75rem);
   color: var(--gray-11, #666);
 }
 
 .failure-message {
   margin: 0;
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs, 0.8125rem);
+  font-size: var(--font-size-xs, 0.75rem);
   color: var(--danger-11, #c00);
   overflow-wrap: anywhere;
 }
 
 summary {
-  font-size: var(--font-size-xs, 0.8125rem);
+  font-size: var(--font-size-xs, 0.75rem);
   color: var(--gray-11, #666);
   cursor: pointer;
 }
@@ -286,7 +294,7 @@ summary {
   border-radius: var(--radius-sm, 4px);
   background: var(--gray-3, #f4f4f5);
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs, 0.8125rem);
+  font-size: var(--font-size-xs, 0.75rem);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -317,21 +325,30 @@ summary {
   cursor: pointer;
 }
 
+.plugin-toggle {
+  accent-color: var(--accent-9, #06f);
+}
+
+.plugin-toggle:focus-visible {
+  outline: 2px solid var(--accent-8, #2f6feb);
+  outline-offset: 1px;
+}
+
 .plugin-name {
   font-weight: var(--font-weight-medium, 500);
 }
 
 .plugin-description {
   margin: 0.125rem 0 0 1.5rem;
-  font-size: var(--font-size-xs, 0.8125rem);
+  font-size: var(--font-size-xs, 0.75rem);
   color: var(--gray-11, #666);
 }
 
 .tag {
   padding: 0 0.25rem;
   border: 1px solid var(--gray-6, #e4e4e7);
-  border-radius: var(--radius-xs, 3px);
-  font-size: var(--font-size-xs, 0.8125rem);
+  border-radius: var(--radius-xs, 2px);
+  font-size: var(--font-size-xs, 0.75rem);
   color: var(--gray-11, #666);
 }
 
@@ -374,7 +391,7 @@ summary {
   border: none;
   background: none;
   color: var(--gray-11, #666);
-  font-size: var(--font-size-xs, 0.8125rem);
+  font-size: var(--font-size-xs, 0.75rem);
   text-decoration: underline;
   cursor: pointer;
 }

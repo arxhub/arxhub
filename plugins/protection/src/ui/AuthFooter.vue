@@ -22,7 +22,7 @@ const copy = computed(() => describeRejection(rejection.value?.reason ?? null))
   height: 24px;
   padding: 0 8px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xs);
   background: var(--danger-3);
   color: var(--danger-11);
   font-family: var(--font-sans);

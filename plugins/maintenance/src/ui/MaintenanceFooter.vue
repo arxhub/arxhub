@@ -25,7 +25,7 @@ function openPlugins(): void {
   height: 24px;
   padding: 0 8px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xs);
   background: var(--warning-3);
   color: var(--warning-11);
   font-family: var(--font-sans);
@@ -36,5 +36,10 @@ function openPlugins(): void {
 
 .maintenance:hover {
   background: var(--warning-4);
+}
+
+.maintenance:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: 1px;
 }
 </style>
