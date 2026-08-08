@@ -37,11 +37,25 @@ export type LayoutSplit = {
 }
 export type LayoutNode = LayoutLeaf | LayoutSplit
 
+// The device-local-persisted slice of a PanelStore's state — everything EXCEPT definitions, which come
+// fresh from each plugin's own registration on every boot and would be stale component references if
+// they were ever serialized themselves.
+export interface PanelWorkspaceState {
+  groups: Record<string, PanelGroup>
+  layout: LayoutNode | null
+  activeGroupId: string | null
+}
+
 export interface PanelStore {
   readonly definitions: DeepReadonly<Ref<PanelDefinition[]>>
   readonly groups: DeepReadonly<Ref<Record<string, PanelGroup>>>
   readonly layout: DeepReadonly<Ref<LayoutNode | null>>
   readonly activeGroupId: DeepReadonly<Ref<string | null>>
+  // A snapshot fit to persist device-locally and hand back to restore() on a later boot.
+  serialize(): PanelWorkspaceState
+  // Replaces groups/layout/activeGroupId wholesale — for restoring a persisted snapshot, not for
+  // incremental UI-driven changes (those go through the mutators below).
+  restore(state: PanelWorkspaceState): void
   registerPanel(def: PanelDefinition): void
   getDefinition(id: string): PanelDefinition | undefined
   getPanelsForFile(ext: string): PanelDefinition[]

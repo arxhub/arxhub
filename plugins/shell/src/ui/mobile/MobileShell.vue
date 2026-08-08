@@ -4,6 +4,7 @@ import { provideShellFrame, useKeyboardInset } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import type { MobileTab } from '../extension'
 import { useShell } from '../use-shell'
+import MobileDock from './MobileDock.vue'
 import MobileEdgeGestures from './MobileEdgeGestures.vue'
 import MobileFilesPanel from './MobileFilesPanel.vue'
 import MobileMoreSheet from './MobileMoreSheet.vue'
@@ -29,25 +30,11 @@ function toggle(which: 'files' | 'more'): void {
   layer.value = layer.value === which ? null : which
 }
 
-// Two keys belong to the frame rather than to any plugin: the one that reveals the active mini-app's
-// own navigation, and the one holding everything not needed while reading.
+// The one frame-owned key left in the row: "everything not needed while reading". The nav/rail key
+// used to live here too, mixed in with the mini-app switcher below it — it now has its own strip
+// (MobileDock, below) since "navigate within where I am" and "switch to a different place" are
+// different questions, not one row answering both.
 const frameTabs = computed((): MobileTab[] => [
-  ...(railClaim.value != null
-    ? [
-        {
-          id: 'arxhub.shell.rail',
-          icon: railClaim.value.icon,
-          // The mini-app names its own rail: the same panel holds files under Explorer and sections
-          // under Settings, so the frame is in no position to label it.
-          title: railClaim.value.title ?? activeTitle.value,
-          order: -100,
-          gesture: 'left-edge' as const,
-          role: 'layer' as const,
-          active: () => layer.value === 'files',
-          onSelect: () => toggle('files'),
-        },
-      ]
-    : []),
   {
     id: 'arxhub.shell.more',
     icon: 'lu:ellipsis',
@@ -58,6 +45,20 @@ const frameTabs = computed((): MobileTab[] => [
     onSelect: () => toggle('more'),
   },
 ])
+
+// The dock strip's own content — independent of the tab row's list so the left-edge gesture and the
+// strip's render condition both key off it directly, not off a search through `allTabs`.
+const nav = computed(() =>
+  railClaim.value == null
+    ? null
+    : {
+        icon: railClaim.value.icon,
+        // The mini-app names its own rail: the same panel holds files under Explorer and sections
+        // under Settings, so the frame is in no position to label it.
+        title: railClaim.value.title ?? activeTitle.value,
+        active: layer.value === 'files',
+      },
+)
 
 // A mini-app is a place you go, so it belongs on the bar rather than two taps deep inside More.
 // Only the primary ones: an item in the 'bottom' region is a utility — settings, logs — and stays in
@@ -88,9 +89,9 @@ const tabs = computed(() => {
   return [...all.filter((tab) => tab.id !== 'arxhub.shell.more').slice(0, MAX_TABS - more.length), ...more]
 })
 
-// Off the full set, not the bar: a gesture is a second way to reach a tab, and it must not disappear
-// because that tab was the one pushed off the end.
-const leftEdge = computed(() => allTabs.value.find((t) => t.gesture === 'left-edge'))
+// The nav key's swipe is wired straight to `nav`/`toggle` now that it is not a tab to search for.
+// rightEdge is still a tab search: MobilePanels registers its "Notes, N open" switcher key at runtime
+// via shell.tabs, a genuine plugin-owned tab, not a frame-owned one.
 const rightEdge = computed(() => allTabs.value.find((t) => t.gesture === 'right-edge'))
 
 const railTitle = computed(() => railClaim.value?.title ?? activeTitle.value)
@@ -104,7 +105,14 @@ const status = computed(() => [...footerLeft.value, ...footerRight.value])
          the note itself or on the key that opened it. -->
     <div class="mobile-stage">
       <main class="mobile-content">
-        <component v-if="activeItem?.layout" :is="activeItem.layout" />
+        <!-- Switching mini-apps used to fully unmount the outgoing one — a phone will do this dozens
+             of times a session (Notes -> Search -> back), and every return was a freshly-mounted
+             editor: scroll reset, undo history gone, selection lost. KeepAlive caches each mini-app's
+             component tree by its own identity, so the one PanelsLayout instance it holds (and every
+             editor inside it) survives the trip instead of being torn down and rebuilt. -->
+        <KeepAlive>
+          <component v-if="activeItem?.layout" :is="activeItem.layout" :key="activeItem.id" />
+        </KeepAlive>
       </main>
 
       <MobileFilesPanel :open="layer === 'files'" :title="railTitle" @close="layer = null" />
@@ -112,13 +120,14 @@ const status = computed(() => [...footerLeft.value, ...footerRight.value])
       <!-- Only while nothing is open. An edge that opens the panel says nothing once the panel is up,
            and the strip went on painting over the scrim, which read as a rendering fault. -->
       <MobileEdgeGestures
-        :left="leftEdge != null && layer == null"
+        :left="nav != null && layer == null"
         :right="rightEdge != null && layer == null"
-        @left="leftEdge?.onSelect()"
+        @left="toggle('files')"
         @right="rightEdge?.onSelect()"
       />
     </div>
 
+    <MobileDock v-if="nav != null" :icon="nav.icon" :title="nav.title" :active="nav.active" @open="toggle('files')" />
     <MobileTabBar :tabs="tabs" />
     <Toaster />
   </div>

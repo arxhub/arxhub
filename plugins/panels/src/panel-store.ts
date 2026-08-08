@@ -4,7 +4,7 @@ import type { EventBus } from '@arxhub/events'
 import { nanoid } from 'nanoid'
 import { markRaw, readonly, ref } from 'vue'
 import type { DropZone } from './composables/drag-types'
-import type { LayoutLeaf, LayoutNode, LayoutSplit, PanelDefinition, PanelGroup, PanelInstance, PanelStore } from './types'
+import type { LayoutLeaf, LayoutNode, LayoutSplit, PanelDefinition, PanelGroup, PanelInstance, PanelStore, PanelWorkspaceState } from './types'
 
 function findAndReplace(node: LayoutNode, target: LayoutNode, replacement: LayoutNode): LayoutNode {
   if (node === target) return replacement
@@ -345,6 +345,16 @@ export function createPanelStore(bus: EventBus): PanelStore {
       bus.emit('group:created', { groupId: newGroupId })
 
       store.movePanel(instanceId, fromGroupId, newGroupId, 0)
+    },
+
+    serialize(): PanelWorkspaceState {
+      return { groups: groups.value, layout: layout.value, activeGroupId: activeGroupId.value }
+    },
+
+    restore(state: PanelWorkspaceState): void {
+      groups.value = state.groups
+      layout.value = state.layout
+      activeGroupId.value = state.activeGroupId
     },
   }
 

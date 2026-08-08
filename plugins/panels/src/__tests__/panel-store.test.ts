@@ -161,3 +161,41 @@ describe('movePanel across groups (the tab "move to next/previous split" actions
     expect(store.getOrderedGroupIds()).toEqual([secondGroupId])
   })
 })
+
+describe('serialize/restore (device-local workspace persistence)', () => {
+  test('a snapshot restored into a fresh store reproduces groups, layout, and the active group', () => {
+    const a = open('notes/a.md')
+    const firstGroupId = store.activeGroupId.value as string
+    const secondGroupId = store.splitGroup(firstGroupId, 'horizontal')
+    const b = open('notes/b.md', secondGroupId)
+
+    const snapshot = store.serialize()
+
+    const fresh = createPanelStore(createEventBus<EventMap>())
+    fresh.registerPanel({ id: EDITOR, title: 'Editor', component: defineComponent({}) })
+    fresh.restore(snapshot)
+
+    expect(fresh.layout.value).toEqual(store.layout.value)
+    expect(fresh.activeGroupId.value).toEqual(store.activeGroupId.value)
+    expect(fresh.groups.value[firstGroupId]?.instances.map((i) => i.instanceId)).toEqual([a])
+    expect(fresh.groups.value[secondGroupId]?.instances.map((i) => i.instanceId)).toEqual([b])
+  })
+
+  test('restore does not require definitions to already be registered', () => {
+    open('notes/a.md')
+    const snapshot = store.serialize()
+
+    // Simulates restoring before every plugin's configure() has registered its panel definitions —
+    // restore() only ever touches groups/layout/activeGroupId, never definitions or the DOM.
+    const fresh = createPanelStore(createEventBus<EventMap>())
+    expect(() => fresh.restore(snapshot)).not.toThrow()
+    expect(fresh.groups.value).toEqual(store.groups.value)
+  })
+
+  test('serialize omits definitions — only groups/layout/activeGroupId round-trip', () => {
+    open('notes/a.md')
+    const snapshot = store.serialize()
+
+    expect(Object.keys(snapshot).sort()).toEqual(['activeGroupId', 'groups', 'layout'])
+  })
+})

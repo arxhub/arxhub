@@ -49,7 +49,11 @@ const hasHeader = computed(() => headerLeft.value.length + headerCenter.value.le
         </template>
       </AppFooter>
     </template>
-    <component v-if="activeItem?.layout" :is="activeItem.layout" />
+    <!-- See MobileShell.vue's identical wrapper: without KeepAlive, switching mini-apps fully
+         remounted the outgoing one on every trip, losing scroll/undo/selection in whatever was open. -->
+    <KeepAlive>
+      <component v-if="activeItem?.layout" :is="activeItem.layout" :key="activeItem.id" />
+    </KeepAlive>
   </DesktopLayout>
   <ModalsProvider />
   <ActionMenuHost />

@@ -144,11 +144,7 @@ class PgliteSqlIndex extends PgliteExecutor implements SqlIndex {
     return this.serialize(() => this.runReadOnly<R>(sql, params, limits))
   }
 
-  private async runReadOnly<R = SqlRow>(
-    sql: string,
-    params: unknown[],
-    limits: SqlReadOnlyLimits,
-  ): Promise<SqlReadOnlyResult<R>> {
+  private async runReadOnly<R = SqlRow>(sql: string, params: unknown[], limits: SqlReadOnlyLimits): Promise<SqlReadOnlyResult<R>> {
     const maxRows = positiveInteger(limits.maxRows, DEFAULT_MAX_ROWS)
     const timeoutMs = positiveInteger(limits.timeoutMs, DEFAULT_TIMEOUT_MS)
 
