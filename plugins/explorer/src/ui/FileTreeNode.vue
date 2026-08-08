@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { basename, dirname } from '@arxhub/path'
-import { actionMenu, Icon, Row } from '@arxhub/uikit/core'
+import { actionMenu, Icon, Input, Row } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, watch } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
 import { useFileActions } from './use-file-actions'
+import { treeRowId } from './use-tree-navigation'
 
 const props = withDefaults(defineProps<{ node: TreeNode; depth?: number }>(), { depth: 0 })
 
@@ -45,13 +46,16 @@ function onContextMenu(event: MouseEvent) {
 // ── inline rename (shared state: only one node renames at a time) ───────────────
 const renaming = computed(() => explorer.renamingPath.value === props.node.entry.pathname)
 const renameValue = ref('')
-const renameInput = ref<HTMLInputElement | null>(null)
+// A wrapper ref rather than one on <Input> itself: the ref would be the component instance, and
+// reaching through it for the native element it renders needs a cast that strict mode has no honest
+// form for (same trade the search rail's own input ref makes).
+const renameWrap = ref<HTMLElement | null>(null)
 
 watch(renaming, async (active) => {
   if (!active) return
   renameValue.value = basename(props.node.entry.pathname)
   await nextTick()
-  renameInput.value?.select()
+  renameWrap.value?.querySelector('input')?.select()
 })
 
 function commitRename() {
@@ -94,10 +98,24 @@ function handleEnter() {
   if (props.node.entry.kind === 'file') actions.openFile(props.node, false)
   else handleClick()
 }
+
+// ── roving tabindex ───────────────────────────────────────────────────────────
+// Only the row `explorer.focusedPath` names is a Tab stop; every other row is -1, so the tree is one
+// stop from outside and useTreeNavigation's Up/Down/Left/Right/Home/End move real DOM focus among them.
+const focused = computed(() => explorer.focusedPath.value === props.node.entry.pathname)
+
+// Fires whenever this row's own div receives DOM focus — a click (divs with tabindex focus on click),
+// Tab landing on the current stop, or useTreeNavigation's own `.focus()` calls — so `focusedPath` stays
+// in sync with reality regardless of how focus arrived. `focus` does not bubble, so the rename <input>
+// this row hosts never triggers it.
+function handleFocus() {
+  explorer.focusedPath.value = props.node.entry.pathname
+}
 </script>
 
 <template>
   <Row
+    :id="treeRowId(node.entry.pathname)"
     class="tree-node"
     :selected="explorer.selectedPath.value === node.entry.pathname"
     :depth="depth"
@@ -107,10 +125,11 @@ function handleEnter() {
     :aria-level="depth + 1"
     :aria-selected="explorer.selectedPath.value === node.entry.pathname"
     :aria-expanded="node.entry.kind === 'dir' ? node.expanded : undefined"
-    tabindex="0"
+    :tabindex="focused ? 0 : -1"
     @click="handleClick"
     @dblclick.prevent="handleDblClick"
     @contextmenu.prevent.stop="onContextMenu"
+    @focus="handleFocus"
     @keydown.f2.prevent.stop="actions.startRename(node)"
     @keydown.enter.prevent="handleEnter"
   >
@@ -121,18 +140,17 @@ function handleEnter() {
       <Icon :name="typeIcon" :size="14" />
     </span>
 
-    <input
-      v-if="renaming"
-      ref="renameInput"
-      v-model="renameValue"
-      class="rename-input"
-      aria-label="New name"
-      @keydown.enter.prevent.stop="commitRename"
-      @keydown.escape.prevent.stop="cancelRename"
-      @blur="commitRename"
-      @click.stop
-      @dblclick.stop
-    />
+    <span v-if="renaming" ref="renameWrap" class="rename-wrap">
+      <Input
+        v-model="renameValue"
+        aria-label="New name"
+        @keydown.enter.prevent.stop="commitRename"
+        @keydown.escape.prevent.stop="cancelRename"
+        @blur="commitRename"
+        @click.stop
+        @dblclick.stop
+      />
+    </span>
     <span v-else class="name">{{ basename(node.entry.pathname) || node.entry.pathname }}</span>
   </Row>
 
@@ -181,17 +199,10 @@ function handleEnter() {
   text-overflow: ellipsis;
 }
 
-.rename-input {
+/* The input itself owns its geometry (Control role, 32px, --radius-sm, the shared focus-visible ring)
+   — this wrapper only takes the row's slack the way the name span it replaces does. */
+.rename-wrap {
   flex: 1;
   min-width: 0;
-  height: 24px;
-  background: var(--gray-1);
-  border: 1px solid var(--accent-8);
-  border-radius: var(--radius-xs);
-  color: var(--gray-12);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-sans);
-  padding: 0 4px;
-  outline: none;
 }
 </style>

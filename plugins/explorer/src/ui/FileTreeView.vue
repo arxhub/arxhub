@@ -5,10 +5,12 @@ import { onMounted } from 'vue'
 import { ExplorerExtension } from '../explorer-extension'
 import FileTreeNode from './FileTreeNode.vue'
 import { useFileActions } from './use-file-actions'
+import { useTreeNavigation } from './use-tree-navigation'
 
 const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
 const actions = useFileActions()
+const { onKeydown } = useTreeNavigation(explorer.tree, explorer)
 
 onMounted(() => {
   explorer.loadRoot()
@@ -43,7 +45,7 @@ function newFolder() {
       </Button>
     </Strip>
 
-    <div class="file-tree" role="tree" aria-label="Files" @contextmenu.prevent="onRootContextMenu">
+    <div class="file-tree" role="tree" aria-label="Files" @contextmenu.prevent="onRootContextMenu" @keydown="onKeydown">
       <FileTreeNode
         v-for="node in explorer.tree.value"
         :key="node.entry.pathname"
