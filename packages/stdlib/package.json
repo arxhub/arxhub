@@ -13,7 +13,8 @@
     "./collections/*": "./src/collections/*.ts",
     "./fs/*": "./src/fs/*.ts",
     "./record/*": "./src/record/*.ts",
-    "./crypto/*": "./src/crypto/*.ts"
+    "./crypto/*": "./src/crypto/*.ts",
+    "./scheduling/*": "./src/scheduling/*.ts"
   },
   "files": [
     "dist"
@@ -47,6 +48,10 @@
       "./record/*": {
         "import": "./dist/record/*.js",
         "types": "./dist/record/*.d.ts"
+      },
+      "./scheduling/*": {
+        "import": "./dist/scheduling/*.js",
+        "types": "./dist/scheduling/*.d.ts"
       }
     }
   }

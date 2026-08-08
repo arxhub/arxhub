@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { usePanelInstance } from '@arxhub/plugin-panels/ui'
+import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
+import { Button } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { history } from 'prosemirror-history'
@@ -15,6 +17,10 @@ import { schema } from '../editor-schema'
 import EditorToolbar from './EditorToolbar.vue'
 import 'prosemirror-view/style/prosemirror.css'
 
+// Fires this long after the last keystroke, mirroring the search plugin's index-queue debounce shape
+// (a burst of edits coalesces into one write, not one per keystroke).
+const AUTOSAVE_DEBOUNCE_MS = 1500
+
 const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
@@ -28,14 +34,13 @@ function buildPlugins() {
 }
 
 function buildState(_path: string, bytes: Uint8Array): EditorState {
+  // Only a genuinely-empty file opens an empty document. Anything else is decoded and deserialized
+  // as-is — a failure here (corrupt JSON, an incompatible schema) is left to propagate so the shared
+  // load hook can route it through the same error path as a read failure, rather than silently
+  // substituting an empty document a Save could flush over the original bytes.
   if (bytes.length === 0) return EditorState.create({ schema, doc: emptyDoc(schema), plugins: buildPlugins() })
-  try {
-    const doc = deserialize(schema, new TextDecoder().decode(bytes))
-    return EditorState.create({ schema, doc, plugins: buildPlugins() })
-  } catch {
-    // Malformed content (not a read failure) → open an empty doc rather than crashing the panel.
-    return EditorState.create({ schema, doc: emptyDoc(schema), plugins: buildPlugins() })
-  }
+  const doc = deserialize(schema, new TextDecoder().decode(bytes))
+  return EditorState.create({ schema, doc, plugins: buildPlugins() })
 }
 
 // Shared composable owns the load lifecycle: staleness guard on rapid file switches, open-empty
@@ -56,15 +61,21 @@ const {
         dispatchTransaction(tr) {
           if (!view.value) return
           view.value.updateState(view.value.state.apply(tr))
-          // First real edit promotes a VSCode-style preview tab to a permanent one (no-op otherwise)
-          if (tr.docChanged) panel?.promote()
+          if (tr.docChanged) {
+            // First real edit promotes a VSCode-style preview tab to a permanent one (no-op otherwise)
+            panel?.promote()
+            // Never autosave over a load that hasn't (or can no longer) resolve — `doSave` re-checks
+            // canSave at fire time too, but there is no point arming a timer for a run that can only
+            // no-op.
+            if (canSave.value) autosave.schedule()
+          }
         },
       })
     }
   },
 })
 
-async function save() {
+async function doSave() {
   if (!view.value || !canSave.value) return
   const content = serialize(view.value.state.doc)
   try {
@@ -77,7 +88,17 @@ async function save() {
   }
 }
 
+// One write path for both the explicit Save (button / Ctrl+S) and autosave: the explicit path flushes
+// the debounce immediately (joining an in-flight autosave rather than racing it with a second write),
+// autosave schedules it AUTOSAVE_DEBOUNCE_MS after the last edit.
+const autosave = createDebouncedTask({ run: doSave, debounceMs: AUTOSAVE_DEBOUNCE_MS })
+
+async function save() {
+  await autosave.flush()
+}
+
 onUnmounted(() => {
+  autosave.cancel()
   view.value?.destroy()
   view.value = null
 })
@@ -85,10 +106,10 @@ onUnmounted(() => {
 
 <template>
   <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <EditorToolbar :view="view" :on-save="save" />
+    <EditorToolbar :view="view" :on-save="save" :can-save="canSave" />
     <div v-if="loadError" class="editor-error">
       <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
-      <button class="editor-error-retry" @click="reload(path)">Retry</button>
+      <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>
     </div>
     <div v-show="!loadError" ref="editorEl" class="editor-content" />
   </div>
@@ -114,17 +135,9 @@ onUnmounted(() => {
   gap: 8px;
   padding: 8px 12px;
   font-size: var(--font-size-sm);
-  color: var(--red-11);
-  background: var(--red-2);
-  border-bottom: 1px solid var(--red-6);
-}
-.editor-error-retry {
-  border: 1px solid var(--red-6);
-  border-radius: 4px;
-  background: var(--red-3);
-  color: var(--red-11);
-  padding: 2px 10px;
-  cursor: pointer;
+  color: var(--danger-11);
+  background: var(--danger-2);
+  border-bottom: 1px solid var(--danger-6);
 }
 .editor-content :deep(.ProseMirror) {
   outline: none;

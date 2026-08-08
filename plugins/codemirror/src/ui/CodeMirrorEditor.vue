@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usePanelInstance } from '@arxhub/plugin-panels/ui'
+import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button, Strip } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
@@ -13,6 +14,11 @@ import { editorTheme } from '../editor-theme'
 import { insertLink, toggleBold, toggleInlineCode, toggleItalic } from '../markdown-commands'
 import { isMarkdown, markdownProfile } from '../markdown-profile'
 import MarkdownToolbar from './MarkdownToolbar.vue'
+
+// Fires this long after the last keystroke, mirroring the search plugin's index-queue debounce shape
+// (a burst of edits coalesces into one write, not one per keystroke) and the ProseMirror editor's own
+// autosave, so the two note editors behave identically.
+const AUTOSAVE_DEBOUNCE_MS = 1500
 
 const props = defineProps<{ path: string }>()
 
@@ -30,6 +36,9 @@ const editorEl = ref<HTMLDivElement>()
 // shallowRef so the markdown toolbar can reach the live view; the view is not reactive data.
 const view = shallowRef<EditorView | null>(null)
 const note = computed(() => isMarkdown(props.path))
+// Bumped on every selection/doc change (see the updateListener below) so the toolbar's active-state
+// highlighting has a reactive reason to recompute — mutating `view.value` in place never gives Vue one.
+const revision = ref(0)
 
 async function buildState(path: string, bytes: Uint8Array): Promise<EditorState> {
   const doc = new TextDecoder().decode(bytes)
@@ -49,9 +58,14 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
       ...(langSupport ? [langSupport] : []),
       // First real edit promotes a VSCode-style preview tab to permanent (mirrors the ProseMirror
       // editor). Guard on transactions: a programmatic setState() during a file switch reports
-      // docChanged but carries no transaction, so it must NOT promote.
+      // docChanged but carries no transaction, so it must NOT promote — and must not autosave either,
+      // or a plain file switch would immediately re-write the file it just opened.
       EditorView.updateListener.of((update) => {
-        if (update.docChanged && update.transactions.length > 0) panel?.promote()
+        if (update.docChanged || update.selectionSet) revision.value++
+        if (update.docChanged && update.transactions.length > 0) {
+          panel?.promote()
+          if (canSave.value) autosave.schedule()
+        }
       }),
     ],
   })
@@ -72,7 +86,7 @@ const {
   },
 })
 
-async function save() {
+async function doSave() {
   if (!view.value || !canSave.value) return
   try {
     await vfs.write(props.path, new TextEncoder().encode(view.value.state.doc.toString()))
@@ -84,7 +98,17 @@ async function save() {
   }
 }
 
+// One write path for both the explicit Save (button / Ctrl+S) and autosave: the explicit path flushes
+// the debounce immediately (joining an in-flight autosave rather than racing it with a second write),
+// autosave schedules it AUTOSAVE_DEBOUNCE_MS after the last edit.
+const autosave = createDebouncedTask({ run: doSave, debounceMs: AUTOSAVE_DEBOUNCE_MS })
+
+async function save() {
+  await autosave.flush()
+}
+
 onUnmounted(() => {
+  autosave.cancel()
   view.value?.destroy()
   view.value = null
 })
@@ -96,7 +120,7 @@ onUnmounted(() => {
          three bands of chrome (tab strip, path, toolbar) above every note before a word of it showed. -->
     <Strip>
       <span class="codemirror-path">{{ path }}</span>
-      <MarkdownToolbar v-if="note && !loadError" :view="view" />
+      <MarkdownToolbar v-if="note && !loadError" :view="view" :revision="revision" />
       <template #actions>
         <Button size="sm" variant="secondary" :disabled="!canSave" @click="save">Save</Button>
       </template>

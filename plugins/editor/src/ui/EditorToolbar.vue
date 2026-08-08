@@ -8,7 +8,7 @@ import type { Command } from 'prosemirror-state'
 import type { EditorView } from 'prosemirror-view'
 import { schema } from '../editor-schema'
 
-const props = defineProps<{ view: EditorView | null; onSave?: () => void }>()
+const props = defineProps<{ view: EditorView | null; onSave?: () => void; canSave: boolean }>()
 
 function cmd(command: Command) {
   if (!props.view) return
@@ -89,7 +89,7 @@ const HISTORY: { label: string; icon: string; run: Command }[] = [
       @click="cmd(action.run)"
     />
     <template #actions>
-      <Button variant="secondary" size="sm" @click="onSave?.()">Save</Button>
+      <Button variant="secondary" size="sm" :disabled="!canSave" @click="onSave?.()">Save</Button>
     </template>
   </Strip>
 </template>
