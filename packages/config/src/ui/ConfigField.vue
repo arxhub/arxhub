@@ -315,7 +315,7 @@ async function copy(): Promise<void> {
 }
 
 .textarea:disabled {
-  background: var(--gray-2);
+  background: var(--gray-3);
   color: var(--gray-9);
   cursor: not-allowed;
 }

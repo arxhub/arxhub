@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { TagsInput } from '@ark-ui/vue'
+import Icon from './Icon.vue'
 
 defineProps<{
   modelValue?: string[]
@@ -30,7 +31,9 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
         >
           <TagsInput.ItemPreview class="chip-preview">
             <TagsInput.ItemText class="chip-text">{{ entry }}</TagsInput.ItemText>
-            <TagsInput.ItemDeleteTrigger class="chip-remove" :aria-label="`Remove ${entry}`">✕</TagsInput.ItemDeleteTrigger>
+            <TagsInput.ItemDeleteTrigger class="chip-remove" :aria-label="`Remove ${entry}`">
+              <Icon name="lu:x" :size="14" />
+            </TagsInput.ItemDeleteTrigger>
           </TagsInput.ItemPreview>
           <TagsInput.ItemInput class="chip-edit" />
         </TagsInput.Item>
@@ -65,7 +68,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
 }
 
 .root[data-disabled] .control {
-  background: var(--gray-2);
+  background: var(--gray-3);
   border-color: var(--gray-6);
 }
 
@@ -97,8 +100,6 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   border-radius: var(--radius-xs);
   background: transparent;
   color: var(--gray-10);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-none);
   cursor: pointer;
 }
 

@@ -45,7 +45,7 @@ defineProps<{
 }
 
 .input:disabled {
-  background-color: var(--gray-2);
+  background-color: var(--gray-3);
   color: var(--gray-9);
   cursor: not-allowed;
 }

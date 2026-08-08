@@ -7,7 +7,7 @@
 // This is a MEASUREMENT, so it asserts against the role's token value rather than a number typed twice:
 // the expected values are read out of the running document's own custom properties.
 import type { Page } from '@playwright/test'
-import { expect, isMobileFrame, openMiniApp, openNavigation, openSettingsSection, test } from './fixtures'
+import { expect, isMobileFrame, openMiniApp, openNavigation, openSettingsSection, test, withShellChrome } from './fixtures'
 
 async function token(page: Page, name: string): Promise<number> {
   const value = await page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name)
@@ -51,7 +51,21 @@ test.describe('the visual language holds on screen', () => {
     expect(tree.length).toBeGreaterThan(0)
     for (const height of tree) expect(height).toBe(expected)
 
-    // A second list, in another mini-app, to prove the density is the role's and not one list's habit.
+    // A second list, behind a right click: the action list of a tree node, which is a popover on the
+    // desktop frame and a bottom sheet on the mobile one. Two presentations, one density — the sheet used
+    // to be 56px on the argument that it holds the largest targets in the app, which is how the mobile
+    // frame ended up with two touch densities at once.
+    await app.getByRole('treeitem', { name: note }).click({ button: 'right' })
+    await expect(app.getByRole('menuitem', { name: 'Rename' })).toBeVisible()
+    const actions = await heights(app, '[role="menuitem"]')
+    expect(actions.length).toBeGreaterThan(0)
+    for (const height of actions) expect(height).toBe(expected)
+    // Left as found: an open menu (a sheet especially) swallows the next click.
+    if (mobile) await app.goBack()
+    else await app.keyboard.press('Escape')
+    await expect(app.getByRole('menuitem', { name: 'Rename' })).toBeHidden()
+
+    // A third list, in another mini-app, to prove the density is the role's and not one list's habit.
     await openSettingsSection(app, 'Appearance')
     // Picking a section is a navigation step, so the mobile frame closes the panel the rail lives in —
     // summon it back before measuring, or there is nothing laid out to measure.
@@ -59,6 +73,50 @@ test.describe('the visual language holds on screen', () => {
     const sections = await heights(app, '.settings-nav .row')
     expect(sections.length).toBeGreaterThan(0)
     for (const height of sections) expect(height).toBe(expected)
+  })
+
+  // A row whose content legitimately wraps has to grow DOWN from the role's value. Measuring it as "at
+  // least" is the whole point: a log line that came out at 17px was not a dense row, it was a row that
+  // never asked what a row is.
+  test('a wrapping row grows down from the density, never below it', async ({ app }) => {
+    const mobile = await isMobileFrame(app)
+    const expected = await token(app, mobile ? '--size-xl' : '--size-2xs')
+
+    // The log is where the boot writes itself down, so it has entries without seeding any. It is a hidden
+    // mini-app opened from the status item, which lives in the More sheet on a phone.
+    await withShellChrome(app, (chrome) => chrome.getByRole('button', { name: 'Open logs' }).click())
+    await expect(app.locator('.log-panel')).toBeVisible()
+
+    const entries = await heights(app, '.log-row')
+    expect(entries.length).toBeGreaterThan(0)
+    for (const height of entries) expect(height).toBeGreaterThanOrEqual(expected)
+  })
+
+  test('the sheets are the same touch density as the lists in front of them', async ({ app, vault }) => {
+    test.skip(!(await isMobileFrame(app)), 'the desktop frame has no sheets')
+    const note = await vault.write('sheets.md', '# Sheets\n\nbody\n')
+    await app.reload()
+    const expected = await token(app, '--size-xl')
+
+    // The mini-app list: one line each, so it lands exactly on the role's touch value.
+    await app.getByRole('button', { name: 'More' }).click()
+    const sheet = app.getByRole('dialog', { name: 'More' })
+    await expect(sheet).toBeVisible()
+    const apps = await heights(app, '.more-list .row')
+    expect(apps.length).toBeGreaterThan(0)
+    for (const height of apps) expect(height).toBe(expected)
+    await app.goBack()
+    await expect(sheet).toBeHidden()
+
+    // The list of open documents: a name with its path under it, so it grows down from the same value.
+    await openNavigation(app)
+    await app.getByRole('treeitem', { name: note }).click()
+    await expect(app.locator('.cm-content')).toBeVisible()
+    await app.getByRole('button', { name: /^Notes, \d+ open$/ }).click()
+    const open = await heights(app, '.tab-list .row')
+    expect(open.length).toBeGreaterThan(0)
+    for (const height of open) expect(height).toBeGreaterThanOrEqual(expected)
+    await app.goBack()
   })
 
   test('switching workspace tabs does not move where content starts', async ({ app, vault }) => {

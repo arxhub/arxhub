@@ -49,7 +49,7 @@ defineEmits<(e: 'update:modelValue', value: string) => void>()
 }
 
 .root[data-disabled] {
-  background: var(--gray-2);
+  background: var(--gray-3);
   border-color: var(--gray-6);
 }
 

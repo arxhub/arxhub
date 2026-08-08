@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Toaster as ArkToaster, ToastCloseTrigger, ToastDescription, ToastRoot, ToastTitle } from '@ark-ui/vue'
 import { toaster } from '../hooks/useToast'
+import Icon from './Icon.vue'
 </script>
 
 <template>
@@ -10,7 +11,9 @@ import { toaster } from '../hooks/useToast'
         <ToastTitle class="toast-title">{{ toast.title }}</ToastTitle>
         <ToastDescription v-if="toast.description" class="toast-desc">{{ toast.description }}</ToastDescription>
       </div>
-      <ToastCloseTrigger class="toast-close" aria-label="Dismiss">✕</ToastCloseTrigger>
+      <ToastCloseTrigger class="toast-close" aria-label="Dismiss">
+        <Icon name="lu:x" :size="14" />
+      </ToastCloseTrigger>
     </ToastRoot>
   </ArkToaster>
 </template>
@@ -39,11 +42,21 @@ import { toaster } from '../hooks/useToast'
   color: var(--gray-12);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .toast { transition: none; }
+}
+
 /* The border and the title tint carry the type — semantic scales, not the raw hues, so a theme that
-   remaps danger/success stays consistent here. */
+   remaps danger/success/warning/info stays consistent here. All four severities Ark can hand back are
+   covered; 'loading' intentionally isn't — it reads as neutral, matching the default. */
 .toast[data-type='error'] { border-color: var(--danger-6); }
 .toast[data-type='error'] .toast-title { color: var(--danger-11); }
+.toast[data-type='success'] { border-color: var(--success-6); }
 .toast[data-type='success'] .toast-title { color: var(--success-11); }
+.toast[data-type='warning'] { border-color: var(--warning-6); }
+.toast[data-type='warning'] .toast-title { color: var(--warning-11); }
+.toast[data-type='info'] { border-color: var(--info-6); }
+.toast[data-type='info'] .toast-title { color: var(--info-11); }
 
 .toast-body {
   flex: 1;
@@ -65,13 +78,12 @@ import { toaster } from '../hooks/useToast'
 }
 
 .toast-close {
+  display: flex;
   flex-shrink: 0;
   border: none;
   background: transparent;
   color: var(--gray-10);
   cursor: pointer;
-  font-size: var(--font-size-xs);
-  line-height: 1;
   padding: 4px;
   border-radius: var(--radius-xs);
 }

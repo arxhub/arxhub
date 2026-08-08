@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect, openMiniApp, openSearchApp as openSearch, test } from './fixtures'
+import { expect, isMobileFrame, openMiniApp, openSearchApp as openSearch, test } from './fixtures'
 
 // UJ-24 «Поиск записи по слову из текста»: the owner remembers a word, not a file name. The path from that
 // word to the open note has to work from the keyboard alone, and it has to end in the workspace the notes
@@ -49,6 +49,19 @@ test.describe('finding a note by a word in its text', () => {
     const snippet = (await results(app).locator('.snippet').first().textContent()) ?? ''
     expect(marks.filter((mark) => snippet.includes(mark))).toEqual([])
     await expect(app.locator('.summary')).toContainText(/document/)
+
+    // A result is a row of an enumeration, so it takes the frame's density and grows down from it because a
+    // title carries its path (.claude/rules/design.md §Roles). Measured here rather than in design.spec: a
+    // filled list needs the index to have caught up, which is what this test already waits for.
+    const role = (await isMobileFrame(app)) ? '--size-xl' : '--size-2xs'
+    const density = Number.parseFloat(
+      await app.evaluate((name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), role),
+    )
+    const rows = await results(app)
+      .getByRole('option')
+      .evaluateAll((nodes) => nodes.map((n) => Math.round(n.getBoundingClientRect().height)))
+    expect(rows.length).toBeGreaterThan(0)
+    for (const height of rows) expect(height).toBeGreaterThanOrEqual(density)
 
     // Down enters the list, down again moves inside it, Enter opens. Not a click in this path.
     await field(app).press('ArrowDown')

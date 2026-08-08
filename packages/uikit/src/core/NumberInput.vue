@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { NumberInput } from '@ark-ui/vue'
+import Icon from './Icon.vue'
 
 defineProps<{
   modelValue?: number
@@ -32,10 +33,14 @@ function onValueChange(details: { valueAsNumber: number }): void {
     @value-change="onValueChange"
   >
     <NumberInput.Control class="control">
-      <NumberInput.DecrementTrigger class="nudge" aria-label="Decrease">−</NumberInput.DecrementTrigger>
+      <NumberInput.DecrementTrigger class="nudge" aria-label="Decrease">
+        <Icon name="lu:minus" :size="14" />
+      </NumberInput.DecrementTrigger>
       <NumberInput.Input class="value" :aria-label="ariaLabel" />
       <span v-if="unit" class="unit">{{ unit }}</span>
-      <NumberInput.IncrementTrigger class="nudge" aria-label="Increase">+</NumberInput.IncrementTrigger>
+      <NumberInput.IncrementTrigger class="nudge" aria-label="Increase">
+        <Icon name="lu:plus" :size="14" />
+      </NumberInput.IncrementTrigger>
     </NumberInput.Control>
   </NumberInput.Root>
 </template>
@@ -62,7 +67,7 @@ function onValueChange(details: { valueAsNumber: number }): void {
 }
 
 .root[data-disabled] .control {
-  background: var(--gray-2);
+  background: var(--gray-3);
   border-color: var(--gray-6);
 }
 
@@ -73,9 +78,6 @@ function onValueChange(details: { valueAsNumber: number }): void {
   border: none;
   background: transparent;
   color: var(--gray-11);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-none);
   cursor: pointer;
 }
 
@@ -88,7 +90,7 @@ function onValueChange(details: { valueAsNumber: number }): void {
 }
 
 .nudge[data-disabled] {
-  color: var(--gray-8);
+  color: var(--gray-9);
   cursor: not-allowed;
 }
 

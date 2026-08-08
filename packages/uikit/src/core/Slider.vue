@@ -79,7 +79,7 @@ function onValueChange(details: { value: number[] }): void {
 }
 
 .root[data-disabled] .range {
-  background: var(--gray-8);
+  background: var(--gray-9);
 }
 
 .thumb {
@@ -97,7 +97,7 @@ function onValueChange(details: { value: number[] }): void {
 }
 
 .root[data-disabled] .thumb {
-  border-color: var(--gray-8);
+  border-color: var(--gray-9);
 }
 
 .readout {
