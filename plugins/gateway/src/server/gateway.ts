@@ -23,11 +23,24 @@ export class Gateway {
   }
 
   async listen(port = 3000): Promise<void> {
-    this.elysia.listen(port, (server) => {
-      this.disposable = server
+    // "Listening" used to print unconditionally, right after the call, not from the bind callback. When
+    // the bind itself failed (srvx under @elysiajs/node calls listen({ reusePort: true }), which
+    // answers ENOTSUP on macOS + Node 22 and is swallowed) the log still cheerfully reported the server
+    // as up. From the outside that looked like an app with a dead store and not one line saying why.
+    // The message now comes from where binding actually happened, and its absence is a warning, not
+    // silence — listen() either resolves the callback promptly or it never will, so a short bound wait
+    // is enough to tell the two apart.
+    const bound = await new Promise<boolean>((resolve) => {
+      this.elysia.listen(port, (server) => {
+        this.disposable = server
+        resolve(true)
+      })
+      setTimeout(() => resolve(false), 500)
     })
+
     this.port = port
-    this.logger.info(`Listening on port: ${port}`)
+    if (bound) this.logger.info(`Listening on port: ${port}`)
+    else this.logger.error(`Could not bind port ${port} — the server did not come up, the app will have no storage`)
   }
 
   async stop(): Promise<void> {

@@ -272,11 +272,18 @@ class VaultIndexer implements Indexer {
     const head = await this.vfs.head(path)
     const stat = { size: head.size, mtime: head.modifiedAt, ctime: head.createdAt }
     const existing = await this.readDocumentState(path)
+    const kind = detectDocumentKind(path)
 
     // Same path, same size, same modification time — nothing to read (FR-224).
-    if (!force && existing != null && existing.size === stat.size && existing.mtime === stat.mtime) return
+    //
+    // Except one case: a row with no hash. A hash only appears after a real parse, so its absence on an
+    // otherwise-indexable file within the size limit means the parse never actually happened — the row
+    // was written from metadata alone after some earlier failure. Without this check that row was stuck
+    // forever: size and mtime already matched, so the file was never read again, staying in the index
+    // with no text and no title. A transient failure has no business becoming a permanent one.
+    const unparsed = existing != null && existing.hash == null && kind !== 'binary' && stat.size <= this.maxFileSize
+    if (!force && !unparsed && existing != null && existing.size === stat.size && existing.mtime === stat.mtime) return
 
-    const kind = detectDocumentKind(path)
     if (kind === 'binary') {
       // Nothing in the file would be read, so it is not read: hashing a video to learn it is still a
       // video costs a full pass over it.

@@ -98,6 +98,15 @@ class PgliteSqlIndex extends PgliteExecutor implements SqlIndex {
   readonly dataDir: string
   private readonly pglite: PGlite
   private isClosed = false
+  // Queue over ALL access to the connection. PGlite holds a single connection, and readOnly() keeps a
+  // multi-step transaction open on it (BEGIN → SET TRANSACTION READ ONLY → query → COMMIT). A write
+  // that lands in that window runs INSIDE the read-only transaction and dies with 25006 — "cannot
+  // execute INSERT in a read-only transaction". From the outside this looked like the indexer losing
+  // whichever file it was writing exactly while someone ran a console query, leaving that file in the
+  // index with no text and no title, permanently (readDocumentState still saw a row, so it never
+  // retried — see the indexer's own unparsed-row fix). The queue only forbids interleaving; PGlite is
+  // single-threaded regardless, so it costs no throughput.
+  private tail: Promise<unknown> = Promise.resolve()
 
   constructor(dataDir: string, db: PGlite, typeNames: Map<number, string>) {
     super(db, typeNames)
@@ -111,17 +120,35 @@ class PgliteSqlIndex extends PgliteExecutor implements SqlIndex {
 
   override async query<R = SqlRow>(sql: string, params: unknown[] = []): Promise<SqlQueryResult<R>> {
     this.assertOpen()
-    return super.query<R>(sql, params)
+    return this.serialize(() => super.query<R>(sql, params))
   }
 
   override async exec(sql: string): Promise<void> {
     this.assertOpen()
-    return super.exec(sql)
+    return this.serialize(() => super.exec(sql))
+  }
+
+  // Queues the given work behind everything already queued. A rejection doesn't wedge the queue — the
+  // next caller still gets its own turn, or one failed statement would hang the index until restart.
+  private serialize<T>(work: () => Promise<T>): Promise<T> {
+    const next = this.tail.then(work, work)
+    this.tail = next.then(
+      () => undefined,
+      () => undefined,
+    )
+    return next
   }
 
   async readOnly<R = SqlRow>(sql: string, params: unknown[] = [], limits: SqlReadOnlyLimits = {}): Promise<SqlReadOnlyResult<R>> {
     this.assertOpen()
+    return this.serialize(() => this.runReadOnly<R>(sql, params, limits))
+  }
 
+  private async runReadOnly<R = SqlRow>(
+    sql: string,
+    params: unknown[],
+    limits: SqlReadOnlyLimits,
+  ): Promise<SqlReadOnlyResult<R>> {
     const maxRows = positiveInteger(limits.maxRows, DEFAULT_MAX_ROWS)
     const timeoutMs = positiveInteger(limits.timeoutMs, DEFAULT_TIMEOUT_MS)
 
@@ -179,6 +206,10 @@ class PgliteSqlIndex extends PgliteExecutor implements SqlIndex {
 
   async transaction<T>(fn: (tx: SqlExecutor) => Promise<T>): Promise<T> {
     this.assertOpen()
+    return this.serialize(() => this.runTransaction(fn))
+  }
+
+  private async runTransaction<T>(fn: (tx: SqlExecutor) => Promise<T>): Promise<T> {
     // PGlite's transaction() resolves with what the callback returned, but T is only known here —
     // carrying the value out through an array keeps the generic exact without a cast.
     const captured: T[] = []
