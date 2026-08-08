@@ -104,14 +104,6 @@ const status = computed(() => [...footerLeft.value, ...footerRight.value])
     <!-- No app bar. The top of the screen is content, and the title it would have shown is either in
          the note itself or on the key that opened it. -->
     <div class="mobile-stage">
-      <!-- Inside the stage, not beside it: MobileFilesPanel's scrim covers this whole area (inset: 0
-           relative to .mobile-stage), so the dock rides under the panel along with the content — only
-           the tab row below stays visible, exactly as it did before the dock existed. Leaving the dock
-           as a sibling of .mobile-stage would have doubled the dead strip beneath an open panel to
-           dock+row instead of the row alone, and left the panel floating further from the true bottom
-           edge than the sheet role anywhere else in the app does. -->
-      <MobileDock v-if="nav != null" :icon="nav.icon" :title="nav.title" :active="nav.active" @open="toggle('files')" />
-
       <main class="mobile-content">
         <!-- Switching mini-apps used to fully unmount the outgoing one — a phone will do this dozens
              of times a session (Notes -> Search -> back), and every return was a freshly-mounted
@@ -122,6 +114,12 @@ const status = computed(() => [...footerLeft.value, ...footerRight.value])
           <component v-if="activeItem?.layout" :is="activeItem.layout" :key="activeItem.id" />
         </KeepAlive>
       </main>
+
+      <!-- Last in the flex column, not first: this is the row directly above the tab bar — the two-tier
+           bottom bar the dock exists for. Still inside .mobile-stage rather than beside it, so
+           MobileFilesPanel's scrim (inset: 0 relative to .mobile-stage) covers it along with the
+           content; only the tab row outside the stage stays visible under an open panel. -->
+      <MobileDock v-if="nav != null" :icon="nav.icon" :title="nav.title" :active="nav.active" @open="toggle('files')" />
 
       <MobileFilesPanel :open="layer === 'files'" :title="railTitle" @close="layer = null" />
 
