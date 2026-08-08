@@ -4,12 +4,13 @@ import type { KeyStore } from './keystore'
 
 // Reserved entry (in the inner store) holding the per-store scrypt salt as hex. Not secret; needed to
 // re-derive the key on the next unlock. Hidden from list() so it never shows up as a user secret.
-const SALT_ENTRY = '__vault_salt__'
+// Exported so a migration in device-lock.ts can promote it last and know it did — see promoteStaged.
+export const SALT_ENTRY = '__vault_salt__'
 
 // Reserved entry holding a known plaintext encrypted under the derived key. Its presence is also what
 // marks a store as locked. Without it a wrong code would only surface when something first read a real
 // secret — by which time the caller has already committed to booting with a store it cannot read.
-const CHECK_ENTRY = '__vault_check__'
+export const CHECK_ENTRY = '__vault_check__'
 const CHECK_VALUE = 'arxhub-device-lock-v1'
 
 const RESERVED = new Set([SALT_ENTRY, CHECK_ENTRY])

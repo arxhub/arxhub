@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@arxhub/crypto": "workspace:*",
+    "@sinclair/typebox": "catalog:shared",
     "elysia": "catalog:server",
     "vue": "catalog:client"
   },

@@ -36,8 +36,9 @@ const arxhub = new ArxHub({ disabled: policy.disabled, maintenance: policy.maint
 // Resolve the device identity from client-local storage and install it into the signer before start().
 // In browser mode this signs every /vfs request; under Tauri the native fs needs no signing, but the
 // same identity still drives sync encryption/auth.
-// Blocks on the unlock prompt when the device is locked — nothing below can run without the secrets.
-const keystore = await resolveKeyStore()
+// Blocks on the unlock prompt when the device is locked, or on first-run lock setup when it never has
+// been (requireLock: true — a shipped build never boots with its secrets in the clear).
+const keystore = await resolveKeyStore({ requireLock: true })
 const keyring = await loadOrCreateKeyring(keystore)
 const signer = new MutableRequestSigner()
 signer.install(keyring)

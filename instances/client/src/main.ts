@@ -33,8 +33,9 @@ const policy = new BootPolicy()
 const arxhub = new ArxHub({ disabled: policy.disabled, maintenance: policy.maintenance })
 // Resolve the device identity from client-local storage (never the server VFS) and install it into the
 // signer BEFORE start(): the /vfs backend is protected, so every request must already be signed.
-// Blocks on the unlock prompt when the device is locked — nothing below can run without the secrets.
-const keystore = await resolveKeyStore()
+// Blocks on the unlock prompt when the device is locked, or on first-run lock setup when it never has
+// been (requireLock: true — a shipped build never boots with its secrets in the clear).
+const keystore = await resolveKeyStore({ requireLock: true })
 const keyring = await loadOrCreateKeyring(keystore)
 const signer = new MutableRequestSigner()
 signer.install(keyring)
