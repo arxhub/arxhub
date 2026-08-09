@@ -121,8 +121,8 @@ function onContextMenu(event: MouseEvent) {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 8px 0 12px;
-  height: var(--size-2xs);
+  padding: 0 4px 0 8px;
+  height: var(--size-md);
   max-width: 220px;
   border: 1px solid transparent;
   border-radius: var(--radius-xs);

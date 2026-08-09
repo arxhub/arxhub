@@ -21,8 +21,7 @@ function openPlugins(): void {
 
 <style scoped>
 .maintenance {
-  align-self: center;
-  height: 24px;
+  height: var(--size-md);
   padding: 0 8px;
   border: none;
   border-radius: var(--radius-xs);
