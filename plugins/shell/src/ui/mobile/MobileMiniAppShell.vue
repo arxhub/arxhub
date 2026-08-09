@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useSlots } from 'vue'
-import { claimRailHost, MOBILE_RAIL_HOST_ID } from './rail-host'
+import { onActivated, onDeactivated, onUnmounted, ref, useId, useSlots } from 'vue'
+import { claimRailHost, fallbackRailId, MOBILE_RAIL_HOST_ID, releaseRailHost } from './rail-host'
 
 const props = withDefaults(
   defineProps<{
@@ -20,15 +20,39 @@ const slots = useSlots()
 // A mini-app declares its #rail slot in its own template, so whether it has one is fixed for the life
 // of the component — settled once here rather than watched.
 const hasRail = props.rail && !!slots.rail
-// Tells the frame there is something behind the key, and what to call it. Without a claim the key does
-// not render at all.
-if (hasRail) claimRailHost({ title: props.railTitle, icon: props.railIcon })
+const id = useId() ?? fallbackRailId()
+
+// A mini-app's layout sits inside MobileShell's <KeepAlive>, so switching away deactivates this
+// component rather than unmounting it — a claim made once at setup and never released left every
+// previously-visited mini-app's Teleport still rendering into the shared rail host forever, stacked
+// underneath whichever one claimed the (title, icon) pair last: Explorer's file tree and Search's rail
+// both live in #arxhub-mobile-rail at once, and the dock key names only the most recent of them.
+// onActivated fires once on the initial mount too, so claiming only there — never at setup — covers
+// both the first appearance and every later return; onUnmounted stays as a defensive fallback for
+// mounting outside any KeepAlive ancestor, where onActivated/onDeactivated never fire at all.
+const isActive = ref(false)
+
+function claim(): void {
+  isActive.value = true
+  if (hasRail) claimRailHost(id, { title: props.railTitle, icon: props.railIcon })
+}
+
+function release(): void {
+  isActive.value = false
+  releaseRailHost(id)
+}
+
+onActivated(claim)
+onDeactivated(release)
+onUnmounted(release)
 </script>
 
 <template>
   <!-- Deferred because the host is mounted by the frame after this content: the panel sits below the
-       stage in the tree, so its target does not exist yet on our first render. -->
-  <Teleport v-if="hasRail" :to="`#${MOBILE_RAIL_HOST_ID}`" defer>
+       stage in the tree, so its target does not exist yet on our first render. isActive, not just
+       hasRail, gates the Teleport itself — otherwise the claim stops naming this mini-app on
+       deactivation while its content keeps teleporting into the shared host regardless. -->
+  <Teleport v-if="hasRail && isActive" :to="`#${MOBILE_RAIL_HOST_ID}`" defer>
     <slot name="rail" />
   </Teleport>
 

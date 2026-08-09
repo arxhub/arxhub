@@ -1,4 +1,4 @@
-import { type ComputedRef, computed, onScopeDispose, ref, useId } from 'vue'
+import { type ComputedRef, computed, ref } from 'vue'
 
 // The mobile frame has no permanent column for a mini-app's own navigation, so the mini-app teleports
 // its rail into a panel instead. The frame has to know two things before it offers the key that opens
@@ -23,10 +23,21 @@ const claims = ref<{ id: string; claim: RailClaim }[]>([])
 // file is typechecked through that instance.
 export const railClaim: ComputedRef<RailClaim | null> = computed(() => claims.value[claims.value.length - 1]?.claim ?? null)
 
-export function claimRailHost(claim: RailClaim): void {
-  const id = useId() ?? `rail-${claims.value.length}`
+// The id is the caller's own — claim/release is now driven by onActivated/onDeactivated (see
+// MobileMiniAppShell.vue), not by scope disposal, so a single id has to survive repeated claim/release
+// pairs across a mini-app's whole KeepAlive-cached lifetime rather than being minted fresh each call.
+export function claimRailHost(id: string, claim: RailClaim): void {
   claims.value = [...claims.value, { id, claim }]
-  onScopeDispose(() => {
-    claims.value = claims.value.filter((entry) => entry.id !== id)
-  })
+}
+
+export function releaseRailHost(id: string): void {
+  claims.value = claims.value.filter((entry) => entry.id !== id)
+}
+
+// useId() is unavailable in one build target this file is typechecked through (see the historical note
+// this replaced); a locally incrementing id is a fine fallback since uniqueness, not stability across
+// reloads, is all a claim id needs.
+let nextFallbackId = 0
+export function fallbackRailId(): string {
+  return `rail-${nextFallbackId++}`
 }
