@@ -94,31 +94,57 @@ function onKeyDown(e: KeyboardEvent) {
 </template>
 
 <style scoped>
+/* Zero in the resize axis — no permanent 4px band between two panel groups — but the grab area still
+   needs to be wide enough to find, so ::after carries that instead, reaching 4px into each pane on
+   either side of it. Same technique as .rail-resize in DesktopMiniAppShell.vue: hovering the
+   pseudo-element's rendered pixels counts as hovering this element, so :hover/:active/:focus-visible
+   below and the @mousedown in the template all still fire correctly. */
 .resize-handle {
+  position: relative;
   flex-shrink: 0;
-  background-color: var(--gray-4);
   z-index: 1;
 }
 
-.resize-handle:hover,
-.resize-handle:active {
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  background-color: transparent;
+  transition: background-color var(--duration-fast);
+}
+
+.resize-handle:hover::after,
+.resize-handle:active::after {
   background-color: var(--accent-7);
 }
 
-.resize-handle:focus-visible {
+.resize-handle:focus-visible::after {
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
 }
 
 .resize-handle.horizontal {
-  width: 4px;
+  width: 0;
   height: 100%;
   cursor: col-resize;
 }
 
+.resize-handle.horizontal::after {
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+}
+
 .resize-handle.vertical {
   width: 100%;
-  height: 4px;
+  height: 0;
   cursor: row-resize;
+}
+
+.resize-handle.vertical::after {
+  left: 0;
+  right: 0;
+  top: -4px;
+  bottom: -4px;
 }
 </style>
