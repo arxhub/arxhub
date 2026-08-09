@@ -26,17 +26,32 @@ Every value below comes from a token. A literal in place of one of these is a vi
 
 - **Strip** — a horizontal band above content: a header, a tab bar, a formatting row, a filter row. `var(--size-md)`
   (40px), text `var(--font-size-sm)`. One element with an optional title slot — a strip with a title and a strip with
-  only controls are the same role, not two.
+  only controls are the same role, not two. Its two zones have one job each and are never swapped: the content zone
+  (the `title` slot or the default slot) is an identifying label — a static name (`title="Vault"`) or a live one
+  (a `StatusDot` plus text, as content) — paired with icon-only `IconButton`s for the strip's frequent, self-evident
+  actions (new file, formatting marks); `#actions` is for occasional, commit-style controls that need a label and
+  read as a decision rather than a toggle (Save, Clear, Run) — a labelled bordered `Button` belongs there and nowhere
+  else in the strip. `size="lg"` on `IconButton` (`var(--size-md)`, 40px) fills the strip's own height edge to edge,
+  the way `size="lg"` on nothing else does — reach for it exactly when an icon sits directly in a strip. Pair it
+  with `Strip`'s `flush-actions` when the actions zone ends in one: the strip's own 8px right inset is for content
+  that needs the breathing room (text, a smaller icon), and against a `size="lg"` icon it does not frame the icon,
+  it silently eats into it — a title plus four `size="lg"` actions is wide enough to overflow the strip's own
+  padding, which reads as "no gap" for the wrong reason (overflow, not a rule) and shifts if the title's length
+  ever does. `flush-actions` makes the same edge deliberate instead.
 - **Row** — one item of an enumeration: a tree node, a menu item, a settings section, a search result, a log entry.
   28px on the desktop frame, `var(--size-xl)` (48px) on the mobile frame. The frame chooses, read through
   `useShellFrame()`; the consumer gets no density prop. A single-line row lands exactly on the value; a row that
   legitimately wraps grows down from it.
 - **Control** — an interactive element: button, input, switch, stepper, segmented control. `var(--size-xs)` (32px).
-- **Status bar** — 32px.
+- **Status bar** — `var(--size-md)` (40px) on the desktop frame, matching the rail's own `size="lg"` `NavItem`
+  it now runs the full height beside — a shorter footer left a jog where the two met instead of one level seam. Its
+  own items (Logs, Sync, the maintenance/auth/pending-changes alerts) fill that height edge to edge rather than
+  sitting as a smaller control centred inside it — the same reasoning as the Tab role below, applied to the same bar.
 - **Page frame** — a full-height page (a settings section, a full-screen mini-app): `PageLayout`, padding
   `24px 24px 20px`, and it sets no measure. A panel of the workspace is NOT a page: it starts with a strip.
-- **Tab** — keeps its own component (it carries drag-and-drop and a close control) but takes its height from the row
-  role rather than a literal.
+- **Tab** — keeps its own component (it carries drag-and-drop and a close control) but matches the Strip it sits in
+  (`var(--size-md)`, 40px) rather than the Row role — it fills the tab bar's own height edge to edge, the way a
+  `size="lg"` icon does, instead of sitting centred inside it with a gap above and below.
 </Roles>
 
 <Colour>
