@@ -10,13 +10,17 @@ withDefaults(
     // A strip divides two regions and says so with a rule. The exception is a strip that is already
     // inside a bordered box (a dialog closes its own edge), not a matter of taste.
     bordered?: boolean
+    // A size="lg" IconButton already fills the strip's own height — the 8px right inset built for
+    // text and smaller icons then just eats into it instead of framing it. Set this when the strip
+    // ends in one, so the icon reaches the edge on purpose instead of overflowing into it by accident.
+    flushActions?: boolean
   }>(),
   { bordered: true },
 )
 </script>
 
 <template>
-  <div class="strip" :class="{ bordered }">
+  <div class="strip" :class="{ bordered, 'flush-actions': flushActions }">
     <span v-if="title || $slots.title" class="strip-title">
       <slot name="title">{{ title }}</slot>
     </span>
@@ -43,6 +47,10 @@ withDefaults(
 
 .strip.bordered {
   border-bottom: 1px solid var(--gray-6);
+}
+
+.strip.flush-actions {
+  padding-right: 0;
 }
 
 /* 8px more than the strip's own inset, so a title reads as a label of the region rather than as the

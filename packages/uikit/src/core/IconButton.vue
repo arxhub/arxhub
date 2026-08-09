@@ -10,7 +10,7 @@ defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
     icon?: string
-    size?: 'xs' | 'sm' | 'md'
+    size?: 'xs' | 'sm' | 'md' | 'lg'
     active?: boolean
     disabled?: boolean
     tooltip?: string
@@ -23,7 +23,7 @@ const props = withDefaults(
 
 // One optical size across the set: a single-weight glyph at ~14px inside a larger hit box, so chrome
 // icons read as labels rather than as buttons of their own.
-const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16 })[props.size])
+const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20 })[props.size])
 </script>
 
 <template>
@@ -107,5 +107,10 @@ const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16 })[props.size])
 .size-md {
   width: 28px;
   height: var(--size-2xs);
+}
+
+.size-lg {
+  width: var(--size-md);
+  height: var(--size-md);
 }
 </style>

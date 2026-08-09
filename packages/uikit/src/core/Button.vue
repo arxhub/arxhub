@@ -100,7 +100,7 @@ defineProps<{
 .btn-sm {
   height: 24px;
   padding: 0 8px;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
 }
 
 .btn-md {

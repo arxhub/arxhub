@@ -24,16 +24,16 @@ withDefaults(
   background: var(--gray-4);
 }
 
+/* No margin of its own: every call site places this inside a flex row that already has `gap`, and a
+   margin here on top of that gap doubled the space around a separator versus between two plain icons. */
 .separator.vertical {
   width: 1px;
   height: 16px;
-  margin: 0 4px;
 }
 
 .separator.horizontal {
   width: 100%;
   height: 1px;
-  margin: 4px 0;
 }
 
 .separator.grow {
