@@ -59,7 +59,19 @@ export interface PanelStore {
   registerPanel(def: PanelDefinition): void
   getDefinition(id: string): PanelDefinition | undefined
   getPanelsForFile(ext: string): PanelDefinition[]
-  openPanel(definitionId: string, props?: Record<string, unknown>, title?: string, targetGroupId?: string, preview?: boolean): string
+  // dedupe, when given, is checked against every open instance of this definitionId BEFORE a new one is
+  // created: a match is activated (and promoted out of preview) in place, and its instanceId returned,
+  // instead of opening a second copy. Callers that want at most one instance of a panel — ever (Welcome,
+  // the SQL console) or per some key (Settings' one-tab-per-section) — pass this instead of hand-rolling
+  // the same scan over `groups`.
+  openPanel(
+    definitionId: string,
+    props?: Record<string, unknown>,
+    title?: string,
+    targetGroupId?: string,
+    preview?: boolean,
+    dedupe?: (instance: PanelInstance) => boolean,
+  ): string
   activatePanel(instanceId: string, groupId: string): void
   promotePanel(instanceId: string, groupId: string): void
   closePanel(instanceId: string, groupId: string): void

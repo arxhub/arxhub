@@ -91,7 +91,9 @@ const explorer = arxhub.extensions.has(ExplorerExtension) ? arxhub.extensions.ge
 if (explorer != null) shell.sidebar.setActive('arxhub.explorer')
 
 store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
-store.openPanel('arxhub.welcome', {}, 'Welcome', explorer?.contentGroupId ?? undefined)
+// dedupe: a workspace restored from a previous session may already have Welcome open — without this,
+// every boot added a second one on top of it rather than bringing the existing tab to front.
+store.openPanel('arxhub.welcome', {}, 'Welcome', explorer?.contentGroupId ?? undefined, false, () => true)
 
 // One browser build is served to phones and desktops alike, so this bundle cannot know its frame and
 // probes once, here, at boot. Everything below the shell reads the answer from injection — nothing in

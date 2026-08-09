@@ -7,21 +7,14 @@ export interface OpenConsole {
 }
 
 // Puts the SQL console in front of the owner. One console, not one per click: a second instance would hold
-// a second copy of a query text that is stored per device anyway, so an open one is activated instead.
+// a second copy of a query text that is stored per device anyway, so an open one is activated instead —
+// openPanel's own dedupe does the scan-and-activate; this only names which existing instance counts.
 export function useOpenConsole(): OpenConsole {
   const arxhub = useArxHub()
   const { store } = arxhub.extensions.get(PanelStoreExtension)
 
   function open(): void {
-    for (const [groupId, group] of Object.entries(store.groups.value)) {
-      const instance = group.instances.find((candidate) => candidate.definitionId === SQL_CONSOLE_PANEL)
-      if (instance == null) continue
-      store.activateGroup(groupId)
-      store.activatePanel(instance.instanceId, groupId)
-      if (instance.preview === true) store.promotePanel(instance.instanceId, groupId)
-      return
-    }
-    store.openPanel(SQL_CONSOLE_PANEL, {}, 'SQL console')
+    store.openPanel(SQL_CONSOLE_PANEL, {}, 'SQL console', undefined, false, () => true)
   }
 
   return { open }

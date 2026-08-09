@@ -56,22 +56,15 @@ export class SettingsExtension extends Extension {
     if (this.activeId.value === id) this.activeId.value = this.sections.value[0]?.id ?? null
   }
 
-  // Open the section as a tab in the content store, reusing an existing tab if already open.
+  // Open the section as a tab in the content store, reusing an existing tab if already open — openPanel's
+  // own dedupe does the scan-and-activate; this only names which existing instance counts (one per section,
+  // even though every section shares the same 'settings.page' definitionId).
   open(id: string): void {
     this.activeId.value = id
     const store = this.store
     if (!store) return
 
-    for (const [groupId, group] of Object.entries(store.groups.value)) {
-      const instance = group.instances.find((i) => i.props?.sectionId === id)
-      if (instance) {
-        store.activateGroup(groupId)
-        store.activatePanel(instance.instanceId, groupId)
-        return
-      }
-    }
-
     const section = this.sections.value.find((s) => s.id === id)
-    store.openPanel('settings.page', { sectionId: id }, section?.title ?? id)
+    store.openPanel('settings.page', { sectionId: id }, section?.title ?? id, undefined, false, (i) => i.props?.sectionId === id)
   }
 }

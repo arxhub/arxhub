@@ -67,9 +67,27 @@ export function createPanelStore(bus: EventBus): PanelStore {
       return definitions.value.filter((d) => d.handles?.includes(ext))
     },
 
-    openPanel(definitionId: string, props?: Record<string, unknown>, title?: string, targetGroupId?: string, preview = false): string {
+    openPanel(
+      definitionId: string,
+      props?: Record<string, unknown>,
+      title?: string,
+      targetGroupId?: string,
+      preview = false,
+      dedupe?: (instance: PanelInstance) => boolean,
+    ): string {
       const def = definitions.value.find((d) => d.id === definitionId)
       if (!def) throw illegalState(`Panel definition not found: ${definitionId}`)
+
+      if (dedupe) {
+        for (const [existingGroupId, existingGroup] of Object.entries(groups.value)) {
+          const existing = existingGroup.instances.find((i) => i.definitionId === definitionId && dedupe(i))
+          if (!existing) continue
+          store.activateGroup(existingGroupId)
+          store.activatePanel(existing.instanceId, existingGroupId)
+          if (existing.preview) store.promotePanel(existing.instanceId, existingGroupId)
+          return existing.instanceId
+        }
+      }
 
       let groupId = targetGroupId ?? activeGroupId.value
 

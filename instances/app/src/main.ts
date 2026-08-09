@@ -111,7 +111,9 @@ const explorer = arxhub.extensions.has(ExplorerExtension) ? arxhub.extensions.ge
 if (explorer != null) shell.sidebar.setActive('arxhub.explorer')
 
 store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
-store.openPanel('arxhub.welcome', {}, 'Welcome', explorer?.contentGroupId ?? undefined)
+// dedupe: a workspace restored from a previous session may already have Welcome open — without this,
+// every boot added a second one on top of it rather than bringing the existing tab to front.
+store.openPanel('arxhub.welcome', {}, 'Welcome', explorer?.contentGroupId ?? undefined, false, () => true)
 
 // The frame is a build decision, not a runtime one: a phone package mounts the mobile shell and never
 // ships the desktop one. __ARXHUB_FRAME__ comes from TAURI_ENV_PLATFORM — see vite.config.ts.
