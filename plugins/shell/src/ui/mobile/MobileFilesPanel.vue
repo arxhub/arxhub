@@ -14,10 +14,11 @@ useBackStack(
 
 // Everything in the rail is a navigation target, so choosing one dismisses the panel — including the
 // one already active, which raises no event to react to. Expanding a folder is the exception: it has
-// not navigated anywhere yet.
+// not navigated anywhere yet. [role="option"] covers Search's result listbox — a result is never
+// expandable, so it carries none of the treeitem selector's aria-expanded exception.
 function onActivate(event: MouseEvent): void {
   const target = event.target as HTMLElement | null
-  if (target?.closest('button, [role="treeitem"]:not([aria-expanded])')) emit('close')
+  if (target?.closest('button, [role="treeitem"]:not([aria-expanded]), [role="option"]')) emit('close')
 }
 </script>
 
