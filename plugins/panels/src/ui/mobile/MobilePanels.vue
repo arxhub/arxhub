@@ -1,90 +1,23 @@
 <script setup lang="ts">
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { BottomSheet, IconButton, Row } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
-import { computed, onActivated, onDeactivated, onUnmounted, ref, useId } from 'vue'
+import { IconButton } from '@arxhub/uikit/core'
 import type { PanelStore } from '../../types'
 import PanelView from '../PanelView.vue'
+import { useOpenTabsList } from '../use-open-tabs'
 
 const props = withDefaults(
   defineProps<{
     store: PanelStore
-    // 'single' is one page at a time switched from the mini-app's rail: no key listing what is open and
-    // no context strip, because the rail is already that list and a settings section has nothing to close.
+    // 'single' is one page at a time switched from the mini-app's rail: no context strip, because the
+    // rail is already that list and a settings section has nothing to close.
     mode?: 'tiled' | 'single'
-    // Label for the bottom-bar key that lists this layout's open panels. Tiled mode only.
-    tab?: string
-    tabIcon?: string
   }>(),
   { mode: 'tiled' },
 )
 
-const sheetOpen = ref(false)
-
 // A narrow screen shows one document at a time. The layout tree built on a wide screen is left
 // untouched — every open instance is still there, so the same vault opened on a desktop still has the
 // arrangement it was given.
-const openTabs = computed(() =>
-  Object.entries(props.store.groups.value).flatMap(([groupId, group]) =>
-    group.instances.map((instance) => ({
-      groupId,
-      instance,
-      active: group.activeInstanceId === instance.instanceId && groupId === props.store.activeGroupId.value,
-    })),
-  ),
-)
-
-const current = computed(() => openTabs.value.find((tab) => tab.active) ?? openTabs.value[0])
-
-// File panels carry the path they were opened with; a settings page or the welcome panel does not.
-function pathOf(instance: { props?: Record<string, unknown> }): string | null {
-  const path = instance.props?.path
-  return typeof path === 'string' ? path : null
-}
-
-function select(groupId: string, instanceId: string): void {
-  props.store.activateGroup(groupId)
-  props.store.activatePanel(instanceId, groupId)
-  sheetOpen.value = false
-}
-
-// The key belongs to this layout rather than to the app: it arrives when the mini-app hosting it comes
-// on screen and leaves with it, so the bar always describes what is actually in front of you — and it
-// counts this layout's own store, not whatever the global one happens to hold.
-//
-// onActivated/onDeactivated, not onMounted/onUnmounted: the mini-app switch above this is wrapped in
-// KeepAlive, so leaving a mini-app deactivates its component tree rather than destroying it — onUnmounted
-// never ran, the outgoing layout's key stayed registered, and the next mini-app's own MobilePanels
-// registered a SECOND one, both reading "Notes" at once. onActivated already fires once on the initial
-// mount (right after onMounted would have), so registering only there — never in onMounted — covers both
-// the first appearance and every later return. onUnmounted stays as a defensive fallback for the (today
-// hypothetical) case of this component mounting outside any KeepAlive ancestor, where onActivated/
-// onDeactivated never fire at all.
-const title = props.tab
-if (props.mode === 'tiled' && title != null) {
-  const shell = useArxHub().extensions.get(ShellExtension)
-  // Per instance: mini-apps overlap during a switch, so a fixed id would have the outgoing layout
-  // unregister the incoming one's key.
-  const id = `arxhub.panels.tab.${useId()}`
-  const register = () =>
-    shell.tabs.register({
-      id,
-      icon: props.tabIcon ?? 'lu:file-text',
-      title,
-      order: 0,
-      gesture: 'right-edge',
-      badge: () => openTabs.value.length,
-      active: () => sheetOpen.value,
-      onSelect: () => {
-        sheetOpen.value = !sheetOpen.value
-      },
-    })
-  const unregister = () => shell.tabs.unregister(id)
-
-  onActivated(register)
-  onDeactivated(unregister)
-  onUnmounted(unregister)
-}
+const { openTabs, current, pathOf } = useOpenTabsList(props.store)
 </script>
 
 <template>
@@ -119,34 +52,6 @@ if (props.mode === 'tiled' && title != null) {
         @click="props.store.closePanel(current.instance.instanceId, current.groupId)"
       />
     </div>
-
-    <!-- Every open document is reachable, not only the ones that would have fitted in a tab strip. -->
-    <BottomSheet
-      v-if="mode === 'tiled'"
-      :open="sheetOpen"
-      title="Open documents"
-      label="Open documents"
-      @close="sheetOpen = false"
-    >
-      <div class="tab-list" role="menu">
-        <Row
-          v-for="tab in openTabs"
-          :key="tab.instance.instanceId"
-          as="button"
-          type="button"
-          wrap
-          class="tab-entry"
-          :selected="tab.active"
-          role="menuitem"
-          @click="select(tab.groupId, tab.instance.instanceId)"
-        >
-          <span class="entry-text">
-            <span class="entry-name">{{ tab.instance.title }}</span>
-            <span v-if="pathOf(tab.instance)" class="entry-path">{{ pathOf(tab.instance) }}</span>
-          </span>
-        </Row>
-      </div>
-    </BottomSheet>
   </div>
 </template>
 
@@ -185,15 +90,9 @@ if (props.mode === 'tiled' && title != null) {
   background: var(--gray-2);
 }
 
-.tab-list {
-  display: flex;
-  flex-direction: column;
-  padding: 0 8px;
-}
-
-/* The two lines of a document's identity — name over path — used both inside a Row's box (the row owns
-   its height and inset) and directly in the context strip above the bottom bar; one block, so the two
-   never drift apart the way a `Row`-owned copy and a hand-rolled one already had (gap, weight). */
+/* The two lines of a document's identity — name over path — also used, verbatim, by OpenTabsList's own
+   Row entries; one block, so the two never drift apart the way a `Row`-owned copy and a hand-rolled one
+   already had (gap, weight). */
 .entry-text {
   display: flex;
   flex-direction: column;

@@ -1689,6 +1689,9 @@ importers:
       '@arxhub/plugin-codemirror':
         specifier: workspace:*
         version: link:../codemirror
+      '@arxhub/plugin-explorer':
+        specifier: workspace:*
+        version: link:../explorer
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels

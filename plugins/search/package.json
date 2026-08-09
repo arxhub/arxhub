@@ -38,6 +38,7 @@
     "@arxhub/errors": "workspace:*",
     "@arxhub/logger": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
+    "@arxhub/plugin-explorer": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",

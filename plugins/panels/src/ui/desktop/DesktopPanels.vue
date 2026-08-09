@@ -11,9 +11,6 @@ const props = withDefaults(
   defineProps<{
     store: PanelStore
     mode?: 'tiled' | 'single'
-    // Accepted for one shape across both frames, unused here: nothing on this frame is behind a key.
-    tab?: string
-    tabIcon?: string
   }>(),
   { mode: 'tiled' },
 )

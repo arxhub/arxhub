@@ -11,6 +11,6 @@ import SearchRail from './SearchRail.vue'
     <template #rail>
       <SearchRail />
     </template>
-    <PanelsLayout tab="Notes" />
+    <PanelsLayout />
   </MiniAppShell>
 </template>

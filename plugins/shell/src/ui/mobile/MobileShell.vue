@@ -65,11 +65,11 @@ const nav = computed(() =>
 // the sheet, exactly as it sits at the bottom of the desktop rail rather than among the mini-apps.
 const miniAppTabs = computed((): MobileTab[] =>
   sidebarItems.value
-    .filter((item) => !item.hidden && item.region !== 'bottom')
+    .filter((item) => !item.hidden && item.region !== 'bottom' && !item.absorbedOnMobileBy)
     .map((item) => ({
       id: item.id,
       icon: item.icon,
-      title: item.title,
+      title: item.mobileTitle ?? item.title,
       order: item.order ?? 0,
       active: () => activeId.value === item.id,
       onSelect: () => setActive(item.id),

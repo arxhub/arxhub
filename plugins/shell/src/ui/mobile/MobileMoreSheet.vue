@@ -11,8 +11,10 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ 'item-select': [id: string]; close: [] }>()
 
-// Same split the desktop rail makes — the mini-apps you work in, then the ones you visit.
-const primary = computed(() => props.items.filter((i) => !i.hidden && i.region !== 'bottom'))
+// Same split the desktop rail makes — the mini-apps you work in, then the ones you visit. An item
+// absorbed into another mini-app's mobile rail (see SidebarItem.absorbedOnMobileBy) is reachable from
+// there, not from a second place here — the same filter the bottom tab row applies.
+const primary = computed(() => props.items.filter((i) => !i.hidden && i.region !== 'bottom' && !i.absorbedOnMobileBy))
 const secondary = computed(() => props.items.filter((i) => !i.hidden && i.region === 'bottom'))
 
 function select(id: string): void {
@@ -40,7 +42,7 @@ function select(id: string): void {
         @click="select(item.id)"
       >
         <Icon :name="item.icon" :size="16" />
-        <span>{{ item.title }}</span>
+        <span>{{ item.mobileTitle ?? item.title }}</span>
       </Row>
 
       <div v-if="secondary.length && primary.length" class="more-divider" />
@@ -55,7 +57,7 @@ function select(id: string): void {
         @click="select(item.id)"
       >
         <Icon :name="item.icon" :size="16" />
-        <span>{{ item.title }}</span>
+        <span>{{ item.mobileTitle ?? item.title }}</span>
       </Row>
     </nav>
   </BottomSheet>

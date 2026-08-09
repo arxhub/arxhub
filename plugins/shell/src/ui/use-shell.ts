@@ -43,6 +43,8 @@ export function useShell(): Shell {
         region: item.region,
         order: item.order,
         hidden: item.hidden,
+        absorbedOnMobileBy: item.absorbedOnMobileBy,
+        mobileTitle: item.mobileTitle,
       })),
     ),
     headerLeft: computed(() => byOrder(shell.header.items.filter((i) => i.region === 'left'))),

@@ -1,5 +1,6 @@
 import { PluginConfig } from '@arxhub/config'
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { EXPLORER_SIDEBAR_ITEM, ExplorerExtension } from '@arxhub/plugin-explorer/ui'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
@@ -12,6 +13,7 @@ import { manifest } from './manifest'
 import { SearchConfigSchema, toSearchSettings } from './search-config'
 import { SearchExtension } from './search-extension'
 import SearchLayout from './ui/SearchLayout.vue'
+import SearchRail from './ui/SearchRail.vue'
 import SearchSettingsPage from './ui/SearchSettingsPage.vue'
 import SqlConsolePanel from './ui/SqlConsolePanel.vue'
 
@@ -49,15 +51,33 @@ export class SearchPlugin extends Plugin {
     const search = ctx.extensions.get(SearchExtension)
     search.config = ctx.services.get(PluginConfig)
 
-    // One registration for both frames: the desktop rail renders it as a section and the mobile bottom bar
-    // as a key, from the same item — the frame decides where a mini-app lands, the plugin does not (FR-228).
+    // One registration for both frames: the desktop rail renders it as a section, from the same item —
+    // the frame decides where a mini-app lands, the plugin does not (FR-228). absorbedOnMobileBy is the
+    // one declarative exception: on a phone Search has no bottom-bar destination of its own (see the
+    // rail-tab contribution below instead), so the mobile frame drops it from its tab row and the More
+    // sheet on that account without either frame or plugin naming the other.
     ctx.extensions.get(ShellExtension).sidebar.register({
       id: SEARCH_SIDEBAR_ITEM,
       icon: 'lu:search',
       title: 'Search',
       layout: SearchLayout,
       order: 10,
+      absorbedOnMobileBy: EXPLORER_SIDEBAR_ITEM,
     })
+
+    // Explorer is switchable and Search does not otherwise depend on it — a device that disabled
+    // Explorer must not lose Search over a missing contribution target. Contributed unconditionally
+    // otherwise (not gated on frame): Explorer's own mobile-only rail switcher is the thing that decides
+    // whether to render this at all, the same way desktop's rail never reads getRailTabs() in the first
+    // place, so nothing here has to ask which frame it is running on.
+    if (ctx.extensions.has(ExplorerExtension)) {
+      ctx.extensions.get(ExplorerExtension).registerRailTab({
+        id: SEARCH_SIDEBAR_ITEM,
+        title: 'Search',
+        icon: 'lu:search',
+        component: markRaw(SearchRail),
+      })
+    }
 
     // The console is a content panel on the workspace store, not a screen of its own: the owner opens it
     // from the Search rail and it sits beside the notes, in whichever frame is running (FR-236).

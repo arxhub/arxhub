@@ -1,7 +1,7 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { VaultVfs } from '@arxhub/vfs'
-import { ExplorerExtension } from './explorer-extension'
+import { EXPLORER_SIDEBAR_ITEM, ExplorerExtension } from './explorer-extension'
 import { manifest } from './manifest'
 import ExplorerLayout from './ui/ExplorerLayout.vue'
 
@@ -31,9 +31,12 @@ export class ExplorerPlugin extends Plugin {
 
     const shell = ctx.extensions.get(ShellExtension)
     shell.sidebar.register({
-      id: 'arxhub.explorer',
+      id: EXPLORER_SIDEBAR_ITEM,
       icon: 'lu:folder-open',
       title: 'Explorer',
+      // Its mobile rail now also holds Tabs and (if Search registers) Search sections — "Explorer"
+      // undersells that, but the desktop rail icon is unrelated and keeps its own name.
+      mobileTitle: 'Files',
       layout: ExplorerLayout,
       order: 0,
     })
