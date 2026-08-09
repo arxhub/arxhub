@@ -40,7 +40,6 @@ function label(tab: MobileTab): string {
 .tab-bar {
   display: flex;
   flex-shrink: 0;
-  padding-top: 4px;
   padding-bottom: env(safe-area-inset-bottom);
   border-top: 1px solid var(--gray-6);
   background: var(--gray-2);
