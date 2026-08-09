@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DEFAULT_SEARCH_LIMIT, SEARCH_QUALIFIERS, type SearchSnippet, type SearchSort, snippetSegments } from '@arxhub/sql'
-import { Button, Input, Row, SectionLabel, Segmented, type SelectOption, StatusDot, Switch } from '@arxhub/uikit/core'
+import { IconButton, Input, Row, SectionLabel, Segmented, type SelectOption, StatusDot, Strip, Switch } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { SearchExtension } from '../search-extension'
@@ -350,22 +350,30 @@ onMounted(focusInput)
       </dl>
     </div>
 
-    <div class="index-status">
+    <!-- Same Strip role as the Explorer header: an identifying label on the left, action icons on the
+         right — content here rather than the title slot because the label is a live dot+text pair, not
+         a static name. Unbordered: this divides a hairline inside the rail, not a boundary between two
+         regions (--gray-4, not Strip's own --gray-6), and it needs the rule above it, not below. -->
+    <Strip class="index-strip" :bordered="false" flush-actions>
       <!-- Stops here, because a rebuild is not navigation: the mobile frame dismisses its rail panel when
            something in it is activated, and the owner asking for a reindex has not gone anywhere. -->
-      <div class="state" @click.stop>
+      <span class="index-state" @click.stop>
         <StatusDot :tone="index.tone.value" :pulse="index.scanning.value" />
-        <span :class="{ danger: index.unavailable.value }">{{ index.text.value }}</span>
-      </div>
-      <div class="index-actions">
-        <Button variant="secondary" size="sm" :disabled="index.unavailable.value || index.busy.value" @click.stop="index.reindex()">
-          Reindex
-        </Button>
+        <span class="index-state-text" :class="{ danger: index.unavailable.value }">{{ index.text.value }}</span>
+      </span>
+      <template #actions>
+        <IconButton
+          size="lg"
+          icon="lu:refresh-cw"
+          tooltip="Reindex"
+          :disabled="index.unavailable.value || index.busy.value"
+          @click.stop="index.reindex()"
+        />
         <!-- Deliberately NOT stopped: opening the console IS navigation — it puts a panel in the content
              area, which on a phone sits behind the rail panel, so that panel has to get out of the way. -->
-        <Button variant="secondary" size="sm" @click="sqlConsole.open()">SQL console</Button>
-      </div>
-    </div>
+        <IconButton size="lg" icon="lu:database" tooltip="SQL console" @click="sqlConsole.open()" />
+      </template>
+    </Strip>
   </div>
 </template>
 
@@ -545,36 +553,23 @@ onMounted(focusInput)
   color: var(--gray-12);
 }
 
-/* A column, not a row: the rail is 240px wide and the state line plus two controls do not share one. */
-.index-status {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.index-strip {
   flex-shrink: 0;
-  padding: 8px;
   border-top: 1px solid var(--gray-4);
-  color: var(--gray-11);
-  font-size: var(--font-size-xs);
 }
 
-.index-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.index-actions > * {
-  flex: 1;
-}
-
-.state {
+.index-state {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
   min-width: 0;
 }
 
-.state span {
+.index-state-text {
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--gray-11);
+  font-size: var(--font-size-xs);
 }
 </style>
