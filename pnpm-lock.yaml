@@ -1346,6 +1346,12 @@ importers:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)
     devDependencies:
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig

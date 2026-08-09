@@ -53,7 +53,7 @@ export function useFileActions() {
 
   async function newFile(node: TreeNode): Promise<void> {
     const parent = node.entry.kind === 'dir' ? node.entry.pathname : dirname(node.entry.pathname)
-    await explorer.createFile(parent, 'untitled.md')
+    await explorer.createFile(parent, 'untitled.arx')
   }
 
   async function newFolder(node: TreeNode): Promise<void> {
@@ -104,7 +104,7 @@ export function useFileActions() {
         id: 'new-file',
         label: 'New File',
         icon: 'lu:file-plus',
-        onSelect: () => runAction(explorer.createFile(explorer.root, 'untitled.md'), 'create the file'),
+        onSelect: () => runAction(explorer.createFile(explorer.root, 'untitled.arx'), 'create the file'),
       },
       {
         id: 'new-folder',

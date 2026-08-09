@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { actionMenu, Button, Icon, Strip } from '@arxhub/uikit/core'
+import { actionMenu, IconButton, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted } from 'vue'
 import { ExplorerExtension } from '../explorer-extension'
@@ -25,7 +25,7 @@ function onRootContextMenu(event: MouseEvent) {
 // a refused create was an unhandled rejection in the console and a button that appeared to do nothing.
 function newFile() {
   const parent = explorer.selectedPath.value ?? explorer.root
-  actions.runAction(explorer.createFile(parent, 'untitled.md'), 'create the file')
+  actions.runAction(explorer.createFile(parent, 'untitled.arx'), 'create the file')
 }
 
 function newFolder() {
@@ -36,13 +36,15 @@ function newFolder() {
 
 <template>
   <div class="file-tree-wrap">
-    <Strip>
-      <Button variant="secondary" size="sm" title="New File" @click="newFile">
-        <Icon name="lu:file-plus" :size="14" />File
-      </Button>
-      <Button variant="secondary" size="sm" title="New Folder" @click="newFolder">
-        <Icon name="lu:folder-plus" :size="14" />Folder
-      </Button>
+    <!-- "Vault" is the one VFS root there is today — a stand-in for a name that becomes per-root once
+         more than one can be connected at once (see ExplorerExtension for the rest of that note). -->
+    <Strip title="Vault" flush-actions>
+      <template #actions>
+        <IconButton size="lg" icon="lu:folder-plus" tooltip="New folder" @click="newFolder" />
+        <IconButton size="lg" icon="lu:file-plus" tooltip="New file" @click="newFile" />
+        <IconButton size="lg" icon="lu:refresh-cw" tooltip="Refresh" @click="explorer.loadRoot()" />
+        <IconButton size="lg" icon="lu:chevrons-down-up" tooltip="Collapse tree" @click="explorer.collapseAll()" />
+      </template>
     </Strip>
 
     <div class="file-tree" role="tree" aria-label="Files" @contextmenu.prevent="onRootContextMenu" @keydown="onKeydown">
@@ -66,6 +68,5 @@ function newFolder() {
 .file-tree {
   overflow-y: auto;
   flex: 1;
-  padding: 4px 0;
 }
 </style>

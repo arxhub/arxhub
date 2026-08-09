@@ -27,6 +27,11 @@ function emptyContentFor(name: string): string {
   return name.toLowerCase().endsWith('.arx') ? EMPTY_ARX : ''
 }
 
+// TODO(multi-vfs): one instance is one VFS root, shown as one "Vault" section in FileTreeView. Several
+// VFS connected at once would mean a list of these (or an equivalent per-root state) rendered as
+// separate worktree-style sections — needs its own design for where the extra roots come from (config,
+// an added folder, a sync remote) before touching this. Not built; tracked here so the assumption is
+// visible at the one place it lives.
 export class ExplorerExtension extends Extension {
   readonly vfs: VirtualFileSystem
   readonly root: string
@@ -68,6 +73,18 @@ export class ExplorerExtension extends Extension {
 
   collapse(node: TreeNode): void {
     node.expanded = false
+  }
+
+  // Folds every open node back to the top level without discarding their fetched children, so
+  // re-expanding any of them is instant rather than a new vfs.list() round trip.
+  collapseAll(): void {
+    const walk = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        node.expanded = false
+        if (node.children) walk(node.children)
+      }
+    }
+    walk(this.tree.value)
   }
 
   async createFile(parentPath: string, name: string): Promise<void> {
