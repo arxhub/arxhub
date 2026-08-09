@@ -146,7 +146,8 @@ function openSettings() {
 }
 
 .fx-item:disabled {
-  cursor: default;
+  cursor: not-allowed;
+  background: var(--gray-3);
   color: var(--gray-9);
 }
 

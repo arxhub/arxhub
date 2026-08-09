@@ -90,7 +90,7 @@ function onClick(edge: 'left' | 'right'): void {
 
 .edge:focus-visible {
   outline: 2px solid var(--accent-8);
-  outline-offset: -2px;
+  outline-offset: -1px;
 }
 
 .edge.left {
