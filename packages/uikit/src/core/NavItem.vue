@@ -20,15 +20,15 @@ defineProps<{
       :aria-pressed="active || undefined"
       v-bind="$attrs"
     >
-      <Icon :name="icon" :size="16" />
+      <Icon :name="icon" :size="20" />
     </button>
   </Tooltip>
 </template>
 
 <style scoped>
 .nav-item {
-  width: 32px;
-  height: var(--size-xs);
+  width: var(--size-md);
+  height: var(--size-md);
   display: flex;
   align-items: center;
   justify-content: center;

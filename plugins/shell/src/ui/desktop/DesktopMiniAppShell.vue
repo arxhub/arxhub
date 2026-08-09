@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, useSlots } from 'vue'
 import { RAIL_MAX, RAIL_MIN, useRailWidth } from '../use-rail-width'
+import { useShell } from '../use-shell'
+import AppFooter from './AppFooter.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -18,6 +20,11 @@ const props = withDefaults(
 
 const slots = useSlots()
 const showRail = computed(() => props.rail && !!slots.rail)
+
+// The footer lives here, not in DesktopLayout: it sits beside the rail, under the content column only
+// — the rail runs the full height next to it, the way a sidebar does, rather than stopping where the
+// content does and leaving the footer to span under both.
+const shell = useShell()
 
 const railWidth = useRailWidth(props.widthKey)
 const shellEl = ref<HTMLElement | null>(null)
@@ -56,8 +63,18 @@ onUnmounted(() => cleanup?.())
       </div>
       <div class="rail-resize" @mousedown="startResize" />
     </template>
-    <div class="content">
-      <slot />
+    <div class="content-column">
+      <div class="content">
+        <slot />
+      </div>
+      <AppFooter>
+        <template #left>
+          <component v-for="item in shell.footerLeft.value" :key="item.id" :is="item.component" />
+        </template>
+        <template #right>
+          <component v-for="item in shell.footerRight.value" :key="item.id" :is="item.component" />
+        </template>
+      </AppFooter>
     </div>
   </div>
 </template>
@@ -80,25 +97,48 @@ onUnmounted(() => cleanup?.())
   border-right: 1px solid var(--gray-6);
 }
 
+/* Zero width itself — the rail's own border-right is the seam, not a 4px strip beside it — but the
+   hit area still needs to be wide enough to grab, so ::after carries that instead, centred on this
+   element and reaching 4px into both the rail and the content on either side of it. Hovering the
+   pseudo-element's rendered pixels counts as hovering this element (they are not separately
+   hit-testable), so :hover/:active below and the @mousedown in the template both still fire correctly. */
 .rail-resize {
+  position: relative;
   flex-shrink: 0;
-  width: 4px;
+  width: 0;
   height: 100%;
-  cursor: col-resize;
-  background-color: transparent;
-  transition: background-color var(--duration-fast);
   z-index: 1;
 }
 
-.rail-resize:hover,
-.rail-resize:active {
+.rail-resize::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+  cursor: col-resize;
+  background-color: transparent;
+  transition: background-color var(--duration-fast);
+}
+
+.rail-resize:hover::after,
+.rail-resize:active::after {
   background-color: var(--accent-8);
+}
+
+.content-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .content {
   flex: 1;
-  min-width: 0;
-  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 </style>

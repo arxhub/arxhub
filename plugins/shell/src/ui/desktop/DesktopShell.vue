@@ -3,7 +3,6 @@ import { ActionMenuHost, ModalsProvider } from '@arxhub/uikit/core'
 import { provideShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { useShell } from '../use-shell'
-import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 import DesktopLayout from './DesktopLayout.vue'
@@ -12,7 +11,10 @@ import DesktopLayout from './DesktopLayout.vue'
 // injection rather than measuring the window.
 provideShellFrame('desktop')
 
-const { content, activeItem, activeId, sidebarItems, headerLeft, headerCenter, headerRight, footerLeft, footerRight, setActive } = useShell()
+// footerLeft/footerRight aren't read here — DesktopMiniAppShell renders the footer itself, beside its
+// own rail, so the rail can reach the true bottom of the window instead of stopping where a
+// DesktopLayout-level footer used to start underneath both the rail and the content.
+const { content, activeItem, activeId, sidebarItems, headerLeft, headerCenter, headerRight, setActive } = useShell()
 
 // The header is an extension point nothing currently extends, and an empty strip of chrome is still
 // 40px of the window: it reads as a title bar that forgot its title. So it exists when a plugin has
@@ -38,16 +40,6 @@ const hasHeader = computed(() => headerLeft.value.length + headerCenter.value.le
           <component v-for="item in headerRight" :key="item.id" :is="item.component" />
         </template>
       </AppHeader>
-    </template>
-    <template #footer>
-      <AppFooter>
-        <template #left>
-          <component v-for="item in footerLeft" :key="item.id" :is="item.component" />
-        </template>
-        <template #right>
-          <component v-for="item in footerRight" :key="item.id" :is="item.component" />
-        </template>
-      </AppFooter>
     </template>
     <!-- See MobileShell.vue's identical wrapper: without KeepAlive, switching mini-apps fully
          remounted the outgoing one on every trip, losing scroll/undo/selection in whatever was open. -->

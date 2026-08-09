@@ -17,8 +17,8 @@ const bottomItems = computed(() =>
 
 <template>
   <aside class="app-sidebar">
-    <div class="content-section">
-      <component v-if="content" :is="content" />
+    <div v-if="content" class="content-section">
+      <component :is="content" />
     </div>
     <nav class="nav-section">
       <NavItem
@@ -45,11 +45,13 @@ const bottomItems = computed(() =>
 
 <style scoped>
 .app-sidebar {
-  width: 48px;
+  /* +1px: border-box counts border-right in the width, so without this the 40px nav item overflowed
+     past it — the border rendered underneath the button's own fill instead of beside it. */
+  width: calc(var(--size-md) + 1px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 0;
+  padding: 0;
   background-color: var(--gray-2);
   border-right: 1px solid var(--gray-6);
   flex-shrink: 0;
@@ -64,7 +66,6 @@ const bottomItems = computed(() =>
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
   width: 100%;
 }
 
@@ -73,7 +74,6 @@ const bottomItems = computed(() =>
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
   width: 100%;
 }
 </style>

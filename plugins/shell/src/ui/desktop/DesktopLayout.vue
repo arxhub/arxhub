@@ -5,9 +5,11 @@ import AppSidebar from './AppSidebar.vue'
 
 <template>
   <div class="app-shell">
-    <!-- No fallback header or footer. A strip of chrome exists because something asked for it: an
-         empty one still spends its height, and the header's fallback was what kept a blank 40px band
-         across the top of the window even when the frame had decided against it. -->
+    <!-- No fallback header. A strip of chrome exists because something asked for it: an empty one
+         still spends its height, and the fallback was what kept a blank 40px band across the top of
+         the window even when the frame had decided against it. The footer isn't rendered here at all —
+         DesktopMiniAppShell renders its own, beside its rail, so the rail reaches the true bottom of
+         the window instead of stopping where the footer used to start underneath both columns. -->
     <slot name="header" />
     <div class="main-container">
       <slot name="sidebar">
@@ -17,7 +19,6 @@ import AppSidebar from './AppSidebar.vue'
         <slot />
       </main>
     </div>
-    <slot name="footer" />
     <Toaster />
   </div>
 </template>

@@ -14,9 +14,11 @@
 
 <style scoped>
 .app-footer {
-  height: var(--size-xs);
+  /* var(--size-md), not the Control role's --size-xs: the rail now runs the full height beside this
+     footer, and its own NavItem is size="lg" (40px) — a shorter footer left an 8px jog where the two
+     met instead of one level seam. */
+  height: var(--size-md);
   width: 100%;
-  padding: 0 4px;
   background-color: var(--gray-2);
   border-top: 1px solid var(--gray-4);
   display: flex;
