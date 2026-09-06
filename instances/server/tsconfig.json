@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "lib": ["ES2022", "DOM"],
+    /* The base names no runtime; this one is Node, and DOM carries the fetch/Web types Elysia builds on. */
+    "lib": ["esnext", "DOM"],
     "types": ["node"]
   },
   "include": ["src/**/*"]
