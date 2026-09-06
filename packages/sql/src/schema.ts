@@ -1,7 +1,8 @@
-// Bump whenever anything below changes shape. An index written by another version is discarded, not
-// migrated (FR-217): every row is recoverable by walking the content store, so rebuilding is cheaper
-// than carrying a data migration for a derived index.
-export const SQL_SCHEMA_VERSION = 2
+// Bump whenever anything below changes shape, and whenever the parser starts producing rows the old
+// walk did not (nested `.arx` list items, at version 3). An index written by another version is
+// discarded, not migrated (FR-217): every row is recoverable by walking the content store, so
+// rebuilding is cheaper than carrying a data migration for a derived index.
+export const SQL_SCHEMA_VERSION = 3
 
 export const SCHEMA_VERSION_KEY = 'schema_version'
 
@@ -133,12 +134,12 @@ export const SCHEMA_TABLES: readonly SqlSchemaTable[] = [
   },
   {
     name: 'block',
-    description: 'A part of a document as a unit of search — heading, paragraph, list item, code, quote. Dropped with its document.',
+    description: 'A part of a document as a unit of search — heading, paragraph, list item, task, code, quote. Dropped with its document.',
     columns: [
       { name: 'id', description: 'Document path plus the block ordinal. Not stable across versions of a document.' },
       { name: 'doc_path', description: 'Owning document. ON DELETE CASCADE.' },
       { name: 'ordinal', description: 'Position inside the document, from zero.' },
-      { name: 'type', description: 'heading | paragraph | list-item | code | quote.' },
+      { name: 'type', description: 'heading | paragraph | list-item | task | code | quote.' },
       { name: 'level', description: 'Heading depth for a heading, nesting depth for a list item or a task; null otherwise.' },
       { name: 'checked', description: 'Done state of a task; null for every other type, so "unfinished" and "not a task" stay apart.' },
       { name: 'content', description: 'Flat text of the block — what a snippet shows.' },

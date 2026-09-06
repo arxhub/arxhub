@@ -37,7 +37,9 @@ export const SearchConfigSchema = Type.Object(
       description: 'How many matching fragments a result row shows under its title.',
       group: 'Search',
       default: DEFAULT_SNIPPETS_PER_DOCUMENT,
-      minimum: 0,
+      // At least one: a result is never a bare path (BE 4.7.4) — a document nothing matched inside is
+      // still shown with its opening block — so zero is a value the search could not have honoured.
+      minimum: 1,
       maximum: 10,
     }),
     'search.snippetWords': Type.Integer({
@@ -111,7 +113,7 @@ export function toSearchSettings(config: Partial<SearchConfig>): SearchSettings 
   return {
     maxRows: positiveInteger(config['sql.maxRows'], DEFAULT_MAX_ROWS),
     timeoutMs: positiveInteger(config['sql.timeoutMs'], DEFAULT_TIMEOUT_MS),
-    snippetsPerDocument: boundedInteger(config['search.snippetsPerDocument'], DEFAULT_SNIPPETS_PER_DOCUMENT, 0, 10),
+    snippetsPerDocument: boundedInteger(config['search.snippetsPerDocument'], DEFAULT_SNIPPETS_PER_DOCUMENT, 1, 10),
     snippetWords: boundedInteger(config['search.snippetWords'], DEFAULT_SNIPPET_WORDS, 4, 100),
     fuzzyThreshold: boundedNumber(config['search.fuzzyThreshold'], DEFAULT_FUZZY_THRESHOLD, 0, 1),
     debounceMs: boundedInteger(config['index.debounceMs'], DEFAULT_DEBOUNCE_MS, 0, Number.MAX_SAFE_INTEGER),

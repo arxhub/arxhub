@@ -282,35 +282,91 @@ describe('parseDocument — arx', () => {
     expect(doc.title).toBe('broken')
   })
 
+  // Every tree below is one the editor can actually write: `list_item` is `paragraph block*`, so a
+  // nested list hangs INSIDE its parent item, and `task_item` is `paragraph+`, so nothing hangs inside a
+  // task (plugins/editor/src/editor-schema.ts). The fixture this replaced put a bullet_list straight
+  // into a task_list — an invalid document, and the only place depth 2 was ever produced.
+  const para = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
+  const item = (...content: object[]) => ({ type: 'list_item', content })
+  const arxDoc = (path: string, ...content: object[]) =>
+    parseDocument(path, encoder.encode(JSON.stringify({ version: 1, doc: { type: 'doc', content } })))
+  const shape = (doc: { blocks: readonly { type: string; level: number | null; content: string }[] }) =>
+    doc.blocks.map((block) => [block.type, block.level, block.content])
+
   it('reads a task_item as a task, with its state and its depth', () => {
-    const withTasks = {
-      version: 1,
-      doc: {
-        type: 'doc',
-        content: [
-          {
-            type: 'task_list',
-            content: [
-              { type: 'task_item', attrs: { checked: true }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'сделано' }] }] },
-              { type: 'task_item', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'нет' }] }] },
-              // No attrs at all: the editor's schema defaults `checked` to false, so this is unfinished
-              // rather than a task with nothing to say about its state.
-              { type: 'task_item', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'без атрибута' }] }] },
-              {
-                type: 'bullet_list',
-                content: [{ type: 'list_item', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'вложенный' }] }] }],
-              },
-            ],
-          },
-        ],
-      },
-    }
-    const doc = parseDocument('notes/tasks.arx', encoder.encode(JSON.stringify(withTasks)))
+    const doc = arxDoc('notes/tasks.arx', {
+      type: 'task_list',
+      content: [
+        { type: 'task_item', attrs: { checked: true }, content: [para('сделано')] },
+        { type: 'task_item', attrs: { checked: false }, content: [para('нет')] },
+        // No attrs at all: the editor's schema defaults `checked` to false, so this is unfinished
+        // rather than a task with nothing to say about its state.
+        { type: 'task_item', content: [para('без атрибута')] },
+      ],
+    })
     expect(doc.blocks.map((block) => [block.type, block.level, block.checked, block.content])).toEqual([
       ['task', 1, true, 'сделано'],
       ['task', 1, false, 'нет'],
       ['task', 1, false, 'без атрибута'],
-      ['list-item', 2, null, 'вложенный'],
+    ])
+  })
+
+  it('gives a nested bullet list a row per item, one level deeper', () => {
+    const doc = arxDoc('notes/nested.arx', {
+      type: 'bullet_list',
+      content: [
+        item(para('внешний пункт'), {
+          type: 'bullet_list',
+          content: [item(para('вложенный пункт'), { type: 'bullet_list', content: [item(para('третий уровень'))] })],
+        }),
+        item(para('второй внешний')),
+      ],
+    })
+    expect(shape(doc)).toEqual([
+      ['list-item', 1, 'внешний пункт'],
+      ['list-item', 2, 'вложенный пункт'],
+      ['list-item', 3, 'третий уровень'],
+      ['list-item', 1, 'второй внешний'],
+    ])
+  })
+
+  it('reads a nested ordered list the same way', () => {
+    const doc = arxDoc('notes/ordered.arx', {
+      type: 'ordered_list',
+      content: [item(para('первый'), { type: 'ordered_list', content: [item(para('первый вложенный'))] }), item(para('второй'))],
+    })
+    expect(shape(doc)).toEqual([
+      ['list-item', 1, 'первый'],
+      ['list-item', 2, 'первый вложенный'],
+      ['list-item', 1, 'второй'],
+    ])
+  })
+
+  it('reads a task list nested in a list item, keeping the task apart from its parent', () => {
+    const doc = arxDoc('notes/mixed.arx', {
+      type: 'bullet_list',
+      content: [
+        item(para('пункт с задачами'), {
+          type: 'task_list',
+          content: [{ type: 'task_item', attrs: { checked: true }, content: [para('подзадача')] }],
+        }),
+      ],
+    })
+    expect(doc.blocks.map((block) => [block.type, block.level, block.checked, block.content])).toEqual([
+      ['list-item', 1, null, 'пункт с задачами'],
+      ['task', 2, true, 'подзадача'],
+    ])
+  })
+
+  it('separates the blocks it flattens, so two words never fuse into one token', () => {
+    const doc = arxDoc(
+      'notes/quote.arx',
+      { type: 'blockquote', content: [para('первый абзац'), para('второй абзац')] },
+      { type: 'bullet_list', content: [item(para('первый абзац пункта'), para('второй абзац пункта'))] },
+    )
+    expect(shape(doc)).toEqual([
+      ['quote', null, 'первый абзац второй абзац'],
+      ['list-item', 1, 'первый абзац пункта второй абзац пункта'],
     ])
   })
 })

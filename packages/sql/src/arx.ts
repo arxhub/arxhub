@@ -14,8 +14,9 @@ interface ArxNode {
 }
 
 // Node type of the tree to the block vocabulary of the index. A container that holds blocks (a list, a
-// callout, a quote) is opened rather than flattened into one row: `list-item` is a block type and
-// `list` is not, so a two-item list is two blocks — the same result markdown gives.
+// callout) is opened rather than flattened into one row: `list-item` is a block type and `list` is not,
+// so a two-item list is two blocks — the same result markdown gives. A quote is the other way round —
+// one row carrying the text of the paragraphs inside it.
 const BLOCK_TYPES: Record<string, BlockType> = {
   heading: 'heading',
   paragraph: 'paragraph',
@@ -80,18 +81,36 @@ function appendNode(node: ArxNode, result: ArxParse, depth: number): void {
   const blockType = BLOCK_TYPES[type] ?? 'paragraph'
   const blockIndex = result.blocks.length
   const { text, links } = readText(node, blockType === 'code')
-  if (text.trim() === '' && links.length === 0) return
-
-  result.blocks.push({
-    type: blockType,
-    level: blockLevel(node, blockType, depth),
-    checked: blockType === 'task' ? isChecked(node) : null,
-    raw: text,
-    content: text,
-  })
-  for (const link of links) {
-    result.markLinks.push({ blockIndex, ref: link })
+  if (text.trim() !== '' || links.length > 0) {
+    result.blocks.push({
+      type: blockType,
+      level: blockLevel(node, blockType, depth),
+      checked: blockType === 'task' ? isChecked(node) : null,
+      raw: text,
+      content: text,
+    })
+    for (const link of links) {
+      result.markLinks.push({ blockIndex, ref: link })
+    }
   }
+
+  // A list item holds `paragraph block*` (plugins/editor/src/editor-schema.ts), so a nested list sits
+  // INSIDE the item it hangs off rather than beside it. Walked after the item — and at the item's own
+  // depth, which the container then bumps — the nested items are rows of their own; read as part of the
+  // item's text they would be no rows at all, and `level` could never exceed 1.
+  for (const child of childrenOf(node) ?? []) {
+    if (isContainer(child)) appendNode(child, result, depth)
+  }
+}
+
+function isContainer(node: ArxNode): boolean {
+  return typeof node.type === 'string' && CONTAINERS.has(node.type)
+}
+
+// A node the walk gives a row of its own: everything readText must not fuse into the text around it.
+function isBlockNode(node: ArxNode): boolean {
+  const type = typeof node.type === 'string' ? node.type : ''
+  return BLOCK_TYPES[type] != null || CONTAINERS.has(type)
 }
 
 // A tree that nests a list item without a list around it (hand-written, or a format we do not know)
@@ -128,7 +147,7 @@ function readText(node: ArxNode, keepBreaks: boolean): { text: string; links: Om
   const parts: string[] = []
   const links: Omit<ParsedRef, 'srcBlock'>[] = []
 
-  const visit = (current: ArxNode): void => {
+  const visit = (current: ArxNode, top: boolean): void => {
     if (typeof current.text === 'string') {
       parts.push(current.text)
       const href = linkHref(current)
@@ -142,11 +161,18 @@ function readText(node: ArxNode, keepBreaks: boolean): { text: string; links: Om
       return
     }
     for (const child of childrenOf(current) ?? []) {
-      visit(child)
+      // The enumerations directly inside this block are appendNode's, not text of this one. Deeper down
+      // they are still flattened: nothing else would emit them, and losing the text is worse than losing
+      // the shape.
+      if (top && isContainer(child)) continue
+      // A block boundary reads as whitespace, the way markdown's soft line break does (joinSoftLines).
+      // Without it two paragraphs of a quote fuse into a token neither of their words matches.
+      if (isBlockNode(child) && parts.length > 0) parts.push(keepBreaks ? '\n' : ' ')
+      visit(child, false)
     }
   }
 
-  visit(node)
+  visit(node, true)
   const text = parts.join('')
   return { text: keepBreaks ? text : text.replace(/\s+/g, ' ').trim(), links }
 }
