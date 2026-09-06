@@ -117,31 +117,35 @@ export class ExplorerExtension extends Extension {
 
   async createFile(parentPath: string, name: string): Promise<void> {
     await this.vfs.file(join(parentPath, name)).writeText(emptyContentFor(name))
-    await this.refreshPath(parentPath)
+    await this.refreshDir(parentPath)
   }
 
   async createDir(parentPath: string, name: string): Promise<void> {
     await this.vfs.file(join(parentPath, name, '.keep')).write(new Uint8Array())
-    await this.refreshPath(parentPath)
+    await this.refreshDir(parentPath)
   }
 
   async deleteEntry(path: string): Promise<void> {
     await this.vfs.delete(path, { recursive: true, force: true })
-    await this.refreshPath(dirname(path))
+    await this.refreshDir(dirname(path))
   }
 
   async renameEntry(path: string, newName: string): Promise<void> {
     await vfsRenameEntry(this.vfs, path, join(dirname(path), newName))
-    await this.refreshPath(dirname(path))
+    await this.refreshDir(dirname(path))
   }
 
   async moveEntry(srcPath: string, destPath: string): Promise<void> {
     await vfsRenameEntry(this.vfs, srcPath, destPath)
-    await this.refreshPath(dirname(srcPath))
-    await this.refreshPath(dirname(destPath))
+    await this.refreshDir(dirname(srcPath))
+    await this.refreshDir(dirname(destPath))
   }
 
-  private async refreshPath(parentPath: string): Promise<void> {
+  // Public because a plugin may write into the vault through the VFS directly (the editor's md → arx
+  // conversion writes a file the tree has to show) and the tree does not observe VaultWatcher — it is
+  // refreshed by whoever wrote. Refreshing the one directory, not loadRoot(), keeps every other node's
+  // expanded state.
+  async refreshDir(parentPath: string): Promise<void> {
     const norm = parentPath.replace(/^\/+/, '')
     if (!norm || norm === '.') {
       await this.loadRoot()

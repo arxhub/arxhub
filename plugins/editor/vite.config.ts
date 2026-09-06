@@ -6,6 +6,8 @@ export default defineConfig((env) =>
     entries: ['src/ui.ts'],
     external: [
       '@arxhub/core',
+      '@arxhub/path',
+      '@arxhub/plugin-explorer',
       '@arxhub/plugin-panels',
       '@arxhub/uikit',
       '@arxhub/vfs',
@@ -18,6 +20,9 @@ export default defineConfig((env) =>
       'prosemirror-keymap',
       'prosemirror-schema-basic',
       'prosemirror-schema-list',
+      'mdast-util-from-markdown',
+      'mdast-util-gfm',
+      'micromark-extension-gfm',
       'vue',
     ],
   }),

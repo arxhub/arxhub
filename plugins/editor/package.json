@@ -31,15 +31,21 @@
     "prosemirror-keymap": "catalog:client",
     "prosemirror-schema-basic": "catalog:client",
     "prosemirror-schema-list": "catalog:client",
+    "mdast-util-from-markdown": "catalog:client",
+    "mdast-util-gfm": "catalog:client",
+    "micromark-extension-gfm": "catalog:client",
     "vue": "catalog:client"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
+    "@types/mdast": "catalog:toolchain",
     "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
+    "@arxhub/path": "workspace:*",
+    "@arxhub/plugin-explorer": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/stdlib": "workspace:*",
     "@arxhub/uikit": "workspace:*",
