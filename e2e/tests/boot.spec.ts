@@ -30,3 +30,26 @@ test.describe('about', () => {
     await expect(app.getByTestId('app-version')).toHaveText(/^\d+\.\d+\.\d+/)
   })
 })
+
+// A fast boot deliberately shows nothing — the screen appears only once the wait is long enough to be
+// worth explaining. Holding every API call is what makes this boot slow honestly: the plugins that
+// read config or the vault really are waiting, which is exactly the case the screen exists for.
+test('a slow boot says which plugins it is still waiting for', async ({ app }) => {
+  await app.route('**/api/**', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 900))
+    await route.continue()
+  })
+  const reload = app.reload()
+
+  const screen = app.getByRole('status', { name: 'Starting ArxHub' })
+  await expect(screen).toBeVisible()
+  // The count is the summary and the roster is the detail: a bar alone cannot name what is holding
+  // things up, which is the only reason to look at this screen at all.
+  await expect(screen).toContainText(/\d+ of \d+ plugins ready/)
+  await expect(screen.getByText('Shell', { exact: true })).toBeVisible()
+
+  // And it gets out of the way on its own once the boot is through — no click, no timeout.
+  await reload
+  await expect(screen).toBeHidden()
+  await expect(app.getByRole('main')).toBeVisible()
+})
