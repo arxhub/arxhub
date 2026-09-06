@@ -69,11 +69,17 @@ function onMenuKeydown(event: KeyboardEvent) {
 watch(
   () => state.value.open,
   (open) => {
+    anchored = false
     if (!open || isMobile) return
     placement.value = { x: state.value.x, y: state.value.y, placed: false }
     nextTick(() => {
       place()
       focusItem(0)
+      // One frame, not a delay: a scroll the opening click caused is delivered in the frame the menu
+      // opened in, and every scroll after that one is the user moving away from it.
+      requestAnimationFrame(() => {
+        anchored = true
+      })
     })
   },
 )
@@ -91,10 +97,16 @@ function onGlobalKeydown(event: KeyboardEvent) {
   if (state.value.open && event.key === 'Escape') actionMenu.close()
 }
 
-// Scroll/resize/blur reposition or invalidate a pointer-anchored menu; a sheet is anchored to the
-// screen edge and survives all three.
+// Scroll/resize/blur invalidate a pointer-anchored menu — but only once it is actually up. The click
+// that opens the menu can itself cause a scroll: right-clicking a row that is only half in view makes
+// its list scroll to show it, and that scroll event is delivered AFTER the contextmenu handler has
+// already opened the menu. Unarmed for one frame, the menu no longer closes itself the moment it
+// appears, which is what it did on every right-click near the ends of a long file tree — a menu that
+// flashes and vanishes reads as a control that does nothing.
+let anchored = false
+
 function onCloseIfAnchored() {
-  if (!isMobile) actionMenu.close()
+  if (!isMobile && anchored) actionMenu.close()
 }
 
 onMounted(() => {

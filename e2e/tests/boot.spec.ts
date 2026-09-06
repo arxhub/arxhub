@@ -1,4 +1,4 @@
-import { expect, explorerLabel, openSettingsSection, test, withShellChrome } from './fixtures'
+import { expect, explorerLabel, openSettingsSection, test, waitForApp, withShellChrome } from './fixtures'
 
 test.describe('application boot', () => {
   test('comes up with the shell and its mini-apps', async ({ app }) => {
@@ -51,5 +51,5 @@ test('a slow boot says which plugins it is still waiting for', async ({ app }) =
   // And it gets out of the way on its own once the boot is through — no click, no timeout.
   await reload
   await expect(screen).toBeHidden()
-  await expect(app.getByRole('main')).toBeVisible()
+  await waitForApp(app)
 })

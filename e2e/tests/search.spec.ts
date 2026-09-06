@@ -1,5 +1,15 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect, isMobileFrame, openMiniApp, openNote, openRailSection, openSearchApp as openSearch, test, waitForIndex } from './fixtures'
+import {
+  expect,
+  isMobileFrame,
+  openMiniApp,
+  openNote,
+  openRailSection,
+  openSearchApp as openSearch,
+  test,
+  waitForApp,
+  waitForIndex,
+} from './fixtures'
 
 // UJ-24 «Поиск записи по слову из текста»: the owner remembers a word, not a file name. The path from that
 // word to the open note has to work from the keyboard alone, and it has to end in the workspace the notes
@@ -190,7 +200,7 @@ test.describe('finding a note by a word in its text', () => {
 
     await expect(app.getByText('Nothing can open this file')).toBeVisible()
     // Still the app, not a broken screen.
-    await expect(app.getByRole('main')).toBeVisible()
+    await waitForApp(app)
   })
 
   test('an empty answer says what was searched', async ({ app }) => {

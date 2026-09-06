@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openDocumentList, openMiniApp, openNavigation, openNote, test } from './fixtures'
+import { expect, isMobileFrame, openDocumentList, openMiniApp, openNavigation, openNote, test, waitForApp } from './fixtures'
 
 test.describe('the frame is chosen once, by the bundle', () => {
   test('a phone-shaped client mounts the mobile frame and a desktop one the rail', async ({ app }) => {
@@ -45,7 +45,7 @@ test.describe('mobile navigation', () => {
 
     await expect(app.getByRole('region', { name: /navigation$/ })).toBeHidden()
     // Still the app, not a blank tab or the previous page.
-    await expect(app.getByRole('main')).toBeVisible()
+    await waitForApp(app)
   })
 
   // The bar holds five keys, so the sheet is what guarantees reachability: every mini-app is in there,

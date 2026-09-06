@@ -19,6 +19,10 @@ process.env.ARXHUB_E2E_DATA_DIR = dataDir
 
 export default defineConfig({
   testDir: './tests',
+  // Boots the app once per frame before any test, so the dev server's dependency pre-bundling settles
+  // while nothing is on screen to lose. See global-setup.ts — a re-optimization mid-run reloads every
+  // connected page at once, and a test asserting at that moment reports the app as never having come up.
+  globalSetup: './global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
@@ -38,13 +42,19 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `pnpm --filter @arxhub/dev exec vite --port ${WEB_PORT} --strictPort`,
+    // --force: the optimizer cache is shared with whatever the developer has been running, and a run
+    // that starts from a partial one discovers the rest mid-suite (see global-setup.ts). A run of its
+    // own gets a scan of its own, the same reasoning as the throwaway data dir and the private ports.
+    command: `pnpm --filter @arxhub/dev exec vite --port ${WEB_PORT} --strictPort --force`,
     url: `http://localhost:${WEB_PORT}`,
     cwd: '..',
     reuseExistingServer: false,
     timeout: 120_000,
     stdout: 'pipe',
     stderr: 'pipe',
-    env: { ARXHUB_DATA_DIR: dataDir, ARXHUB_PORT: String(API_PORT) },
+    // ARXHUB_FROZEN_STAND: no file watching, no HMR. The source does not change during a run, and a
+    // stand that reloads every page when it does is the difference between a suite and an editing
+    // session — see instances/dev/vite.config.ts.
+    env: { ARXHUB_DATA_DIR: dataDir, ARXHUB_PORT: String(API_PORT), ARXHUB_FROZEN_STAND: '1' },
   },
 })

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, explorerLabel, openSettingsSection, test, withShellChrome } from './fixtures'
+import { expect, explorerLabel, openSettingsSection, test, waitForApp, withShellChrome } from './fixtures'
 
 // Matches BootPolicy's storage key. Written from the page rather than through the UI where a test needs
 // the app to come up already in that state.
@@ -11,7 +11,7 @@ async function bootWith(page: Page, policy: { disabled?: string[]; maintenance?:
     JSON.stringify({ disabled: policy.disabled ?? [], maintenance: policy.maintenance ?? false }),
   ] as const)
   await page.reload()
-  await expect(page.getByRole('main')).toBeVisible()
+  await waitForApp(page)
 }
 
 test.describe('maintenance mode', () => {

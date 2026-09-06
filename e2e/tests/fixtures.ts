@@ -1,11 +1,11 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { Locator, Page } from '@playwright/test'
+import type { Locator, Page, TestInfo } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 
 // Matches LocalStorageKeyStore's namespace and the identity entry name.
 const KEYSTORE_PREFIX = 'arxhub.keystore.'
-const IDENTITY_KEY = `${KEYSTORE_PREFIX}identity.mnemonic`
+export const IDENTITY_KEY = `${KEYSTORE_PREFIX}identity.mnemonic`
 
 // Every browser context starts with empty storage, so each test would otherwise boot a fresh
 // identity — and the stand pins the first key that reaches it, leaving every later test rejected.
@@ -73,7 +73,11 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
     await use(vault)
   },
 
-  app: async ({ page }, use) => {
+  app: async ({ page }, use, testInfo) => {
+    // Every console line and every failed request of this page, kept for the one case that needs them:
+    // a test that ends with no app on screen. The page is gone by the time the report is read, so a
+    // failure that leaves nothing behind is a failure nobody can diagnose from the report.
+    recordPageChatter(page)
     // Seed only when absent: this runs on every navigation, so setting it unconditionally would
     // overwrite an identity the app itself wrote and silently undo a reload-based change.
     await page.addInitScript(
@@ -82,12 +86,111 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
       },
       [IDENTITY_KEY, SEEDED_MNEMONIC] as const,
     )
-    await page.goto('/')
-    // The mobile frame keeps the mini-app list behind the menu, so wait on something both frames show.
-    await expect(page.getByRole('main')).toBeVisible()
-    await use(page)
+    try {
+      await page.goto('/')
+      // The mobile frame keeps the mini-app list behind the menu, so wait on something both frames show.
+      await waitForApp(page)
+      await use(page)
+    } finally {
+      // In a finally, because the boot failing right here is the case the record was kept for.
+      await attachPageChatter(page, testInfo)
+    }
   },
 })
+
+// ---------------------------------------------------------------------------------------------
+// Is the app there, and if not, why not
+// ---------------------------------------------------------------------------------------------
+
+interface PageChatter {
+  console: string[]
+  errors: string[]
+  failedRequests: string[]
+  // When the main frame last committed a document. A page that navigated a moment ago is a page whose
+  // app is booting again — and a navigation nothing in the test asked for is the dev server reloading
+  // it, which looks exactly like "the app never came up" from the outside.
+  navigatedAt: number
+  navigations: number
+}
+
+const chatter = new WeakMap<Page, PageChatter>()
+
+function recordPageChatter(page: Page): void {
+  const log: PageChatter = { console: [], errors: [], failedRequests: [], navigatedAt: Date.now(), navigations: 0 }
+  chatter.set(page, log)
+  page.on('console', (message) => log.console.push(`[${message.type()}] ${message.text()}`))
+  page.on('pageerror', (error) => log.errors.push(String(error.stack ?? error)))
+  page.on('requestfailed', (request) => log.failedRequests.push(`${request.method()} ${request.url()} — ${request.failure()?.errorText}`))
+  // A navigation clears the record: what matters is the boot that is on screen now, and a test that
+  // reloads five times would otherwise bury it under four boots that went fine.
+  page.on('framenavigated', (frame) => {
+    if (frame !== page.mainFrame()) return
+    log.navigatedAt = Date.now()
+    log.navigations += 1
+    log.console.length = 0
+    log.errors.length = 0
+    log.failedRequests.length = 0
+  })
+}
+
+async function attachPageChatter(page: Page, testInfo: TestInfo): Promise<void> {
+  if (testInfo.status === testInfo.expectedStatus) return
+  const log = chatter.get(page)
+  if (log == null) return
+  const body = [
+    `# console (since the last navigation)\n${log.console.join('\n') || '(nothing)'}`,
+    `# page errors\n${log.errors.join('\n\n') || '(none)'}`,
+    `# failed requests\n${log.failedRequests.join('\n') || '(none)'}`,
+  ].join('\n\n')
+  await testInfo.attach('page-chatter.txt', { body, contentType: 'text/plain' })
+}
+
+// Waits for the app itself, and says which of the four things happened when it is not there.
+//
+// `<main>` is the app's own landmark and neither pre-boot screen renders one, deliberately — so "no
+// main" alone covers a boot still running, a boot that died onto the crash screen, and a mount that
+// never happened, which need three different fixes. This tells them apart and fails with the one that
+// is true. Nothing here waits longer than the plain assertion did.
+export async function waitForApp(page: Page): Promise<void> {
+  try {
+    await expect(page.getByRole('main')).toBeVisible()
+  } catch (error) {
+    throw new Error(`no app on screen: ${await whyNoApp(page)}`, { cause: error })
+  }
+}
+
+async function whyNoApp(page: Page): Promise<string> {
+  const crash = page.locator('.crash')
+  if (await crash.isVisible().catch(() => false)) {
+    return `the boot failed and handed the page to the crash screen — ${await terse(crash)}`
+  }
+  const boot = page.locator('.boot')
+  if (await boot.isVisible().catch(() => false)) {
+    return `the boot is still running — ${await terse(boot)}`
+  }
+  const log = chatter.get(page)
+  const said = [
+    log?.errors.length ? `page errors: ${log.errors.join(' | ')}` : '',
+    log?.failedRequests.length ? `failed requests: ${log.failedRequests.join(' | ')}` : '',
+    log?.console.filter((it) => it.startsWith('[error]')).join(' | '),
+  ]
+    .filter(Boolean)
+    .join('; ')
+  const root =
+    (await page
+      .locator('#app')
+      .innerHTML()
+      .catch(() => '')) ?? ''
+  const mounted = root.trim().length > 0 ? 'something is mounted at #app but renders no <main>' : '#app is empty — the mount never happened'
+  const state = await page.evaluate(() => document.readyState).catch(() => 'unknown')
+  const since = log == null ? '' : `, ${log.navigations} navigation(s), the last ${Date.now() - log.navigatedAt} ms ago`
+  return `neither boot screen is up, document.readyState=${state}${since}, and ${mounted}${said ? ` (${said})` : ' and the page said nothing'}`
+}
+
+async function terse(locator: Locator): Promise<string> {
+  const text = ((await locator.textContent().catch(() => '')) ?? '').replace(/\s+/g, ' ').trim()
+  return text.length > 600 ? `${text.slice(0, 600)}…` : text
+}
 
 // The tree is read at boot, so a note written after the app came up needs a reload to appear.
 export async function openNote(page: Page, path: string): Promise<void> {
@@ -104,7 +207,7 @@ export async function isMobileFrame(page: Page): Promise<boolean> {
   // The app mounts asynchronously — the identity is resolved, then the frame itself is imported — so
   // reading the DOM straight after a reload would race the mount and report the wrong frame. Both
   // frames render a <main>, so that is the signal that there is a frame to ask about at all.
-  await expect(page.getByRole('main')).toBeVisible()
+  await waitForApp(page)
   return (await page.locator('.mobile-shell').count()) > 0
 }
 

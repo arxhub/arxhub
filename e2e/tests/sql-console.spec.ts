@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect, openSearchApp, test } from './fixtures'
+import { expect, openSearchApp, test, waitForApp } from './fixtures'
 
 // UJ-25 «Вопрос к базе на SQL»: the owner asks their own base a question in SQL and gets a table back,
 // without being able to break anything doing it. Both halves matter — an answer, and a refusal that leaves
@@ -140,7 +140,7 @@ test.describe('asking the base a question in SQL', () => {
     await expect(app.getByTestId('sql-console-error')).toContainText(/documnet/)
     await expect(panel(app).locator('.cm-content')).toContainText('documnet')
     // Still the app, not a broken screen.
-    await expect(app.getByRole('main')).toBeVisible()
+    await waitForApp(app)
   })
 
   test('a query that matches nothing is an empty state, not a failure', async ({ app }) => {

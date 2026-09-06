@@ -1,4 +1,4 @@
-import { expect, OTHER_MNEMONIC, openSecuritySettings, SEEDED_MNEMONIC, storedMnemonic, test } from './fixtures'
+import { expect, OTHER_MNEMONIC, openSecuritySettings, SEEDED_MNEMONIC, storedMnemonic, test, waitForApp } from './fixtures'
 
 const UNLOCK_CODE = '314159'
 
@@ -137,7 +137,7 @@ test.describe('Security settings', () => {
 
     await app.getByLabel('Unlock code').fill(UNLOCK_CODE)
     await app.getByRole('button', { name: 'Unlock' }).click()
-    await expect(app.getByRole('main')).toBeVisible()
+    await waitForApp(app)
   })
 
   test('a wrong code does not get past the gate', async ({ app }) => {
@@ -166,6 +166,6 @@ test.describe('Security settings', () => {
     await app.getByTestId('handover-keep').click()
 
     await app.waitForLoadState('domcontentloaded')
-    await expect(app.getByRole('main')).toBeVisible()
+    await waitForApp(app)
   })
 })

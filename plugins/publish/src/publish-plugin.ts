@@ -122,7 +122,20 @@ export class PublishPlugin extends Plugin {
       remote,
       logger: this.logger,
     })
-    await publisher.load()
+    try {
+      await publisher.load()
+    } catch (error) {
+      // A file must not take the boot down (FR-147) — the two reads above already say so with tryRead,
+      // and this one was the exception that made a whole session land on the crash screen. The set of
+      // published paths is shared state: another device (or, in the e2e stand, another worker) can be
+      // rewriting it at the moment this boot reads it, and half a JSON document is a SyntaxError.
+      //
+      // Publishing then stays OFF for the session rather than starting from an empty set. That file is
+      // the record of what is public; a publisher that could not read it would rewrite it from nothing
+      // on the next publish and quietly unpublish everything the owner had shared.
+      this.logger.error('Could not read the set of published paths — publishing is unavailable this session', error)
+      return
+    }
     const publish = ctx.extensions.get(PublishExtension)
     publish.serverUrl = cfg.serverUrl
     publish.publisher = publisher

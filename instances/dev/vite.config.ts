@@ -9,6 +9,14 @@ const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.ur
 
 const API_PREFIXES = ['/api', '/healthcheck']
 
+// A test run is not an editing session. The stand watches the working tree and reloads every open page
+// when a file changes — which is what a dev server is for, and exactly wrong under a suite: one save
+// landing mid-run pulls the app out from under whatever is asserting, on every page at once, and the
+// test that was looking at it reports that the app never came up. The e2e stand sets this; nothing else
+// does. (Vite falls back to a no-op watcher when `watch` is null, so the server-restart hook below
+// still has something to subscribe to — it simply never fires.)
+const frozen = process.env.ARXHUB_FROZEN_STAND === '1'
+
 function apiProxy(port: number) {
   return (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     if (!API_PREFIXES.some((p) => req.url?.startsWith(p))) return next()
@@ -56,6 +64,7 @@ export default defineConfig({
   ],
   server: {
     port: 3000,
+    ...(frozen ? { hmr: false, watch: null } : {}),
   },
   // PGlite carries its Postgres build as .wasm and .tar.gz assets it resolves with new URL(...).
   // esbuild's dependency pre-bundling rewrites those URLs and the index then fails to start.
