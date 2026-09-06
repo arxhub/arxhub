@@ -166,14 +166,16 @@ describe('taking saved settings into use', () => {
   })
 })
 
-describe('the schema the console shows', () => {
-  it('lists every table of the index with its columns', () => {
+// The prose half only. What the console draws — columns, types, keys, what points where — is read from
+// the catalog of the live index, and is covered against a real one in @arxhub/sql.
+describe('the schema notes the console hangs on what it read', () => {
+  it('describes every table of the index, and every column it names', () => {
     const tables = extension().schema
     expect(tables.map((table) => table.name)).toEqual(['document', 'block', 'ref', 'tag', 'index_meta'])
     for (const table of tables) {
+      expect(table.description).not.toBe('')
       expect(table.columns.length).toBeGreaterThan(0)
       for (const column of table.columns) {
-        expect(column.type).not.toBe('')
         expect(column.description).not.toBe('')
       }
     }

@@ -66,6 +66,14 @@ export {
   type SqlSchemaTable,
 } from './schema'
 export {
+  SCHEMA_REFERENCE_MAX_ROWS,
+  SCHEMA_REFERENCE_SQL,
+  type SqlSchemaReferenceColumn,
+  type SqlSchemaReferenceRow,
+  type SqlSchemaReferenceTable,
+  toSchemaReference,
+} from './schema-reference'
+export {
   DEFAULT_FUZZY_THRESHOLD,
   DEFAULT_SEARCH_LIMIT,
   DEFAULT_SEARCH_OFFSET,

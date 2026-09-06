@@ -86,9 +86,10 @@ export class SearchExtension extends Extension {
     return this.opened
   }
 
-  // The tables and columns of the index, for a console that has to be writable without reading source.
-  // A constant of the engine's schema, not a question put to the database — so it is right before the
-  // index has opened and stays right after one has failed to.
+  // What the tables and columns of the index MEAN — the half a database cannot answer about itself.
+  // Shape (types, keys, nullability) is read from the live catalog instead, so it cannot drift from the
+  // DDL; this is a constant, so a console still has something to show before the index has opened and
+  // after one has failed to.
   get schema(): readonly SqlSchemaTable[] {
     return SCHEMA_TABLES
   }

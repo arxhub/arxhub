@@ -92,7 +92,6 @@ export const CONTENT_SCHEMA_DDL: readonly string[] = [
 
 export interface SqlSchemaColumn {
   name: string
-  type: string
   description: string
 }
 
@@ -102,30 +101,32 @@ export interface SqlSchemaTable {
   columns: readonly SqlSchemaColumn[]
 }
 
-// What the console shows so a query can be written without reading the source (Q-04 of the spec).
-// Kept next to the DDL on purpose: a column added there and missed here is a column nobody can find.
+// The prose half of the console's schema reference: what each table holds and what a column means.
+// Shape — the columns, their types, what is nullable, what is a key, what points where — is NOT here:
+// it is read from the catalog of the live index (schema-reference.ts), because a second description of
+// the DDL drifts from it. This list had already lost `block.checked` that way.
+// Kept next to the DDL on purpose, and schema-reference.test.ts fails when a column here has no note.
 export const SCHEMA_TABLES: readonly SqlSchemaTable[] = [
   {
     name: 'document',
     description: 'One row per file of the content store. Derived — the file is the source of truth.',
     columns: [
-      { name: 'path', type: 'text', description: 'Path inside the content store, no leading slash. Primary key.' },
-      { name: 'name', type: 'text', description: 'File name with extension.' },
-      { name: 'dir', type: 'text', description: 'Parent folder; empty string at the root.' },
-      { name: 'ext', type: 'text', description: 'Lower-case extension without the dot; empty string when there is none.' },
-      { name: 'kind', type: 'text', description: 'How the content was read: markdown | arx | text | binary.' },
-      { name: 'title', type: 'text', description: 'Title to show. Never empty.' },
-      { name: 'title_fold', type: 'text', description: 'Title lower-cased and unaccented — what similarity() compares.' },
-      { name: 'content', type: 'text', description: 'Flat text of the document. Empty for a binary file.' },
-      { name: 'frontmatter', type: 'jsonb', description: 'Document metadata when the format carries any.' },
-      { name: 'size', type: 'bigint', description: 'File size in bytes when it was indexed.' },
-      { name: 'mtime', type: 'bigint', description: 'File modification time, ms.' },
-      { name: 'ctime', type: 'bigint', description: 'File creation time, ms.' },
-      { name: 'hash', type: 'text', description: 'Content hash when it was indexed; null when unavailable.' },
-      { name: 'indexed_at', type: 'timestamptz', description: 'When the row was last reindexed.' },
+      { name: 'path', description: 'Path inside the content store, no leading slash. Primary key.' },
+      { name: 'name', description: 'File name with extension.' },
+      { name: 'dir', description: 'Parent folder; empty string at the root.' },
+      { name: 'ext', description: 'Lower-case extension without the dot; empty string when there is none.' },
+      { name: 'kind', description: 'How the content was read: markdown | arx | text | binary.' },
+      { name: 'title', description: 'Title to show. Never empty.' },
+      { name: 'title_fold', description: 'Title lower-cased and unaccented — what similarity() compares.' },
+      { name: 'content', description: 'Flat text of the document. Empty for a binary file.' },
+      { name: 'frontmatter', description: 'Document metadata when the format carries any.' },
+      { name: 'size', description: 'File size in bytes when it was indexed.' },
+      { name: 'mtime', description: 'File modification time, ms.' },
+      { name: 'ctime', description: 'File creation time, ms.' },
+      { name: 'hash', description: 'Content hash when it was indexed; null when unavailable.' },
+      { name: 'indexed_at', description: 'When the row was last reindexed.' },
       {
         name: 'tsv',
-        type: 'tsvector',
         description: `Generated: title (weight A) and content (weight B) under the '${FTS_CONFIG}' configuration.`,
       },
     ],
@@ -134,13 +135,14 @@ export const SCHEMA_TABLES: readonly SqlSchemaTable[] = [
     name: 'block',
     description: 'A part of a document as a unit of search — heading, paragraph, list item, code, quote. Dropped with its document.',
     columns: [
-      { name: 'id', type: 'text', description: 'Document path plus the block ordinal. Not stable across versions of a document.' },
-      { name: 'doc_path', type: 'text', description: 'Owning document. ON DELETE CASCADE.' },
-      { name: 'ordinal', type: 'int', description: 'Position inside the document, from zero.' },
-      { name: 'type', type: 'text', description: 'heading | paragraph | list-item | code | quote.' },
-      { name: 'level', type: 'int', description: 'Heading level 1..6; null for other types.' },
-      { name: 'content', type: 'text', description: 'Flat text of the block — what a snippet shows.' },
-      { name: 'tsv', type: 'tsvector', description: `Generated from content under the '${FTS_CONFIG}' configuration.` },
+      { name: 'id', description: 'Document path plus the block ordinal. Not stable across versions of a document.' },
+      { name: 'doc_path', description: 'Owning document. ON DELETE CASCADE.' },
+      { name: 'ordinal', description: 'Position inside the document, from zero.' },
+      { name: 'type', description: 'heading | paragraph | list-item | code | quote.' },
+      { name: 'level', description: 'Heading depth for a heading, nesting depth for a list item or a task; null otherwise.' },
+      { name: 'checked', description: 'Done state of a task; null for every other type, so "unfinished" and "not a task" stay apart.' },
+      { name: 'content', description: 'Flat text of the block — what a snippet shows.' },
+      { name: 'tsv', description: `Generated from content under the '${FTS_CONFIG}' configuration.` },
     ],
   },
   {
@@ -148,32 +150,32 @@ export const SCHEMA_TABLES: readonly SqlSchemaTable[] = [
     description:
       'A link from a document (or one of its blocks) to another document. A link to a document that does not exist keeps target_path null.',
     columns: [
-      { name: 'id', type: 'bigint', description: 'Surrogate key.' },
-      { name: 'src_path', type: 'text', description: 'Document the link is written in. ON DELETE CASCADE.' },
-      { name: 'src_block', type: 'text', description: 'Block the link sits in; null when it came from document metadata.' },
-      { name: 'target_raw', type: 'text', description: 'Target as written, before it is resolved to a path.' },
-      { name: 'target_path', type: 'text', description: 'Resolved target path, or null for a link to a document that is not indexed.' },
-      { name: 'kind', type: 'text', description: 'wikilink | markdown.' },
-      { name: 'label', type: 'text', description: 'Visible link text when it differs from the target.' },
+      { name: 'id', description: 'Surrogate key.' },
+      { name: 'src_path', description: 'Document the link is written in. ON DELETE CASCADE.' },
+      { name: 'src_block', description: 'Block the link sits in; null when it came from document metadata.' },
+      { name: 'target_raw', description: 'Target as written, before it is resolved to a path.' },
+      { name: 'target_path', description: 'Resolved target path, or null for a link to a document that is not indexed.' },
+      { name: 'kind', description: 'wikilink | markdown.' },
+      { name: 'label', description: 'Visible link text when it differs from the target.' },
     ],
   },
   {
     name: 'tag',
     description: 'A tag of a document or of one of its blocks, taken from metadata or from the text.',
     columns: [
-      { name: 'id', type: 'bigint', description: 'Surrogate key.' },
-      { name: 'doc_path', type: 'text', description: 'Owning document. ON DELETE CASCADE.' },
-      { name: 'block_id', type: 'text', description: 'Block the tag appeared in; null when it came from document metadata.' },
-      { name: 'name', type: 'text', description: 'Tag as written, without the leading marker.' },
-      { name: 'name_fold', type: 'text', description: 'Tag lower-cased and unaccented — what the tag: qualifier compares.' },
+      { name: 'id', description: 'Surrogate key.' },
+      { name: 'doc_path', description: 'Owning document. ON DELETE CASCADE.' },
+      { name: 'block_id', description: 'Block the tag appeared in; null when it came from document metadata.' },
+      { name: 'name', description: 'Tag as written, without the leading marker.' },
+      { name: 'name_fold', description: 'Tag lower-cased and unaccented — what the tag: qualifier compares.' },
     ],
   },
   {
     name: 'index_meta',
     description: 'Bookkeeping: schema version and the state of the last walk. One row per key.',
     columns: [
-      { name: 'key', type: 'text', description: `${SCHEMA_VERSION_KEY} | last_scan_started_at | last_scan_finished_at | scan_cursor.` },
-      { name: 'value', type: 'text', description: 'Value as a string — every reader knows its own key.' },
+      { name: 'key', description: `${SCHEMA_VERSION_KEY} | last_scan_started_at | last_scan_finished_at | scan_cursor.` },
+      { name: 'value', description: 'Value as a string — every reader knows its own key.' },
     ],
   },
 ]

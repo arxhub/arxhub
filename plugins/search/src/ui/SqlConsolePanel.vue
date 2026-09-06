@@ -4,6 +4,7 @@ import { Button, modals, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { SearchExtension } from '../search-extension'
+import SqlSchemaReference from './SqlSchemaReference.vue'
 import { createSqlConsoleController, formatCell, type SqlCell } from './sql-console-controller'
 import { SQL_CONSOLE_EXAMPLE, useConsoleQuery } from './sql-console-state'
 
@@ -104,21 +105,9 @@ const summary = computed(() => {
         <span v-if="controller.failure.value.code" class="failure-code">{{ controller.failure.value.code }}</span>
       </div>
 
-      <section v-if="schemaOpen" class="schema" aria-label="Index schema">
-        <!-- The whole point of the control: the tables and their columns, so a query can be written without
-             reading the source (FR-236). -->
-        <article v-for="table in search.schema" :key="table.name" class="schema-table">
-          <h2 class="schema-name">{{ table.name }}</h2>
-          <p class="schema-description">{{ table.description }}</p>
-          <ul class="schema-columns">
-            <li v-for="column in table.columns" :key="column.name" class="schema-column">
-              <code class="schema-column-name">{{ column.name }}</code>
-              <code class="schema-column-type">{{ column.type }}</code>
-              <span class="schema-column-description">{{ column.description }}</span>
-            </li>
-          </ul>
-        </article>
-      </section>
+      <!-- The whole point of the control: the tables and their columns, so a query can be written without
+           reading the source (FR-236) — read from the index itself, so it cannot drift from the DDL. -->
+      <SqlSchemaReference v-if="schemaOpen" />
 
       <div v-if="table" class="result">
         <div v-if="table.rows.length === 0" class="empty" data-testid="sql-console-empty">
@@ -232,69 +221,6 @@ const summary = computed(() => {
   font-size: var(--font-size-xs);
   color: var(--danger-11);
   opacity: 0.85;
-}
-
-/* Capped and scrolled inside itself: the schema sits where the query is written, and five tables' worth of
-   columns would otherwise push the answer clean off the screen. */
-.schema {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 320px;
-  overflow-y: auto;
-  padding: 16px;
-  border: 1px solid var(--gray-6);
-  border-radius: var(--radius-sm);
-  background: var(--gray-2);
-}
-
-.schema-name {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--gray-12);
-}
-
-.schema-description {
-  margin: 4px 0 8px;
-  max-width: 62ch;
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-normal);
-  color: var(--gray-11);
-}
-
-.schema-columns {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.schema-column {
-  display: grid;
-  grid-template-columns: 160px 96px 1fr;
-  gap: 8px;
-  align-items: baseline;
-  min-height: 20px;
-  font-size: var(--font-size-xs);
-}
-
-.schema-column-name {
-  font-family: var(--font-mono);
-  color: var(--gray-12);
-}
-
-.schema-column-type {
-  font-family: var(--font-mono);
-  color: var(--gray-10);
-}
-
-.schema-column-description {
-  color: var(--gray-11);
-  line-height: var(--line-height-normal);
 }
 
 /* A wide result scrolls inside its own box; the page itself never scrolls sideways. */
