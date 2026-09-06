@@ -32,9 +32,31 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
     if (found == null) throw new Error(`ENOENT: ${path}`)
     return found
   }),
-  readDir: vi.fn(async () => []),
-  remove: vi.fn(async (path: string) => {
-    files.delete(path)
+  readDir: vi.fn(async (path: string) => {
+    const prefix = path ? `${path}/` : ''
+    const names = new Set<string>()
+    for (const key of [...files.keys(), ...dirs]) {
+      if (!key.startsWith(prefix)) continue
+      const rest = key.slice(prefix.length)
+      if (rest === '' || rest.includes('/')) continue
+      names.add(rest)
+    }
+    return [...names].map((name) => ({ name, isDirectory: dirs.has(prefix + name), isFile: files.has(prefix + name) }))
+  }),
+  remove: vi.fn(async (path: string, options?: { recursive?: boolean }) => {
+    // The real plugin throws on a path that is not there — which is what `force` exists to swallow.
+    const had = files.delete(path) || dirs.delete(path)
+    let removed = had
+    if (options?.recursive) {
+      for (const key of [...files.keys(), ...dirs]) {
+        if (key.startsWith(`${path}/`)) {
+          files.delete(key)
+          dirs.delete(key)
+          removed = true
+        }
+      }
+    }
+    if (!removed) throw new Error(`ENOENT: ${path}`)
   }),
   stat: vi.fn(async (path: string) => {
     if (!files.has(path)) throw new Error(`ENOENT: ${path}`)
@@ -102,5 +124,53 @@ describe('TauriFileSystem', () => {
 
     expect(dirs.has('deep/inside')).toBe(true)
     expect(files.get('deep/inside/stream.txt')).toEqual(new Uint8Array([5]))
+  })
+  it('hides the .arxmeta sidecar from a listing, and keeps directories', async () => {
+    const fs = makeFs()
+    await fs.write('notes/a.md', new Uint8Array([1]))
+    await fs.write('notes/a.md.arxmeta', new Uint8Array([2]))
+    await fs.write('notes/deep/b.md', new Uint8Array([3]))
+
+    const listed = (await fs.list('notes')).map((it) => it.pathname).sort()
+
+    // The sidecar is the write machinery's own bookkeeping — showing it would put a second row under
+    // every note in the tree.
+    expect(listed).toEqual(['notes/a.md', 'notes/deep'])
+  })
+
+  it('round-trips through a stream the way a direct write does', async () => {
+    const fs = makeFs()
+    await fs.write('notes/direct.md', new TextEncoder().encode('hello'))
+
+    expect(new TextDecoder().decode(await fs.read('notes/direct.md'))).toBe('hello')
+  })
+
+  it('answers a missing file with fileNotFound rather than the backend error', async () => {
+    // A caller distinguishes "not there" from "the store is broken"; leaking the plugin's own message
+    // would make every absent file look like a failure of the file system.
+    await expect(makeFs().read('nowhere.md')).rejects.toThrow(/nowhere\.md/)
+    await expect(makeFs().head('nowhere.md')).rejects.toThrow(/nowhere\.md/)
+  })
+
+  it('says a file is there only when it is', async () => {
+    const fs = makeFs()
+    expect(await fs.exists('notes/a.md')).toBe(false)
+    await fs.write('notes/a.md', new Uint8Array([1]))
+    expect(await fs.exists('notes/a.md')).toBe(true)
+  })
+
+  it('reports what it knows about a file', async () => {
+    const fs = makeFs()
+    await fs.write('notes/a.md', new Uint8Array([1, 2, 3]))
+
+    const head = await fs.head('notes/a.md')
+    expect(head.size).toBe(3)
+    expect(typeof head.modifiedAt).toBe('number')
+  })
+
+  it('a forced delete of something absent is not a failure', async () => {
+    // `force` is what makes a delete idempotent, and the sweep after a failed write relies on it.
+    await expect(makeFs().delete('nowhere.md', { force: true })).resolves.toBeUndefined()
+    await expect(makeFs().delete('nowhere.md')).rejects.toThrow(/nowhere\.md/)
   })
 })
