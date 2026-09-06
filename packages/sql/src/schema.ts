@@ -1,7 +1,7 @@
 // Bump whenever anything below changes shape. An index written by another version is discarded, not
 // migrated (FR-217): every row is recoverable by walking the content store, so rebuilding is cheaper
 // than carrying a data migration for a derived index.
-export const SQL_SCHEMA_VERSION = 1
+export const SQL_SCHEMA_VERSION = 2
 
 export const SCHEMA_VERSION_KEY = 'schema_version'
 
@@ -56,7 +56,10 @@ export const CONTENT_SCHEMA_DDL: readonly string[] = [
     doc_path text NOT NULL REFERENCES document (path) ON DELETE CASCADE,
     ordinal int NOT NULL,
     type text NOT NULL,
+    -- Heading depth for a heading, nesting depth for a list item or a task, null otherwise.
     level int,
+    -- Done state of a task; null for every other type, so "unfinished" and "not a task" stay apart.
+    checked boolean,
     content text NOT NULL,
     tsv tsvector GENERATED ALWAYS AS (to_tsvector('${FTS_CONFIG}', content)) STORED
   )`,

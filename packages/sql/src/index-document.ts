@@ -3,7 +3,7 @@ import { DOCUMENT_EXTENSIONS, documentExtension, documentPath, type ParsedDocume
 import type { SqlExecutor, SqlIndex } from './types'
 
 // Rows written per INSERT. Postgres takes at most 65535 bind parameters per statement, and the widest
-// row here binds six — a document with thousands of blocks stays well inside the limit at this size.
+// row here binds seven — a document with thousands of blocks stays well inside the limit at this size.
 const INSERT_CHUNK = 200
 
 // Writes a parsed document into the index, replacing whatever was there. One transaction for the whole
@@ -51,8 +51,8 @@ export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument): Promi
 
   for (const chunk of chunks(doc.blocks, INSERT_CHUNK)) {
     await tx.query(
-      `INSERT INTO block (id, doc_path, ordinal, type, level, content) VALUES ${placeholders(chunk.length, 6)}`,
-      chunk.flatMap((block) => [block.id, doc.path, block.ordinal, block.type, block.level, block.content]),
+      `INSERT INTO block (id, doc_path, ordinal, type, level, checked, content) VALUES ${placeholders(chunk.length, 7)}`,
+      chunk.flatMap((block) => [block.id, doc.path, block.ordinal, block.type, block.level, block.checked, block.content]),
     )
   }
 

@@ -22,10 +22,14 @@ const BLOCK_TYPES: Record<string, BlockType> = {
   code_block: 'code',
   blockquote: 'quote',
   list_item: 'list-item',
-  task_item: 'list-item',
+  task_item: 'task',
 }
 
 const CONTAINERS = new Set(['bullet_list', 'ordered_list', 'task_list', 'callout'])
+
+// The containers that nest: entering one is a level deeper for the items inside it. A callout holds
+// blocks but is not a list, so it opens without changing anyone's depth.
+const LIST_CONTAINERS = new Set(['bullet_list', 'ordered_list', 'task_list'])
 
 // Nodes that carry no text and become no block.
 const IGNORED = new Set(['horizontal_rule'])
@@ -56,18 +60,19 @@ export function parseArx(text: string): ArxParse | null {
 
   const result: ArxParse = { blocks: [], markLinks: [] }
   for (const child of children) {
-    appendNode(child, result)
+    appendNode(child, result, 0)
   }
   return result
 }
 
-function appendNode(node: ArxNode, result: ArxParse): void {
+function appendNode(node: ArxNode, result: ArxParse, depth: number): void {
   const type = typeof node.type === 'string' ? node.type : ''
   if (IGNORED.has(type)) return
 
   if (CONTAINERS.has(type)) {
+    const inner = LIST_CONTAINERS.has(type) ? depth + 1 : depth
     for (const child of childrenOf(node) ?? []) {
-      appendNode(child, result)
+      appendNode(child, result, inner)
     }
     return
   }
@@ -79,13 +84,30 @@ function appendNode(node: ArxNode, result: ArxParse): void {
 
   result.blocks.push({
     type: blockType,
-    level: blockType === 'heading' ? headingLevel(node) : null,
+    level: blockLevel(node, blockType, depth),
+    checked: blockType === 'task' ? isChecked(node) : null,
     raw: text,
     content: text,
   })
   for (const link of links) {
     result.markLinks.push({ blockIndex, ref: link })
   }
+}
+
+// A tree that nests a list item without a list around it (hand-written, or a format we do not know)
+// still gets depth 1 rather than 0: the item is at the top level, not outside every list.
+function blockLevel(node: ArxNode, blockType: BlockType, depth: number): number | null {
+  if (blockType === 'heading') return headingLevel(node)
+  if (blockType !== 'list-item' && blockType !== 'task') return null
+  return Math.max(depth, 1)
+}
+
+// The editor's task_item declares `checked` with a default of false, so a task whose attribute is
+// missing is an unfinished one — not a task with nothing to say about its state.
+function isChecked(node: ArxNode): boolean {
+  const attrs = node.attrs
+  if (attrs == null || typeof attrs !== 'object' || !('checked' in attrs)) return false
+  return (attrs as { checked: unknown }).checked === true
 }
 
 function headingLevel(node: ArxNode): number {

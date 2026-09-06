@@ -41,6 +41,7 @@ export function parseDocument(pathname: string, bytes: Uint8Array, stat?: Partia
     ordinal,
     type: block.type,
     level: block.level,
+    checked: block.checked,
     content: block.content,
   }))
 
@@ -131,7 +132,7 @@ function readSource(kind: DocumentKind, text: string): DocumentSource {
 }
 
 function textSource(text: string): DocumentSource {
-  const blocks: SourceBlock[] = text.trim() === '' ? [] : [{ type: 'paragraph', level: null, raw: text, content: text }]
+  const blocks: SourceBlock[] = text.trim() === '' ? [] : [{ type: 'paragraph', level: null, checked: null, raw: text, content: text }]
   return { kind: 'text', blocks, frontmatter: null, frontmatterTitle: null, frontmatterTags: [], markLinks: [] }
 }
 

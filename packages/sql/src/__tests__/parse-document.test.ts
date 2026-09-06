@@ -98,8 +98,8 @@ describe('parseDocument — markdown', () => {
     expect(doc.blocks.map((block) => [block.type, block.level])).toEqual([
       ['heading', 1],
       ['paragraph', null],
-      ['list-item', null],
-      ['list-item', null],
+      ['list-item', 1],
+      ['list-item', 1],
       ['code', null],
       ['quote', null],
     ])
@@ -169,6 +169,73 @@ describe('parseDocument — markdown', () => {
   it('keeps one row for the same link written twice', () => {
     const doc = parseDocument('notes/dup.md', bytes(['[[target]] and again [[target]].']))
     expect(doc.refs).toHaveLength(1)
+  })
+})
+
+describe('parseDocument — lists and tasks', () => {
+  function blocks(...lines: string[]) {
+    return parseDocument('notes/list.md', bytes(lines)).blocks.map((block) => [block.type, block.level, block.checked, block.content])
+  }
+
+  it('tells a task apart from a plain list item, and keeps its state', () => {
+    expect(blocks('- [ ] написать', '- [x] прочитать', '- просто пункт')).toEqual([
+      ['task', 1, false, 'написать'],
+      ['task', 1, true, 'прочитать'],
+      ['list-item', 1, null, 'просто пункт'],
+    ])
+  })
+
+  it('reads an upper-case marker as done', () => {
+    expect(blocks('- [X] готово')).toEqual([['task', 1, true, 'готово']])
+  })
+
+  it('makes a task of a marker with nothing after it', () => {
+    expect(blocks('- [ ]')).toEqual([['task', 1, false, '']])
+  })
+
+  it('leaves a bracket that is not a marker in the text', () => {
+    expect(blocks('- [позже] зайти', '- [] пусто')).toEqual([
+      ['list-item', 1, null, '[позже] зайти'],
+      ['list-item', 1, null, '[] пусто'],
+    ])
+  })
+
+  // The depth comes from what the document itself did, not from a width the parser picked: the same
+  // shape indented by two spaces and by a tab has to read the same.
+  it('reads nesting depth from the indentation the document uses', () => {
+    expect(blocks('- один', '  - два', '    - три', '  - обратно', '- корень')).toEqual([
+      ['list-item', 1, null, 'один'],
+      ['list-item', 2, null, 'два'],
+      ['list-item', 3, null, 'три'],
+      ['list-item', 2, null, 'обратно'],
+      ['list-item', 1, null, 'корень'],
+    ])
+    expect(blocks('- один', '\t- два')).toEqual([
+      ['list-item', 1, null, 'один'],
+      ['list-item', 2, null, 'два'],
+    ])
+  })
+
+  it('keeps one list across a blank line but not across a paragraph', () => {
+    expect(blocks('- один', '', '  - два')).toEqual([
+      ['list-item', 1, null, 'один'],
+      ['list-item', 2, null, 'два'],
+    ])
+    // A blank line on both sides — a line pressed straight against a list item is a lazy continuation
+    // of that item, which is what the joined text below asserts.
+    expect(blocks('  - один', '', 'абзац', '', '  - два')).toEqual([
+      ['list-item', 1, null, 'один'],
+      ['paragraph', null, null, 'абзац'],
+      ['list-item', 1, null, 'два'],
+    ])
+    expect(blocks('  - один', 'абзац')).toEqual([['list-item', 1, null, 'один абзац']])
+  })
+
+  it('nests a task under a list item and an ordered marker like any other', () => {
+    expect(blocks('1. шаг', '   - [x] подшаг')).toEqual([
+      ['list-item', 1, null, 'шаг'],
+      ['task', 2, true, 'подшаг'],
+    ])
   })
 })
 
@@ -252,8 +319,8 @@ describe('parseDocument — arx', () => {
     expect(doc.blocks.map((block) => [block.type, block.level, block.content])).toEqual([
       ['heading', 2, 'Дерево'],
       ['paragraph', null, 'Абзац с #тегом'],
-      ['list-item', null, 'раз'],
-      ['list-item', null, 'два'],
+      ['list-item', 1, 'раз'],
+      ['list-item', 1, 'два'],
       ['code', null, 'let x = 1'],
       ['quote', null, 'цитата'],
       ['paragraph', null, 'сюда'],
@@ -269,5 +336,37 @@ describe('parseDocument — arx', () => {
     expect(doc.blocks).toHaveLength(1)
     expect(doc.blocks[0].type).toBe('paragraph')
     expect(doc.title).toBe('broken')
+  })
+
+  it('reads a task_item as a task, with its state and its depth', () => {
+    const withTasks = {
+      version: 1,
+      doc: {
+        type: 'doc',
+        content: [
+          {
+            type: 'task_list',
+            content: [
+              { type: 'task_item', attrs: { checked: true }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'сделано' }] }] },
+              { type: 'task_item', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'нет' }] }] },
+              // No attrs at all: the editor's schema defaults `checked` to false, so this is unfinished
+              // rather than a task with nothing to say about its state.
+              { type: 'task_item', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'без атрибута' }] }] },
+              {
+                type: 'bullet_list',
+                content: [{ type: 'list_item', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'вложенный' }] }] }],
+              },
+            ],
+          },
+        ],
+      },
+    }
+    const doc = parseDocument('notes/tasks.arx', encoder.encode(JSON.stringify(withTasks)))
+    expect(doc.blocks.map((block) => [block.type, block.level, block.checked, block.content])).toEqual([
+      ['task', 1, true, 'сделано'],
+      ['task', 1, false, 'нет'],
+      ['task', 1, false, 'без атрибута'],
+      ['list-item', 2, null, 'вложенный'],
+    ])
   })
 })
