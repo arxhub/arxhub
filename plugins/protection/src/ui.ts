@@ -1,3 +1,6 @@
 export { IDENTITY_MNEMONIC_KEY, loadOrCreateKeyring } from './identity'
 export { KeyringExtension } from './keyring-extension'
+export { decideIdentityChange, type IdentityDecision, type IdentitySituation } from './owner-decision'
+export type { OwnerVerdict } from './owner-marker'
 export { ProtectionPlugin } from './protection-plugin'
+export { clearVaultWorkingTree, isVaultEmpty } from './vault-reset'

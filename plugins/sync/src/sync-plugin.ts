@@ -63,7 +63,7 @@ export class SyncPlugin extends Plugin {
       return
     }
 
-    await this.discardStateOfPreviousIdentity(pluginVfs, keyring.authPublicKey)
+    await this.discardStateOfPreviousIdentity(pluginVfs, ctx.extensions.get(KeyringExtension))
 
     // Sign remote requests with the same identity so a protected sync server accepts them.
     const signer = new MutableRequestSigner()
@@ -106,32 +106,23 @@ export class SyncPlugin extends Plugin {
   // it. After the user enters a different recovery phrase the old store is undecryptable and its
   // last-synced anchor points at another owner's history, so rebasing onto it would fail in a way
   // that reads like remote tampering. Dropping it re-enters trust-on-first-sync instead.
-  private async discardStateOfPreviousIdentity(vfs: PluginVfs, authPublicKey: string): Promise<void> {
-    const owner = vfs.state.file('/identity')
+  //
+  // Whether the identity changed is protection's answer, not sync's: the same record tells the
+  // Security page a reinstall apart from a stranger's phrase, and one owner of that question is
+  // enough. Sync used to keep the marker itself in state/sync/identity; protection adopts that file
+  // on first read, so an existing device is not mistaken for an unknown owner.
+  private async discardStateOfPreviousIdentity(vfs: PluginVfs, keyrings: KeyringExtension): Promise<void> {
+    const owner = await keyrings.owner()
+    if (owner == null || !owner.changed) return
 
-    // An unreadable marker must not keep the app from starting, and it is not evidence of a changed
-    // identity either — treat it as unknown and rewrite it.
-    let previous: string | null = null
+    this.logger.warn('Identity changed since the last run — discarding the previous owner’s sync state')
     try {
-      previous = (await owner.readJSON<string | null>(null))?.trim() ?? null
+      await vfs.state.delete('/repo', { recursive: true, force: true })
     } catch (error) {
-      this.logger.warn('Could not read the sync identity marker — rewriting it', error)
+      // Leaving the old store in place would make the next sync fail as if the remote had been
+      // tampered with, so say so loudly rather than starting into a confusing failure.
+      this.logger.error('Could not discard the previous owner’s sync state — sync will likely fail until state/sync/repo is removed', error)
     }
-
-    if (previous === authPublicKey) return
-
-    if (previous != null) {
-      this.logger.warn('Identity changed since the last run — discarding the previous owner’s sync state')
-      try {
-        await vfs.state.delete('/repo', { recursive: true, force: true })
-      } catch (error) {
-        // Leaving the old store in place would make the next sync fail as if the remote had been
-        // tampered with, so say so loudly rather than starting into a confusing failure.
-        this.logger.error('Could not discard the previous owner’s sync state — sync will likely fail until state/sync/repo is removed', error)
-      }
-    }
-
-    await owner.writeJSON(authPublicKey)
   }
 
   override async stop(ctx: PluginContext): Promise<void> {

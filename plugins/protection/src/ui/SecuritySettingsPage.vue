@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { validateMnemonic } from '@arxhub/crypto'
-import { hasErrorCode } from '@arxhub/errors'
+import { keyringFromMnemonic, validateMnemonic } from '@arxhub/crypto'
+import { hasErrorCode, illegalState } from '@arxhub/errors'
 import {
   changeUnlockCode,
   disableDeviceLock,
@@ -12,13 +12,29 @@ import {
 } from '@arxhub/plugin-keystore/ui'
 import { Badge, Button, Card, modals, PageLayout } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
-import { computed, onMounted, ref } from 'vue'
+import { VaultVfs } from '@arxhub/vfs'
+import { computed, markRaw, onMounted, ref } from 'vue'
 import { IDENTITY_MNEMONIC_KEY } from '../identity'
 import { KeyringExtension } from '../keyring-extension'
+import { decideIdentityChange } from '../owner-decision'
+import { clearVaultWorkingTree, isVaultEmpty } from '../vault-reset'
+import OwnerHandoverDialog from './OwnerHandoverDialog.vue'
 
 const arxhub = useArxHub()
 const keystore = arxhub.extensions.get(KeyStoreExtension).keystore
-const keyring = arxhub.extensions.get(KeyringExtension).keyring
+const keyrings = arxhub.extensions.get(KeyringExtension)
+const keyring = keyrings.keyring
+
+// This page is the one surface that may delete the working tree, so it reads the vault view itself
+// rather than borrowing one from a plugin that happens to hold it. An instance without a vault (there
+// is nothing to lose there) leaves it null.
+const vault = (() => {
+  try {
+    return arxhub.services.get(VaultVfs)
+  } catch {
+    return null
+  }
+})()
 
 // The lock operations rewrite the raw entries, so they need the undecorated localStorage view rather
 // than whatever decorated store the app booted on. A LocalStorageKeyStore holds no state of its own,
@@ -117,23 +133,137 @@ function run(action: Promise<void>, title: string): void {
   action.catch((error) => toaster.create({ title, description: String(error), type: 'error' }))
 }
 
-// The identity is resolved from the key store before ArxHub.start(), so a replacement can only take
-// effect on a fresh boot — hence the reload rather than swapping the keyring in place.
-async function replaceIdentity(): Promise<void> {
-  await keystore.set(IDENTITY_MNEMONIC_KEY, normalized.value)
-  window.location.reload()
+// A BIP39 checksum only answers “is this a phrase at all”. Deriving its auth key answers “is this
+// YOUR phrase” — pure, offline and instant, so it costs a keystroke and no round trip.
+const enteredKey = computed(() => (enteredValid.value ? keyringFromMnemonic(normalized.value).authPublicKey : null))
+
+const previousOwner = ref<string | null>(null)
+// Conservative until proven otherwise: an unknown vault is a vault worth asking about.
+const vaultEmpty = ref(false)
+const replaceBusy = ref(false)
+
+onMounted(async () => {
+  // The marker as it was BEFORE this boot — the memoised accessor hands every caller the same value,
+  // so it does not matter that the page asks long after sync already did.
+  previousOwner.value = (await keyrings.owner())?.previousOwner ?? null
+  vaultEmpty.value = await readVaultEmpty()
+})
+
+async function readVaultEmpty(): Promise<boolean> {
+  if (vault == null) return false
+  try {
+    return await isVaultEmpty(vault)
+  } catch {
+    // Not knowing what is at stake is a reason to ask the question, never a reason to skip it.
+    return false
+  }
 }
 
-function confirmReplace(): void {
-  modals.openConfirmModal({
-    title: 'Replace this device’s identity',
-    content:
-      'This device will stop being the owner it is now. Anything encrypted under the current phrase becomes ' +
-      'unreachable unless you saved that phrase. The app restarts to apply the new one.',
-    labels: { confirm: 'Replace identity', cancel: 'Cancel' },
-    confirmProps: { danger: true },
-    onConfirm: () => run(replaceIdentity(), 'Could not replace the identity'),
+const decision = computed(() => {
+  if (keyring == null || enteredKey.value == null) return null
+  return decideIdentityChange({
+    entered: enteredKey.value,
+    current: keyring.authPublicKey,
+    previousOwner: previousOwner.value,
+    vaultEmpty: vaultEmpty.value,
   })
+})
+
+// Said before anything is pressed: the common cases (your own phrase, the phrase for the files that
+// are here) should never look like they are about to take something away.
+const verdict = computed(() => {
+  switch (decision.value?.kind) {
+    case 'nothing-to-lose':
+      return 'This device holds no files, so there is nothing to lose by switching to this phrase.'
+    case 'already-this-device':
+      return 'This is already this device’s phrase — there is nothing to change.'
+    case 'restores-owner':
+      return 'This is the phrase the files on this device belong to. Restoring it changes nothing about them.'
+    case 'foreign-owner':
+      return 'This phrase belongs to a different owner and this device holds files — you will be asked what happens to them.'
+    default:
+      return null
+  }
+})
+
+const canApply = computed(() => decision.value != null && decision.value.kind !== 'already-this-device')
+const restoring = computed(() => decision.value?.kind === 'restores-owner')
+
+async function beginReplace(): Promise<void> {
+  if (keyring == null || enteredKey.value == null) return
+  // Captured together: the phrase and the key derived from it must not drift apart while a dialog is
+  // open between the decision and the write.
+  const mnemonic = normalized.value
+  const entered = enteredKey.value
+  // Re-read rather than trust what mount saw: this answer decides whether anything is asked at all.
+  vaultEmpty.value = await readVaultEmpty()
+
+  const outcome = decideIdentityChange({
+    entered,
+    current: keyring.authPublicKey,
+    previousOwner: previousOwner.value,
+    vaultEmpty: vaultEmpty.value,
+  })
+
+  switch (outcome.kind) {
+    // The button is already disabled for this, and the line under the field says so; this is the belt
+    // for anyone reaching the decision by another route.
+    case 'already-this-device':
+      toaster.create({ title: 'That is already this device’s phrase', description: 'Nothing was changed.', type: 'info' })
+      return
+    // Nothing is being taken from anyone in either of these: an empty vault has nothing to lose, and
+    // the phrase that owns the files on disk is the one they were waiting for.
+    case 'nothing-to-lose':
+    case 'restores-owner':
+      await applyIdentity(mnemonic, entered, false)
+      return
+    case 'foreign-owner':
+      openHandover(mnemonic, entered)
+  }
+}
+
+const HANDOVER_MODAL_ID = 'arxhub.protection.handover'
+
+function openHandover(mnemonic: string, entered: string): void {
+  modals.open({
+    modalId: HANDOVER_MODAL_ID,
+    title: 'This phrase belongs to another owner',
+    size: 'md',
+    centered: true,
+    content: markRaw(OwnerHandoverDialog),
+    contentProps: {
+      modalId: HANDOVER_MODAL_ID,
+      onKeepLocalFiles: () => run(applyIdentity(mnemonic, entered, false), 'Could not replace the identity'),
+      onTakeFromServer: () => run(applyIdentity(mnemonic, entered, true), 'Could not replace the identity'),
+    },
+  })
+}
+
+// The identity is resolved from the key store before ArxHub.start(), so a replacement can only take
+// effect on a fresh boot — hence the reload rather than swapping the keyring in place.
+//
+// Order is the safety property here: the working tree goes first, so a wipe that fails leaves the
+// device exactly as it was instead of half handed over. Only after it succeeds does the phrase become
+// this device’s, and the marker record the handover — which is what the next boot reads to drop the
+// previous owner’s derived state.
+async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boolean): Promise<void> {
+  replaceBusy.value = true
+  try {
+    if (wipeVault) {
+      if (vault == null) throw illegalState('This device has no vault to clear')
+      await clearVaultWorkingTree(vault)
+    }
+    await keystore.set(IDENTITY_MNEMONIC_KEY, mnemonic)
+    // Past this point the phrase IS this device's, so a marker that could not be written must not be
+    // reported as “could not replace the identity”. The cost of losing it is that the next boot does
+    // not know the handover was deliberate — which errs towards discarding the previous owner's
+    // derived state, never towards keeping it.
+    await keyrings.claimOwner(publicKey).catch((error) => arxhub.logger.warn('[protection] could not record the identity handover', error))
+    window.location.reload()
+  } catch (error) {
+    replaceBusy.value = false
+    throw error
+  }
 }
 </script>
 
@@ -242,7 +372,8 @@ function confirmReplace(): void {
     <Card variant="danger" label="Irreversible" title="Use an existing recovery phrase">
       <p class="hint">
         Enter the phrase from another device to make this one the same owner. Save the current phrase first — replacing
-        it cannot be undone from here.
+        it cannot be undone from here. The phrase is compared with what this device already knows, so you are only
+        asked about your files when it really is a different owner.
       </p>
       <textarea
         v-model="entered"
@@ -254,8 +385,17 @@ function confirmReplace(): void {
         data-testid="recovery-phrase-entry"
       />
       <p v-if="normalized && !enteredValid" class="invalid">Not a valid recovery phrase — check the words and their order.</p>
+      <p v-else-if="verdict" class="hint" data-testid="phrase-verdict">{{ verdict }}</p>
       <div class="row">
-        <Button size="sm" variant="danger" :disabled="!enteredValid" @click="confirmReplace">Replace identity</Button>
+        <Button
+          size="sm"
+          :variant="restoring ? 'primary' : 'danger'"
+          :disabled="!canApply || replaceBusy"
+          data-testid="replace-identity"
+          @click="run(beginReplace(), 'Could not replace the identity')"
+        >
+          {{ restoring ? 'Restore identity' : 'Replace identity' }}
+        </Button>
       </div>
     </Card>
     </div>

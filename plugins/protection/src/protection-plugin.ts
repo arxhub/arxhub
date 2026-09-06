@@ -2,10 +2,12 @@ import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import type { Keyring } from '@arxhub/crypto'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { PluginVfs, RootVfs } from '@arxhub/vfs'
 import { markRaw } from 'vue'
 import { watchAuthRejections } from './auth-status'
 import { KeyringExtension } from './keyring-extension'
 import { manifest } from './manifest'
+import { OwnerRegistry } from './owner-marker'
 import AuthFooter from './ui/AuthFooter.vue'
 import { openAuthRejectedDialog } from './ui/auth-dialog'
 import SecuritySettingsPage from './ui/SecuritySettingsPage.vue'
@@ -32,7 +34,16 @@ export class ProtectionPlugin extends Plugin {
 
   override create(ctx: PluginContext): void {
     super.create(ctx)
-    ctx.extensions.register(KeyringExtension, () => ({ keyring: this.keyring }))
+    ctx.extensions.register(KeyringExtension, () => ({
+      keyring: this.keyring,
+      // Identity is protection's business, so the record of who the data on disk belongs to lives in
+      // protection's own device-local state. Root is reached only to adopt the copy sync used to keep.
+      owners: new OwnerRegistry({
+        state: () => ctx.services.get(PluginVfs).state,
+        root: () => ctx.services.get(RootVfs),
+        logger: this.logger,
+      }),
+    }))
     // In create(), not start(): every plugin's config read happens during start(), so a subscription
     // made there would miss the first refusals — the ones that explain why the boot went wrong. The
     // dialog goes through the modal registry, so opening it here (before anything is mounted) is fine —

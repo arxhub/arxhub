@@ -2,6 +2,27 @@ import { expect, OTHER_MNEMONIC, openSecuritySettings, SEEDED_MNEMONIC, storedMn
 
 const UNLOCK_CODE = '314159'
 
+// Replacing the identity now leaves a record on disk of who the vault belongs to, and both Playwright
+// projects share the stand's data dir. Two projects entering the SAME phrase would race: whichever got
+// there first would turn the other's "someone else's phrase" into "the phrase these files belong to",
+// and the test would stop testing what it is named after. One phrase per writing test per project.
+const APPLIED_PHRASES: Record<string, Record<string, string>> = {
+  kept: {
+    desktop: 'improve crazy survey chalk flag prize tube retire blast split nose grant',
+    mobile: 'slight blood glory echo quick essay sustain truly merry cargo razor dash',
+  },
+  rejected: {
+    desktop: 'journey adult spin frost trim runway clay print alpha toward ranch salad',
+    mobile: 'six gym message kit project frost snack clown critic interest lemon oven',
+  },
+}
+
+function phraseFor(group: keyof typeof APPLIED_PHRASES): string {
+  const phrase = APPLIED_PHRASES[group][test.info().project.name]
+  if (!phrase) throw new Error(`No phrase reserved for ${group} on project ${test.info().project.name}`)
+  return phrase
+}
+
 test.describe('Security settings', () => {
   test.beforeEach(async ({ app }) => {
     await openSecuritySettings(app)
@@ -47,28 +68,55 @@ test.describe('Security settings', () => {
     await expect(replace).toBeDisabled()
   })
 
-  test('accepts a valid phrase and leaves the identity untouched until confirmed', async ({ app }) => {
+  test('recognises this device’s own phrase instead of offering to replace it', async ({ app, vault }) => {
+    // A vault with something in it: an empty one has nothing to lose and is deliberately never asked.
+    await vault.write('owned.md', '# still here')
+    await app.reload()
+    await openSecuritySettings(app)
+
+    await app.getByTestId('recovery-phrase-entry').fill(SEEDED_MNEMONIC)
+
+    // The checksum passes for any twelve valid words, which used to be enough to reach the destructive
+    // confirm. The phrase is now compared with the identity this device actually has.
+    await expect(app.getByTestId('phrase-verdict')).toContainText('already this device')
+    await expect(app.getByRole('button', { name: 'Replace identity' })).toBeDisabled()
+  })
+
+  // OTHER_MNEMONIC is safe to share between the projects here precisely because this test cancels:
+  // nothing is ever written under it, so it cannot become the recorded owner of anything.
+  test('asks what happens to the local files, and cancelling changes nothing', async ({ app, vault }) => {
+    await vault.write('asked-about.md', '# keep me')
+    await app.reload()
+    await openSecuritySettings(app)
+
     await app.getByTestId('recovery-phrase-entry').fill(OTHER_MNEMONIC)
     await expect(app.getByText('Not a valid recovery phrase')).toBeHidden()
+    await app.getByRole('button', { name: 'Replace identity' }).click()
 
-    const replace = app.getByRole('button', { name: 'Replace identity' })
-    await expect(replace).toBeEnabled()
+    const dialog = app.getByRole('dialog')
+    await expect(dialog).toContainText('belongs to a different owner')
+    // Both branches are named and neither is pressed for the user — there is no default.
+    await expect(dialog.getByTestId('handover-keep')).toBeVisible()
+    await expect(dialog.getByTestId('handover-take-server')).toBeVisible()
 
-    await replace.click()
-    await expect(app.getByRole('dialog')).toContainText('stop being the owner it is now')
-    await app.getByRole('button', { name: 'Cancel' }).click()
-
+    await dialog.getByRole('button', { name: 'Cancel' }).click()
     expect(await storedMnemonic(app)).toBe(SEEDED_MNEMONIC)
   })
 
-  test('confirming the replacement applies the new phrase and restarts', async ({ app }) => {
-    await app.getByTestId('recovery-phrase-entry').fill(OTHER_MNEMONIC)
+  test('keeping the local files applies the new phrase and leaves the vault alone', async ({ app, vault }) => {
+    const phrase = phraseFor('kept')
+    const kept = await vault.write('kept.md', '# kept')
+    await app.reload()
+    await openSecuritySettings(app)
+
+    await app.getByTestId('recovery-phrase-entry').fill(phrase)
     await app.getByRole('button', { name: 'Replace identity' }).click()
-    await app.getByRole('button', { name: 'Replace identity' }).last().click()
+    await app.getByTestId('handover-keep').click()
 
     // The identity is read before ArxHub.start(), so applying it means a reload, not a live swap.
     await app.waitForLoadState('domcontentloaded')
-    await expect.poll(() => storedMnemonic(app)).toBe(OTHER_MNEMONIC)
+    await expect.poll(() => storedMnemonic(app)).toBe(phrase)
+    expect(await vault.read(kept)).toContain('# kept')
   })
 
   test('locking the device encrypts the phrase at rest and gates the next boot', async ({ app }) => {
@@ -105,10 +153,14 @@ test.describe('Security settings', () => {
   // After the reload the stand still has the previous key pinned, so every vault call answers 401.
   // The app must still come up: otherwise a mistyped phrase is unrecoverable without devtools,
   // because Settings — the one place that can correct it — lives inside the app.
-  test('stays usable when the server rejects the new identity', async ({ app }) => {
-    await app.getByTestId('recovery-phrase-entry').fill(OTHER_MNEMONIC)
+  test('stays usable when the server rejects the new identity', async ({ app, vault }) => {
+    await vault.write('rejected.md', '# note')
+    await app.reload()
+    await openSecuritySettings(app)
+
+    await app.getByTestId('recovery-phrase-entry').fill(phraseFor('rejected'))
     await app.getByRole('button', { name: 'Replace identity' }).click()
-    await app.getByRole('button', { name: 'Replace identity' }).last().click()
+    await app.getByTestId('handover-keep').click()
 
     await app.waitForLoadState('domcontentloaded')
     await expect(app.getByRole('main')).toBeVisible()
