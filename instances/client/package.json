@@ -38,6 +38,7 @@
     "@arxhub/theme-slate": "workspace:*"
   },
   "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
     "@vitejs/plugin-vue": "catalog:toolchain",
     "typescript": "catalog:toolchain",
     "vite": "catalog:toolchain",

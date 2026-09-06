@@ -18,7 +18,15 @@ export const SyncConfigSchema = Type.Object({
   // Auto-sync cadence in seconds. A no-change sync is ~1 request (getHead) and sync() no-ops while one
   // is already running, so polling is cheap; the manual footer button stays for an immediate push.
   // 0 disables the poll (manual-only).
-  autoSyncSeconds: Type.Number({ title: 'Auto-sync interval (seconds)', description: '0 to sync manually only', default: 30, minimum: 0 }),
+  // Device-local (A-20): a phone on a weak connection must not impose its cadence on a desktop, while
+  // the server address means the same thing everywhere and stays shared.
+  autoSyncSeconds: Type.Number({
+    title: 'Auto-sync interval (seconds)',
+    description: '0 to sync manually only',
+    default: 30,
+    minimum: 0,
+    deviceLocal: true,
+  }),
 })
 
 export class SyncPlugin extends Plugin {

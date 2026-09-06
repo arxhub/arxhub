@@ -45,6 +45,7 @@
     "@arxhub/theme-slate": "workspace:*"
   },
   "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
     "@tauri-apps/cli": "catalog:tauri",
     "@vitejs/plugin-vue": "catalog:toolchain",
     "cross-env": "catalog:toolchain",
