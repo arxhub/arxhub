@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BootFailure, PluginInfo } from '@arxhub/core'
 import { computed, reactive, ref } from 'vue'
+import type { BootLedger } from '../boot-ledger'
 import type { BootPolicy } from '../boot-policy'
 import { pluginLabel } from '../plugin-label'
 
@@ -8,6 +9,8 @@ const props = defineProps<{
   error: unknown
   failures: BootFailure[]
   catalog: readonly PluginInfo[]
+  // How far the boot got. Null when nothing was watching — the screen simply omits the section.
+  ledger: BootLedger | null
   policy: BootPolicy
   maintenance: boolean
   continuable: boolean
@@ -26,6 +29,19 @@ const enabled = reactive<Record<string, boolean>>(
 
 const switchable = computed(() => props.catalog.filter((it) => !it.essential))
 const changed = computed(() => switchable.value.filter((it) => enabled[it.name] === props.policy.isDisabled(it.name)))
+
+// Every plugin this boot actually ran, in the order the boot walked them. A plugin that was switched off
+// is left out here — it is already listed, with its switch, in the section below.
+const reached = computed(() => (props.ledger?.entries ?? []).filter((it) => it.state !== 'off'))
+
+const LEDGER_PHASE: Record<string, string> = { setup: 'preparing', create: 'registering', configure: 'wiring', start: 'starting' }
+
+function ledgerState(entry: { state: string; phase: string | null }): string {
+  if (entry.state === 'ready') return 'loaded'
+  if (entry.state === 'failed') return `failed while ${LEDGER_PHASE[entry.phase ?? ''] ?? entry.phase}`
+  if (entry.state === 'running') return `stopped while ${LEDGER_PHASE[entry.phase ?? ''] ?? entry.phase}`
+  return 'never started'
+}
 
 const busy = ref(false)
 const copyState = ref<'idle' | 'copied' | 'failed'>('idle')
@@ -134,6 +150,18 @@ function copyReport(): void {
         </div>
       </section>
 
+      <!-- What the failure alone cannot say: the plugin it names is one of many, and which of the others
+           were already through is most of what tells a broken plugin apart from a broken order. -->
+      <section v-if="reached.length > 0" class="block">
+        <h2 class="block-title">How far it got</h2>
+        <ul class="ledger">
+          <li v-for="entry in reached" :key="entry.name" class="ledger-row" :class="`ledger-row--${entry.state}`">
+            <span class="ledger-name">{{ pluginLabel(entry.name) }}</span>
+            <span class="ledger-state">{{ ledgerState(entry) }}</span>
+          </li>
+        </ul>
+      </section>
+
       <section class="block">
         <h2 class="block-title">Plugins</h2>
         <p class="hint">
@@ -190,6 +218,37 @@ function copyReport(): void {
 </template>
 
 <style scoped>
+.ledger {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ledger-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: var(--size-2xs, 28px);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.ledger-state {
+  margin-left: auto;
+  color: var(--gray-11, #555);
+  font-size: var(--font-size-xs, 0.75rem);
+}
+
+.ledger-row--waiting .ledger-name {
+  color: var(--gray-9, #8f8f8f);
+}
+
+.ledger-row--failed .ledger-state,
+.ledger-row--running .ledger-state {
+  color: var(--red-11, #cd2b31);
+}
+
 /* Self-sufficient by design, like the unlock gate: this screen renders when the app did not, so it
    leans on nothing but the design tokens — and falls back when even those did not load. */
 .crash {
