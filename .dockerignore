@@ -1,0 +1,38 @@
+# Context for instances/server/Dockerfile, which builds from the repository root.
+#
+# The server bundle inlines every @arxhub/* package from its TypeScript SOURCE, and pnpm needs a
+# package.json for every workspace pattern in pnpm-workspace.yaml or --frozen-lockfile rejects the
+# lockfile. So no workspace directory may be excluded here — only build output, installed modules,
+# and the parts of the repo no build reads.
+
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+
+# Rust/Tauri output — gigabytes, and the desktop bundle is not built here.
+instances/app/src-tauri/target
+instances/app/src-tauri/gen
+
+# Test and tool output.
+e2e/test-results
+e2e/playwright-report
+e2e/.cache
+**/.vite
+**/.vite-temp
+**/coverage
+
+.git
+.github
+.vscode
+.claude
+.idea
+
+# Documentation and design references — no build step reads them.
+forge-wiki
+refs
+**/*.md
+
+**/.DS_Store
+**/*.log
+Dockerfile
+.dockerignore

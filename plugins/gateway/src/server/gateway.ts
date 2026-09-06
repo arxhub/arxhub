@@ -3,6 +3,14 @@ import { node } from '@elysiajs/node'
 import Elysia, { type AnyElysia } from 'elysia'
 import type { Server } from 'elysia/universal'
 
+// `Server` from elysia/universal is the Bun-shaped type; under @elysiajs/node the same object also
+// carries srvx's node handle, and that handle is the only place the real bind state lives.
+type NodeBackedServer = { node?: { server?: { listening?: boolean } } }
+
+function isListening(server: Server | null): boolean {
+  return (server as NodeBackedServer | null)?.node?.server?.listening === true
+}
+
 export class Gateway {
   private readonly logger: Logger
   private readonly elysia: Elysia
@@ -23,23 +31,20 @@ export class Gateway {
   }
 
   async listen(port = 3000): Promise<void> {
-    // "Listening" used to print unconditionally, right after the call, not from the bind callback. When
-    // the bind itself failed (srvx under @elysiajs/node calls listen({ reusePort: true }), which
-    // answers ENOTSUP on macOS + Node 22 and is swallowed) the log still cheerfully reported the server
-    // as up. From the outside that looked like an app with a dead store and not one line saying why.
-    // The message now comes from where binding actually happened, and its absence is a warning, not
-    // silence — listen() either resolves the callback promptly or it never will, so a short bound wait
-    // is enough to tell the two apart.
-    const bound = await new Promise<boolean>((resolve) => {
-      this.elysia.listen(port, (server) => {
-        this.disposable = server
-        resolve(true)
-      })
-      setTimeout(() => resolve(false), 500)
+    // Two separate silences under @elysiajs/node, and together they made a server that never came up
+    // report itself as listening. Handed a bare port number the adapter hardcodes `reusePort: true`;
+    // Node answers that with ENOTSUP on macOS and srvx swallows the listen error, so nothing binds and
+    // the process simply exits with no line saying why. The option form is the only way to turn it off
+    // — a single-process server never wanted SO_REUSEPORT. And the listen callback fires whether or not
+    // the bind happened, so it cannot be the "we are up" signal either; only srvx's node handle knows.
+    const server = await new Promise<Server | null>((resolve) => {
+      this.elysia.listen({ port, reusePort: false }, resolve)
+      setTimeout(() => resolve(null), 500)
     })
 
+    this.disposable = server
     this.port = port
-    if (bound) this.logger.info(`Listening on port: ${port}`)
+    if (isListening(server)) this.logger.info(`Listening on port: ${port}`)
     else this.logger.error(`Could not bind port ${port} — the server did not come up, the app will have no storage`)
   }
 
