@@ -2,7 +2,9 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "opener:default",
@@ -11,6 +13,7 @@
     "fs:allow-read-dir",
     "fs:allow-read-file",
     "fs:allow-write-file",
+    "fs:allow-mkdir",
     "fs:allow-remove",
     "fs:allow-stat",
     "fs:allow-exists",
@@ -21,13 +24,31 @@
           "path": "$HOME/.arxhub"
         },
         {
+          "path": "$HOME/.arxhub/*"
+        },
+        {
           "path": "$HOME/.arxhub/**"
+        },
+        {
+          "path": "$HOME/.arxhub/.*"
+        },
+        {
+          "path": "$HOME/.arxhub/**/.*"
         },
         {
           "path": "$APPDATA"
         },
         {
+          "path": "$APPDATA/*"
+        },
+        {
           "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPDATA/.*"
+        },
+        {
+          "path": "$APPDATA/**/.*"
         }
       ]
     }

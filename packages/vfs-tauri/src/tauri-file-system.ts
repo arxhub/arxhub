@@ -1,7 +1,14 @@
 import type { Logger } from '@arxhub/core'
 import { normalizePath } from '@arxhub/path'
 import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type VirtualEntry } from '@arxhub/vfs'
-import { BaseDirectory, readDir, readFile, remove, stat, writeFile } from '@tauri-apps/plugin-fs'
+import { BaseDirectory, mkdir, readDir, readFile, remove, stat, writeFile } from '@tauri-apps/plugin-fs'
+
+// The directory a path sits in, or '' at the root. Not `posix.dirname` — that answers '.' for a bare
+// name, which `mkdir` would then create as a literal directory called '.'.
+function parentOf(pathname: string): string {
+  const cut = pathname.lastIndexOf('/')
+  return cut <= 0 ? '' : pathname.slice(0, cut)
+}
 
 export class TauriFileSystem extends GenericVirtualFileSystem {
   private readonly baseDir: BaseDirectory
@@ -55,6 +62,15 @@ export class TauriFileSystem extends GenericVirtualFileSystem {
   }
 
   async write(pathname: string, content: Uint8Array): Promise<void> {
+    // The VFS has no mkdir of its own — a directory exists because a file in it does, and every backend
+    // owes the write its parent. Node's does it (`fs.mkdir(dirname, { recursive: true })` before each
+    // write); this one did not, so any write below a directory that was not there yet simply failed.
+    // That is one root cause for two symptoms: the theme could not be saved (`storage/theme/` did not
+    // exist) and the explorer could not create a folder at all, since a new folder IS a write of
+    // `<folder>/.keep`. Reads were fine throughout, which is what made it look like a permission
+    // problem rather than a missing call.
+    const parent = parentOf(this.fullPath(pathname))
+    if (parent) await mkdir(parent, { baseDir: this.baseDir, recursive: true })
     await writeFile(this.fullPath(pathname), content, { baseDir: this.baseDir })
   }
 
