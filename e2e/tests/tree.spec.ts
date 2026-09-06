@@ -1,5 +1,15 @@
 import { expect, openNavigation, test } from './fixtures'
 
+// A half-written file is not a failure, it is "not yet" — the poll that waits for the seed needs it to
+// answer that way rather than throwing out of the poll callback, which expect.poll does not retry.
+function parseOrNull(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}
+
 // Daily housekeeping: create, rename, delete. Every assertion checks the vault on disk, not just the
 // tree, because the tree agreeing with itself proves nothing.
 test.describe('keeping the tree in order', () => {
@@ -10,11 +20,13 @@ test.describe('keeping the tree in order', () => {
     // '.arx' is the primary format (planning/decisions.md A-29): markdown stays readable and editable,
     // but everything structural is read from the '.arx' tree. The seed has to match the extension — an
     // '.arx' reader rejects a bare file, so an empty one would open as a broken document.
-    await expect.poll(() => vault.read('untitled.arx').catch(() => null)).not.toBeNull()
-    expect(JSON.parse(await vault.read('untitled.arx'))).toMatchObject({ version: 1, doc: { type: 'doc' } })
-
-    // Clean up so a rerun starts from the same tree.
-    await vault.remove('untitled.arx')
+    //
+    // Polled on the parsed seed, not on the file existing: the write goes over HTTP and the file is on disk
+    // before its bytes are, so a read that only waited for the name came back empty and the parse died with
+    // "Unexpected end of JSON input". Nothing deletes it afterwards either — the name is the app's own, so
+    // both projects create the same untitled.arx in the one vault, and a cleanup here removes the file the
+    // other project is still reading. Each run gets its own temp vault, so there is nothing to tidy up for.
+    await expect.poll(() => vault.read('untitled.arx').then(parseOrNull, () => null)).toMatchObject({ version: 1, doc: { type: 'doc' } })
   })
 
   test('renames a note in place', async ({ app, vault }) => {

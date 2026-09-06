@@ -113,9 +113,12 @@ test.describe('Security settings', () => {
     await app.getByRole('button', { name: 'Replace identity' }).click()
     await app.getByTestId('handover-keep').click()
 
-    // The identity is read before ArxHub.start(), so applying it means a reload, not a live swap.
+    // The identity is read before ArxHub.start(), so applying it means a reload, not a live swap — and the
+    // reload starts on the app's own schedule. Reading the profile straight after loses the race about one
+    // run in three ("Execution context was destroyed"), and expect.poll does not retry a callback that
+    // throws: a read taken mid-navigation answers null and the next one, after the reload, is the real one.
     await app.waitForLoadState('domcontentloaded')
-    await expect.poll(() => storedMnemonic(app)).toBe(phrase)
+    await expect.poll(() => storedMnemonic(app).catch(() => null), { timeout: 15_000 }).toBe(phrase)
     expect(await vault.read(kept)).toContain('# kept')
   })
 

@@ -19,10 +19,27 @@ async function openConsole(page: Page): Promise<void> {
 
 // CodeMirror's editable is a contenteditable, which fill() drives directly — no key-by-key typing, so a
 // query with newlines in it lands in one step.
+//
+// Escape first, and the result checked afterwards, because of what fill() does to this particular control:
+// it selects the element's text and inserts over the selection, and CodeMirror's completion popup — still
+// open from the previous query, whose Run click had not yet blurred the editor — makes that select-all miss.
+// The insert then lands at the cursor instead of over the old text, and the query that runs is the previous
+// one with this one glued to its end: the DELETE that should have been refused as a write came back as
+// "syntax error at or near FROM at character 124", one character past the select in front of it. Re-filling
+// is what makes the step wait for a popup to close rather than for a fixed number of milliseconds.
 async function writeQuery(page: Page, sql: string): Promise<void> {
   const editable = panel(page).locator('.cm-content')
   await expect(editable).toBeVisible()
-  await editable.fill(sql)
+  await expect
+    .poll(
+      async () => {
+        await editable.press('Escape')
+        await editable.fill(sql)
+        return ((await editable.innerText()) ?? '').replace(/\s+/g, ' ').trim()
+      },
+      { message: 'the editor did not take the query' },
+    )
+    .toBe(sql.replace(/\s+/g, ' ').trim())
 }
 
 function runControl(page: Page): Locator {

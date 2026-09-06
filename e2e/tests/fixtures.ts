@@ -171,6 +171,17 @@ export async function openRailSection(page: Page, section: string): Promise<void
   await page.locator('.section-switcher').getByText(section, { exact: true }).click()
 }
 
+// The index is brought up detached from the boot — status 'opening', then a walk of the whole vault — so the
+// first moment of a session has an index that answers over part of the store and a Reindex control that is
+// inert while the walk runs (AGENTS.md, "start() must not hold the first paint"). This waits for the status
+// line the Search rail already renders to say the walk is done: "N in index". Read from the rail, so it is
+// called while that rail is on screen — on a phone the console closes the panel it was opened from.
+export async function waitForIndex(page: Page): Promise<void> {
+  // Longer than the default expect timeout, shorter than the test's own: a cold PGlite boots a WASM payload
+  // and then walks the vault, and eight workers do that at once.
+  await expect(page.locator('.index-state-text')).toContainText(/\d+ in index/, { timeout: 20_000 })
+}
+
 // One registration reaches both frames, but only the desktop frame gives Search a mini-app of its own: on
 // a phone it is declared absorbed into Explorer's rail (SidebarItem.absorbedOnMobileBy), so it has no
 // bottom-bar destination and is reached as a section of that rail instead. Reaching for Explorer's key by
@@ -184,6 +195,9 @@ export async function openSearchApp(page: Page): Promise<void> {
     await openMiniApp(page, 'Search')
   }
   await expect(page.getByRole('textbox', { name: 'Search' }).first()).toBeVisible()
+  // Every screen reached from here reads the index: the result list, the console's queries, the Reindex
+  // control. Waiting for the walk once, here, is what keeps each of them from racing it.
+  await waitForIndex(page)
 }
 
 // The list of what is open. A bottom-bar "Notes" key used to hold it; it is now the Tabs section of

@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect, isMobileFrame, openMiniApp, openSearchApp as openSearch, test } from './fixtures'
+import { expect, isMobileFrame, openMiniApp, openSearchApp as openSearch, test, waitForIndex } from './fixtures'
 
 // UJ-24 «Поиск записи по слову из текста»: the owner remembers a word, not a file name. The path from that
 // word to the open note has to work from the keyboard alone, and it has to end in the workspace the notes
@@ -191,10 +191,16 @@ test.describe('finding a note by a word in its text', () => {
     await expect(app.locator('.index-state-text')).toContainText(/in index|Indexing…/)
 
     const reindex = app.getByRole('button', { name: 'Reindex' })
+    // A walk in progress leaves the control inert — including the very first one, which is still running a
+    // second into the session — so the rebuild is asked for once the index reports what it holds.
+    await waitForIndex(app)
     await expect(reindex).toBeEnabled()
     await reindex.click()
-    // A walk in progress leaves the control inert, and the index reports the count again when it is done.
-    await expect.poll(() => reindex.isDisabled(), { timeout: 10_000 }).toBe(false)
+    // The rebuild is a second walk of the whole vault, and the control stays inert for all of it — so this
+    // is the wait for the walk itself, not for a paint. Not keyed on the status line: it goes back to
+    // reading 'N in index' the moment the walk ends, but the count it held BEFORE the click reads the same,
+    // so a line-watcher passes without having waited for anything.
+    await expect(reindex).toBeEnabled({ timeout: 20_000 })
     await expect(app.locator('.index-state-text')).toContainText('in index')
   })
 })
