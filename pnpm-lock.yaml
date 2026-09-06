@@ -1192,6 +1192,9 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
+      '@arxhub/stdlib':
+        specifier: workspace:*
+        version: link:../../packages/stdlib
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
