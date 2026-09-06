@@ -567,6 +567,9 @@ onMounted(focusInput)
 }
 
 .index-state-text {
+  /* text-overflow only acts on text that does not wrap: without this the line broke to two rather than
+     being clipped, and the ellipsis never appeared. */
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--gray-11);
