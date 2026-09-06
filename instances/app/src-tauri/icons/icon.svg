@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="1024" height="1024" role="img" aria-label="ArxHub">
+  <!-- ArxHub application mark: the core and the module.
+       Drawn on a 512 grid; every feature and seam is at least 48 units (1.5px at 16px) so nothing
+       merges when the raster set is generated. Colours are literal because an icon file cannot read
+       CSS variables; each is a theme token copied by value. See README.md in this folder. -->
+
+  <!-- Tile: sand-12, the product's ink. Radius 112 is the 22% app-tile convention. -->
+  <rect width="512" height="512" rx="112" fill="#21201c"/>
+
+  <!-- The core: a square with its top-right quarter taken out. sand-1. -->
+  <path d="M136 136 H216 a16 16 0 0 1 16 16 V264 a16 16 0 0 0 16 16 H360 a16 16 0 0 1 16 16 V376 a48 48 0 0 1 -48 48 H136 a48 48 0 0 1 -48 -48 V184 a48 48 0 0 1 48 -48 Z" fill="#fdfdfc"/>
+
+  <!-- The module: the missing quarter, set clear of the core by a 48-unit seam. cyan-9. -->
+  <rect x="280" y="88" width="144" height="144" rx="32" fill="#00a2c7"/>
+</svg>
