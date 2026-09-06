@@ -336,18 +336,21 @@ test.describe('finding a note by a word in its text', () => {
     const broad = await documentCount(app)
     expect(broad).toBeGreaterThanOrEqual(4)
 
-    // The same word, with a qualifier naming the heading. Nothing else about the question changes, so any
-    // difference in the answer is the qualifier's doing.
-    await field(app).fill('кварцит title:конспект')
+    // The same word with a qualifier naming the OTHER three headings — deliberately not the one the free
+    // text already favours. `title:конспект` would read as a passing test even with qualifier parsing
+    // torn out, because that word is in the summary's own heading and the fuzzy-title branch alone picks
+    // it: the answer would be identical for the wrong reason. `title:порода` cannot be reached that way —
+    // ignore the qualifier and the query matches nothing at all.
+    await field(app).fill('кварцит title:порода')
     await expect
       .poll(
         async () => ({
           titled: await documentRow(app, titled).count(),
           bodies: (await Promise.all(bodies.map((path) => documentRow(app, path).count()))).reduce((sum, count) => sum + count, 0),
         }),
-        { message: 'title: did not drop the notes whose heading does not name it' },
+        { message: 'title: did not narrow to the notes whose heading names it' },
       )
-      .toEqual({ titled: 1, bodies: 0 })
+      .toEqual({ titled: 0, bodies: 3 })
 
     // Strictly shorter, read off the count the rail shows rather than inferred from the rows above: the
     // qualifier has to narrow the answer, not merely reorder it.
