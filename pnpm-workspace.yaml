@@ -66,7 +66,6 @@ catalogs:
     '@types/path-browserify': ^1.0.3
     tsx: ^4.21.0
     glob: ^13.0.6
-    rollup-plugin-node-externals: ^9.0.1
     type-fest: ^5.6.0
     typescript: ^6.0.3
     vite: ^8.0.16

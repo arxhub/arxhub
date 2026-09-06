@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@vitejs/plugin-vue": "catalog:toolchain",
-    "rollup-plugin-node-externals": "catalog:toolchain",
     "vite-plugin-dts": "catalog:toolchain",
     "vite-tsconfig-paths": "catalog:toolchain"
   },
