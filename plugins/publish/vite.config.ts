@@ -1,5 +1,28 @@
-import { createBrowserConfig } from '@arxhub/toolchain-vite'
+import { createVueConfig } from '@arxhub/toolchain-vite'
 import { defineConfig } from 'vite'
 
-// biome-ignore format: Hand formatting is more readable
-export default defineConfig((env) => createBrowserConfig(__dirname, env))
+// Two entries, like every other plugin with both halves (see plugins/protection): the plugin is a
+// library, not an app. It was on createBrowserConfig with no entries, which adds nothing to the
+// generic config — so vite fell back to an app build and failed looking for an index.html.
+export default defineConfig((env) =>
+  createVueConfig(__dirname, env, {
+    entries: ['src/ui.ts', 'src/server.ts'],
+    external: [
+      '@arxhub/config',
+      '@arxhub/core',
+      '@arxhub/errors',
+      '@arxhub/plugin-explorer',
+      '@arxhub/plugin-gateway',
+      '@arxhub/plugin-protection',
+      '@arxhub/plugin-settings',
+      '@arxhub/plugin-vfs',
+      '@arxhub/stdlib',
+      '@arxhub/sync',
+      '@arxhub/uikit',
+      '@arxhub/vfs',
+      '@arxhub/vfs-http',
+      'elysia',
+      'vue',
+    ],
+  }),
+)

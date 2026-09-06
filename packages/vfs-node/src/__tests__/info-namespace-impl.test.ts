@@ -25,7 +25,7 @@ describe('InfoNamespaceImpl', () => {
   })
 
   test('set({ flush: false }) batches, flush() writes once', async () => {
-    interface Fields {
+    type Fields = {
       a: string
       b: string
       hash?: string
@@ -56,7 +56,7 @@ describe('InfoNamespaceImpl', () => {
   })
 
   test('concurrent auto-flush calls — no lost writes', async () => {
-    interface Fields {
+    type Fields = {
       a: string
       b: string
       c: string
@@ -82,7 +82,7 @@ describe('InfoNamespaceImpl', () => {
   })
 
   test('type inference: get(key) returns typed value with generic T', async () => {
-    interface ArticleInfo {
+    type ArticleInfo = {
       title: string
       count: number
       hash?: string
