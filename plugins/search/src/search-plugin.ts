@@ -10,6 +10,7 @@ import { markRaw, watch } from 'vue'
 import { SEARCH_SETTINGS_SECTION, SEARCH_SIDEBAR_ITEM, SQL_CONSOLE_PANEL } from './contributions'
 import { createIndexQueue, type IndexQueue } from './index-queue'
 import { manifest } from './manifest'
+import { openWithRetry } from './open-index'
 import { SearchConfigSchema, toSearchSettings } from './search-config'
 import { SearchExtension } from './search-extension'
 import SearchLayout from './ui/SearchLayout.vue'
@@ -134,7 +135,18 @@ export class SearchPlugin extends Plugin {
       const settings = search.settings.value
       if (this.stopping) return
 
-      const index = await openSqlIndex({ dataDir: this.dataDir })
+      // Retried, because the store can lose a race it wins a moment later — a reload landing on the
+      // previous page's teardown contends for the same IndexedDB origin. Only a store failure is retried;
+      // a dataDir the engine refuses is refused identically every time (see open-index.ts). Bounded to
+      // well under a second in total: the app is already painted, but a genuinely unavailable index still
+      // has to say so promptly rather than after a visible pause.
+      const index = await openWithRetry({
+        open: () => openSqlIndex({ dataDir: this.dataDir }),
+        attempts: 3,
+        delayMs: (retry) => retry * 150,
+        cancelled: () => this.stopping,
+        onRetry: (retry, error) => this.logger.warn(`The search index did not open (attempt ${retry}) — trying again`, error),
+      })
       // Stopped while the index was opening. Closing it here rather than leaving it to the teardown: the
       // teardown only knows about `this.index`, and assigning it now would race a stop that has already
       // walked past that line. A live WASM instance — and, in the browser, an open IndexedDB handle —
