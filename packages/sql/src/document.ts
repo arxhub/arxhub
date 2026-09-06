@@ -7,7 +7,9 @@ export type DocumentKind = 'markdown' | 'arx' | 'text' | 'binary'
 // The block vocabulary of the first release. Tables are still absent — no parser produces one, and a
 // block type nothing produces is a column nobody can query. `task` is separate from `list-item` rather
 // than a flag on it (A-28): "what is still open" is the question tasks are indexed for, and it must not
-// have to know that a task is a kind of list item first.
+// have to know that a task is a kind of list item first. Only the `.arx` reader produces one — see
+// A-29 in the decisions register: `.arx` is the format the product reasons about, markdown is read for
+// its text and its rough shape and nothing more.
 export type BlockType = 'heading' | 'paragraph' | 'list-item' | 'task' | 'code' | 'quote'
 
 export type RefKind = 'wikilink' | 'markdown'
@@ -24,9 +26,9 @@ export interface ParsedBlock {
   id: string
   ordinal: number
   type: BlockType
-  // Heading depth for a heading, nesting depth for a list item or a task, null for everything else.
-  // One column for both because it is the same question — how deep this block sits — and the type
-  // beside it already says which scale to read it on.
+  // Heading depth for a heading, nesting depth for an `.arx` list item or task, null for everything
+  // else — markdown's list items included. One column for both because it is the same question — how
+  // deep this block sits — and the type beside it already says which scale to read it on.
   level: number | null
   // Whether a task is done. Null for every other block type, the way `level` is: a plain list item has
   // no state to be in, and a `false` there would answer "not done" to a question nobody asked.

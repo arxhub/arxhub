@@ -98,8 +98,8 @@ describe('parseDocument — markdown', () => {
     expect(doc.blocks.map((block) => [block.type, block.level])).toEqual([
       ['heading', 1],
       ['paragraph', null],
-      ['list-item', 1],
-      ['list-item', 1],
+      ['list-item', null],
+      ['list-item', null],
       ['code', null],
       ['quote', null],
     ])
@@ -170,71 +170,15 @@ describe('parseDocument — markdown', () => {
     const doc = parseDocument('notes/dup.md', bytes(['[[target]] and again [[target]].']))
     expect(doc.refs).toHaveLength(1)
   })
-})
 
-describe('parseDocument — lists and tasks', () => {
-  function blocks(...lines: string[]) {
-    return parseDocument('notes/list.md', bytes(lines)).blocks.map((block) => [block.type, block.level, block.checked, block.content])
-  }
-
-  it('tells a task apart from a plain list item, and keeps its state', () => {
-    expect(blocks('- [ ] написать', '- [x] прочитать', '- просто пункт')).toEqual([
-      ['task', 1, false, 'написать'],
-      ['task', 1, true, 'прочитать'],
-      ['list-item', 1, null, 'просто пункт'],
-    ])
-  })
-
-  it('reads an upper-case marker as done', () => {
-    expect(blocks('- [X] готово')).toEqual([['task', 1, true, 'готово']])
-  })
-
-  it('makes a task of a marker with nothing after it', () => {
-    expect(blocks('- [ ]')).toEqual([['task', 1, false, '']])
-  })
-
-  it('leaves a bracket that is not a marker in the text', () => {
-    expect(blocks('- [позже] зайти', '- [] пусто')).toEqual([
-      ['list-item', 1, null, '[позже] зайти'],
-      ['list-item', 1, null, '[] пусто'],
-    ])
-  })
-
-  // The depth comes from what the document itself did, not from a width the parser picked: the same
-  // shape indented by two spaces and by a tab has to read the same.
-  it('reads nesting depth from the indentation the document uses', () => {
-    expect(blocks('- один', '  - два', '    - три', '  - обратно', '- корень')).toEqual([
-      ['list-item', 1, null, 'один'],
-      ['list-item', 2, null, 'два'],
-      ['list-item', 3, null, 'три'],
-      ['list-item', 2, null, 'обратно'],
-      ['list-item', 1, null, 'корень'],
-    ])
-    expect(blocks('- один', '\t- два')).toEqual([
-      ['list-item', 1, null, 'один'],
-      ['list-item', 2, null, 'два'],
-    ])
-  })
-
-  it('keeps one list across a blank line but not across a paragraph', () => {
-    expect(blocks('- один', '', '  - два')).toEqual([
-      ['list-item', 1, null, 'один'],
-      ['list-item', 2, null, 'два'],
-    ])
-    // A blank line on both sides — a line pressed straight against a list item is a lazy continuation
-    // of that item, which is what the joined text below asserts.
-    expect(blocks('  - один', '', 'абзац', '', '  - два')).toEqual([
-      ['list-item', 1, null, 'один'],
-      ['paragraph', null, null, 'абзац'],
-      ['list-item', 1, null, 'два'],
-    ])
-    expect(blocks('  - один', 'абзац')).toEqual([['list-item', 1, null, 'один абзац']])
-  })
-
-  it('nests a task under a list item and an ordered marker like any other', () => {
-    expect(blocks('1. шаг', '   - [x] подшаг')).toEqual([
-      ['list-item', 1, null, 'шаг'],
-      ['task', 2, true, 'подшаг'],
+  // Deliberate, not an omission: structure is read from `.arx`, and markdown gets the rough shape only.
+  // A checkbox here is a list item whose marker was taken out of the text, and nesting is not read at all.
+  it('reads no task and no nesting out of markdown', () => {
+    const doc = parseDocument('notes/tasks.md', bytes(['- [ ] написать', '- [x] прочитать', '  - вложенный']))
+    expect(doc.blocks.map((block) => [block.type, block.level, block.checked, block.content])).toEqual([
+      ['list-item', null, null, 'написать'],
+      ['list-item', null, null, 'прочитать'],
+      ['list-item', null, null, 'вложенный'],
     ])
   })
 })
