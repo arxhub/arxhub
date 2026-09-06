@@ -28,8 +28,12 @@ function isMarkActive(markType: MarkType): boolean {
 // carry their own blue tiles and follow no theme. The markdown editor showed the same actions as lucide
 // icons already, so one product drew one job two ways.
 const MARKS: { label: string; icon: string; mark: MarkType }[] = [
-  { label: 'Bold', icon: 'lu:bold', mark: schema.marks.bold },
-  { label: 'Italic', icon: 'lu:italic', mark: schema.marks.italic },
+  // `strong` and `em`, not `bold` and `italic` — those are the names prosemirror-schema-basic gives them,
+  // and the two the toolbar used to ask for did not exist. `isMarkActive` then read `isInSet` off
+  // undefined and threw during render, so opening a note in this editor took its toolbar (and sometimes
+  // the app) down, and neither button had ever worked. See the schema test beside this file.
+  { label: 'Bold', icon: 'lu:bold', mark: schema.marks.strong },
+  { label: 'Italic', icon: 'lu:italic', mark: schema.marks.em },
   { label: 'Strikethrough', icon: 'lu:strikethrough', mark: schema.marks.strike },
   { label: 'Underline', icon: 'lu:underline', mark: schema.marks.underline },
   { label: 'Inline code', icon: 'lu:code', mark: schema.marks.code },

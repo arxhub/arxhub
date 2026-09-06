@@ -11,6 +11,28 @@ const state = useActionMenuState()
 const isMobile = useShellFrame() === 'mobile'
 const menuEl = ref<HTMLElement | null>(null)
 
+// Where the menu actually lands, which is the pointer only while the whole menu fits there. A menu is
+// opened by a right-click, and a right-click near the bottom of a long list is the ordinary case, not
+// the edge case — anchored at the pointer alone it ran off the screen and its items became unclickable
+// while still being visible and enabled, which is the worst shape a control can take.
+// `placed` is its own flag rather than a coordinate test: a right-click in the top-left corner opens a
+// menu legitimately at 0,0, and treating that as "not measured yet" would hide it.
+const placement = ref({ x: 0, y: 0, placed: false })
+
+// Measured after the menu is in the DOM: its height depends on how many actions the caller passed, so
+// there is nothing to clamp against until it has been laid out.
+function place(): void {
+  const menu = menuEl.value
+  if (menu == null) return
+  const { width, height } = menu.getBoundingClientRect()
+  // Flip to the other side of the pointer when there is room there, and only clamp to the edge when
+  // there is not — flipping keeps the pointer outside the menu, so the click that opened it cannot land
+  // on an item.
+  const x = state.value.x + width > window.innerWidth ? Math.max(0, state.value.x - width) : state.value.x
+  const y = state.value.y + height > window.innerHeight ? Math.max(0, state.value.y - height) : state.value.y
+  placement.value = { x, y, placed: true }
+}
+
 function run(item: { disabled?: boolean; onSelect: () => void }) {
   if (item.disabled) return
   item.onSelect()
@@ -47,7 +69,12 @@ function onMenuKeydown(event: KeyboardEvent) {
 watch(
   () => state.value.open,
   (open) => {
-    if (open && !isMobile) nextTick(() => focusItem(0))
+    if (!open || isMobile) return
+    placement.value = { x: state.value.x, y: state.value.y, placed: false }
+    nextTick(() => {
+      place()
+      focusItem(0)
+    })
   },
 )
 
@@ -95,7 +122,7 @@ onBeforeUnmount(() => {
       ref="menuEl"
       class="action-menu"
       role="menu"
-      :style="{ top: `${state.y}px`, left: `${state.x}px` }"
+      :style="{ top: `${placement.y}px`, left: `${placement.x}px`, visibility: placement.placed ? undefined : 'hidden' }"
       @contextmenu.prevent
       @keydown="onMenuKeydown"
     >
