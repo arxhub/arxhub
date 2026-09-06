@@ -1,19 +1,15 @@
 import { useArxHub } from '@arxhub/uikit/hooks'
-import { type Component, type ComputedRef, computed } from 'vue'
-import { type FooterItem, type HeaderItem, type MobileTab, ShellExtension } from './extension'
+import { type ComputedRef, computed } from 'vue'
+import { type FooterItem, type MobileTab, ShellExtension } from './extension'
 import type { SidebarItem } from './types'
 
 // Both frames read the same registries — what differs is where the items land, not what they are.
 // Keeping the derivation here means a plugin's contribution reaches the mobile frame the moment it
 // reaches the desktop one, with no second wiring to forget.
 export interface Shell {
-  readonly content: ComputedRef<Component | undefined>
   readonly activeItem: ComputedRef<SidebarItem | undefined>
   readonly activeTitle: ComputedRef<string>
   readonly sidebarItems: ComputedRef<SidebarItem[]>
-  readonly headerLeft: ComputedRef<HeaderItem[]>
-  readonly headerCenter: ComputedRef<HeaderItem[]>
-  readonly headerRight: ComputedRef<HeaderItem[]>
   readonly footerLeft: ComputedRef<FooterItem[]>
   readonly footerRight: ComputedRef<FooterItem[]>
   readonly tabs: ComputedRef<MobileTab[]>
@@ -41,7 +37,6 @@ export function useShell(): Shell {
   )
 
   return {
-    content: computed(() => shell.content.value ?? undefined),
     activeItem,
     activeTitle: computed(() => activeItem.value?.title ?? 'ArxHub'),
     sidebarItems: computed(() =>
@@ -56,9 +51,6 @@ export function useShell(): Shell {
         mobileTitle: item.mobileTitle,
       })),
     ),
-    headerLeft: computed(() => byOrder(shell.header.items.filter((i) => i.region === 'left'))),
-    headerCenter: computed(() => byOrder(shell.header.items.filter((i) => i.region === 'center'))),
-    headerRight: computed(() => byOrder(shell.header.items.filter((i) => i.region === 'right'))),
     footerLeft: computed(() => byOrder(shell.footer.items.filter((i) => i.region === 'left'))),
     footerRight: computed(() => byOrder(shell.footer.items.filter((i) => i.region === 'right'))),
     tabs: computed(() => byOrder(shell.tabs.items)),

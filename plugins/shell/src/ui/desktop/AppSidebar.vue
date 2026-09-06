@@ -17,9 +17,6 @@ const bottomItems = computed(() =>
 
 <template>
   <aside class="app-sidebar">
-    <div v-if="content" class="content-section">
-      <component :is="content" />
-    </div>
     <nav class="nav-section">
       <NavItem
         v-for="item in topItems"
@@ -56,10 +53,6 @@ const bottomItems = computed(() =>
   border-right: 1px solid var(--gray-6);
   flex-shrink: 0;
   z-index: var(--z-index-docked);
-}
-
-.content-section {
-  margin-bottom: 8px;
 }
 
 .nav-section {

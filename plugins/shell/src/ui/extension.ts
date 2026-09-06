@@ -1,5 +1,7 @@
-import { Extension } from '@arxhub/core'
-import { type Component, markRaw, reactive, shallowRef } from 'vue'
+import { Extension, type ExtensionArgs } from '@arxhub/core'
+import { type Component, markRaw, reactive } from 'vue'
+import { StatusRegistry } from './status'
+import { TabTypeRegistry } from './tab-type-registry'
 import type { SidebarItem } from './types'
 
 export type { SidebarItem }
@@ -11,7 +13,6 @@ export interface ShellItem {
   order?: number
 }
 
-export type HeaderItem = ShellItem & { region: 'left' | 'center' | 'right' }
 export type FooterItem = ShellItem & { region: 'left' | 'right' }
 
 // A key in the mobile frame's bottom bar. The bar is the only navigation a phone gets, so a plugin
@@ -44,8 +45,23 @@ export interface MobileTab {
   gesture?: 'left-edge' | 'right-edge'
 }
 
+// Two navigation models live here at once, on purpose, and only one of them is wired to a frame.
+//
+// The old one — `sidebar` + `tabs` + `footer` — is what both frames run on today and it is untouched.
+// The new one — `types` and `status` — is the direction: a plugin declares a tab TYPE once instead of
+// describing the same thing twice (a rail item for desktop, a bar key for the phone), and it says WHAT
+// it contributes to the status bar instead of WHERE to put it. Nothing reads the new pair yet; the
+// registries arrive first so the ports that consume them can land one at a time.
+//
+// What is already gone: `header`, `content` and `setContent`. Not replaced by anything — they had zero
+// call sites in the whole repository and the header never rendered once. That was not an API, it was
+// code nobody had deleted.
 export class ShellExtension extends Extension {
-  readonly content = shallowRef<Component | null>(null)
+  // The tab-type registry: the row and the "open new" section of the search sheet are built from it.
+  readonly types: TabTypeRegistry
+  // The desktop status bar, the status block of the phone's search sheet and the background line, all
+  // from the same registrations. Successor to `footer.register({ region })`, which still works.
+  readonly status: StatusRegistry
 
   readonly sidebar = reactive({
     items: [] as SidebarItem[],
@@ -61,18 +77,6 @@ export class ShellExtension extends Extension {
     },
     setActive(id: string): void {
       this.activeId = id
-    },
-  })
-
-  readonly header = reactive({
-    items: [] as HeaderItem[],
-    register(item: HeaderItem): void {
-      // markRaw the component (like sidebar does with layout) so Vue doesn't deeply track the
-      // component definition as reactive state — that's wasteful and can break some components.
-      this.items = [...this.items, { ...item, component: markRaw(item.component) }]
-    },
-    unregister(id: string): void {
-      this.items = this.items.filter((i) => i.id !== id)
     },
   })
 
@@ -96,7 +100,12 @@ export class ShellExtension extends Extension {
     },
   })
 
-  setContent(component: Component): void {
-    this.content.value = component
+  constructor(args: ExtensionArgs) {
+    super(args)
+    const warn = (message: string): void => {
+      this.logger.warn(message)
+    }
+    this.types = new TabTypeRegistry(warn)
+    this.status = new StatusRegistry(warn)
   }
 }
