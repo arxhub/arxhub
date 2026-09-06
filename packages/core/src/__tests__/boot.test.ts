@@ -134,3 +134,85 @@ describe('boot failures', () => {
     expect(bootFailures(new Error('nope'))).toBeNull()
   })
 })
+
+describe('boot progress', () => {
+  function watch(arxhub: ArxHub) {
+    const steps: string[] = []
+    const roster: string[][] = []
+    const finished: { failures: readonly { plugin: string | null; phase: string }[] }[] = []
+    arxhub.boot.on('roster', (it) => roster.push(it.map((p) => `${p.name}:${p.enabled}`)))
+    arxhub.boot.on('step', (it) => steps.push(`${it.plugin}:${it.phase}:${it.status}`))
+    arxhub.boot.on('finished', (it) => finished.push(it))
+    return { steps, roster, finished }
+  }
+
+  test('announces the roster once, before any phase has run', async () => {
+    const arxhub = new ArxHub({ disabled: ['optional'] })
+    arxhub.plugins.register(EssentialPlugin)
+    arxhub.plugins.register(OptionalPlugin)
+    const seen = watch(arxhub)
+    await arxhub.start()
+
+    // Once, and carrying the plugin the boot skipped — a screen must be able to say "off" rather than
+    // leave a plugin out and look like it forgot about it.
+    expect(seen.roster).toEqual([['essential:true', 'optional:false']])
+    // Nothing about a skipped plugin ever runs, so it contributes no steps.
+    expect(seen.steps.some((it) => it.startsWith('optional:'))).toBe(false)
+  })
+
+  test('walks every phase of every plugin, running before done', async () => {
+    const arxhub = new ArxHub()
+    arxhub.plugins.register(EssentialPlugin)
+    const seen = watch(arxhub)
+    await arxhub.start()
+
+    expect(seen.steps).toEqual([
+      'essential:setup:running',
+      'essential:setup:done',
+      'essential:create:running',
+      'essential:create:done',
+      'essential:configure:running',
+      'essential:configure:done',
+      'essential:start:running',
+      'essential:start:done',
+    ])
+    expect(seen.finished).toEqual([{ failures: [] }])
+  })
+
+  test('a synchronous phase failure is announced, and the boot finishes with it', async () => {
+    const arxhub = new ArxHub()
+    arxhub.plugins.register(BrokenConfigurePlugin)
+    const seen = watch(arxhub)
+    await expect(arxhub.start()).rejects.toThrow()
+
+    expect(seen.steps).toContain('broken-configure:configure:failed')
+    expect(seen.steps).not.toContain('broken-configure:configure:done')
+    expect(seen.finished).toHaveLength(1)
+    expect(seen.finished[0].failures.map((it) => `${it.plugin}:${it.phase}`)).toEqual(['broken-configure:configure'])
+  })
+
+  test('a start failure names the plugin, and the plugins beside it still report done', async () => {
+    const arxhub = new ArxHub()
+    arxhub.plugins.register(EssentialPlugin)
+    arxhub.plugins.register(BrokenStartPlugin)
+    const seen = watch(arxhub)
+    await expect(arxhub.start()).rejects.toThrow()
+
+    // start() runs every plugin at once, so the healthy one is not held back by the broken one — the
+    // screen has to be able to show one failed among several done.
+    expect(seen.steps).toContain('essential:start:done')
+    expect(seen.steps).toContain('broken-start:start:failed')
+    expect(seen.finished[0].failures.map((it) => it.plugin)).toEqual(['broken-start'])
+  })
+
+  test('a listener that throws does not take the boot with it', async () => {
+    const arxhub = new ArxHub()
+    arxhub.plugins.register(EssentialPlugin)
+    arxhub.boot.on('step', () => {
+      throw new Error('the screen is broken')
+    })
+
+    // The thing being watched matters more than the thing watching it.
+    await expect(arxhub.start()).resolves.toBeUndefined()
+  })
+})

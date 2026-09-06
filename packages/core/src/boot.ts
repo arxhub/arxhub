@@ -11,6 +11,32 @@ export interface BootFailure {
   error: unknown
 }
 
+// One plugin's passage through one phase. `failed` carries the error; the two others do not.
+export interface BootStep {
+  plugin: string
+  phase: BootPhase
+  status: 'running' | 'done' | 'failed'
+  error?: unknown
+}
+
+// What a boot announces while it happens, for a screen that exists BEFORE any plugin does — so it
+// cannot be the application-wide bus (that one is created for plugins and reaches them as ctx.events).
+// A stream belonging to one object gets its own map; this is ArxHub's.
+//
+// Two things the shape has to be honest about. `setup`/`create`/`configure` are a synchronous loop, so
+// every step of theirs is announced within one turn and a screen sees them already finished — the boot
+// is not slowed down to animate them, because that would cost a frame per plugin per phase on every
+// launch to dramatise work that takes microseconds. And `start` runs every plugin at once, so several
+// are `running` together; that concurrency is what keeps a boot fast and is not an ordering to display.
+export interface BootEvents {
+  // The full roster, announced once instances exist and before any phase has run — so a screen can
+  // draw everything it is waiting for rather than growing a list one plugin at a time.
+  roster: readonly PluginInfo[]
+  step: BootStep
+  // Every plugin is through, or the boot is abandoning. `failures` is empty on a clean boot.
+  finished: { failures: readonly BootFailure[] }
+}
+
 // A registered plugin as this boot saw it: `enabled` is false for one the boot policy skipped.
 export interface PluginInfo {
   name: string

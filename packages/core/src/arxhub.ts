@@ -1,8 +1,8 @@
 import { LazyContainer } from '@arxhub/di'
 import { bootFailed, illegalState } from '@arxhub/errors'
-import { createEventBus, type EventBus, type EventMap } from '@arxhub/events'
+import { createEventBus, type EventBus, type EventMap, type TypedEventBus } from '@arxhub/events'
 import { createRootLogger, type LogBuffer, LogBufferKey, type Logger } from '@arxhub/logger'
-import type { BootFailure, BootOptions, BootPhase, PluginInfo } from './boot'
+import type { BootEvents, BootFailure, BootOptions, BootPhase, PluginInfo } from './boot'
 import { ExtensionContainer } from './extension'
 import { type Plugin, PluginContainer } from './plugin'
 import type { PluginContext, PluginHost, ScopeConfigureCallback } from './plugin-context'
@@ -18,6 +18,9 @@ export class ArxHub {
   // LogBufferKey so the logger plugin's panel/file writer resolve this exact instance.
   readonly logBuffer: LogBuffer
   readonly events: EventBus
+  // What this boot is doing, while it is doing it. Its own bus, not `events`: a boot screen has to
+  // subscribe before any plugin exists, and `events` is the plugins' channel. See BootEvents.
+  readonly boot: TypedEventBus<BootEvents>
   // This boot runs the essential plugins only. Surfaced so the UI can say so (and offer a way out)
   // instead of the app silently looking half-empty.
   readonly maintenance: boolean
@@ -55,6 +58,11 @@ export class ArxHub {
     this.events = createEventBus<EventMap>({
       onError: (error, event) => this.logger.error(`A listener for '${event}' threw`, error),
     })
+    // A progress listener that throws must never be the reason a boot fails — the screen watching is
+    // strictly less important than the thing it is watching.
+    this.boot = createEventBus<BootEvents>({
+      onError: (error, event) => this.logger.error(`A boot listener for '${event}' threw`, error),
+    })
   }
 
   // Every registered plugin and whether this boot ran it. Empty until start() has instantiated them;
@@ -87,6 +95,9 @@ export class ArxHub {
     }))
     const plugins = instances.filter((_, i) => this.roster[i].enabled)
     this.running = plugins
+    // Before any phase: a screen can draw the whole roster at once instead of growing it plugin by
+    // plugin, and it still has something to show if the very first phase dies.
+    this.boot.emit('roster', this.roster)
     for (const it of this.roster) {
       if (!it.enabled) this.logger.warn(`Plugin '${it.name}' is switched off — skipping it`)
     }
@@ -110,10 +121,25 @@ export class ArxHub {
     await configure?.(this)
 
     // 5. Start every plugin; collect failures instead of letting one rejection abandon the rest.
-    const results = await Promise.allSettled(plugins.map((it) => it.start(this.context(it))))
+    // Announced per plugin as it settles rather than all at the end: start() is the one phase where a
+    // boot spends real time, so it is the only one a progress screen can actually show moving.
+    const results = await Promise.allSettled(
+      plugins.map(async (it) => {
+        const plugin = it.manifest.name
+        this.boot.emit('step', { plugin, phase: 'start', status: 'running' })
+        try {
+          await it.start(this.context(it))
+          this.boot.emit('step', { plugin, phase: 'start', status: 'done' })
+        } catch (error) {
+          this.boot.emit('step', { plugin, phase: 'start', status: 'failed', error })
+          throw error
+        }
+      }),
+    )
     const failures: BootFailure[] = results.flatMap((r, i) =>
       r.status === 'rejected' ? [{ plugin: plugins[i].manifest.name, phase: 'start' as const, error: r.reason }] : [],
     )
+    this.boot.emit('finished', { failures })
     if (failures.length > 0) {
       for (const { plugin, error } of failures) this.logger.error(`Plugin '${plugin}' failed during start()`, error)
       throw bootFailed(failures, `${failures.length} plugin(s) failed to start`)
@@ -172,9 +198,14 @@ export class ArxHub {
   // collect failures instead, so they don't go through here.
   private runPhase(plugins: Plugin[], phase: Extract<BootPhase, 'setup' | 'create' | 'configure'>, action: (plugin: Plugin) => void): void {
     for (const plugin of plugins) {
+      const name = plugin.manifest.name
+      this.boot.emit('step', { plugin: name, phase, status: 'running' })
       try {
         action(plugin)
+        this.boot.emit('step', { plugin: name, phase, status: 'done' })
       } catch (error) {
+        this.boot.emit('step', { plugin: name, phase, status: 'failed', error })
+        this.boot.emit('finished', { failures: [{ plugin: name, phase, error }] })
         this.logger.error(`Plugin '${plugin.name}' failed during ${phase}()`, error)
         // Wrapped rather than rethrown raw: whoever catches this has to know WHICH plugin died and
         // where, or it cannot offer to switch that one off and try again.
