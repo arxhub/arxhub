@@ -1,3 +1,4 @@
+export * from './device-local'
 export * from './plugin-config'
 export * from './read-config'
 export * from './types'

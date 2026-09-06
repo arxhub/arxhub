@@ -1,4 +1,5 @@
 import type { TObject } from '@sinclair/typebox'
+import { isDeviceLocal } from '../device-local'
 
 // Which control a field renders as. The schema decides — a plugin never names a widget, so two
 // plugins that describe the same shape get the same control.
@@ -80,6 +81,8 @@ export interface FieldSchema {
   enumHints?: Record<string, string>
   // Names a sibling boolean field; this one is inert while that one is false.
   enabledBy?: string
+  // Kept on this device instead of in the synced config file (see device-local.ts).
+  deviceLocal?: boolean
 }
 
 // A union of literals is how TypeBox spells an enum, so both shapes have to resolve to one list.
@@ -147,6 +150,9 @@ export function signatureFor(key: string, schema: FieldSchema, choices: Choice[]
   if (schema.unit) parts.push(`unit: ${schema.unit}`)
   if (schema.writeOnly) parts.push('writeOnly')
   if (schema.readOnly) parts.push('readOnly')
+  // Where the value is kept belongs in the signature for the same reason its type does: without it a
+  // reader has every reason to assume the setting they just changed changed on all their devices.
+  if (isDeviceLocal(schema)) parts.push('device-local', 'this device only')
 
   return parts.join(' · ')
 }

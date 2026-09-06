@@ -51,6 +51,13 @@ describe('signatureFor', () => {
     expect(signatureFor('server.token', Type.String({ writeOnly: true }), [])).toBe('server.token · string · writeOnly')
   })
 
+  it('says a device-local field is device-local, so a save is not read as a save everywhere', () => {
+    expect(signatureFor('sync.intervalMinutes', Type.Integer({ deviceLocal: true }), [])).toBe(
+      'sync.intervalMinutes · integer · device-local · this device only',
+    )
+    expect(signatureFor('server.url', Type.String(), [])).not.toContain('device-local')
+  })
+
   it('counts the options for an enum', () => {
     const choices = [
       { value: 'a', label: 'a' },
