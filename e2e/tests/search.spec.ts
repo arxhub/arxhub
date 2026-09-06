@@ -128,8 +128,10 @@ test.describe('finding a note by a word in its text', () => {
     ).toHaveCount(0)
 
     // Leaving the mini-app and coming back finds the switch as it was left: the setting is device-local and
-    // does not live in the component that showed it.
-    await openMiniApp(app, 'Explorer')
+    // does not live in the component that showed it. Where "away" is differs by frame: on a phone Search IS
+    // a section of Explorer's rail, so Explorer is not away at all — and on the desktop Settings is not
+    // usable as "away" either, since its section list holds a row called Search too.
+    await openMiniApp(app, (await isMobileFrame(app)) ? 'Settings' : 'Explorer')
     await openSearch(app)
     await expect(app.getByRole('checkbox', { name: 'Titles only' })).toBeChecked()
 
@@ -186,13 +188,13 @@ test.describe('finding a note by a word in its text', () => {
 
     // Either the walk is running or it has finished; both are a statement about the index, and neither is
     // "nothing found".
-    await expect(app.locator('.index-status')).toContainText(/in index|Indexing…/)
+    await expect(app.locator('.index-state-text')).toContainText(/in index|Indexing…/)
 
     const reindex = app.getByRole('button', { name: 'Reindex' })
     await expect(reindex).toBeEnabled()
     await reindex.click()
     // A walk in progress leaves the control inert, and the index reports the count again when it is done.
     await expect.poll(() => reindex.isDisabled(), { timeout: 10_000 }).toBe(false)
-    await expect(app.locator('.index-status')).toContainText('in index')
+    await expect(app.locator('.index-state-text')).toContainText('in index')
   })
 })

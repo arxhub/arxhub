@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, openSettingsSection, test, withShellChrome } from './fixtures'
+import { expect, explorerLabel, openSettingsSection, test, withShellChrome } from './fixtures'
 
 // Matches BootPolicy's storage key. Written from the page rather than through the UI where a test needs
 // the app to come up already in that state.
@@ -18,10 +18,11 @@ test.describe('maintenance mode', () => {
   test('boots the essentials only, and says so', async ({ app }) => {
     await bootWith(app, { maintenance: true })
 
+    const explorer = await explorerLabel(app)
     await withShellChrome(app, async (chrome) => {
       await expect(chrome.getByRole('button', { name: 'Maintenance mode' })).toBeVisible()
       // Explorer is not essential, so a maintenance boot leaves it out entirely — no entry at all.
-      await expect(chrome.getByRole('button', { name: 'Explorer' })).toHaveCount(0)
+      await expect(chrome.getByRole('button', { name: explorer, exact: true })).toHaveCount(0)
       await expect(chrome.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
     })
   })
@@ -33,9 +34,10 @@ test.describe('maintenance mode', () => {
     await expect(app.getByText('Maintenance mode is on')).toBeVisible()
     await app.getByRole('button', { name: 'Leave and restart' }).click()
 
+    const explorer = await explorerLabel(app)
     await withShellChrome(app, async (chrome) => {
       await expect(chrome.getByRole('button', { name: 'Maintenance mode' })).toHaveCount(0)
-      await expect(chrome.getByRole('button', { name: 'Explorer' })).toBeVisible()
+      await expect(chrome.getByRole('button', { name: explorer, exact: true })).toBeVisible()
     })
   })
 })

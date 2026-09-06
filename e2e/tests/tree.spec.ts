@@ -3,16 +3,18 @@ import { expect, openNavigation, test } from './fixtures'
 // Daily housekeeping: create, rename, delete. Every assertion checks the vault on disk, not just the
 // tree, because the tree agreeing with itself proves nothing.
 test.describe('keeping the tree in order', () => {
-  test('creates a note as markdown', async ({ app, vault }) => {
+  test('creates a note in the format the product reasons about', async ({ app, vault }) => {
     await openNavigation(app)
-    await app.getByRole('button', { name: 'File', exact: true }).click()
+    await app.getByRole('button', { name: 'New file', exact: true }).click()
 
-    // Markdown is the default because the vault has to stay readable outside the product, and the
-    // seed must match the extension — a note seeded with a document tree opens as JSON text.
-    await expect.poll(() => vault.read('untitled.md').catch(() => null)).toBe('')
+    // '.arx' is the primary format (planning/decisions.md A-29): markdown stays readable and editable,
+    // but everything structural is read from the '.arx' tree. The seed has to match the extension — an
+    // '.arx' reader rejects a bare file, so an empty one would open as a broken document.
+    await expect.poll(() => vault.read('untitled.arx').catch(() => null)).not.toBeNull()
+    expect(JSON.parse(await vault.read('untitled.arx'))).toMatchObject({ version: 1, doc: { type: 'doc' } })
 
     // Clean up so a rerun starts from the same tree.
-    await vault.remove('untitled.md')
+    await vault.remove('untitled.arx')
   })
 
   test('renames a note in place', async ({ app, vault }) => {

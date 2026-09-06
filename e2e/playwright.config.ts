@@ -4,9 +4,10 @@ import { join } from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
 
 // Ports deliberately off the dev stand's 3000/3001 so a run does not collide with — or get proxied
-// into — a stand the developer already has open.
-const WEB_PORT = 3100
-const API_PORT = 3101
+// into — a stand the developer already has open. Overridable because --strictPort makes the pair
+// exclusive: two runs on one machine (a second checkout, a watch alongside a full run) need their own.
+const WEB_PORT = Number(process.env.ARXHUB_E2E_WEB_PORT ?? 3100)
+const API_PORT = Number(process.env.ARXHUB_E2E_API_PORT ?? 3101)
 
 // A throwaway vault per run. The stand persists the TOFU pin of the first key that reaches it, so
 // pointing it at the real ~/.arxhub would unpair the developer's actual devices.

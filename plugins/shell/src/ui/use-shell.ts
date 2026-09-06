@@ -29,7 +29,16 @@ export function useShell(): Shell {
   const arxhub = useArxHub()
   const shell = arxhub.extensions.get(ShellExtension)
 
-  const activeItem = computed(() => shell.sidebar.items.find((i) => i.id === shell.sidebar.activeId))
+  // Nothing has claimed the first screen when every mini-app that would have is switched off — which is
+  // exactly a maintenance boot, where `sidebar.register` never auto-activates because the only item left
+  // (Settings) sits in the 'bottom' region. The desktop frame then renders no mini-app at all, and since
+  // the status bar lives inside the mini-app shell (see DesktopMiniAppShell) the window came up empty:
+  // no content, and no pill saying maintenance mode is on — on the one boot that exists to say so.
+  // Resolved here rather than at registration time, so it does not depend on which plugin configures
+  // first.
+  const activeItem = computed(
+    () => shell.sidebar.items.find((i) => i.id === shell.sidebar.activeId) ?? byOrder(shell.sidebar.items.filter((i) => !i.hidden))[0],
+  )
 
   return {
     content: computed(() => shell.content.value ?? undefined),
@@ -54,6 +63,8 @@ export function useShell(): Shell {
     footerRight: computed(() => byOrder(shell.footer.items.filter((i) => i.region === 'right'))),
     tabs: computed(() => byOrder(shell.tabs.items)),
     setActive: (id: string) => shell.sidebar.setActive(id),
-    activeId: computed(() => shell.sidebar.activeId),
+    // The resolved item's id, not the raw registry value: with the fallback above, the rail and the
+    // bottom bar have to mark the mini-app that is actually on screen as the one you are in.
+    activeId: computed(() => activeItem.value?.id ?? ''),
   }
 }

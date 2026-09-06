@@ -7,7 +7,7 @@
 // This is a MEASUREMENT, so it asserts against the role's token value rather than a number typed twice:
 // the expected values are read out of the running document's own custom properties.
 import type { Page } from '@playwright/test'
-import { expect, isMobileFrame, openMiniApp, openNavigation, openSettingsSection, test, withShellChrome } from './fixtures'
+import { expect, isMobileFrame, openDocumentList, openMiniApp, openNavigation, openSettingsSection, test, withShellChrome } from './fixtures'
 
 async function token(page: Page, name: string): Promise<number> {
   const value = await page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name)
@@ -108,12 +108,13 @@ test.describe('the visual language holds on screen', () => {
     await app.goBack()
     await expect(sheet).toBeHidden()
 
-    // The list of open documents: a name with its path under it, so it grows down from the same value.
+    // The list of open documents — a section of the same rail panel the tree comes out of: a name with its
+    // path under it, so it grows down from the same value rather than landing exactly on it.
     await openNavigation(app)
     await app.getByRole('treeitem', { name: note }).click()
     await expect(app.locator('.cm-content')).toBeVisible()
-    await app.getByRole('button', { name: /^Notes, \d+ open$/ }).click()
-    const open = await heights(app, '.tab-list .row')
+    await openDocumentList(app)
+    const open = await heights(app, '.open-tabs-list .row')
     expect(open.length).toBeGreaterThan(0)
     for (const height of open) expect(height).toBeGreaterThanOrEqual(expected)
     await app.goBack()

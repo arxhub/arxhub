@@ -155,21 +155,45 @@ export async function openMiniApp(page: Page, name: string): Promise<void> {
   await expect(sheet).toBeHidden()
 }
 
-// One registration reaches both frames, so the Search mini-app is opened the way each frame opens
-// mini-apps: a rail section on the desktop, a bottom-bar key on a phone. Reaching for the key by test id
-// is also what proves it is there — a mobile frame with no Search key fails here rather than silently
-// falling back. Shared, because both the search and the SQL-console specs start from this screen.
+// What the Explorer mini-app is called in the frame under test. Its mobile rail absorbed the open-tabs
+// list and Search, so the mobile frame names the same registration "Files" (SidebarItem.mobileTitle)
+// while the desktop rail, which gained none of that, keeps "Explorer".
+export async function explorerLabel(page: Page): Promise<string> {
+  return (await isMobileFrame(page)) ? 'Files' : 'Explorer'
+}
+
+// Explorer's mobile rail is a switcher — Files, Tabs, and whatever else contributed a section (Search) —
+// over the one panel the frame summons. The segments are Ark's SegmentGroup items, a label around a
+// visually hidden radio, so the click goes to the label the owner presses. Mobile only: the desktop rail
+// has no switcher, it is the file tree it always was.
+export async function openRailSection(page: Page, section: string): Promise<void> {
+  await openNavigation(page)
+  await page.locator('.section-switcher').getByText(section, { exact: true }).click()
+}
+
+// One registration reaches both frames, but only the desktop frame gives Search a mini-app of its own: on
+// a phone it is declared absorbed into Explorer's rail (SidebarItem.absorbedOnMobileBy), so it has no
+// bottom-bar destination and is reached as a section of that rail instead. Reaching for Explorer's key by
+// test id is also what proves the bar still carries it. Shared, because both the search and the
+// SQL-console specs start from this screen.
 export async function openSearchApp(page: Page): Promise<void> {
   if (await isMobileFrame(page)) {
-    await page.getByTestId('arxhub.search').click()
-    // The rail lives in the panel the frame summons, and activating a result closes it again.
-    const panel = page.getByRole('region', { name: /navigation$/ })
-    if (!(await panel.isVisible())) await page.getByTestId('arxhub.shell.rail').click()
-    await expect(panel).toBeVisible()
+    await page.getByTestId('arxhub.explorer').click()
+    await openRailSection(page, 'Search')
   } else {
     await openMiniApp(page, 'Search')
   }
   await expect(page.getByRole('textbox', { name: 'Search' }).first()).toBeVisible()
+}
+
+// The list of what is open. A bottom-bar "Notes" key used to hold it; it is now the Tabs section of
+// Explorer's rail on a phone, and the panel tab strip on the desktop — so this is mobile-only, the way
+// the tab strip is desktop-only.
+export async function openDocumentList(page: Page): Promise<Locator> {
+  await openRailSection(page, 'Tabs')
+  const list = page.getByRole('menu', { name: 'Open documents' })
+  await expect(list).toBeVisible()
+  return list
 }
 
 export async function openSettingsSection(page: Page, section: string): Promise<void> {

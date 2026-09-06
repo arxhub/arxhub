@@ -1,11 +1,13 @@
-import { expect, openSettingsSection, test, withShellChrome } from './fixtures'
+import { expect, explorerLabel, openSettingsSection, test, withShellChrome } from './fixtures'
 
 test.describe('application boot', () => {
   test('comes up with the shell and its mini-apps', async ({ app }) => {
     // The list is a permanent rail on desktop and lives behind the More key on a phone; the fixture
-    // hands back whichever scope holds it.
+    // hands back whichever scope holds it. Explorer answers to a different name in each frame — see
+    // explorerLabel — because its mobile rail took on more than the desktop one did.
+    const explorer = await explorerLabel(app)
     await withShellChrome(app, async (chrome) => {
-      await expect(chrome.getByRole('button', { name: 'Explorer' })).toBeVisible()
+      await expect(chrome.getByRole('button', { name: explorer, exact: true })).toBeVisible()
       await expect(chrome.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
     })
   })
