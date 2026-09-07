@@ -1,6 +1,5 @@
 import type { PluginConfig } from '@arxhub/config'
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import type { PanelStore } from '@arxhub/plugin-panels/ui'
 import type { TObject } from '@sinclair/typebox'
 import { type Component, markRaw, ref, shallowRef } from 'vue'
 import { createPendingChanges, type PendingChanges } from './pending-changes'
@@ -27,8 +26,16 @@ export class SettingsExtension extends Extension {
   // the form consumes it. Sections are always replaced wholesale, so shallow reactivity is enough.
   readonly sections = shallowRef<SettingsSection[]>([])
   readonly activeId = ref<string | null>(null)
-  // The settings content area's own panel store — assigned by SettingsPlugin.configure().
-  store!: PanelStore
+  // Every section shown at least once this session, in the order it was first shown. The frame keeps
+  // all of them mounted and displays the active one, so a section keeps its scroll position, its
+  // in-flight reads and its half-typed form while another one is on screen.
+  //
+  // This replaces a private `PanelStore` settings used to create for the same job. A store belongs to
+  // a tab type and a tab is an object of the vault; a settings section is neither — it is picked from
+  // a list, never opened, closed, split or dragged. The store existed only to make sections look like
+  // tabs, and it cost a second copy of "which section is showing" beside `activeId` that nothing kept
+  // in step.
+  readonly openedIds = ref<string[]>([])
   // Edits from every section, staged together and applied by one Save. See pending-changes.ts.
   readonly changes: PendingChanges
 
@@ -53,18 +60,21 @@ export class SettingsExtension extends Extension {
 
   unregister(id: string): void {
     this.sections.value = this.sections.value.filter((s) => s.id !== id)
-    if (this.activeId.value === id) this.activeId.value = this.sections.value[0]?.id ?? null
+    this.openedIds.value = this.openedIds.value.filter((it) => it !== id)
+    if (this.activeId.value !== id) return
+    const next = this.sections.value[0]?.id
+    if (next == null) this.activeId.value = null
+    else this.open(next)
   }
 
-  // Open the section as a tab in the content store, reusing an existing tab if already open — openPanel's
-  // own dedupe does the scan-and-activate; this only names which existing instance counts (one per section,
-  // even though every section shares the same 'settings.page' definitionId).
+  // Show a section. Called from outside settings too (the sync footer, the maintenance footer, the
+  // auth dialog), so it must work while the screen is not mounted — it records the choice, and the
+  // frame renders it whenever it next runs.
+  //
+  // A second call for a section already shown is not a second anything: it only makes it active
+  // again. The de-duplication is the membership test below, in one place, so no caller does its own.
   open(id: string): void {
     this.activeId.value = id
-    const store = this.store
-    if (!store) return
-
-    const section = this.sections.value.find((s) => s.id === id)
-    store.openPanel('settings.page', { sectionId: id }, section?.title ?? id, undefined, false, (i) => i.props?.sectionId === id)
+    if (!this.openedIds.value.includes(id)) this.openedIds.value = [...this.openedIds.value, id]
   }
 }

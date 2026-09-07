@@ -31,7 +31,6 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
     "@arxhub/uikit": "workspace:*",

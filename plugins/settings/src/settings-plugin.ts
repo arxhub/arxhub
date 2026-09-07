@@ -1,12 +1,10 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { createPanelStore } from '@arxhub/plugin-panels/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { markRaw } from 'vue'
 import { manifest } from './manifest'
 import { SettingsExtension } from './settings-extension'
 import SettingsFooter from './ui/SettingsFooter.vue'
 import SettingsLayout from './ui/SettingsLayout.vue'
-import SettingsPageHost from './ui/SettingsPageHost.vue'
 
 export class SettingsPlugin extends Plugin {
   constructor(args: PluginArgs) {
@@ -20,10 +18,6 @@ export class SettingsPlugin extends Plugin {
 
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
-
-    const settings = ctx.extensions.get(SettingsExtension)
-    settings.store = createPanelStore(ctx.events)
-    settings.store.registerPanel({ id: 'settings.page', title: 'Settings', component: SettingsPageHost })
 
     const shell = ctx.extensions.get(ShellExtension)
     shell.sidebar.register({

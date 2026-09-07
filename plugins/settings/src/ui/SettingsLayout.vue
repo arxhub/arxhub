@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { PanelsLayout } from '@arxhub/plugin-panels/ui'
 import { MiniAppShell } from '@arxhub/plugin-shell/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted } from 'vue'
 import { SettingsExtension } from '../settings-extension'
 import SettingsChangesBar from './SettingsChangesBar.vue'
 import SettingsNav from './SettingsNav.vue'
+import SettingsPageHost from './SettingsPageHost.vue'
 
 const arxhub = useArxHub()
 const settings = arxhub.extensions.get(SettingsExtension)
 
 onMounted(() => {
-  // First open: surface the active (or first) section as a tab if the content is empty.
-  if (Object.keys(settings.store.groups.value).length > 0) return
+  // First open: show the active (or first) section, so the screen is never blank behind a full list.
+  if (settings.openedIds.value.length > 0) return
   const id = settings.activeId.value ?? settings.sections.value[0]?.id
   if (id) settings.open(id)
 })
@@ -24,7 +24,17 @@ onMounted(() => {
       <SettingsNav />
     </template>
     <div class="settings-content">
-      <PanelsLayout :store="settings.store" mode="single" />
+      <div class="settings-pages">
+        <!-- Every section that has been shown stays mounted; only the active one is displayed —
+             exactly what the panel store this replaced did. A `v-if` would tear the page down on
+             every switch, and a page holds more than the pending-changes registry can hand back to
+             it: its scroll position, a config read still in flight, the index report a custom
+             section renders. -->
+        <div v-for="id in settings.openedIds.value" v-show="id === settings.activeId.value" :key="id" class="settings-page">
+          <SettingsPageHost :section-id="id" />
+        </div>
+        <p v-if="settings.openedIds.value.length === 0" class="settings-empty">No plugin has registered a settings section.</p>
+      </div>
       <SettingsChangesBar />
     </div>
   </MiniAppShell>
@@ -38,8 +48,25 @@ onMounted(() => {
   min-height: 0;
 }
 
-.settings-content > :first-child {
+.settings-pages {
   flex: 1;
   min-height: 0;
+  overflow: hidden;
+}
+
+.settings-page {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.settings-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0;
+  color: var(--gray-10);
+  font-size: var(--font-size-sm);
 }
 </style>

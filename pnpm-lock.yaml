@@ -1841,9 +1841,6 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@arxhub/plugin-panels':
-        specifier: workspace:*
-        version: link:../panels
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell

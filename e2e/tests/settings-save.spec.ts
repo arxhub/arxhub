@@ -26,7 +26,7 @@ async function readConfig(vault: { readData(path: string): Promise<string> }, pa
 }
 
 test.describe('applying settings', () => {
-  // Both tests read and write the same config files in the suite's shared data dir, so running them
+  // These tests read and write the same config files in the suite's shared data dir, so running them
   // in parallel would have each one observing the other's writes.
   test.describe.configure({ mode: 'serial' })
 
@@ -71,6 +71,31 @@ test.describe('applying settings', () => {
     // Only Sync: publish.spec.ts writes storage/publish/config.toml in the same shared data dir, so
     // asserting that file here would race it.
     expect(await readConfig(vault, 'storage/sync/config.toml')).toContain(`hub-${frame}.example.com`)
+  })
+
+  // An edit that has not been applied yet has to survive both moves away from it a person can make:
+  // to another section, and out of settings altogether. Two separate things hold it up — the section's
+  // page stays mounted, and the staged draft is handed back to the page if it ever does not — and the
+  // requirement is the same whichever carried it, so this asserts what is on screen rather than which.
+  test('keeps a staged edit on screen across a section switch and a trip out of settings', async ({ app, vault }, testInfo) => {
+    const staged = `https://kept-${testInfo.project.name}.example.com`
+
+    await openSettingsSection(app, 'Sync')
+    await setServerUrl(app, staged)
+    await expect(app.getByRole('button', { name: 'Save & apply' })).toBeVisible()
+
+    await openSettingsSection(app, 'Appearance')
+    await openSettingsSection(app, 'Sync')
+    await expect(app.locator('input[aria-label="Server URL"]:visible')).toHaveValue(staged)
+
+    await openMiniApp(app, 'Explorer')
+    await openSettingsSection(app, 'Sync')
+    await expect(app.locator('input[aria-label="Server URL"]:visible')).toHaveValue(staged)
+
+    // Still an edit, not just text on screen: it applies, and the file says so.
+    await app.getByRole('button', { name: 'Save & apply' }).click()
+    await expect(app.getByRole('button', { name: 'Save & apply' })).toBeHidden()
+    expect(await readConfig(vault, 'storage/sync/config.toml')).toContain(`kept-${testInfo.project.name}.example.com`)
   })
 
   test('reverting drops every staged edit and writes nothing', async ({ app, vault }, testInfo) => {
