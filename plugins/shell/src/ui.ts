@@ -35,3 +35,15 @@ export {
   type WorkspaceOptions,
   type WorkspaceState,
 } from './ui/workspace'
+export {
+  COLUMN_MAX,
+  COLUMN_MIN,
+  type ColumnState,
+  clampColumnWidth,
+  type StorageLike,
+  WORKSPACE_BACKUP_KEY,
+  WORKSPACE_KEY,
+  WORKSPACE_VERSION,
+  WorkspaceStorage,
+  type WorkspaceStorageOptions,
+} from './ui/workspace-storage'

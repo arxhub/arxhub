@@ -14,13 +14,13 @@ import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { KeyStorePlugin, resolveKeyStore } from '@arxhub/plugin-keystore/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { BootPolicy, MaintenancePlugin, startWithCrashScreen } from '@arxhub/plugin-maintenance/ui'
-import { NotesPlugin } from '@arxhub/plugin-notes/ui'
-import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
+import { NOTES_TYPE_ID, NotesPlugin } from '@arxhub/plugin-notes/ui'
+import { createPanelStore, PanelStoreExtension, PanelsPlugin, StorePanelHost } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { PublishPlugin } from '@arxhub/plugin-publish/ui'
 import { SearchPlugin } from '@arxhub/plugin-search/ui'
 import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
-import { AboutSettingsPage, ShellExtension, ShellPlugin } from '@arxhub/plugin-shell/ui'
+import { AboutSettingsPage, ShellExtension, ShellPlugin, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
 import { type Theme, ThemePlugin } from '@arxhub/plugin-theme/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
@@ -119,6 +119,33 @@ store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: Welcome
 // dedupe: a workspace restored from a previous session may already have Welcome open — without this,
 // every boot added a second one on top of it rather than bringing the existing tab to front.
 store.openPanel('arxhub.welcome', {}, 'Welcome', undefined, false, () => true)
+
+// The desk of the navigation model, assembled here because only a composition root may hold both
+// halves: the workspace needs a panel host per type, and the shell must not import the panels plugin
+// to get one. A store per type — a type is the level ABOVE panel groups, and a group stays what it
+// was, a cell of the layout.
+//
+// `desk` is referenced before the line that creates it, and only ever called after: constructing a
+// workspace announces nothing. It is the shorter half of a loop — the storage saves this workspace,
+// the workspace tells the storage what the person did.
+const workspace = new Workspace({
+  types: shell.types,
+  createPanels: () => new StorePanelHost(createPanelStore(arxhub.events)),
+  emit: (event, payload) => desk.observe(event, payload),
+})
+const desk = new WorkspaceStorage({ workspace })
+// Restored after every plugin has declared its types and before anything is on screen. Silently — a
+// restore is the initial state, not news. It also has no right to keep a person out of the
+// application: it reads storage, storage can be unavailable, and an unhandled rejection here would
+// fail BEFORE app.mount() and leave a blank white page instead of a shell.
+//
+// Nothing on screen reads this workspace yet — `plugins/panels` still restores the visible layout
+// through its own device-local record. Two persistence paths for one desk is the price of not
+// breaking the screen while the frames move over, and it ends when they do.
+const restored = await desk.restore().catch(() => false)
+// A first run, or a record that cannot be read, is a clean desk rather than an error. A clean desk
+// opens on notes: the type the product exists for beats an empty screen inviting you to go looking.
+if (!restored && shell.types.has(NOTES_TYPE_ID)) workspace.activateType(NOTES_TYPE_ID)
 
 // The frame is a build decision, not a runtime one: a phone package mounts the mobile shell and never
 // ships the desktop one. __ARXHUB_FRAME__ comes from TAURI_ENV_PLATFORM — see vite.config.ts.
