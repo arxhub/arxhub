@@ -1,4 +1,5 @@
 export * from './events'
+export { StorePanelHost } from './panel-host'
 export { createPanelStore } from './panel-store'
 export { PanelStoreExtension } from './panel-store-extension'
 export { PanelsPlugin } from './panels-plugin'
