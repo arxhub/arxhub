@@ -1216,6 +1216,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../notes
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
@@ -1253,6 +1256,9 @@ importers:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)
     devDependencies:
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig
@@ -1299,6 +1305,9 @@ importers:
       '@arxhub/plugin-explorer':
         specifier: workspace:*
         version: link:../explorer
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../notes
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
@@ -1351,6 +1360,9 @@ importers:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)
     devDependencies:
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig

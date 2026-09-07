@@ -16,7 +16,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "codemirror": "catalog:client",
@@ -29,12 +30,14 @@
     "@lezer/highlight": "catalog:client"
   },
   "devDependencies": {
+    "@arxhub/logger": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
     "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
+    "@arxhub/plugin-notes": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/stdlib": "workspace:*",
     "@arxhub/uikit": "workspace:*",

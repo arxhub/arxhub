@@ -1,6 +1,7 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { basename, dirname } from '@arxhub/path'
 import { ExplorerExtension, type TreeNode } from '@arxhub/plugin-explorer/ui'
+import { NotesExtension, type NoteViewer } from '@arxhub/plugin-notes/ui'
 import { type PanelStore, PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
@@ -12,6 +13,22 @@ import EditorPanel from './ui/EditorPanel.vue'
 
 const PANEL_ID = 'arxhub.editor'
 
+// An editor is a way to show an object, not a place of its own: what it can show is declared as a
+// viewer of the "Notes" type, so picking one by extension stops being the panel layout's business.
+//
+// No `dock`: this editor's tool bar carries Save and the edit history and lives inside the component,
+// above the document's own text.
+export const EDITOR_VIEWER: NoteViewer = {
+  // The same id as the panel definition, for as long as both exist: the explorer still opens through
+  // the store, and two ids for one editor would make the two registrations disagree.
+  id: PANEL_ID,
+  title: 'Document',
+  extensions: ['.arx'],
+  component: EditorPanel,
+  // Ahead of the plain text editor, so a format with a richer viewer is not claimed by the plain one.
+  order: 0,
+}
+
 export class EditorPlugin extends Plugin {
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -20,13 +37,19 @@ export class EditorPlugin extends Plugin {
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
 
+    // Both registrations stand side by side on purpose, and not for long. The panel definition is what
+    // the frames read today; the viewer registry is what they read once F-14/F-16 wire them, and the
+    // second half of F-21 then moves the explorer's lookup off `getPanelsForFile`. Dropping either one
+    // before that takes this editor off the screen.
     const { store } = ctx.extensions.get(PanelStoreExtension)
     store.registerPanel({
       id: PANEL_ID,
       title: 'Editor',
       component: EditorPanel,
-      handles: ['.arx'],
+      handles: EDITOR_VIEWER.extensions,
     })
+
+    ctx.extensions.get(NotesExtension).registerViewer(EDITOR_VIEWER)
 
     // The conversion is offered where the note is — as an action on the file itself, through the
     // explorer's contribution channel rather than an import in either direction. A build without the

@@ -8,6 +8,7 @@ export default defineConfig((env) =>
       '@arxhub/core',
       '@arxhub/path',
       '@arxhub/plugin-explorer',
+      '@arxhub/plugin-notes',
       '@arxhub/plugin-panels',
       '@arxhub/uikit',
       '@arxhub/vfs',
