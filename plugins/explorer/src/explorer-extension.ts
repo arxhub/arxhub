@@ -59,7 +59,6 @@ export class ExplorerExtension extends Extension {
   // stop. Lives here rather than in a component because the recursive FileTreeNode tree has no other
   // shared channel between a row and its siblings elsewhere in the structure.
   readonly focusedPath = ref<string | null>(null)
-  contentGroupId: string | null = null
   private readonly nodeActionContributors: NodeActionContributor[] = []
   private readonly railTabs: RailTab[] = []
 

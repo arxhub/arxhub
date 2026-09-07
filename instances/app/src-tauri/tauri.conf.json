@@ -25,13 +25,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "deb",
-      "rpm",
-      "app",
-      "dmg",
-      "nsis"
-    ],
+    "targets": ["deb", "rpm", "app", "dmg", "nsis"],
     "publisher": "rougsig",
     "copyright": "Copyright \u00a9 rougsig",
     "category": "Productivity",

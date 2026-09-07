@@ -68,3 +68,17 @@ test.describe('keeping the tree in order', () => {
     await expect.poll(() => vault.read(path).catch(() => null)).toBeNull()
   })
 })
+
+test.describe('opening from the tree', () => {
+  test('a file nothing can open says so instead of doing nothing', async ({ app, vault }) => {
+    // '.text' is claimed by no panel, which is exactly the case the notification is for. Search already
+    // answers this way; the tree used to refuse in silence, which reads as a broken row.
+    const path = await vault.write('unopenable.text', 'plain bytes nothing claims\n')
+    await app.reload()
+    await openNavigation(app)
+
+    await app.getByRole('treeitem', { name: path }).click()
+
+    await expect(app.getByText('Nothing can open this file')).toBeVisible()
+  })
+})

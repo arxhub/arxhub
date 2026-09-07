@@ -34,8 +34,6 @@ export function useFileActions() {
 
   function openFile(node: TreeNode, preview: boolean): void {
     const path = node.entry.pathname
-    const panels = store.getPanelsForFile(extname(path))
-    if (panels.length === 0) return
 
     // Already open somewhere → focus it. A permanent open also promotes an existing preview tab.
     for (const [groupId, group] of Object.entries(store.groups.value)) {
@@ -48,7 +46,16 @@ export function useFileActions() {
       }
     }
 
-    store.openPanel(panels[0].id, { path }, basename(path), explorer.contentGroupId ?? undefined, preview)
+    const panels = store.getPanelsForFile(extname(path))
+    if (panels.length === 0) {
+      // A row of the tree that nothing can open is still a real file — the vault has it, the workspace
+      // has nothing that reads this format. A click that silently did nothing was indistinguishable
+      // from a broken tree. Same wording as search's own refusal: one concept, one phrasing.
+      toaster.create({ title: 'Nothing can open this file', description: path, type: 'error' })
+      return
+    }
+
+    store.openPanel(panels[0].id, { path }, basename(path), undefined, preview)
   }
 
   async function newFile(node: TreeNode): Promise<void> {

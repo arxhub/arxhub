@@ -14,6 +14,7 @@ import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { KeyStorePlugin, resolveKeyStore } from '@arxhub/plugin-keystore/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { BootPolicy, MaintenancePlugin, startWithCrashScreen } from '@arxhub/plugin-maintenance/ui'
+import { NotesPlugin } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { PublishPlugin } from '@arxhub/plugin-publish/ui'
@@ -47,6 +48,10 @@ arxhub.plugins.register(LoggerPlugin)
 arxhub.plugins.register(ConfigPlugin)
 arxhub.plugins.register(ShellPlugin)
 arxhub.plugins.register(PanelsPlugin)
+// The "Notes" type owns the vault objects and the registry of what opens them; the explorer below
+// contributes the navigation into it. Essential, because there is no `dependsOn`: a boot with one of
+// the two switched off is a state nobody has designed.
+arxhub.plugins.register(NotesPlugin, () => ({ root: '' }))
 arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
 arxhub.plugins.register(EditorPlugin)
@@ -95,7 +100,7 @@ if (explorer != null) shell.sidebar.setActive('arxhub.explorer')
 store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
 // dedupe: a workspace restored from a previous session may already have Welcome open — without this,
 // every boot added a second one on top of it rather than bringing the existing tab to front.
-store.openPanel('arxhub.welcome', {}, 'Welcome', explorer?.contentGroupId ?? undefined, false, () => true)
+store.openPanel('arxhub.welcome', {}, 'Welcome', undefined, false, () => true)
 
 // One browser build is served to phones and desktops alike, so this bundle cannot know its frame and
 // probes once, here, at boot. Everything below the shell reads the answer from injection — nothing in

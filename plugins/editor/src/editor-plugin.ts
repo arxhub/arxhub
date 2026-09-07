@@ -80,7 +80,7 @@ export class EditorPlugin extends Plugin {
     await explorer.refreshDir(dirname(target))
 
     const name = basename(target)
-    store.openPanel(PANEL_ID, { path: target }, name, explorer.contentGroupId ?? undefined, false)
+    store.openPanel(PANEL_ID, { path: target }, name, undefined, false)
 
     // What markdown said and the document format cannot say is the user's to know about — the toast
     // carries the count so it stays one line, the log carries what each one was.

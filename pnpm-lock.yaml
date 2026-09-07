@@ -291,6 +291,9 @@ importers:
       '@arxhub/plugin-maintenance':
         specifier: workspace:*
         version: link:../../plugins/maintenance
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../../plugins/notes
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
@@ -415,6 +418,9 @@ importers:
       '@arxhub/plugin-maintenance':
         specifier: workspace:*
         version: link:../../plugins/maintenance
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../../plugins/notes
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
@@ -515,6 +521,9 @@ importers:
       '@arxhub/plugin-maintenance':
         specifier: workspace:*
         version: link:../../plugins/maintenance
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../../plugins/notes
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
@@ -1363,6 +1372,9 @@ importers:
       '@arxhub/path':
         specifier: workspace:*
         version: link:../../packages/path
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../notes
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
@@ -1512,6 +1524,43 @@ importers:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)
     devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+
+  plugins/notes:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/path':
+        specifier: workspace:*
+        version: link:../../packages/path
+      '@arxhub/plugin-shell':
+        specifier: workspace:*
+        version: link:../shell
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig

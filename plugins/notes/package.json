@@ -1,8 +1,8 @@
 {
-  "name": "@arxhub/plugin-explorer",
+  "name": "@arxhub/plugin-notes",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "File explorer plugin for ArxHub",
+  "description": "Notes tab type for ArxHub: the object type and its viewer registry",
   "keywords": [
     "arxhub"
   ],
@@ -10,7 +10,8 @@
   "author": "",
   "type": "module",
   "exports": {
-    "./ui": "./src/ui.ts"
+    "./ui": "./src/ui.ts",
+    "./type": "./src/notes-type.ts"
   },
   "files": [
     "dist"
@@ -21,7 +22,6 @@
   },
   "dependencies": {
     "@arxhub/path": "workspace:*",
-    "lucide-vue-next": "catalog:client",
     "vue": "catalog:client"
   },
   "devDependencies": {
@@ -33,8 +33,6 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/plugin-notes": "workspace:*",
-    "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/uikit": "workspace:*",
     "@arxhub/vfs": "workspace:*"
@@ -44,6 +42,10 @@
       "./ui": {
         "import": "./dist/ui.js",
         "types": "./dist/ui.d.ts"
+      },
+      "./type": {
+        "import": "./dist/notes-type.js",
+        "types": "./dist/notes-type.d.ts"
       }
     }
   }
