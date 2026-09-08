@@ -83,19 +83,13 @@ async function handleClick() {
       await explorer.expand(props.node)
     }
   } else {
-    actions.openFile(props.node, true)
+    actions.openFile(props.node)
   }
-}
-
-function handleDblClick() {
-  if (renaming.value) return
-  // Double-clicking a file promotes it to a permanent tab; folders are handled by the single click
-  if (props.node.entry.kind === 'file') actions.openFile(props.node, false)
 }
 
 function handleEnter() {
   if (renaming.value) return
-  if (props.node.entry.kind === 'file') actions.openFile(props.node, false)
+  if (props.node.entry.kind === 'file') actions.openFile(props.node)
   else handleClick()
 }
 
@@ -127,7 +121,6 @@ function handleFocus() {
     :aria-expanded="node.entry.kind === 'dir' ? node.expanded : undefined"
     :tabindex="focused ? 0 : -1"
     @click="handleClick"
-    @dblclick.prevent="handleDblClick"
     @contextmenu.prevent.stop="onContextMenu"
     @focus="handleFocus"
     @keydown.f2.prevent.stop="actions.startRename(node)"
@@ -148,7 +141,6 @@ function handleFocus() {
         @keydown.escape.prevent.stop="cancelRename"
         @blur="commitRename"
         @click.stop
-        @dblclick.stop
       />
     </span>
     <span v-else class="name">{{ basename(node.entry.pathname) || node.entry.pathname }}</span>

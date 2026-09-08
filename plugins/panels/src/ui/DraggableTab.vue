@@ -11,13 +11,11 @@ const props = defineProps<{
   index: number
   title: string
   isActive: boolean
-  isPreview: boolean
 }>()
 
 const emit = defineEmits<{
   click: []
   close: []
-  promote: []
 }>()
 
 const tabEl = ref<HTMLElement | null>(null)
@@ -100,9 +98,8 @@ function onContextMenu(event: MouseEvent) {
     role="button"
     tabindex="0"
     class="tab"
-    :class="{ active: isActive, 'is-dragging': isDragging, preview: isPreview }"
+    :class="{ active: isActive, 'is-dragging': isDragging }"
     @click="emit('click')"
-    @dblclick="emit('promote')"
     @contextmenu.prevent.stop="onContextMenu"
     @keydown.enter.prevent="emit('click')"
     @keydown.space.prevent="emit('click')"
@@ -157,10 +154,6 @@ function onContextMenu(event: MouseEvent) {
 .tab-title {
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.tab.preview .tab-title {
-  font-style: italic;
 }
 
 .tab.is-dragging {

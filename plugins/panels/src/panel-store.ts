@@ -72,7 +72,6 @@ export function createPanelStore(bus: EventBus): PanelStore {
       props?: Record<string, unknown>,
       title?: string,
       targetGroupId?: string,
-      preview = false,
       dedupe?: (instance: PanelInstance) => boolean,
     ): string {
       const def = definitions.value.find((d) => d.id === definitionId)
@@ -84,34 +83,11 @@ export function createPanelStore(bus: EventBus): PanelStore {
           if (!existing) continue
           store.activateGroup(existingGroupId)
           store.activatePanel(existing.instanceId, existingGroupId)
-          if (existing.preview) store.promotePanel(existing.instanceId, existingGroupId)
           return existing.instanceId
         }
       }
 
       let groupId = targetGroupId ?? activeGroupId.value
-
-      // VSCode preview behavior: a group holds at most one preview tab. Opening another file in
-      // preview mode reuses that slot in place — same instanceId, swapped content — so the panel
-      // component (e.g. the editor watching props.path) reloads without remounting.
-      if (preview && groupId && groups.value[groupId]) {
-        const group = groups.value[groupId]
-        const existing = group.instances.find((i) => i.preview)
-        if (existing) {
-          const updated: PanelInstance = { ...existing, definitionId, title: title ?? def.title, props, preview: true }
-          const prevActiveId = group.activeInstanceId
-          groups.value[groupId] = {
-            ...group,
-            instances: group.instances.map((i) => (i.instanceId === existing.instanceId ? updated : i)),
-            activeInstanceId: existing.instanceId,
-          }
-          if (prevActiveId && prevActiveId !== existing.instanceId) {
-            bus.emit('panel:deactivated', { instanceId: prevActiveId, groupId })
-            bus.emit('panel:activated', { instanceId: existing.instanceId, groupId })
-          }
-          return existing.instanceId
-        }
-      }
 
       const instanceId = nanoid()
       const instance: PanelInstance = {
@@ -119,7 +95,6 @@ export function createPanelStore(bus: EventBus): PanelStore {
         definitionId,
         title: title ?? def.title,
         props,
-        preview,
       }
 
       if (!groupId || !groups.value[groupId]) {
@@ -156,17 +131,6 @@ export function createPanelStore(bus: EventBus): PanelStore {
       if (prevActiveId) bus.emit('panel:deactivated', { instanceId: prevActiveId, groupId })
       groups.value[groupId] = { ...group, activeInstanceId: instanceId }
       bus.emit('panel:activated', { instanceId, groupId })
-    },
-
-    promotePanel(instanceId: string, groupId: string): void {
-      const group = groups.value[groupId]
-      if (!group) return
-      const instance = group.instances.find((i) => i.instanceId === instanceId)
-      if (!instance?.preview) return
-      groups.value[groupId] = {
-        ...group,
-        instances: group.instances.map((i) => (i.instanceId === instanceId ? { ...i, preview: false } : i)),
-      }
     },
 
     retargetPanel(instanceId: string, groupId: string, props: Record<string, unknown>, title: string): void {

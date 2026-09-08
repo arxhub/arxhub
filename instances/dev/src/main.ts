@@ -95,7 +95,7 @@ const { store } = arxhub.extensions.get(PanelStoreExtension)
 store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
 // dedupe: a workspace restored from a previous session may already have Welcome open — without this,
 // every boot added a second one on top of it rather than bringing the existing tab to front.
-store.openPanel('arxhub.welcome', {}, 'Welcome', undefined, false, () => true)
+store.openPanel('arxhub.welcome', {}, 'Welcome', undefined, () => true)
 
 // The desk of the navigation model, assembled here because only a composition root may hold both
 // halves: the workspace needs a panel host per type, and the shell must not import the panels plugin

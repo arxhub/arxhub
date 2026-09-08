@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { usePanelInstance } from '@arxhub/plugin-panels/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
@@ -25,7 +24,6 @@ const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
-const panel = usePanelInstance()
 const editorEl = ref<HTMLDivElement>()
 const view = shallowRef<EditorView | null>(null)
 
@@ -62,8 +60,6 @@ const {
           if (!view.value) return
           view.value.updateState(view.value.state.apply(tr))
           if (tr.docChanged) {
-            // First real edit promotes a VSCode-style preview tab to a permanent one (no-op otherwise)
-            panel?.promote()
             // Never autosave over a load that hasn't (or can no longer) resolve — `doSave` re-checks
             // canSave at fire time too, but there is no point arming a timer for a run that can only
             // no-op.

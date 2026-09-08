@@ -94,11 +94,6 @@ test.describe('mobile navigation', () => {
     await app.getByRole('treeitem', { name: first }).click()
     await expect(app.locator('.cm-content:visible')).toContainText('first')
 
-    // A tap opens a preview tab, which the next tap would reuse. Editing pins it, so both documents
-    // stay open — the same rule as the desktop frame.
-    await app.locator('.cm-line').first().click()
-    await app.keyboard.type('!')
-
     await openNavigation(app)
     await app.getByRole('treeitem', { name: second }).click()
     await expect(app.locator('.cm-content:visible')).toContainText('second')

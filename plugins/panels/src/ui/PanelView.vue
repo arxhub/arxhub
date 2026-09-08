@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, provide } from 'vue'
+import { computed } from 'vue'
 import type { PanelInstance } from '../types'
-import { PanelInstanceKey } from '../use-panel-instance'
 import { usePanels } from '../use-panels'
 
 const props = defineProps<{
@@ -12,13 +11,6 @@ const props = defineProps<{
 
 const store = usePanels()
 const def = computed(() => store.getDefinition(props.instance.definitionId))
-
-// Let the hosted panel component act on its own tab (e.g. promote preview → permanent on edit)
-provide(PanelInstanceKey, {
-  instanceId: props.instance.instanceId,
-  groupId: props.groupId,
-  promote: () => store.promotePanel(props.instance.instanceId, props.groupId),
-})
 </script>
 
 <template>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { usePanelInstance } from '@arxhub/plugin-panels/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button, Strip } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
@@ -31,7 +30,6 @@ const markdownKeymap = [
 
 const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
-const panel = usePanelInstance()
 const editorEl = ref<HTMLDivElement>()
 // shallowRef so the markdown toolbar can reach the live view; the view is not reactive data.
 const view = shallowRef<EditorView | null>(null)
@@ -56,16 +54,12 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
       editorTheme({ activeLine: !note }),
       ...(note ? [markdownProfile(), keymap.of(markdownKeymap)] : []),
       ...(langSupport ? [langSupport] : []),
-      // First real edit promotes a VSCode-style preview tab to permanent (mirrors the ProseMirror
-      // editor). Guard on transactions: a programmatic setState() during a file switch reports
-      // docChanged but carries no transaction, so it must NOT promote — and must not autosave either,
-      // or a plain file switch would immediately re-write the file it just opened.
+      // Guard on transactions: a programmatic setState() during a file switch reports docChanged but
+      // carries no transaction, so it must NOT autosave — a plain file switch would immediately
+      // re-write the file it just opened.
       EditorView.updateListener.of((update) => {
         if (update.docChanged || update.selectionSet) revision.value++
-        if (update.docChanged && update.transactions.length > 0) {
-          panel?.promote()
-          if (canSave.value) autosave.schedule()
-        }
+        if (update.docChanged && update.transactions.length > 0 && canSave.value) autosave.schedule()
       }),
     ],
   })

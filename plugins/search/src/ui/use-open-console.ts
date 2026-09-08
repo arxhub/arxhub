@@ -14,7 +14,7 @@ export function useOpenConsole(): OpenConsole {
   const { store } = arxhub.extensions.get(PanelStoreExtension)
 
   function open(): void {
-    store.openPanel(SQL_CONSOLE_PANEL, {}, 'SQL console', undefined, false, () => true)
+    store.openPanel(SQL_CONSOLE_PANEL, {}, 'SQL console', undefined, () => true)
   }
 
   return { open }

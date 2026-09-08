@@ -34,10 +34,6 @@ function onTabClick(instanceId: string) {
   store.activatePanel(instanceId, props.groupId)
 }
 
-function onPromoteTab(instanceId: string) {
-  store.promotePanel(instanceId, props.groupId)
-}
-
 function onCloseTab(instanceId: string) {
   store.closePanel(instanceId, props.groupId)
 }
@@ -46,7 +42,7 @@ function onSplit(direction: 'horizontal' | 'vertical') {
   const newGroupId = store.splitGroup(props.groupId, direction)
   const activeInstance = group.value?.instances.find((i) => i.instanceId === group.value?.activeInstanceId)
   if (activeInstance) {
-    store.openPanel(activeInstance.definitionId, activeInstance.props, activeInstance.title, newGroupId, activeInstance.preview)
+    store.openPanel(activeInstance.definitionId, activeInstance.props, activeInstance.title, newGroupId)
   }
 }
 </script>
@@ -62,9 +58,7 @@ function onSplit(direction: 'horizontal' | 'vertical') {
         :index="index"
         :title="instance.title"
         :is-active="isActiveGroup && instance.instanceId === group?.activeInstanceId"
-        :is-preview="!!instance.preview"
         @click="onTabClick(instance.instanceId)"
-        @promote="onPromoteTab(instance.instanceId)"
         @close="onCloseTab(instance.instanceId)"
       />
     </div>
