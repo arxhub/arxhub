@@ -5,8 +5,12 @@ import { expect, openSearchApp, test, waitForApp } from './fixtures'
 // without being able to break anything doing it. Both halves matter — an answer, and a refusal that leaves
 // the index and the console alike still working.
 
+// The visible one. Every type entered this session keeps its stage mounted (F-05) and both Notes and
+// Search still draw the ONE application panel store — the debt AGENTS.md files under "one shared panel
+// store for every type" — so the console is in the document once per stage and only one of them is on
+// screen.
 function panel(page: Page): Locator {
-  return page.getByTestId('sql-console')
+  return page.getByTestId('sql-console').filter({ visible: true })
 }
 
 // From the Search rail, not from the page at large: on a phone the console's own tab is listed by the same

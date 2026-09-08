@@ -4,7 +4,7 @@ import { provideShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { provideNavHost } from '../nav-host'
 import { useOpenSheetKey } from '../search-sheet'
-import { isObjectType } from '../tab-type'
+import TypeStage from '../TypeStage.vue'
 import { useNavigation } from '../use-navigation'
 import DesktopDock from './DesktopDock.vue'
 import DesktopNavColumn from './DesktopNavColumn.vue'
@@ -27,17 +27,6 @@ const { workspace, types, storage, status } = useNavigation()
 const activeType = computed(() => {
   const id = workspace.activeTypeId.value
   return id == null ? null : (types.get(id) ?? null)
-})
-
-// A type either opens objects or is its own content, so there is no choosing between two pictures: the
-// state "both are set" is not expressible.
-const panels = computed(() => {
-  const id = workspace.activeTypeId.value
-  return id == null ? null : (workspace.panelsOf(id) ?? null)
-})
-const content = computed(() => {
-  const type = activeType.value
-  return type != null && !isObjectType(type) ? type.content : null
 })
 
 // The width and the collapsed state are remembered PER TYPE: the key is the type's own, and by default
@@ -105,13 +94,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         <DesktopDock :component="workspace.dock()" :create="dockCreate" />
 
         <main class="content">
-          <!-- Switching type is the row's basic operation, and the content is not unmounted by it: each
-               type has its own key, so the KeepAlive cache never mixes two types' panels up (F-05). -->
-          <KeepAlive>
-            <component :is="panels.view" v-if="panels != null" :key="`objects:${workspace.activeTypeId.value}`" />
-            <component :is="content" v-else-if="content != null" :key="`content:${workspace.activeTypeId.value}`" />
-          </KeepAlive>
-          <p v-if="panels == null && content == null" class="nothing">Nothing is open. Pick a type on the left.</p>
+          <!-- Switching type is the row's basic operation, and it unmounts nothing: every type entered
+               this session stays on its own stage and only the active one is shown (F-05). -->
+          <TypeStage :workspace="workspace" :types="types" empty="Nothing is open. Pick a type on the left." />
         </main>
       </div>
     </div>
@@ -157,12 +142,5 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   flex: 1;
   overflow: hidden;
   background-color: var(--gray-1);
-}
-
-.nothing {
-  margin: 0;
-  padding: 24px 16px;
-  color: var(--gray-10);
-  text-align: center;
 }
 </style>

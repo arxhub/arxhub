@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onActivated, onDeactivated, onUnmounted, ref, useId, useSlots } from 'vue'
+import { onUnmounted, ref, useId, useSlots, watch } from 'vue'
+import { useStageVisible } from '../type-stage'
 import { claimRailHost, fallbackRailId, MOBILE_RAIL_HOST_ID, releaseRailHost } from './rail-host'
 
 const props = withDefaults(
@@ -22,14 +23,15 @@ const slots = useSlots()
 const hasRail = props.rail && !!slots.rail
 const id = useId() ?? fallbackRailId()
 
-// A mini-app's layout sits inside MobileShell's <KeepAlive>, so switching away deactivates this
-// component rather than unmounting it — a claim made once at setup and never released left every
-// previously-visited mini-app's Teleport still rendering into the shared rail host forever, stacked
-// underneath whichever one claimed the (title, icon) pair last: Explorer's file tree and Search's rail
-// both live in #arxhub-mobile-rail at once, and the dock key names only the most recent of them.
-// onActivated fires once on the initial mount too, so claiming only there — never at setup — covers
-// both the first appearance and every later return; onUnmounted stays as a defensive fallback for
-// mounting outside any KeepAlive ancestor, where onActivated/onDeactivated never fire at all.
+// A mini-app's layout sits on its type's stage, which stays mounted when the person switches away
+// (F-05) — so being mounted says nothing about being on screen, and the rail claim has to follow
+// VISIBILITY. A claim made once at setup and never released left every previously-visited mini-app's
+// Teleport still rendering into the shared rail host forever, stacked underneath whichever one claimed
+// the (title, icon) pair last: Explorer's file tree and Search's rail both live in
+// #arxhub-mobile-rail at once, and the dock key names only the most recent of them. The watcher is
+// immediate, so the first appearance and every later return are the same event; onUnmounted stays for
+// the type being closed, which takes the stage away without a visibility change to observe.
+const visible = useStageVisible()
 const isActive = ref(false)
 
 function claim(): void {
@@ -42,8 +44,7 @@ function release(): void {
   releaseRailHost(id)
 }
 
-onActivated(claim)
-onDeactivated(release)
+watch(visible, (on) => (on ? claim() : release()), { immediate: true })
 onUnmounted(release)
 </script>
 

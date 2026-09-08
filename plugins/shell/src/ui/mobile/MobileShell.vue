@@ -4,7 +4,7 @@ import { provideShellFrame, useKeyboardInset } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import { provideNavHost } from '../nav-host'
 import { useOpenSheetKey } from '../search-sheet'
-import { isObjectType } from '../tab-type'
+import TypeStage from '../TypeStage.vue'
 import { useNavigation } from '../use-navigation'
 import MobileBackgroundBar from './MobileBackgroundBar.vue'
 import MobileDock from './MobileDock.vue'
@@ -37,15 +37,6 @@ const layer = ref<Layer | null>(null)
 const activeType = computed(() => {
   const id = workspace.activeTypeId.value
   return id == null ? null : (types.get(id) ?? null)
-})
-
-const panels = computed(() => {
-  const id = workspace.activeTypeId.value
-  return id == null ? null : (workspace.panelsOf(id) ?? null)
-})
-const content = computed(() => {
-  const type = activeType.value
-  return type != null && !isObjectType(type) ? type.content : null
 })
 
 // What the navigation panel would hold, and therefore whether the key that opens it exists at all. Two
@@ -101,14 +92,10 @@ useOpenSheetKey(() => {
          the note itself or on the key that opened it. -->
     <div class="mobile-stage">
       <main class="mobile-content">
-        <!-- Switching type is the most frequent operation on this frame, and it must not unmount what
-             is open: a return to Notes would otherwise be a freshly mounted editor — scroll at the
-             top, undo history gone, selection lost (F-05). -->
-        <KeepAlive>
-          <component :is="panels.view" v-if="panels != null" :key="`objects:${workspace.activeTypeId.value}`" />
-          <component :is="content" v-else-if="content != null" :key="`content:${workspace.activeTypeId.value}`" />
-        </KeepAlive>
-        <p v-if="panels == null && content == null" class="nothing">Nothing is open. Pick a type in the row below.</p>
+        <!-- Switching type is the most frequent operation on this frame, and it must not unmount what is
+             open: a return to Notes would otherwise be a freshly mounted editor — scroll at the top,
+             undo history gone, selection lost (F-05). -->
+        <TypeStage :workspace="workspace" :types="types" empty="Nothing is open. Pick a type in the row below." />
       </main>
 
       <!-- Three bands from the bottom up: the background line (only while something is running), the
@@ -179,12 +166,5 @@ useOpenSheetKey(() => {
   overflow: hidden;
   /* The device's own status bar is above us and nothing is allowed to hide under it. */
   padding-top: env(safe-area-inset-top);
-}
-
-.nothing {
-  margin: 0;
-  padding: 24px 16px;
-  color: var(--gray-10);
-  text-align: center;
 }
 </style>

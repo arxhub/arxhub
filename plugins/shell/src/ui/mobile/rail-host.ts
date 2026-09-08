@@ -26,9 +26,10 @@ const claims = ref<{ id: string; claim: RailClaim }[]>([])
 // file is typechecked through that instance.
 export const railClaim: ComputedRef<RailClaim | null> = computed(() => claims.value[claims.value.length - 1]?.claim ?? null)
 
-// The id is the caller's own — claim/release is now driven by onActivated/onDeactivated (see
-// MobileMiniAppShell.vue), not by scope disposal, so a single id has to survive repeated claim/release
-// pairs across a mini-app's whole KeepAlive-cached lifetime rather than being minted fresh each call.
+// The id is the caller's own — claim/release is driven by whether the mini-app's stage is on screen
+// (see MobileMiniAppShell.vue), not by scope disposal, so a single id has to survive repeated
+// claim/release pairs across a mini-app's whole mounted lifetime rather than being minted fresh each
+// call.
 export function claimRailHost(id: string, claim: RailClaim): void {
   claims.value = [...claims.value, { id, claim }]
 }
