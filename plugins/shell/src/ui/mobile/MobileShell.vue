@@ -40,8 +40,8 @@ const activeType = computed(() => {
 })
 
 // What the navigation panel would hold, and therefore whether the key that opens it exists at all. Two
-// sources: the active type's own `nav` role, and — until the last mini-app becomes a type — a rail
-// teleported into the panel by `MiniAppShell`. A key in front of an empty panel is worse than no key.
+// sources: the active type's own `nav` role, and a rail teleported into the panel by a type whose
+// content is a `MiniAppShell` (settings, search). A key in front of an empty panel is worse than no key.
 const nav = computed(() => activeType.value?.nav ?? null)
 const navTitle = computed(() => {
   if (nav.value != null) return nav.value.title ?? activeType.value?.title ?? 'Navigation'

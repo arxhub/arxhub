@@ -1,40 +1,23 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { markRaw, reactive, shallowRef } from 'vue'
+import { shallowRef } from 'vue'
 import { StatusRegistry } from './status'
 import { TabTypeRegistry } from './tab-type-registry'
-import type { SidebarItem } from './types'
 import type { Workspace } from './workspace'
 import type { WorkspaceStorage } from './workspace-storage'
 
-export type { SidebarItem }
-
-// Typed by hand rather than inferred. `reactive()` infers through `UnwrapNestedRefs`, whose declaration
-// reaches `LooseRequired` in `@vue/shared` — a name the emitted `.d.ts` cannot get to, so the build
-// reports the field as unnameable (TS2883). An annotation is what the compiler asks for, and it costs
-// nothing here: one fixed shape, which goes away with the last mini-app (F-23…F-25).
-export interface SidebarRegistry {
-  items: SidebarItem[]
-  activeId: string
-  register(item: SidebarItem): void
-  unregister(id: string): void
-  setActive(id: string): void
-}
-
-// Two navigation models live here at once, on purpose, and the frames run on the new one.
+// One navigation model, and two registries carrying it.
 //
-// `types` is it: a plugin declares a tab TYPE once instead of describing the same thing twice (a rail
-// item for the desktop, a bar key for the phone), and both frames draw the same registry. `status` is
-// the same idea for the bar — a plugin says WHAT it contributes rather than WHERE to put it, and one
+// `types` is the model: a plugin declares a tab TYPE once instead of describing the same thing twice (a
+// rail item for the desktop, a bar key for the phone), and both frames draw the same registry. `status`
+// is the same idea for the bar — a plugin says WHAT it contributes rather than WHERE to put it, and one
 // registration is laid out three ways (the desktop bar, the phone's status block, the background line).
 //
-// The old `sidebar` is still here because four plugins still register through it. `use-navigation.ts`
-// reads a `SidebarItem` as a type with no objects so those keep reaching the screen; the bridge empties
-// itself as each plugin moves over (F-23…F-25).
-//
-// What is already gone: `header`, `content` and `setContent` (F-12) — zero call sites, and the header
-// never rendered once — `footer` with `FooterItem`/`ShellItem.region` (F-13), whose five call sites now
-// say what they contribute instead of where to put it, and `tabs` with `MobileTab` (F-18), the phone's
-// second dictionary for what `types` now says once. All three were removed rather than reworked.
+// What is gone: `header`, `content` and `setContent` (F-12) — zero call sites, and the header never
+// rendered once — `footer` with `FooterItem`/`ShellItem.region` (F-13), whose five call sites now say
+// what they contribute instead of where to put it, `tabs` with `MobileTab` (F-18), the phone's second
+// dictionary for what `types` now says once, and `sidebar` with `SidebarItem`/`SidebarRegistry`
+// (F-24/F-25), the mini-app model the type registry replaced. All four were removed rather than
+// reworked, each once its last registrar had moved.
 export class ShellExtension extends Extension {
   // The tab-type registry: the row and the "open new" section of the search sheet are built from it.
   readonly types: TabTypeRegistry
@@ -46,23 +29,6 @@ export class ShellExtension extends Extension {
   // first mount, and a frame that read a plain field during its own setup would never see the write if
   // that order ever changed.
   private readonly desk = shallowRef<{ workspace: Workspace; storage: WorkspaceStorage } | null>(null)
-
-  readonly sidebar: SidebarRegistry = reactive({
-    items: [] as SidebarItem[],
-    activeId: '',
-    register(item: SidebarItem): void {
-      this.items = [...this.items, { ...item, layout: item.layout ? markRaw(item.layout) : undefined }]
-      if (!this.activeId && item.region !== 'bottom') {
-        this.activeId = item.id
-      }
-    },
-    unregister(id: string): void {
-      this.items = this.items.filter((i) => i.id !== id)
-    },
-    setActive(id: string): void {
-      this.activeId = id
-    },
-  })
 
   constructor(args: ExtensionArgs) {
     super(args)

@@ -2,9 +2,9 @@ import { type ComputedRef, computed, markRaw, shallowRef } from 'vue'
 import { isPinned, type TabType } from './tab-type'
 
 // The registry of tab types — what the type row and the "open new" section of the search sheet are
-// built from. It is the successor to `ShellExtension.sidebar` and the `tabs` registry F-18 removed: a
-// plugin used to register a "rail item" and, separately, a "mobile bar key", describing one thing twice
-// in two dictionaries. Registration is now one, and how to show it is the frame's business.
+// built from. It replaced two registries — the shell's `sidebar` and its `tabs` — under which a plugin
+// registered a "rail item" and, separately, a "mobile bar key", describing one thing twice in two
+// dictionaries. Registration is now one, and how to show it is the frame's business.
 export class TabTypeRegistry {
   // shallowRef plus markRaw on the entries: a type holds components and functions, and there is no
   // point making reactive proxies of them — registrations are static, while a proxy breaks identity

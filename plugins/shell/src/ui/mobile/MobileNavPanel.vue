@@ -24,15 +24,15 @@ function onActivate(event: MouseEvent): void {
 </script>
 
 <template>
-  <!-- Always mounted, only hidden: a mini-app that has not become a type yet teleports its rail into
-       the host below, and a target that comes and goes with the panel tears the teleport apart the
-       first time it is opened. -->
+  <!-- Always mounted, only hidden: a type whose content is a `MiniAppShell` teleports its rail into the
+       host below, and a target that comes and goes with the panel tears the teleport apart the first
+       time it is opened. -->
   <div v-show="open" class="nav-scrim" @click.self="emit('close')">
     <section class="nav-panel" :aria-label="`${title} navigation`" @click="onActivate">
       <!-- A head of the panel's own ONLY for a navigation that draws none. A type's `nav` names itself
-           and carries the frame's close control inside its own strip (see nav-host.ts); a mini-app that
-           has not become a type yet teleports in a bare rail, and then this is the only thing naming
-           what is in the panel and the only way out of it that is not a gesture. -->
+           and carries the frame's close control inside its own strip (see nav-host.ts); a `MiniAppShell`
+           teleports in a bare rail, and then this is the only thing naming what is in the panel and the
+           only way out of it that is not a gesture. -->
       <Strip v-if="props.nav == null" :title="title" flush-actions>
         <template #actions>
           <IconButton icon="lu:x" size="lg" ariaLabel="Close navigation" @click="emit('close')" />
@@ -40,9 +40,9 @@ function onActivate(event: MouseEvent): void {
       </Strip>
       <div class="nav-body">
         <!-- Two sources, one panel. A type's own `nav` role is the model; the teleport host is what a
-             mini-app still registered as a `SidebarItem` uses, and it stays until the last of them
-             becomes a type. Both land in the same place because they are the same thing to the person
-             holding the phone: the navigation of where they are. -->
+             type whose content is a `MiniAppShell` uses — settings and search still carry their own
+             rail inside their content. Both land in the same place because they are the same thing to
+             the person holding the phone: the navigation of where they are. -->
         <component :is="props.nav" v-if="props.nav != null" class="nav-fill" />
         <div :id="MOBILE_RAIL_HOST_ID" class="nav-host" :class="{ 'nav-fill': props.nav == null }" />
       </div>

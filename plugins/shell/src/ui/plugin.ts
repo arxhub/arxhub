@@ -5,7 +5,7 @@ const manifest: PluginManifest = {
   name: 'Shell',
   version: '0.1.0',
   author: 'arxhub',
-  description: 'App shell layout with sidebar navigation registry',
+  description: 'App shell layout with the tab-type navigation registry',
   // Nothing renders without the frame.
   essential: true,
 }

@@ -1,5 +1,4 @@
 export { default as AboutSettingsPage } from './ui/AboutSettingsPage.vue'
-export type { SidebarRegistry } from './ui/extension'
 export { ShellExtension } from './ui/extension'
 export { default as MiniAppShell } from './ui/MiniAppShell.vue'
 export type { WorkspaceEmit, WorkspaceEvents } from './ui/nav-events'
@@ -25,7 +24,6 @@ export type {
 } from './ui/tab-type'
 export { isObjectGone, isObjectType, isPinned, objectGone } from './ui/tab-type'
 export { TabTypeRegistry } from './ui/tab-type-registry'
-export type { SidebarItem } from './ui/types'
 export type { Navigation } from './ui/use-navigation'
 export { useNavigation } from './ui/use-navigation'
 export { RAIL_MAX, RAIL_MIN, useRailWidth } from './ui/use-rail-width'
