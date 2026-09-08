@@ -1,5 +1,5 @@
-export type { RailTab, TreeNode } from './explorer-extension'
-export { EXPLORER_SIDEBAR_ITEM, ExplorerExtension } from './explorer-extension'
+export type { TreeNode } from './explorer-extension'
+export { ExplorerExtension } from './explorer-extension'
 export { ExplorerPlugin } from './explorer-plugin'
 export { default as FileTreeNode } from './ui/FileTreeNode.vue'
 export { default as FileTreeView } from './ui/FileTreeView.vue'

@@ -14,9 +14,9 @@ export interface NotesPluginArgs extends PluginArgs {
   root?: string
 }
 
-// The owner of the "Notes" type. The type lives apart from the navigation into it: `SearchLayout` and
-// `ExplorerLayout` render the same global `PanelsLayout`, which makes the explorer and search two
-// roads to ONE space. Handing that space to either road would set the confusion in stone.
+// The owner of the "Notes" type. The type lives apart from the navigation into it: the vault tree and
+// the search rail both open into the same global `PanelsLayout`, which makes them two roads to ONE
+// space. Handing that space to either road would set the confusion in stone.
 export class NotesPlugin extends Plugin {
   private readonly root: string
   // The dock wrapper of the note that is active right now. `dock()` is asked on every render, so the

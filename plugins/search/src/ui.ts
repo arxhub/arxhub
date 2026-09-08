@@ -1,4 +1,4 @@
-export { SEARCH_SETTINGS_SECTION, SEARCH_SIDEBAR_ITEM, SQL_CONSOLE_PANEL } from './contributions'
+export { SEARCH_SETTINGS_SECTION, SEARCH_TYPE_ID, SQL_CONSOLE_PANEL } from './contributions'
 export { searchIndexUnavailable, searchIndexUnavailableErrorSchema } from './errors'
 export { createIndexQueue, DEFAULT_DEBOUNCE_MS, type IndexQueue, type IndexQueueOptions } from './index-queue'
 export {

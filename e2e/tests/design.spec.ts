@@ -144,7 +144,7 @@ test.describe('the visual language holds on screen', () => {
       .first()
       .evaluate((n) => Math.round(n.getBoundingClientRect().top))
 
-    await openType(app, 'Search')
+    await openType(app, 'Search', 'arxhub.search')
     await app.locator('.search-rail').getByRole('button', { name: 'SQL console' }).click()
     // The visible one: every type entered this session keeps its stage mounted (F-05), and both of
     // these types still draw the ONE application panel store, so the console is in the document once

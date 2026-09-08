@@ -2,7 +2,7 @@ import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { basename, dirname, join } from '@arxhub/path'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { type VirtualEntry, type VirtualFileSystem, renameEntry as vfsRenameEntry } from '@arxhub/vfs'
-import { type Component, ref } from 'vue'
+import { ref } from 'vue'
 
 export interface TreeNode {
   entry: VirtualEntry
@@ -13,23 +13,6 @@ export interface TreeNode {
 // Other plugins contribute context-menu actions for tree nodes (extension-only inter-plugin
 // channel). Called each time a menu opens; return [] to contribute nothing for a node.
 export type NodeActionContributor = (node: TreeNode) => ActionItem[]
-
-// A section of the mobile rail switcher (Files | Tabs | Search), contributed by another plugin the
-// same way node actions are — Explorer never imports the contributor. Desktop's rail has no switcher
-// at all (it stays the file tree, unchanged) and simply never reads this list; only the mobile-only
-// switcher component does, so a contribution here has no effect on desktop.
-export interface RailTab {
-  id: string
-  title: string
-  icon: string
-  component: Component
-}
-
-// The one place this id is spelled out. The explorer no longer registers a mini-app under it — the
-// tree became the navigation of the "Notes" type when the frames moved to the type registry (F-14/F-16)
-// — and what is left is the name a plugin contributing a rail tab marks its own sidebar item
-// absorbedOnMobileBy with (see SidebarItem). It goes together with `registerRailTab`, in F-24.
-export const EXPLORER_SIDEBAR_ITEM = 'arxhub.explorer'
 
 type ExplorerExtensionArgs = ExtensionArgs & {
   vfs: VirtualFileSystem
@@ -61,7 +44,6 @@ export class ExplorerExtension extends Extension {
   // shared channel between a row and its siblings elsewhere in the structure.
   readonly focusedPath = ref<string | null>(null)
   private readonly nodeActionContributors: NodeActionContributor[] = []
-  private readonly railTabs: RailTab[] = []
 
   constructor(args: ExplorerExtensionArgs) {
     super(args)
@@ -75,17 +57,6 @@ export class ExplorerExtension extends Extension {
 
   getContributedActions(node: TreeNode): ActionItem[] {
     return this.nodeActionContributors.flatMap((contribute) => contribute(node))
-  }
-
-  // Registration always happens during another plugin's configure(), which finishes for every plugin
-  // before any plugin's start() begins and well before the first mount — a plain array observed once
-  // at render time is enough, the same way node action contributors need no reactivity either.
-  registerRailTab(tab: RailTab): void {
-    this.railTabs.push(tab)
-  }
-
-  getRailTabs(): RailTab[] {
-    return this.railTabs
   }
 
   async loadRoot(): Promise<void> {

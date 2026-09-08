@@ -273,8 +273,26 @@ export function typeKey(page: Page, title: string): Locator {
 // Go to a type — and only when it is not already where you are. A second tap on your own type is the
 // SECOND level on the mobile frame (the list of what is open), so "go here" applied to where you
 // already are would open a layer over it rather than doing nothing.
-export async function openType(page: Page, title: string): Promise<void> {
+//
+// An UNPINNED type (Search, the log viewer) holds no key in the row until it is open, so reaching it
+// goes through the sheet's "Open new" section — the one path the model gives it. Pass the type's id to
+// say that is what this is: without a key in the row there is nothing to click, and nothing to name it
+// by either, since the sheet lists the same title in both of its sections.
+export async function openType(page: Page, title: string, typeId?: string): Promise<void> {
   const key = typeKey(page, title)
+  // A pinned type needs no boot wait of its own: getAttribute below waits for its key to exist. An
+  // unpinned one has no key to wait for — "not in the row" and "the app is not up yet" look identical
+  // from here — so the app is what has to be there before the sheet can be asked for it.
+  if (typeId != null) {
+    await waitForApp(page)
+    if ((await key.count()) === 0) {
+      await page.keyboard.press('ControlOrMeta+k')
+      await searchSheet(page).getByTestId(`sheet:new:${typeId}`).click()
+      await expect(searchSheet(page)).toBeHidden()
+      await expect(key).toHaveAttribute('aria-pressed', 'true')
+      return
+    }
+  }
   if ((await key.getAttribute('aria-pressed')) !== 'true') await key.click()
   await expect(key).toHaveAttribute('aria-pressed', 'true')
 }
@@ -290,12 +308,12 @@ export async function waitForIndex(page: Page): Promise<void> {
   await expect(page.locator('.index-state-text')).toContainText(/\d+ in index/, { timeout: 20_000 })
 }
 
-// Search is a type of its own in both frames now: one registration, one key, the same gesture. It used to
-// be a mini-app on the desktop and a section of Explorer's mobile rail, which is exactly the divergence
-// the type row exists to make unrepresentable. Shared, because both the search and the SQL-console specs
-// start from this screen.
+// Search is a type of its own in both frames now, and an unpinned one: it is reached through the sheet
+// rather than from a permanent key, in both frames alike. It used to be a mini-app on the desktop and a
+// section of Explorer's mobile rail, which is exactly the divergence the type row exists to make
+// unrepresentable. Shared, because both the search and the SQL-console specs start from this screen.
 export async function openSearchApp(page: Page): Promise<void> {
-  await openType(page, 'Search')
+  await openType(page, 'Search', 'arxhub.search')
   // On a phone the rail is a panel over the content; on the desktop it is already beside it.
   await openNavigation(page)
   await expect(page.getByRole('textbox', { name: 'Search' }).first()).toBeVisible()
