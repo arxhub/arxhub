@@ -35,10 +35,23 @@ export default defineConfig({
   },
 
   // Both frames are the same app at different widths, so both run the same specs. A spec that only
-  // makes sense in one frame skips itself on the other.
+  // makes sense in one frame asks the DOM which frame it got (isMobileFrame) and skips itself on the
+  // other — never the project name, because which frame mounted is the app's decision and re-deriving
+  // it here would be a second copy of that rule.
+  //
+  // testIgnore is for the other reason a spec runs once: not the frame, but the stand. The two projects
+  // share one vault, so a spec that writes a config file the whole app reads cannot run twice over it.
+  // Naming those files here rather than skipping inside them also stops the run from booting a page per
+  // test only to throw it away.
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    {
+      name: 'mobile',
+      use: { ...devices['Pixel 7'] },
+      // The active theme is one shared setting, and the settings specs stage and apply plugin config
+      // files. Neither has anything to do with the frame; both would race the desktop project.
+      testIgnore: ['**/themes.spec.ts', '**/settings-save.spec.ts'],
+    },
   ],
 
   webServer: {

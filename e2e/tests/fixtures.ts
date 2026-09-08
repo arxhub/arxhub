@@ -88,7 +88,8 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
     )
     try {
       await page.goto('/')
-      // The mobile frame keeps the mini-app list behind the menu, so wait on something both frames show.
+      // `<main>` is the app's own landmark and both frames render one — so this waits for the app rather
+      // than for anything either frame happens to draw.
       await waitForApp(page)
       await use(page)
     } finally {
@@ -339,9 +340,9 @@ export async function openSettingsSection(page: Page, section: string): Promise<
   // The section list is the mini-app's own rail, which on the mobile frame has to be summoned. On
   // desktop it is already beside the content.
   await openNavigation(page)
-  // Scoped to the section list: a section may share its name with a mini-app (both the Search plugin's
-  // rail entry and its settings section are called "Search"), and an unscoped lookup then matches the
-  // permanent desktop rail key as well.
+  // Scoped to the section list: a section shares its name with the type of the same plugin (Search's
+  // settings section and the Search type are both called "Search"), and an unscoped lookup would match
+  // that type's key in the row as well once it is open.
   await page.locator('.settings-nav').getByRole('button', { name: section, exact: true }).click()
 }
 

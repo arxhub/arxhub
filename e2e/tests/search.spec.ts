@@ -138,7 +138,7 @@ test.describe('finding a note by a word in its text', () => {
     await expect(app.locator('.search-rail')).toContainText('жираф')
   })
 
-  test('the toggles change the answer and outlive the mini-app', async ({ app, vault }) => {
+  test('the toggles change the answer and outlive a trip to another type', async ({ app, vault }) => {
     const body = await vault.write('body-only.md', '# Совсем другое\n\nСлово зебра есть только в тексте.\n')
     await app.reload()
 

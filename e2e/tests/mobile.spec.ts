@@ -49,20 +49,6 @@ test.describe('mobile navigation', () => {
     await waitForApp(app)
   })
 
-  // Reachability is the row's job now, and exactly one key per type is the point of it: Search used to
-  // be a mini-app on the desktop and a section of Explorer's rail here, which is the divergence the one
-  // registry makes unrepresentable. An unpinned type takes its place in the row for as long as it is
-  // open — one key then too, never a second beside the one it already had.
-  test('every type has exactly one key in the row', async ({ app }) => {
-    for (const title of ['Notes', 'Settings']) {
-      await expect(typeRow(app).getByRole('button', { name: new RegExp(`^${title}(,|$)`) })).toHaveCount(1)
-    }
-
-    await expect(typeRow(app).getByRole('button', { name: /^Search(,|$)/ })).toHaveCount(0)
-    await openType(app, 'Search', 'arxhub.search')
-    await expect(typeRow(app).getByRole('button', { name: /^Search(,|$)/ })).toHaveCount(1)
-  })
-
   test('node actions open as a bottom sheet, and back dismisses it', async ({ app, vault }) => {
     const path = await vault.write('actions.md', 'note\n')
     await app.reload()

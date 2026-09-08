@@ -30,12 +30,12 @@ test.describe('applying settings', () => {
   // in parallel would have each one observing the other's writes.
   test.describe.configure({ mode: 'serial' })
 
-  // Desktop only. Staging is frame-agnostic — the same registry, bar and commit on both — but the two
-  // projects share one vault, so running this on both has them overwriting each other's config file.
-  // The one genuine frame difference (mobile files the pending-changes chip into the search sheet's
-  // status block instead of a status bar) is asserted in search-sheet.spec.ts's own territory.
-  test.beforeEach(async ({ app }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'settings staging is not frame-specific')
+  // Desktop only, declared in playwright.config.ts as the mobile project's testIgnore. Staging is
+  // frame-agnostic — the same registry, bar and commit on both — but the two projects share one vault,
+  // so running this on both has them overwriting each other's config file. The one genuine frame
+  // difference (mobile files the pending-changes chip into the search sheet's status block instead of a
+  // status bar) is asserted in search-sheet.spec.ts's own territory.
+  test.beforeEach(async ({ app }) => {
     await app.waitForLoadState('domcontentloaded')
   })
 

@@ -7,13 +7,13 @@ const danger = () => getComputedStyle(document.documentElement).getPropertyValue
 const scheme = () => getComputedStyle(document.documentElement).colorScheme
 
 // The active theme is one setting in one shared config, so these cannot run beside each other — nor
-// beside the same file on the other project. Theme selection has nothing to do with the frame, so it
-// runs serially on one project instead of being made frame-aware.
+// beside the same file on the other project. Theme selection has nothing to do with the frame, so this
+// file runs on the desktop project alone (playwright.config.ts, the mobile project's testIgnore) and
+// serially within it, instead of being made frame-aware.
 test.describe.configure({ mode: 'serial' })
 
 test.describe('themes', () => {
-  test.beforeEach(async ({ app }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'theme selection is not frame-specific')
+  test.beforeEach(async ({ app }) => {
     await openSettingsSection(app, 'Appearance')
   })
 

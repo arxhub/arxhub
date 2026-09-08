@@ -1,4 +1,4 @@
-import { expect, openSettingsSection, test, typeRow, waitForApp } from './fixtures'
+import { expect, openNavigation, openSettingsSection, test, typeRow, waitForApp } from './fixtures'
 
 test.describe('application boot', () => {
   test('comes up with the row of types', async ({ app }) => {
@@ -10,13 +10,24 @@ test.describe('application boot', () => {
   })
 
   test('reaches the working tree over the protected API', async ({ app }) => {
-    // The dev stand guards /vfs with signed-request auth, so a rendered tree means the seeded
-    // identity signed a request the server accepted — the whole client↔server chain, not just paint.
     const response = await app.request.get('/healthcheck')
     expect(response.status()).toBe(200)
 
-    const failed = app.waitForResponse((r) => r.url().includes('/api/vfs') && r.status() === 401, { timeout: 3000 })
-    await expect(failed).rejects.toThrow()
+    // The listener goes on BEFORE the boot that makes the calls. The vault is read while the app comes
+    // up, so a watcher installed once `app` had already booted could never have seen a refusal — which
+    // is what this used to be, and why it would have passed with every /vfs call answered 401.
+    const refused: string[] = []
+    app.on('response', (r) => {
+      if (r.url().includes('/api/vfs') && r.status() === 401) refused.push(r.url())
+    })
+    await app.reload()
+    await waitForApp(app)
+
+    // The dev stand guards /vfs with signed-request auth, so a rendered tree is the whole client↔server
+    // chain and not just paint: the seeded identity signed a request and the server accepted it.
+    await openNavigation(app)
+    await expect(app.getByRole('tree', { name: 'Files' })).toBeVisible()
+    expect(refused).toEqual([])
   })
 })
 

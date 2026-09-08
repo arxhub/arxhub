@@ -93,8 +93,8 @@ test.describe('the visual language holds on screen', () => {
     const mobile = await isMobileFrame(app)
     const expected = await token(app, mobile ? '--size-xl' : '--size-2xs')
 
-    // The log is where the boot writes itself down, so it has entries without seeding any. It is a hidden
-    // mini-app opened from the status item, which lives in the search sheet on a phone.
+    // The log is where the boot writes itself down, so it has entries without seeding any. It is an
+    // unpinned type, reached here by its status item — which lives in the search sheet on a phone.
     await withShellChrome(app, (chrome) => chrome.getByRole('button', { name: 'Open logs' }).click())
     await expect(app.locator('.log-panel')).toBeVisible()
 
@@ -131,8 +131,11 @@ test.describe('the visual language holds on screen', () => {
     await app.goBack()
   })
 
-  test('switching workspace tabs does not move where content starts', async ({ app, vault }) => {
-    test.skip(await isMobileFrame(app), 'the mobile frame shows one document at a time, with no tab strip')
+  // Asked of both frames, because the claim is about the panel and not about the tab strip: what
+  // SWITCHES differs — a tab above the content on the desktop, the type row and its panel on the
+  // phone — but where the content starts afterwards must not, and a page frame inside a panel is what
+  // once put 140px between these on one frame while leaving the other alone.
+  test('switching what is open does not move where content starts', async ({ app, vault }) => {
     const note = await vault.write('tabs.md', '# Tabs\n\nbody\n')
     await app.reload()
 
@@ -145,6 +148,8 @@ test.describe('the visual language holds on screen', () => {
       .evaluate((n) => Math.round(n.getBoundingClientRect().top))
 
     await openType(app, 'Search', 'arxhub.search')
+    // On a phone the rail is a panel over the content; on the desktop it is already beside it.
+    await openNavigation(app)
     await app.locator('.search-rail').getByRole('button', { name: 'SQL console' }).click()
     // The visible one: every type entered this session keeps its stage mounted (F-05), and both of
     // these types still draw the ONE application panel store, so the console is in the document once
@@ -153,7 +158,6 @@ test.describe('the visual language holds on screen', () => {
     await expect(console).toBeVisible()
     const consoleTop = await console.locator('.console').evaluate((n) => Math.round(n.getBoundingClientRect().top))
 
-    // Both panels of the same workspace: a page frame in one of them is what put 140px between these.
     expect(Math.abs(consoleTop - noteTop)).toBeLessThanOrEqual(1)
   })
 
