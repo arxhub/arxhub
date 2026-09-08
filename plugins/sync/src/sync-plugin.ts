@@ -10,7 +10,8 @@ import { Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
 import { manifest } from './manifest'
 import { SyncExtension } from './sync-extension'
-import SyncFooter from './ui/SyncFooter.vue'
+import SyncActions from './ui/SyncActions.vue'
+import SyncStatus from './ui/SyncStatus.vue'
 
 export const SyncConfigSchema = Type.Object({
   // The server ORIGIN (e.g. https://hub.example.com) — the /sync route prefix is appended here.
@@ -50,7 +51,20 @@ export class SyncPlugin extends Plugin {
     settings.register({ id: 'sync', title: 'Sync', schema: SyncConfigSchema, order: 10, config })
 
     const shell = ctx.extensions.get(ShellExtension)
-    shell.footer.register({ id: 'arxhub.sync', component: markRaw(SyncFooter), region: 'right' })
+    const sync = ctx.extensions.get(SyncExtension)
+    // Two registrations, because the one component was two things: where sync stands, and what you can
+    // tell it to do. The grammar has no word for a widget that is both, and the bar lays the two out on
+    // opposite sides.
+    //
+    // `busy` is what puts a round on the background line. No owner: a sync belongs to the vault, not to
+    // any one open object, so there is nowhere for the line to lead — and saying so is the honest answer.
+    shell.status.register({
+      id: 'arxhub.sync',
+      kind: 'status',
+      component: markRaw(SyncStatus),
+      busy: () => (sync.status.value === 'syncing' ? { label: 'Syncing…' } : null),
+    })
+    shell.status.register({ id: 'arxhub.sync.actions', kind: 'action', component: markRaw(SyncActions) })
   }
 
   override async start(ctx: PluginContext): Promise<void> {

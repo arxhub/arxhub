@@ -5,7 +5,7 @@ import { markRaw } from 'vue'
 import type { BootPolicy } from './boot-policy'
 import { MaintenanceExtension } from './maintenance-extension'
 import { manifest } from './manifest'
-import MaintenanceFooter from './ui/MaintenanceFooter.vue'
+import MaintenanceStatus from './ui/MaintenanceStatus.vue'
 import PluginsSettingsPage from './ui/PluginsSettingsPage.vue'
 
 export interface MaintenancePluginArgs extends PluginArgs {
@@ -39,9 +39,10 @@ export class MaintenancePlugin extends Plugin {
     })
 
     // Only while it applies: a maintenance boot looks like a broken app (no explorer, no editor), and
-    // the footer is what tells the owner it is deliberate and where to undo it.
+    // this is what tells the owner it is deliberate and where to undo it. A state of the whole boot,
+    // which is why it is a status and not an action — the undoing happens on the Plugins page.
     if (this.policy.maintenance) {
-      ctx.extensions.get(ShellExtension).footer.register({ id: 'arxhub.maintenance', component: markRaw(MaintenanceFooter), region: 'left' })
+      ctx.extensions.get(ShellExtension).status.register({ id: 'arxhub.maintenance', kind: 'status', component: markRaw(MaintenanceStatus) })
     }
   }
 }

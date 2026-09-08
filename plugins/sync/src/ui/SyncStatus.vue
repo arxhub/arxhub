@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { SettingsExtension } from '@arxhub/plugin-settings/ui'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { Icon, StatusDot } from '@arxhub/uikit/core'
+import { StatusDot } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { SyncExtension } from '../sync-extension'
 
 const arxhub = useArxHub()
 const sync = arxhub.extensions.get(SyncExtension)
-const shell = arxhub.extensions.get(ShellExtension)
-const settings = arxhub.extensions.get(SettingsExtension)
 
 // The only place a conflict copy becomes visible without browsing the vault for a file that quietly
 // appeared. One toast per round, naming every copy this round wrote — merge() resolves conflicts
@@ -76,45 +72,17 @@ const dotTone = computed(() => {
       return 'warning'
   }
 })
-
-function openSettings() {
-  settings.open('sync')
-  shell.sidebar.setActive('arxhub.settings')
-}
 </script>
 
 <template>
-  <div class="sync-footer">
-    <div class="fx-status" role="status" :aria-label="statusLabel">
-      <StatusDot :tone="dotTone" :pulse="syncing" />
-      {{ statusLabel }}
-    </div>
-    <button
-      type="button"
-      class="fx-item"
-      aria-label="Sync now"
-      title="Sync now"
-      :disabled="syncing || !sync.engine"
-      @click="sync.sync()"
-    >
-      <Icon name="lu:refresh-cw" :size="14" :class="{ spin: syncing }" />
-      Sync
-    </button>
-    <button type="button" class="fx-item" aria-label="Sync settings" title="Sync settings" @click="openSettings">
-      <Icon name="lu:settings" :size="14" />
-    </button>
+  <div class="sync-status" role="status" :aria-label="statusLabel">
+    <StatusDot :tone="dotTone" :pulse="syncing" />
+    {{ statusLabel }}
   </div>
 </template>
 
 <style scoped>
-.sync-footer {
-  display: flex;
-  align-items: stretch;
-  height: 100%;
-}
-
-.fx-status,
-.fx-item {
+.sync-status {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -125,40 +93,5 @@ function openSettings() {
   font-size: var(--font-size-xs);
   color: var(--gray-11);
   white-space: nowrap;
-}
-
-.fx-item {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: color var(--duration-fast), background-color var(--duration-fast);
-}
-
-.fx-item:hover:not(:disabled) {
-  background-color: var(--gray-4);
-  color: var(--gray-12);
-}
-
-.fx-item:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -1px;
-}
-
-.fx-item:disabled {
-  cursor: not-allowed;
-  background: var(--gray-3);
-  color: var(--gray-9);
-}
-
-.spin {
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spin { animation: none; }
 }
 </style>

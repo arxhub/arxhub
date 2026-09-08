@@ -8,7 +8,7 @@ import { watchAuthRejections } from './auth-status'
 import { KeyringExtension } from './keyring-extension'
 import { manifest } from './manifest'
 import { OwnerRegistry } from './owner-marker'
-import AuthFooter from './ui/AuthFooter.vue'
+import AuthAlert from './ui/AuthAlert.vue'
 import { openAuthRejectedDialog } from './ui/auth-dialog'
 import SecuritySettingsPage from './ui/SecuritySettingsPage.vue'
 
@@ -57,9 +57,10 @@ export class ProtectionPlugin extends Plugin {
     const settings = ctx.extensions.get(SettingsExtension)
     settings.register({ id: 'security', title: 'Security', order: 1, component: markRaw(SecuritySettingsPage) })
 
-    // Left region, next to maintenance mode: a server refusing this device is the same class of standing,
-    // whole-app condition, and it must not be crowded out by the right-hand status items.
-    ctx.extensions.get(ShellExtension).footer.register({ id: 'arxhub.protection', component: markRaw(AuthFooter), region: 'left' })
+    // A server refusing this device is a standing, whole-app condition — the same class as maintenance
+    // mode. The click opens the explanation; it does not clear anything, because neither fix is
+    // available from here (see the 401 note in AGENTS.md).
+    ctx.extensions.get(ShellExtension).status.register({ id: 'arxhub.protection', kind: 'status', component: markRaw(AuthAlert) })
   }
 
   override async stop(ctx: PluginContext): Promise<void> {

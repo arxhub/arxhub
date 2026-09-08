@@ -3,7 +3,7 @@ import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { markRaw } from 'vue'
 import { manifest } from './manifest'
 import { SettingsExtension } from './settings-extension'
-import SettingsFooter from './ui/SettingsFooter.vue'
+import PendingChangesStatus from './ui/PendingChangesStatus.vue'
 import SettingsLayout from './ui/SettingsLayout.vue'
 
 export class SettingsPlugin extends Plugin {
@@ -29,6 +29,7 @@ export class SettingsPlugin extends Plugin {
       order: 100,
     })
     // Staged settings edits are app-wide, so the status bar reports them even when Settings is closed.
-    shell.footer.register({ id: 'arxhub.settings.pending', component: markRaw(SettingsFooter), region: 'right' })
+    // It reports and leads back; applying them is SettingsChangesBar's job, so this is a state.
+    shell.status.register({ id: 'arxhub.settings.pending', kind: 'status', component: markRaw(PendingChangesStatus) })
   }
 }

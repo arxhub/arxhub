@@ -6,7 +6,7 @@ import { markRaw } from 'vue'
 import { LogFileWriter } from './log-file-writer'
 import { LoggerExtension } from './logger-extension'
 import { manifest } from './manifest'
-import LogFooter from './ui/LogFooter.vue'
+import LogStatus from './ui/LogStatus.vue'
 import LogViewerPanel from './ui/LogViewerPanel.vue'
 
 // Provides logging via DI (binds the instance's base logger as RootLogger + a per-plugin scoped
@@ -36,7 +36,7 @@ export class LoggerPlugin extends Plugin {
     super.configure(ctx)
 
     const shell = ctx.extensions.get(ShellExtension)
-    // Logs is a hidden sidebar mini-app: no rail icon, opened only from the footer status. Its layout
+    // Logs is a hidden sidebar mini-app: no rail icon, opened only from its status item. Its layout
     // still renders full content-surface when made active via shell.sidebar.setActive('arxhub.logs').
     shell.sidebar.register({
       id: 'arxhub.logs',
@@ -46,7 +46,9 @@ export class LoggerPlugin extends Plugin {
       region: 'bottom',
       hidden: true,
     })
-    shell.footer.register({ id: 'arxhub.logger', component: markRaw(LogFooter), region: 'right' })
+    // A state, not an action: it says what the session's log holds — a dot at the worst level present
+    // and the counts. Opening the viewer is a way into that state, not a second thing the item does.
+    shell.status.register({ id: 'arxhub.logger', kind: 'status', component: markRaw(LogStatus) })
   }
 
   override async start(ctx: PluginContext): Promise<void> {
