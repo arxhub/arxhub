@@ -3,6 +3,7 @@ import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { StatusDot } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
+import { SETTINGS_TYPE_ID } from '../contributions'
 import { SettingsExtension } from '../settings-extension'
 
 const arxhub = useArxHub()
@@ -14,7 +15,7 @@ const count = computed(() => settings.changes.fieldCount.value)
 // Staged edits outlive the screen you made them on, so the status bar has to carry them — otherwise
 // navigating away from Settings silently hides work that has not been written yet.
 function openSettings(): void {
-  shell.sidebar.setActive('arxhub.settings')
+  shell.workspace.activateType(SETTINGS_TYPE_ID)
 }
 </script>
 

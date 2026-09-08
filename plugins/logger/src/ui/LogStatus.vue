@@ -3,6 +3,7 @@ import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { StatusDot } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
+import { LOGS_TYPE_ID } from '../contributions'
 import { LoggerExtension } from '../logger-extension'
 
 const arxhub = useArxHub()
@@ -32,8 +33,9 @@ function fmt(n: number): string {
 }
 
 function openLogs(): void {
-  // Focus the Logs sidebar mini-app (idempotent — never opens a duplicate).
-  shell.sidebar.setActive('arxhub.logs')
+  // Entering a type IS opening it, and the workspace de-duplicates: an unpinned type takes its place in
+  // the row on the way there, and a second press only switches to what is already open.
+  shell.workspace.activateType(LOGS_TYPE_ID)
 }
 </script>
 

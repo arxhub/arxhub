@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SettingsExtension } from '@arxhub/plugin-settings/ui'
+import { SETTINGS_TYPE_ID, SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
 
@@ -9,7 +9,7 @@ const settings = arxhub.extensions.get(SettingsExtension)
 
 function openPlugins(): void {
   settings.open('plugins')
-  shell.sidebar.setActive('arxhub.settings')
+  shell.workspace.activateType(SETTINGS_TYPE_ID)
 }
 </script>
 
