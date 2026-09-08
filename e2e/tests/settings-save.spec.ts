@@ -32,8 +32,8 @@ test.describe('applying settings', () => {
 
   // Desktop only. Staging is frame-agnostic — the same registry, bar and commit on both — but the two
   // projects share one vault, so running this on both has them overwriting each other's config file.
-  // The one genuine frame difference (mobile files the pending-changes chip into the More sheet
-  // instead of a status bar) is asserted in mobile.spec.ts's own territory, not here.
+  // The one genuine frame difference (mobile files the pending-changes chip into the search sheet's
+  // status block instead of a status bar) is asserted in search-sheet.spec.ts's own territory.
   test.beforeEach(async ({ app }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'settings staging is not frame-specific')
     await app.waitForLoadState('domcontentloaded')

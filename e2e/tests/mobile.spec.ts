@@ -58,17 +58,6 @@ test.describe('mobile navigation', () => {
     }
   })
 
-  // What the desktop frame keeps permanently in the status bar has no room on a phone, so it lives one
-  // level down behind the row's own immobile key — the one key that is not a place you can be in.
-  test('the status block is behind the immobile key at the end of the row', async ({ app }) => {
-    await app.getByRole('button', { name: 'More' }).click()
-    const sheet = app.getByRole('dialog', { name: 'More' })
-    await expect(sheet.getByRole('button', { name: 'Open logs' })).toBeVisible()
-
-    await app.goBack()
-    await expect(sheet).toBeHidden()
-  })
-
   test('node actions open as a bottom sheet, and back dismisses it', async ({ app, vault }) => {
     const path = await vault.write('actions.md', 'note\n')
     await app.reload()

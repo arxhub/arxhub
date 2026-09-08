@@ -1,5 +1,5 @@
 export { default as AboutSettingsPage } from './ui/AboutSettingsPage.vue'
-export type { MobileTab, MobileTabRegistry, SidebarRegistry } from './ui/extension'
+export type { SidebarRegistry } from './ui/extension'
 export { ShellExtension } from './ui/extension'
 export { default as MiniAppShell } from './ui/MiniAppShell.vue'
 export type { WorkspaceEmit, WorkspaceEvents } from './ui/nav-events'

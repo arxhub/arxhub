@@ -8,53 +8,16 @@ import type { WorkspaceStorage } from './workspace-storage'
 
 export type { SidebarItem }
 
-// A key in the mobile frame's bottom bar. The bar is the only navigation a phone gets, so a plugin
-// that owns something reachable there contributes a tab instead of a strip widget — the desktop frame
-// ignores these entirely.
-export interface MobileTab {
-  id: string
-  // Icon spec string resolved by uikit's Icon registry.
-  icon: string
-  title: string
-  order?: number
-  // Read on every render: a count the tab carries (open documents, unread logs). 0 shows no badge.
-  badge?: () => number
-  // Selecting a tab is an action, not a route — it may activate a mini-app, raise a sheet, or open a
-  // panel. The frame only asks whether the tab reads as active, which is the tab's own business.
-  active?: () => boolean
-  onSelect: () => void
-  // What being active MEANS for this key, which decides how the bar states it.
-  //
-  // A 'place' is where you are — one of the mini-apps — and exactly one is ever active, so it takes
-  // the accent, the same as a selected row or tab anywhere else in the app.
-  //
-  // A 'layer' is something open on top of where you are: the navigation panel, the More sheet. It can
-  // be active at the same time as a place, and when both wore the accent the bar showed two selected
-  // keys and answered neither "where am I" nor "what is open". A layer states itself with a raised
-  // fill instead.
-  role?: 'place' | 'layer'
-  // Binds a screen-edge drag to this tab, so the two layers reachable one-handed do not cost a trip
-  // to the bar. At most one tab per edge; a later claim on a taken edge is ignored.
-  gesture?: 'left-edge' | 'right-edge'
-}
-
-// The two remaining registries are typed by hand rather than inferred. `reactive()` infers through
-// `UnwrapNestedRefs`, whose declaration reaches `LooseRequired` in `@vue/shared` — a name the emitted
-// `.d.ts` cannot get to, so the build reports the field as unnameable (TS2883). An annotation is what
-// the compiler asks for, and it costs nothing here: two fixed shapes, both of which go away with the
-// last mini-app (F-18/F-21).
+// Typed by hand rather than inferred. `reactive()` infers through `UnwrapNestedRefs`, whose declaration
+// reaches `LooseRequired` in `@vue/shared` — a name the emitted `.d.ts` cannot get to, so the build
+// reports the field as unnameable (TS2883). An annotation is what the compiler asks for, and it costs
+// nothing here: one fixed shape, which goes away with the last mini-app (F-23…F-25).
 export interface SidebarRegistry {
   items: SidebarItem[]
   activeId: string
   register(item: SidebarItem): void
   unregister(id: string): void
   setActive(id: string): void
-}
-
-export interface MobileTabRegistry {
-  items: MobileTab[]
-  register(tab: MobileTab): void
-  unregister(id: string): void
 }
 
 // Two navigation models live here at once, on purpose, and the frames run on the new one.
@@ -66,12 +29,12 @@ export interface MobileTabRegistry {
 //
 // The old `sidebar` is still here because four plugins still register through it. `use-navigation.ts`
 // reads a `SidebarItem` as a type with no objects so those keep reaching the screen; the bridge empties
-// itself as each plugin moves over (F-23…F-25). `tabs` has no registrar left at all and no renderer —
-// it goes with F-18.
+// itself as each plugin moves over (F-23…F-25).
 //
 // What is already gone: `header`, `content` and `setContent` (F-12) — zero call sites, and the header
-// never rendered once — and `footer` with `FooterItem`/`ShellItem.region` (F-13), whose five call sites
-// now say what they contribute instead of where to put it. Both were removed rather than reworked.
+// never rendered once — `footer` with `FooterItem`/`ShellItem.region` (F-13), whose five call sites now
+// say what they contribute instead of where to put it, and `tabs` with `MobileTab` (F-18), the phone's
+// second dictionary for what `types` now says once. All three were removed rather than reworked.
 export class ShellExtension extends Extension {
   // The tab-type registry: the row and the "open new" section of the search sheet are built from it.
   readonly types: TabTypeRegistry
@@ -98,16 +61,6 @@ export class ShellExtension extends Extension {
     },
     setActive(id: string): void {
       this.activeId = id
-    },
-  })
-
-  readonly tabs: MobileTabRegistry = reactive({
-    items: [] as MobileTab[],
-    register(tab: MobileTab): void {
-      this.items = [...this.items, tab]
-    },
-    unregister(id: string): void {
-      this.items = this.items.filter((t) => t.id !== id)
     },
   })
 

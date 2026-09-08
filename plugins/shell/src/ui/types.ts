@@ -1,7 +1,8 @@
 import type { Component } from 'vue'
 
-// What a mini-app registers with the shell. Frame-agnostic on purpose: the desktop rail renders these
-// as a column of icons and the mobile More sheet as a list of rows, from the same registration.
+// What a mini-app registers with the shell. Read as a type with no objects by `use-navigation.ts`, which
+// is the whole of it now: both frames draw the type row from `ShellExtension.types`, and this bridge
+// empties itself as each remaining plugin registers a type of its own (F-23…F-25).
 export interface SidebarItem {
   id: string
   // Icon spec string resolved by uikit's Icon registry (e.g. `lu:folder-open`, or an emoji).
@@ -19,8 +20,4 @@ export interface SidebarItem {
   // absorbing mini-app never has to know this field exists. Desktop is unaffected: the rail column
   // still shows every item regardless of this field.
   absorbedOnMobileBy?: string
-  // Overrides `title` for the mobile tab bar and More sheet only. A mini-app whose mobile rail now
-  // absorbs another's job (Explorer's rail gained a Search section) may want a name that covers both —
-  // "Explorer" undersells it, but the desktop rail icon keeps its own name unrelated to what mobile did.
-  mobileTitle?: string
 }
