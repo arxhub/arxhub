@@ -45,7 +45,7 @@ function extension(vfs: VirtualFileSystem = fakeVfs(), root = '/'): NotesExtensi
 }
 
 function viewer(over: Partial<NoteViewer> = {}): NoteViewer {
-  return { id: 'v', title: 'Viewer', extensions: ['.md'], component: Viewer, ...over }
+  return { id: 'v', panelId: 'v.panel', title: 'Viewer', extensions: ['.md'], component: Viewer, ...over }
 }
 
 describe('the viewer registry', () => {
@@ -55,6 +55,28 @@ describe('the viewer registry', () => {
 
     expect(notes.viewerFor('cases/contract.md')?.id).toBe('md')
     expect(notes.viewerFor('cases/CONTRACT.MD')?.id).toBe('md')
+  })
+
+  // The lookup both the tree and search now go through. An extension is not case-sensitive to a person
+  // writing a file name, and the store's own exact string match said otherwise: 'README.MD' used to be
+  // a file nothing could open.
+  test('the case a file name was written in does not decide whether it opens', () => {
+    const notes = extension()
+    notes.registerViewer(viewer({ id: 'md', extensions: ['.md'] }))
+
+    expect(notes.viewerFor('vault/README.md')?.id).toBe('md')
+    expect(notes.viewerFor('vault/README.MD')?.id).toBe('md')
+    expect(notes.viewerFor('vault/README.Md')?.id).toBe('md')
+    expect(notes.viewerFor('vault/README.rst')).toBeUndefined()
+  })
+
+  // `store.openPanel` takes a panel DEFINITION id. Every viewer today carries the same string in both
+  // fields, which is exactly why the caller must not read `id` and hope.
+  test('a viewer names the panel it opens through, and it is not read off the id', () => {
+    const notes = extension()
+    notes.registerViewer(viewer({ id: 'md.viewer', panelId: 'md.panel' }))
+
+    expect(notes.viewerFor('note.md')?.panelId).toBe('md.panel')
   })
 
   test('a file nothing claims has no viewer — and that is an answer, not a throw', () => {

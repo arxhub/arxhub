@@ -1,4 +1,5 @@
-import { basename, dirname, extname } from '@arxhub/path'
+import { basename, dirname } from '@arxhub/path'
+import { NotesExtension } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
@@ -15,6 +16,7 @@ function reasonOf(error: unknown): string {
 export function useFileActions() {
   const arxhub = useArxHub()
   const explorer = arxhub.extensions.get(ExplorerExtension)
+  const notes = arxhub.extensions.get(NotesExtension)
   const { store } = arxhub.extensions.get(PanelStoreExtension)
 
   // Action descriptors are fire-and-forget (the menu/modal invokers don't await onSelect/onConfirm),
@@ -32,22 +34,23 @@ export function useFileActions() {
     })
   }
 
-  function openFile(node: TreeNode, preview: boolean): void {
+  function openFile(node: TreeNode): void {
     const path = node.entry.pathname
 
-    // Already open somewhere → focus it. A permanent open also promotes an existing preview tab.
+    // Already open somewhere → focus it, rather than opening a second editor over one set of bytes.
     for (const [groupId, group] of Object.entries(store.groups.value)) {
       const instance = group.instances.find((i) => i.props?.path === path)
       if (instance) {
         store.activateGroup(groupId)
         store.activatePanel(instance.instanceId, groupId)
-        if (!preview && instance.preview) store.promotePanel(instance.instanceId, groupId)
         return
       }
     }
 
-    const panels = store.getPanelsForFile(extname(path))
-    if (panels.length === 0) {
+    // What opens a file is the type's question, not the panel layout's — the same registry search asks,
+    // so one file gets one answer everywhere in the application.
+    const viewer = notes.viewerFor(path)
+    if (viewer == null) {
       // A row of the tree that nothing can open is still a real file — the vault has it, the workspace
       // has nothing that reads this format. A click that silently did nothing was indistinguishable
       // from a broken tree. Same wording as search's own refusal: one concept, one phrasing.
@@ -55,7 +58,7 @@ export function useFileActions() {
       return
     }
 
-    store.openPanel(panels[0].id, { path }, basename(path), undefined, preview)
+    store.openPanel(viewer.panelId, { path }, basename(path))
   }
 
   async function newFile(node: TreeNode): Promise<void> {
@@ -90,7 +93,7 @@ export function useFileActions() {
     // the built-ins so destructive built-ins stay in their familiar place.
     if (node.entry.kind === 'file') {
       return [
-        { id: 'open', label: 'Open', icon: 'lu:file-plus', onSelect: () => openFile(node, false) },
+        { id: 'open', label: 'Open', icon: 'lu:file-plus', onSelect: () => openFile(node) },
         { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
         { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
         ...explorer.getContributedActions(node),

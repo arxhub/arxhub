@@ -27,6 +27,18 @@ describe('the document editor as a viewer of a note', () => {
     expect(registry().viewerFor('vault/contract.arx')?.id).toBe(EDITOR_VIEWER.id)
   })
 
+  // The lookup the tree and search go through folds the case; the panel store's own match did not, so
+  // a document saved as '.ARX' used to be a file nothing could open.
+  test('the case the name was written in does not decide whether it opens', () => {
+    expect(registry().viewerFor('vault/CONTRACT.ARX')?.id).toBe(EDITOR_VIEWER.id)
+  })
+
+  // The string the panel store was registered under: openers pass `panelId`, so a change here that did
+  // not reach `registerPanel` would open nothing.
+  test('the panel it opens through is named, not inferred', () => {
+    expect(EDITOR_VIEWER.panelId).toBe('arxhub.editor')
+  })
+
   // Markdown stays readable and editable as text (A-1) and is the plain editor's to open; claiming it
   // here would open every note in a format converter's editor.
   test('markdown is left to the text editor', () => {
@@ -39,6 +51,7 @@ describe('the document editor as a viewer of a note', () => {
     const notes = registry()
     notes.registerViewer({
       id: 'test.plain',
+      panelId: 'test.plain',
       title: 'Plain',
       extensions: ['.arx', '.md'],
       component: defineComponent({ render: () => null }),

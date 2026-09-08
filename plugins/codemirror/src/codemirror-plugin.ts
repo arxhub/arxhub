@@ -47,6 +47,8 @@ export const CODEMIRROR_HANDLES = [
   '.lock',
 ]
 
+const CODEMIRROR_PANEL_ID = 'arxhub.codemirror.editor'
+
 // An editor is a way to show an object, not a place of its own — so what it can show is declared as a
 // viewer of the "Notes" type, and picking one by extension stops being the panel layout's business.
 //
@@ -55,9 +57,11 @@ export const CODEMIRROR_HANDLES = [
 // inside the editor component, keyed off the path. Splitting now would buy a distinction nothing
 // renders — the `dock` role has no consumer until a frame reads the type registry (F-14/F-16).
 export const CODEMIRROR_VIEWER: NoteViewer = {
-  // The same id as the panel definition below, for as long as both exist: the explorer still opens
-  // through the store, and two ids for one editor would make the two registrations disagree.
-  id: 'arxhub.codemirror.editor',
+  id: CODEMIRROR_PANEL_ID,
+  // The panel this viewer opens through while the frames still open through the panel store. Stated
+  // rather than derived from `id`: the two strings are equal today, and a lookup that relied on that
+  // would break silently the day one of them changed.
+  panelId: CODEMIRROR_PANEL_ID,
   title: 'Text',
   extensions: CODEMIRROR_HANDLES,
   component: CodeMirrorEditor,
@@ -73,13 +77,13 @@ export class CodeMirrorPlugin extends Plugin {
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
 
-    // Both registrations stand side by side on purpose, and not for long. The panel definition is what
-    // the frames read today; the viewer registry is what they read once F-14/F-16 wire them, and the
-    // second half of F-21 then moves the explorer's lookup off `getPanelsForFile`. Dropping either one
-    // before that takes this editor off the screen.
+    // Both registrations stand side by side on purpose, and not for long. The viewer registry is what
+    // decides WHICH editor opens a file; the panel definition is still what mounts it, and stays until
+    // the frames read the type registry (F-14/F-16). Dropping it before that takes this editor off the
+    // screen.
     const { store } = ctx.extensions.get(PanelStoreExtension)
     store.registerPanel({
-      id: CODEMIRROR_VIEWER.id,
+      id: CODEMIRROR_VIEWER.panelId,
       title: 'Editor',
       component: CodeMirrorEditor,
       handles: CODEMIRROR_HANDLES,

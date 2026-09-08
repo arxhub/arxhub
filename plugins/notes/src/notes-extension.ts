@@ -10,6 +10,12 @@ import type { BlockAnchor } from './notes-type'
 // (`getPanelsForFile`).
 export interface NoteViewer {
   id: string
+  // The panel definition this viewer is opened through, named rather than assumed. `store.openPanel`
+  // takes a panel DEFINITION id, and every viewer today happens to carry the same string as its own
+  // `id` — building the lookup on that would turn a temporary coincidence into the contract. It is a
+  // field so it can be deleted in one place when the frames mount `component` directly (F-14/F-16),
+  // taking the panel registrations with it.
+  panelId: string
   title: string
   // Extensions with the dot, lower case: '.md', '.arx'.
   extensions: string[]

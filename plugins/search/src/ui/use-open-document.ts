@@ -1,4 +1,5 @@
-import { basename, extname } from '@arxhub/path'
+import { basename } from '@arxhub/path'
+import { NotesExtension } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 
@@ -8,11 +9,12 @@ export interface OpenDocument {
   open(path: string, blockId?: string | null): void
 }
 
-// Search does not know about editors: it asks the workspace which panel claims the file's extension and
-// hands the file over. The one thing it does know is that a document already on screen is the one to
+// Search does not know about editors: it asks the "Notes" type which viewer claims the file and hands
+// the file over. The one thing it does know is that a document already on screen is the one to
 // activate — a second instance of one file is two editors over one set of bytes (FR-233).
 export function useOpenDocument(): OpenDocument {
   const arxhub = useArxHub()
+  const notes = arxhub.extensions.get(NotesExtension)
   const { store } = arxhub.extensions.get(PanelStoreExtension)
 
   function open(path: string, blockId?: string | null): void {
@@ -21,21 +23,19 @@ export function useOpenDocument(): OpenDocument {
       if (instance == null) continue
       store.activateGroup(groupId)
       store.activatePanel(instance.instanceId, groupId)
-      // Opening from a search result is a deliberate act, so the tab stops being the ephemeral one that
-      // the next preview would reuse.
-      if (instance.preview === true) store.promotePanel(instance.instanceId, groupId)
       return
     }
 
-    const panels = store.getPanelsForFile(extname(path))
-    if (panels.length === 0) {
+    // The same registry the tree asks, so one file gets one answer everywhere in the application.
+    const viewer = notes.viewerFor(path)
+    if (viewer == null) {
       // A found document that cannot be opened is still a real answer — the search worked, the workspace
       // has nothing that reads this format. Saying so beats a click that does nothing.
       toaster.create({ title: 'Nothing can open this file', description: path, type: 'error' })
       return
     }
 
-    store.openPanel(panels[0].id, { path, ...(blockId != null && blockId !== '' ? { blockId } : {}) }, basename(path))
+    store.openPanel(viewer.panelId, { path, ...(blockId != null && blockId !== '' ? { blockId } : {}) }, basename(path))
   }
 
   return { open }

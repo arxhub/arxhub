@@ -38,6 +38,22 @@ describe('codemirror as a viewer of a note', () => {
     }
   })
 
+  // The lookup the tree and search go through folds the case; the panel store's own match did not, so
+  // a note saved as 'README.MD' used to be a file nothing could open.
+  test('the case the name was written in does not decide whether it opens', () => {
+    const notes = registry()
+
+    for (const path of ['vault/README.md', 'vault/README.MD', 'vault/Notes.TXT', 'src/Main.TS']) {
+      expect(notes.viewerFor(path)?.id, path).toBe(CODEMIRROR_VIEWER.id)
+    }
+  })
+
+  // The string the panel store was registered under: openers pass `panelId`, so a change here that did
+  // not reach `registerPanel` would open nothing.
+  test('the panel it opens through is named, not inferred', () => {
+    expect(CODEMIRROR_VIEWER.panelId).toBe('arxhub.codemirror.editor')
+  })
+
   // The document format has its own viewer, and two viewers claiming '.arx' would make which one opens
   // it depend on the order plugins happen to configure in.
   test('the document format is left to the document editor', () => {
