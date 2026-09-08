@@ -63,10 +63,6 @@ export function createPanelStore(bus: EventBus): PanelStore {
       return definitions.value.find((d) => d.id === id)
     },
 
-    getPanelsForFile(ext: string): PanelDefinition[] {
-      return definitions.value.filter((d) => d.handles?.includes(ext))
-    },
-
     openPanel(
       definitionId: string,
       props?: Record<string, unknown>,

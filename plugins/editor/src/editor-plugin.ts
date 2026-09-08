@@ -48,7 +48,6 @@ export class EditorPlugin extends Plugin {
       id: EDITOR_VIEWER.panelId,
       title: 'Editor',
       component: EditorPanel,
-      handles: EDITOR_VIEWER.extensions,
     })
 
     ctx.extensions.get(NotesExtension).registerViewer(EDITOR_VIEWER)

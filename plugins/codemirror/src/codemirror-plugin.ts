@@ -86,7 +86,6 @@ export class CodeMirrorPlugin extends Plugin {
       id: CODEMIRROR_VIEWER.panelId,
       title: 'Editor',
       component: CodeMirrorEditor,
-      handles: CODEMIRROR_HANDLES,
     })
 
     ctx.extensions.get(NotesExtension).registerViewer(CODEMIRROR_VIEWER)

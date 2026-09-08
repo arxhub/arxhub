@@ -8,7 +8,6 @@ export interface PanelDefinition {
   title: string
   icon?: string
   component: PanelComponent
-  handles?: string[]
 }
 
 export interface PanelInstance {
@@ -56,7 +55,6 @@ export interface PanelStore {
   restore(state: PanelWorkspaceState): void
   registerPanel(def: PanelDefinition): void
   getDefinition(id: string): PanelDefinition | undefined
-  getPanelsForFile(ext: string): PanelDefinition[]
   // dedupe, when given, is checked against every open instance of this definitionId BEFORE a new one is
   // created: a match is activated in place and its instanceId returned, instead of opening a second copy.
   // Callers that want at most one instance of a panel — ever (Welcome, the SQL console) or per some key
