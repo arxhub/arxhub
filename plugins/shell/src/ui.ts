@@ -1,8 +1,10 @@
 export { default as AboutSettingsPage } from './ui/AboutSettingsPage.vue'
-export type { FooterItem, MobileTab, ShellItem } from './ui/extension'
+export type { FooterItem, FooterRegistry, MobileTab, MobileTabRegistry, ShellItem, SidebarRegistry } from './ui/extension'
 export { ShellExtension } from './ui/extension'
 export { default as MiniAppShell } from './ui/MiniAppShell.vue'
 export type { WorkspaceEmit, WorkspaceEvents } from './ui/nav-events'
+export type { NavHost } from './ui/nav-host'
+export { NavHostKey, provideNavHost, useNavHost } from './ui/nav-host'
 export { OBJECT_GONE_MESSAGE, OBJECT_GONE_TITLE, ObjectGoneView } from './ui/object-gone'
 export type { HostedPanel, PanelHost } from './ui/panel-host'
 export { ShellPlugin } from './ui/plugin'
@@ -24,6 +26,8 @@ export type {
 export { isObjectGone, isObjectType, isPinned, objectGone } from './ui/tab-type'
 export { TabTypeRegistry } from './ui/tab-type-registry'
 export type { SidebarItem } from './ui/types'
+export type { Navigation } from './ui/use-navigation'
+export { useNavigation } from './ui/use-navigation'
 export { RAIL_MAX, RAIL_MIN, useRailWidth } from './ui/use-rail-width'
 export {
   type OpenedTab,

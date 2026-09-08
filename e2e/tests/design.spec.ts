@@ -7,7 +7,7 @@
 // This is a MEASUREMENT, so it asserts against the role's token value rather than a number typed twice:
 // the expected values are read out of the running document's own custom properties.
 import type { Page } from '@playwright/test'
-import { expect, isMobileFrame, openDocumentList, openMiniApp, openNavigation, openSettingsSection, test, withShellChrome } from './fixtures'
+import { expect, isMobileFrame, openDocumentList, openNavigation, openSettingsSection, openType, test, withShellChrome } from './fixtures'
 
 async function token(page: Page, name: string): Promise<number> {
   const value = await page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name)
@@ -65,7 +65,7 @@ test.describe('the visual language holds on screen', () => {
     else await app.keyboard.press('Escape')
     await expect(app.getByRole('menuitem', { name: 'Rename' })).toBeHidden()
 
-    // A third list, in another mini-app, to prove the density is the role's and not one list's habit.
+    // A third list, in another type, to prove the density is the role's and not one list's habit.
     await openSettingsSection(app, 'Appearance')
     // Picking a section is a navigation step, so the mobile frame closes the panel the rail lives in —
     // summon it back before measuring, or there is nothing laid out to measure.
@@ -98,7 +98,7 @@ test.describe('the visual language holds on screen', () => {
     await app.reload()
     const expected = await token(app, '--size-xl')
 
-    // The mini-app list: one line each, so it lands exactly on the role's touch value.
+    // The type list: one line each, so it lands exactly on the role's touch value.
     await app.getByRole('button', { name: 'More' }).click()
     const sheet = app.getByRole('dialog', { name: 'More' })
     await expect(sheet).toBeVisible()
@@ -108,13 +108,13 @@ test.describe('the visual language holds on screen', () => {
     await app.goBack()
     await expect(sheet).toBeHidden()
 
-    // The list of open documents — a section of the same rail panel the tree comes out of: a name with its
-    // path under it, so it grows down from the same value rather than landing exactly on it.
+    // The list of what is open in the type — a name with its path under it, so it grows down from the
+    // same value rather than landing exactly on it.
     await openNavigation(app)
     await app.getByRole('treeitem', { name: note }).click()
     await expect(app.locator('.cm-content')).toBeVisible()
     await openDocumentList(app)
-    const open = await heights(app, '.open-tabs-list .row')
+    const open = await heights(app, '.open-list .row')
     expect(open.length).toBeGreaterThan(0)
     for (const height of open) expect(height).toBeGreaterThanOrEqual(expected)
     await app.goBack()
@@ -133,7 +133,7 @@ test.describe('the visual language holds on screen', () => {
       .first()
       .evaluate((n) => Math.round(n.getBoundingClientRect().top))
 
-    await openMiniApp(app, 'Search')
+    await openType(app, 'Search')
     await app.locator('.search-rail').getByRole('button', { name: 'SQL console' }).click()
     await expect(app.getByTestId('sql-console')).toBeVisible()
     const consoleTop = await app

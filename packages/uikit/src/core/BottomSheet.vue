@@ -84,6 +84,9 @@ function onPointerUp(): void {
   border-top-right-radius: var(--radius-md);
   background: var(--gray-1);
   color: var(--gray-12);
+  /* The sheet is teleported to <body>, outside the frame that sets the app's font — so it has to set
+     it itself, or every sheet in the app renders in the browser's default serif. */
+  font-family: var(--font-sans);
   box-shadow: var(--shadow-xl);
 }
 
@@ -105,7 +108,6 @@ function onPointerUp(): void {
 .sheet-title {
   margin: 0.5rem 0 0;
   text-align: center;
-  font-family: var(--font-sans);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--gray-11);

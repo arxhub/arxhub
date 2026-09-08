@@ -1,36 +1,161 @@
 <script setup lang="ts">
-import { ActionMenuHost, ModalsProvider } from '@arxhub/uikit/core'
+import { ActionMenuHost, ModalsProvider, Toaster } from '@arxhub/uikit/core'
 import { provideShellFrame } from '@arxhub/uikit/hooks'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { provideNavHost } from '../nav-host'
+import { isObjectType } from '../tab-type'
+import { useNavigation } from '../use-navigation'
 import { useShell } from '../use-shell'
-import AppSidebar from './AppSidebar.vue'
-import DesktopLayout from './DesktopLayout.vue'
+import DesktopDock from './DesktopDock.vue'
+import DesktopNavColumn from './DesktopNavColumn.vue'
+import DesktopStatusBar from './DesktopStatusBar.vue'
+import DesktopTypeRail from './DesktopTypeRail.vue'
+import { navColumn } from './use-nav-column'
 
 // The whole desktop frame, and the only place that says so: everything below reads the frame from
 // injection rather than measuring the window.
+//
+// Both levels of navigation are visible at once: the types down the left, the active type's objects as
+// the tab strip above the content. The phone shows the same two levels one at a time. One model, two
+// layouts — so nothing collapses itself here: shrinking, and taking the levels in turns, are what a
+// narrow screen forces, not what the model is.
 provideShellFrame('desktop')
 
-// footerLeft/footerRight aren't read here — DesktopMiniAppShell renders the footer itself, beside its
-// own rail, so the rail can reach the true bottom of the window instead of stopping where a
-// DesktopLayout-level footer used to start underneath both the rail and the content.
-//
-// No header either. It was an extension point nothing extended — zero registrations in the whole
-// repository — and the strip only ever rendered when one arrived, so it never rendered. The mobile
-// frame makes the same call permanently ("the top of the screen is content"); the desktop frame has
-// now simply stopped keeping a slot for a band nobody asked for.
-const { activeItem, activeId, sidebarItems, setActive } = useShell()
+const { workspace, types, storage, status } = useNavigation()
+// The fifteen footer registrations that have not moved to the status registry yet (F-11). The frame
+// renders them beside the new ones rather than dropping them.
+const shell = useShell()
+
+const activeType = computed(() => {
+  const id = workspace.activeTypeId.value
+  return id == null ? null : (types.get(id) ?? null)
+})
+
+// A type either opens objects or is its own content, so there is no choosing between two pictures: the
+// state "both are set" is not expressible.
+const panels = computed(() => {
+  const id = workspace.activeTypeId.value
+  return id == null ? null : (workspace.panelsOf(id) ?? null)
+})
+const content = computed(() => {
+  const type = activeType.value
+  return type != null && !isObjectType(type) ? type.content : null
+})
+
+// The width and the collapsed state are remembered PER TYPE: the key is the type's own, and by default
+// it is the type id. Two types naming one key share a width, which is what `widthKey` is for (F-15).
+const column = computed(() => {
+  const type = activeType.value
+  if (type?.nav == null) return null
+  return navColumn(storage, type.nav.widthKey ?? type.id)
+})
+
+// Creating lives in the navigation's own head — the vault tree's New file is that button. A type that
+// declares `create` without declaring `nav` has no head to put it in, and the dock takes it instead: a
+// declared role is never unreachable.
+const dockCreate = computed(() => (activeType.value?.nav == null ? (activeType.value?.create ?? null) : null))
+
+// The one control the frame contributes into the navigation's own strip. It is here rather than in a
+// strip of the column's own, because a second band above the tree's would be two heads for one role.
+provideNavHost({ dismiss: () => column.value?.toggle(), icon: 'lu:panel-left-close', label: 'Collapse navigation (⌘B)' })
+
+// On the window rather than on the root: ⌘B has to work from anywhere, including from inside an editor
+// whose own keymap swallows the default action but not the bubbling.
+function onKeydown(event: KeyboardEvent): void {
+  if (!(event.metaKey || event.ctrlKey)) return
+  if (event.key.toLowerCase() !== 'b') return
+  const it = column.value
+  if (it == null) return
+  event.preventDefault()
+  it.toggle()
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
-  <DesktopLayout>
-    <template #sidebar>
-      <AppSidebar :items="sidebarItems" :active-id="activeId" @item-select="setActive($event)" />
-    </template>
-    <!-- See MobileShell.vue's identical wrapper: without KeepAlive, switching mini-apps fully
-         remounted the outgoing one on every trip, losing scroll/undo/selection in whatever was open. -->
-    <KeepAlive>
-      <component v-if="activeItem?.layout" :is="activeItem.layout" :key="activeItem.id" />
-    </KeepAlive>
-  </DesktopLayout>
+  <div class="desktop-shell">
+    <div class="middle">
+      <DesktopTypeRail :row="workspace.row.value" @select="workspace.activateType($event)" />
+
+      <!-- The navigation column is not a tab: it is neither opened nor closed. A type that declares no
+           navigation gets no column at all, and that is visible rather than hidden behind a
+           placeholder. -->
+      <DesktopNavColumn
+        v-if="activeType?.nav != null && column != null"
+        :nav="activeType.nav"
+        :title="activeType.nav.title ?? activeType.title"
+        :width="column.width.value"
+        :collapsed="column.collapsed.value"
+        @resize="column?.setWidth($event)"
+        @toggle="column?.toggle()"
+      />
+
+      <div class="stage">
+        <!-- No tab strip here, on purpose. Tabs belong to a GROUP, not to a type: split the panels and
+             each half has its own set, so one strip above both would answer "which group do I
+             activate" wrongly. The panel host draws them, one strip per group. -->
+        <DesktopDock :component="workspace.dock()" :create="dockCreate" />
+
+        <main class="content">
+          <!-- Switching type is the row's basic operation, and the content is not unmounted by it: each
+               type has its own key, so the KeepAlive cache never mixes two types' panels up (F-05). -->
+          <KeepAlive>
+            <component :is="panels.view" v-if="panels != null" :key="`objects:${workspace.activeTypeId.value}`" />
+            <component :is="content" v-else-if="content != null" :key="`content:${workspace.activeTypeId.value}`" />
+          </KeepAlive>
+          <p v-if="panels == null && content == null" class="nothing">Nothing is open. Pick a type on the left.</p>
+        </main>
+      </div>
+    </div>
+
+    <DesktopStatusBar :status="status" :workspace="workspace" :left="shell.footerLeft.value" :right="shell.footerRight.value" />
+    <Toaster />
+  </div>
   <ModalsProvider />
   <ActionMenuHost />
 </template>
+
+<style scoped>
+.desktop-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--gray-1);
+  color: var(--gray-12);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+}
+
+.middle {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.stage {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.content {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  background-color: var(--gray-1);
+}
+
+.nothing {
+  margin: 0;
+  padding: 24px 16px;
+  color: var(--gray-10);
+  text-align: center;
+}
+</style>

@@ -29,7 +29,7 @@ const SHORTCUTS: { keys: string[]; does: string }[] = [
       <p class="next">
         {{
           mobile
-            ? 'Tap Files to browse the vault, or Search to find a note.'
+            ? 'Tap Vault to browse the notes, or Search to find one.'
             : 'Open a note from the file tree, or search the vault from the rail on the left.'
         }}
       </p>

@@ -1,56 +1,80 @@
 <script setup lang="ts">
 import { Icon } from '@arxhub/uikit/core'
+import type { Component } from 'vue'
+import type { TabTypeCreate } from '../tab-type'
 
-// The strip above the type row, holding only the key that reveals the active mini-app's own
-// navigation (its file tree, its settings-section list — named by the mini-app itself via
-// claimRailHost(), never generically "Files"). Split out of the tab row rather than mixed in with the
-// mini-app switcher: "navigate within where I am" and "switch to a different place" are different
-// questions, and the row answering the second one was where this key used to live.
+// The band directly above the type row — the most reachable part of the screen. It holds three
+// different things, deliberately:
 //
-// The parent only renders this strip at all when there is a rail to claim it — an empty 40px band
-// above the row would cost real space for nothing, on the frame with the least of it to spare.
-defineProps<{ icon: string; title: string; active: boolean }>()
-const emit = defineEmits<{ open: [] }>()
+// 1. The key that opens the type's navigation. The FRAME puts it there, not the type: navigation
+//    belongs to many types, and making each draw its own button would give seven different ones. The
+//    left-edge swipe does the same thing, but a gesture is invisible — and the only road to the tree
+//    has no right to be.
+// 2. Creating, but only for a type WITHOUT navigation: the button normally lives in the navigation
+//    layer, and two buttons for one action would be worse than one. A type may declare `create` and no
+//    `nav`, and then the role would be unreachable.
+// 3. The dock of the active tab: the type declares it, the active object fills it.
+//
+// None of the three — no band at all: an empty one would spend 48px on nothing, on the frame with the
+// least room to spare.
+const props = defineProps<{ component: Component | null; navTitle: string | null; create: TabTypeCreate | null }>()
+const emit = defineEmits<{ nav: [] }>()
 </script>
 
 <template>
-  <div class="dock" data-testid="dock">
+  <div v-if="props.component != null || props.navTitle != null || props.create != null" class="dock" data-testid="dock">
     <button
+      v-if="props.navTitle != null"
       type="button"
-      class="nav-key"
-      :class="{ active }"
+      class="key"
       data-testid="arxhub.shell.rail"
-      :aria-label="title"
-      :aria-pressed="active"
-      @click="emit('open')"
+      :aria-label="props.navTitle"
+      @click="emit('nav')"
     >
-      <span class="nav-key-glyph">
-        <Icon :name="icon" :size="14" />
-      </span>
-      <span class="nav-key-label">{{ title }}</span>
+      <Icon name="lu:panel-bottom" :size="16" />
+      <span class="key-label">{{ props.navTitle }}</span>
     </button>
+
+    <button
+      v-if="props.create != null && props.navTitle == null"
+      type="button"
+      class="key"
+      data-testid="dock-create"
+      :aria-label="props.create.title"
+      @click="props.create.run()"
+    >
+      <Icon :name="props.create.icon ?? 'lu:plus'" :size="16" />
+    </button>
+
+    <div v-if="props.component != null" class="tools">
+      <component :is="props.component" />
+    </div>
   </div>
 </template>
 
 <style scoped>
 .dock {
   display: flex;
-  align-items: center;
+  height: var(--size-xl);
   flex-shrink: 0;
-  height: var(--size-md);
-  padding: 0 8px;
-  border-top: 1px solid var(--gray-6);
+  align-items: stretch;
+  /* The rule above is a shadow rather than a border: a border would take a pixel off the content's
+     own height, and the navigation key would come out one below the touch minimum — on the target
+     that is the main road to a type's tree. */
+  box-shadow: inset 0 1px 0 var(--gray-6);
   background: var(--gray-2);
 }
 
-.nav-key {
+.key {
   display: flex;
+  min-width: var(--size-xl);
+  flex-shrink: 0;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  height: var(--size-md);
   padding: 0 12px;
   border: none;
-  border-radius: var(--radius-xs);
+  border-right: 1px solid var(--gray-6);
   background: transparent;
   color: var(--gray-11);
   font-family: var(--font-sans);
@@ -58,21 +82,37 @@ const emit = defineEmits<{ open: [] }>()
   cursor: pointer;
 }
 
-/* Raised fill, not the accent: this is "open on top of where I am", the same treatment the type row's
-   own layer keys (More) use — the accent stays reserved for "where I am" alone. */
-.nav-key.active {
+.key:active {
   background: var(--gray-4);
-  color: var(--gray-12);
 }
 
-.nav-key:focus-visible {
+.key:focus-visible {
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
 }
 
-.nav-key-glyph {
+.key-label {
+  overflow: hidden;
+  max-width: 12ch;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The object's tools scroll sideways rather than wrapping: wrapping would make the band two storeys
+   tall and eat the content the screen is open for. */
+.tools {
   display: flex;
+  min-width: 0;
+  flex: 1;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.tools::-webkit-scrollbar {
+  display: none;
 }
 </style>

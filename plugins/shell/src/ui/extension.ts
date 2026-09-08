@@ -1,8 +1,10 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { type Component, markRaw, reactive } from 'vue'
+import { type Component, markRaw, reactive, shallowRef } from 'vue'
 import { StatusRegistry } from './status'
 import { TabTypeRegistry } from './tab-type-registry'
 import type { SidebarItem } from './types'
+import type { Workspace } from './workspace'
+import type { WorkspaceStorage } from './workspace-storage'
 
 export type { SidebarItem }
 
@@ -45,13 +47,42 @@ export interface MobileTab {
   gesture?: 'left-edge' | 'right-edge'
 }
 
-// Two navigation models live here at once, on purpose, and only one of them is wired to a frame.
+// The three registries are typed by hand rather than inferred. `reactive()` infers through
+// `UnwrapNestedRefs`, whose declaration reaches `LooseRequired` in `@vue/shared` — a name the emitted
+// `.d.ts` cannot get to, so the build reports the field as unnameable (TS2883). An annotation is what
+// the compiler asks for, and it costs nothing here: these are three fixed shapes, all of which go away
+// with the last mini-app (F-18/F-21).
+export interface SidebarRegistry {
+  items: SidebarItem[]
+  activeId: string
+  register(item: SidebarItem): void
+  unregister(id: string): void
+  setActive(id: string): void
+}
+
+export interface FooterRegistry {
+  items: FooterItem[]
+  register(item: FooterItem): void
+  unregister(id: string): void
+}
+
+export interface MobileTabRegistry {
+  items: MobileTab[]
+  register(tab: MobileTab): void
+  unregister(id: string): void
+}
+
+// Two navigation models live here at once, on purpose, and the frames run on the new one.
 //
-// The old one — `sidebar` + `tabs` + `footer` — is what both frames run on today and it is untouched.
-// The new one — `types` and `status` — is the direction: a plugin declares a tab TYPE once instead of
-// describing the same thing twice (a rail item for desktop, a bar key for the phone), and it says WHAT
-// it contributes to the status bar instead of WHERE to put it. Nothing reads the new pair yet; the
-// registries arrive first so the ports that consume them can land one at a time.
+// `types` is it: a plugin declares a tab TYPE once instead of describing the same thing twice (a rail
+// item for the desktop, a bar key for the phone), and both frames draw the same registry. `status` is
+// the same idea for the bar — a plugin says WHAT it contributes rather than WHERE to put it.
+//
+// The old `sidebar` + `tabs` + `footer` are still here because four plugins still register through
+// them and fifteen status items still name a region. `use-navigation.ts` reads a `SidebarItem` as a
+// type with no objects so those keep reaching the screen, and the desktop status bar renders
+// `footer.items` beside `status`; both bridges empty themselves as each plugin moves over
+// (F-11, F-18, F-23…F-25). `tabs` has no registrar left at all and no renderer — it goes with F-18.
 //
 // What is already gone: `header`, `content` and `setContent`. Not replaced by anything — they had zero
 // call sites in the whole repository and the header never rendered once. That was not an API, it was
@@ -63,7 +94,12 @@ export class ShellExtension extends Extension {
   // from the same registrations. Successor to `footer.register({ region })`, which still works.
   readonly status: StatusRegistry
 
-  readonly sidebar = reactive({
+  // shallowRef, not a plain field: the two halves are put here by the composition root before the
+  // first mount, and a frame that read a plain field during its own setup would never see the write if
+  // that order ever changed.
+  private readonly desk = shallowRef<{ workspace: Workspace; storage: WorkspaceStorage } | null>(null)
+
+  readonly sidebar: SidebarRegistry = reactive({
     items: [] as SidebarItem[],
     activeId: '',
     register(item: SidebarItem): void {
@@ -80,7 +116,7 @@ export class ShellExtension extends Extension {
     },
   })
 
-  readonly footer = reactive({
+  readonly footer: FooterRegistry = reactive({
     items: [] as FooterItem[],
     register(item: FooterItem): void {
       this.items = [...this.items, { ...item, component: markRaw(item.component) }]
@@ -90,7 +126,7 @@ export class ShellExtension extends Extension {
     },
   })
 
-  readonly tabs = reactive({
+  readonly tabs: MobileTabRegistry = reactive({
     items: [] as MobileTab[],
     register(tab: MobileTab): void {
       this.items = [...this.items, tab]
@@ -107,5 +143,26 @@ export class ShellExtension extends Extension {
     }
     this.types = new TabTypeRegistry(warn)
     this.status = new StatusRegistry(warn)
+  }
+
+  // The desk both frames render. It is put here rather than built here because only a composition root
+  // may hold both halves: the workspace needs a panel host per type, and the shell must not import the
+  // panels plugin to get one. The instance builds them and hands them over before anything mounts.
+  attachWorkspace(workspace: Workspace, storage: WorkspaceStorage): void {
+    this.desk.value = { workspace, storage }
+  }
+
+  get workspace(): Workspace {
+    const desk = this.desk.value
+    // A frame with no desk has nothing to draw at all, and finding that out as `undefined is not an
+    // object` three components deep is how a missing wiring line becomes an afternoon.
+    if (desk == null) throw new Error('No workspace attached to the shell: the instance must call attachWorkspace() before mounting a frame')
+    return desk.workspace
+  }
+
+  get workspaceStorage(): WorkspaceStorage {
+    const desk = this.desk.value
+    if (desk == null) throw new Error('No workspace attached to the shell: the instance must call attachWorkspace() before mounting a frame')
+    return desk.storage
   }
 }

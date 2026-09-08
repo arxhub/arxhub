@@ -10,12 +10,12 @@ import { MutableRequestSigner } from '@arxhub/crypto'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { ConfigPlugin } from '@arxhub/plugin-config/ui'
 import { EditorPlugin } from '@arxhub/plugin-editor/ui'
-import { ExplorerExtension, ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
+import { ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { KeyStorePlugin, resolveKeyStore } from '@arxhub/plugin-keystore/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { BootPolicy, MaintenancePlugin, startWithCrashScreen } from '@arxhub/plugin-maintenance/ui'
 import { NOTES_TYPE_ID, NotesPlugin } from '@arxhub/plugin-notes/ui'
-import { createPanelStore, PanelStoreExtension, PanelsPlugin, StorePanelHost } from '@arxhub/plugin-panels/ui'
+import { PanelStoreExtension, PanelsPlugin, StorePanelHost } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { SearchPlugin } from '@arxhub/plugin-search/ui'
 import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
@@ -90,11 +90,6 @@ arxhub.extensions.get(SettingsExtension).register({
 const shell = arxhub.extensions.get(ShellExtension)
 const { store } = arxhub.extensions.get(PanelStoreExtension)
 
-// Explorer is switchable, and a maintenance boot leaves it out — so the opening layout asks whether it
-// is there rather than assuming it. Shell, panels and settings are essential and always are.
-const explorer = arxhub.extensions.has(ExplorerExtension) ? arxhub.extensions.get(ExplorerExtension) : null
-if (explorer != null) shell.sidebar.setActive('arxhub.explorer')
-
 store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
 // dedupe: a workspace restored from a previous session may already have Welcome open — without this,
 // every boot added a second one on top of it rather than bringing the existing tab to front.
@@ -110,7 +105,12 @@ store.openPanel('arxhub.welcome', {}, 'Welcome', undefined, false, () => true)
 // the workspace tells the storage what the person did.
 const workspace = new Workspace({
   types: shell.types,
-  createPanels: () => new StorePanelHost(createPanelStore(arxhub.events)),
+  // A store per type is the model; the wiring hands the SAME one to the only object type there is.
+  // Every opener in the application still writes straight to the application store — the explorer's
+  // tree, a search result, the SQL console, this instance's own Welcome panel (the second half of
+  // F-21/F-22) — so a type given a private store would be a type in which nothing anyone clicks ever
+  // opens. A SECOND object type is what makes this wrong, and it arrives together with those openers.
+  createPanels: () => new StorePanelHost(store),
   emit: (event, payload) => desk.observe(event, payload),
 })
 const desk = new WorkspaceStorage({ workspace })
@@ -119,9 +119,11 @@ const desk = new WorkspaceStorage({ workspace })
 // application: it reads storage, storage can be unavailable, and an unhandled rejection here would
 // fail BEFORE app.mount() and leave a blank white page instead of a shell.
 //
-// Nothing on screen reads this workspace yet — `plugins/panels` still restores the visible layout
-// through its own device-local record. Two persistence paths for one desk is the price of not
-// breaking the screen while the frames move over, and it ends when they do.
+// The visible layout is still restored by `plugins/panels`' own device-local record, not by this one:
+// the tabs on screen are panels the openers put in the store directly, and the workspace has no
+// snapshot of them to revive. The two records converge when the openers do (the second half of
+// F-21/F-22) — until then this one carries which TYPE you were in, and that one carries what was open.
+shell.attachWorkspace(workspace, desk)
 const restored = await desk.restore().catch(() => false)
 // A first run, or a record that cannot be read, is a clean desk rather than an error. A clean desk
 // opens on notes: the type the product exists for beats an empty screen inviting you to go looking.

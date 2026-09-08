@@ -1,4 +1,4 @@
-import { ref, shallowRef } from 'vue'
+import { type Component, h, ref, shallowRef } from 'vue'
 import type { HostedPanel, PanelHost } from '../ui/panel-host'
 import type { Json } from '../ui/tab-type'
 
@@ -7,6 +7,8 @@ import type { Json } from '../ui/tab-type'
 // `applyLayout` was last given — the workspace treats a layout as opaque data it carries between the
 // host and the snapshot, and that is exactly what the fake lets a test observe.
 export class FakePanelHost implements PanelHost {
+  // Enough to satisfy the port: nothing in a unit test renders it.
+  readonly view: Component = () => h('div')
   // shallowRef: a panel holds a component, and deep reactivity over a component definition is both
   // wasteful and, for the recursive Json of a layout, more type than TypeScript will unwrap.
   readonly panels = shallowRef<HostedPanel[]>([])

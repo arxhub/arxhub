@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, useSlots } from 'vue'
 import { RAIL_MAX, RAIL_MIN, useRailWidth } from '../use-rail-width'
-import { useShell } from '../use-shell'
-import AppFooter from './AppFooter.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -21,11 +19,9 @@ const props = withDefaults(
 const slots = useSlots()
 const showRail = computed(() => props.rail && !!slots.rail)
 
-// The footer lives here, not in DesktopLayout: it sits beside the rail, under the content column only
-// — the rail runs the full height next to it, the way a sidebar does, rather than stopping where the
-// content does and leaving the footer to span under both.
-const shell = useShell()
-
+// No footer here any more. The status bar belongs to the frame and spans the whole window under the
+// type rail (F-14); a mini-app rendering its own was what put a second one on screen the moment the
+// frame grew one of its own.
 const railWidth = useRailWidth(props.widthKey)
 const shellEl = ref<HTMLElement | null>(null)
 
@@ -67,14 +63,6 @@ onUnmounted(() => cleanup?.())
       <div class="content">
         <slot />
       </div>
-      <AppFooter>
-        <template #left>
-          <component v-for="item in shell.footerLeft.value" :key="item.id" :is="item.component" />
-        </template>
-        <template #right>
-          <component v-for="item in shell.footerRight.value" :key="item.id" :is="item.component" />
-        </template>
-      </AppFooter>
     </div>
   </div>
 </template>

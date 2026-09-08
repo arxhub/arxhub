@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { openMiniApp, openSettingsSection, test } from './fixtures'
+import { openSettingsSection, openType, test } from './fixtures'
 
 // A settings page reads its file over the API and rebinds the field when it lands, so an edit made
 // before that arrives does not survive it — and a section whose file does not exist yet legitimately
@@ -54,13 +54,14 @@ test.describe('applying settings', () => {
     await expect(app.getByText('2 unsaved changes across 2 sections')).toBeVisible()
 
     // Leaving settings must not drop the drafts. The desktop frame keeps them in the status bar; the
-    // mobile frame files every status widget into the More sheet, so only desktop shows one here.
-    await openMiniApp(app, 'Explorer')
+    // mobile frame files every status widget behind the row's own immobile key, so only desktop shows
+    // one here.
+    await openType(app, 'Notes')
     if (testInfo.project.name === 'desktop') {
       await expect(app.getByRole('button', { name: /unsaved setting/ })).toBeVisible()
     }
 
-    await openMiniApp(app, 'Settings')
+    await openType(app, 'Settings')
     await app.getByRole('button', { name: 'Save & apply' }).click()
 
     // An apply stops at the first section that fails and leaves it staged, so the bar emptying is
@@ -88,7 +89,7 @@ test.describe('applying settings', () => {
     await openSettingsSection(app, 'Sync')
     await expect(app.locator('input[aria-label="Server URL"]:visible')).toHaveValue(staged)
 
-    await openMiniApp(app, 'Explorer')
+    await openType(app, 'Notes')
     await openSettingsSection(app, 'Sync')
     await expect(app.locator('input[aria-label="Server URL"]:visible')).toHaveValue(staged)
 

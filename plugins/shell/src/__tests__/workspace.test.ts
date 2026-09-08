@@ -93,6 +93,49 @@ beforeEach(() => {
   openCalls = []
 })
 
+describe('Workspace: panels it did not open itself', () => {
+  // Every opener in the application still writes straight to the panel store (the second half of
+  // F-21/F-22), so a type's host legitimately holds tabs the workspace has no object for. A list of
+  // what is open that silently omitted them would be worse than no list.
+  test('lists and counts a panel the host holds but the workspace never opened', async () => {
+    const { workspace } = build(notesType())
+    workspace.activateType('notes')
+    hostOf(workspace, 'notes').open({ key: 'welcome', title: 'Welcome', component: NoteView, props: {} })
+
+    expect(workspace.tabsOf('notes').map((it) => ({ key: it.key, title: it.title }))).toEqual([{ key: 'welcome', title: 'Welcome' }])
+    expect(workspace.row.value.find((it) => it.type.id === 'notes')?.count).toBe(1)
+    // Its title is whatever the host is showing: there is no type-side object to ask `label()` about,
+    // so an adopted tab has no subtitle rather than a made-up one.
+    expect(workspace.tabsOf('notes')[0].subtitle).toBeUndefined()
+  })
+
+  test('activating and closing an adopted panel goes through the same two operations', () => {
+    const { workspace } = build(notesType())
+    workspace.activateType('notes')
+    const host = hostOf(workspace, 'notes')
+    host.open({ key: 'welcome', title: 'Welcome', component: NoteView, props: {} })
+    host.open({ key: 'console', title: 'SQL console', component: NoteView, props: {} })
+
+    workspace.activateObject('notes', 'welcome')
+    expect(workspace.activeTab('notes')?.key).toBe('welcome')
+
+    workspace.closeObject('notes', 'welcome')
+    expect(workspace.tabsOf('notes').map((it) => it.key)).toEqual(['console'])
+  })
+
+  // The workspace record is what the type raised, and an adopted panel has no snapshot to write down —
+  // the panels plugin's own record is what carries those. Two records, one desk, and neither of them
+  // claiming the other's rows.
+  test('an adopted panel is not written into the workspace snapshot', async () => {
+    const { workspace } = build(notesType())
+    await workspace.openObject('notes', { id: 'a.md' })
+    hostOf(workspace, 'notes').open({ key: 'welcome', title: 'Welcome', component: NoteView, props: {} })
+
+    const state = workspace.serialize()
+    expect(state.types.find((it) => it.id === 'notes')?.tabs.map((it) => it.key)).toEqual(['note:a.md'])
+  })
+})
+
 describe('Workspace: the level above panel groups', () => {
   test('the row holds the pinned types even before anyone has entered them', () => {
     const { workspace } = build(notesType(), settingsType(), logsType())

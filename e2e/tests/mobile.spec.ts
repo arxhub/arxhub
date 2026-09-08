@@ -1,17 +1,18 @@
-import { expect, isMobileFrame, openDocumentList, openMiniApp, openNavigation, openNote, test, waitForApp } from './fixtures'
+import { expect, isMobileFrame, openDocumentList, openNavigation, openNote, openType, test, typeRow, waitForApp } from './fixtures'
 
 test.describe('the frame is chosen once, by the bundle', () => {
   test('a phone-shaped client mounts the mobile frame and a desktop one the rail', async ({ app }) => {
+    // One model, two layouts: the same row of types runs along the bottom of a phone and down the left
+    // of a window, and it answers to the same name in both — which is what stops a type from reaching
+    // one frame and not the other.
+    await expect(typeRow(app)).toBeVisible()
+    await expect(typeRow(app).getByRole('button', { name: /^Notes(,|$)/ })).toBeVisible()
+
     if (await isMobileFrame(app)) {
-      await expect(app.getByRole('navigation', { name: 'Navigation' })).toBeVisible()
-      // A mini-app is a key in the bottom bar, never a permanent column beside the content. Explorer is
-      // "Files" here: its mobile rail also carries the open documents and Search, which the name has to
-      // cover (SidebarItem.mobileTitle).
-      await expect(app.locator('.app-sidebar')).toHaveCount(0)
-      await expect(app.getByRole('navigation', { name: 'Navigation' }).getByRole('button', { name: 'Files' })).toBeVisible()
+      await expect(app.locator('.type-rail')).toHaveCount(0)
     } else {
       await expect(app.locator('.mobile-shell')).toHaveCount(0)
-      await expect(app.getByRole('button', { name: 'Explorer' })).toBeVisible()
+      await expect(app.locator('.type-rail')).toBeVisible()
     }
   })
 
@@ -48,16 +49,21 @@ test.describe('mobile navigation', () => {
     await waitForApp(app)
   })
 
-  // The bar holds five keys, so the sheet is what guarantees reachability: every mini-app is in there,
-  // including the utilities that never get a key and anything the bar could not fit.
-  test('every mini-app is reachable from the More sheet', async ({ app }) => {
+  // Reachability is the row's job now, and exactly one key per type is the point of it: Search used to
+  // be a mini-app on the desktop and a section of Explorer's rail here, which is the divergence the one
+  // registry makes unrepresentable.
+  test('every type has exactly one key in the row', async ({ app }) => {
+    for (const title of ['Notes', 'Search', 'Settings']) {
+      await expect(typeRow(app).getByRole('button', { name: new RegExp(`^${title}(,|$)`) })).toHaveCount(1)
+    }
+  })
+
+  // What the desktop frame keeps permanently in the status bar has no room on a phone, so it lives one
+  // level down behind the row's own immobile key — the one key that is not a place you can be in.
+  test('the status block is behind the immobile key at the end of the row', async ({ app }) => {
     await app.getByRole('button', { name: 'More' }).click()
     const sheet = app.getByRole('dialog', { name: 'More' })
-    await expect(sheet.getByRole('button', { name: 'Files', exact: true })).toBeVisible()
-    await expect(sheet.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
-    // And exactly one place per mini-app: Search is a section of the Files rail on this frame
-    // (absorbedOnMobileBy), so the sheet must not offer it a second home as well.
-    await expect(sheet.getByRole('button', { name: 'Search', exact: true })).toHaveCount(0)
+    await expect(sheet.getByRole('button', { name: 'Open logs' })).toBeVisible()
 
     await app.goBack()
     await expect(sheet).toBeHidden()
@@ -78,7 +84,7 @@ test.describe('mobile navigation', () => {
     await expect(sheet).toBeHidden()
   })
 
-  test('shows one document at a time and lists the rest in the rail', async ({ app, vault }) => {
+  test('shows one document at a time and lists the rest behind a second tap', async ({ app, vault }) => {
     const first = await vault.write('one.md', 'first\n')
     const second = await vault.write('two.md', 'second\n')
 
@@ -101,38 +107,36 @@ test.describe('mobile navigation', () => {
     // switching back does not throw away what the editor was holding.
     await expect(app.locator('.cm-content:visible')).toHaveCount(1)
 
-    // One at a time hides how many are waiting, so the rest are a section of the rail — the same panel
-    // the tree came out of, one segment over.
+    // One at a time hides how many are waiting, so the second level is a second tap on the type you are
+    // already in — the counter on the key is what says there is anything behind it.
     const list = await openDocumentList(app)
     await expect(list.getByRole('menuitem', { name: first })).toBeVisible()
     await expect(list.getByRole('menuitem', { name: second })).toBeVisible()
 
     await list.getByRole('menuitem', { name: first }).click()
-    // Choosing one is navigation, so the panel it was chosen from gets out of the way.
-    await expect(app.getByRole('region', { name: /navigation$/ })).toBeHidden()
+    // Choosing one is navigation, so the layer it was chosen from gets out of the way.
+    await expect(list).toBeHidden()
     await expect(app.locator('.cm-content:visible')).toContainText('first')
   })
 
-  // Every mini-app teleports its rail into the one shared panel, and switching mini-apps deactivates the
-  // outgoing one under KeepAlive instead of destroying it — so a claim made once at setup and never
-  // released left every mini-app visited this session still rendering into that panel, stacked under
-  // whichever one named it last. The bottom-bar "Notes" key this used to watch is gone (the open
-  // documents are a section of Explorer's rail now), but the accumulation it was a symptom of is the
-  // same one, and the panel itself is where it shows.
-  test('switching mini-apps does not stack rails in the shared panel', async ({ app, vault }) => {
+  // A mini-app that has not become a type yet teleports its rail into the one shared panel, and
+  // switching types deactivates the outgoing one under KeepAlive instead of destroying it — so a claim
+  // made once at setup and never released left every one visited this session still rendering into that
+  // panel, stacked under whichever named it last.
+  test('switching types does not stack rails in the shared panel', async ({ app, vault }) => {
     const path = await vault.write('kept.md', 'kept\n')
     await openNote(app, path)
 
-    await openMiniApp(app, 'Settings')
-    await openMiniApp(app, 'Files')
+    await openType(app, 'Settings')
+    await openType(app, 'Search')
 
     await openNavigation(app)
     const panel = app.getByRole('region', { name: /navigation$/ })
-    // Explorer's rail, once — and Settings' section list not still hiding underneath it.
-    await expect(panel.locator('.explorer-mobile-rail')).toHaveCount(1)
+    // Search's rail, once — and Settings' section list not still hiding underneath it.
+    await expect(panel.locator('.search-rail')).toHaveCount(1)
     await expect(panel.locator('.settings-nav')).toHaveCount(0)
-    // And the key that opens it names the mini-app that is actually in there.
-    await expect(app.getByTestId('arxhub.shell.rail')).toHaveAttribute('aria-label', 'Files')
+    // And the key that opens it names what is actually in there.
+    await expect(app.getByTestId('arxhub.shell.rail')).toHaveAttribute('aria-label', 'Search')
   })
 
   test('back in a confirmation means cancel, never confirm', async ({ app, vault }) => {

@@ -211,9 +211,10 @@ export async function isMobileFrame(page: Page): Promise<boolean> {
   return (await page.locator('.mobile-shell').count()) > 0
 }
 
-// On the mobile frame a mini-app's own navigation is a panel summoned from the bottom bar, not a
-// column that is always there. Reached by test id because the key is named by whichever mini-app owns
-// the rail — "Files" under Explorer, "Sections" under Settings — so there is no one label to click.
+// A type's own navigation. On the mobile frame it is a panel summoned from the bottom row, not a column
+// that is always there; on the desktop it is the column beside the content and there is nothing to
+// summon. Reached by test id because the key is named by whichever type owns the navigation — "Vault"
+// under Notes, "Sections" under Settings — so there is no one label to click.
 export async function openNavigation(page: Page): Promise<void> {
   if (!(await isMobileFrame(page))) return
   const panel = page.getByRole('region', { name: /navigation$/ })
@@ -222,11 +223,11 @@ export async function openNavigation(page: Page): Promise<void> {
   await expect(panel).toBeVisible()
 }
 
-// The mini-app list and the status widgets: a permanent rail and strip on the desktop frame, both one
-// level down in the More sheet on a phone — everything not needed while reading is behind one key,
-// which is the whole point of the bar. Hands the scope they are in to `read`, so a test looks in the
-// right place without knowing which frame it got, and leaves the frame as it found it: a sheet left
-// open would swallow the next click.
+// The status widgets: a permanent bar on the desktop frame, one level down behind the row's own
+// immobile key on a phone — everything not needed while reading is behind that key, which is the whole
+// point of the row. Hands the scope they are in to `read`, so a test looks in the right place without
+// knowing which frame it got, and leaves the frame as it found it: a sheet left open would swallow the
+// next click.
 export async function withShellChrome<T>(page: Page, read: (chrome: Locator) => Promise<T>): Promise<T> {
   if (!(await isMobileFrame(page))) return read(page.locator('body'))
 
@@ -237,41 +238,36 @@ export async function withShellChrome<T>(page: Page, read: (chrome: Locator) => 
   try {
     return await read(sheet)
   } finally {
-    // Back, not the key again: the sheet covers the bar it opened from.
-    if (!wasOpen) {
+    // Back, not the key again: the sheet covers the row it opened from. And only while it is still
+    // up — choosing something in the sheet is a navigation step and puts it away by itself, and a
+    // goBack() then walks the page out of the app rather than closing anything.
+    if (!wasOpen && (await sheet.isVisible())) {
       await page.goBack()
       await expect(sheet).toBeHidden()
     }
   }
 }
 
-export async function openMiniApp(page: Page, name: string): Promise<void> {
-  if (!(await isMobileFrame(page))) {
-    await page.getByRole('button', { name, exact: true }).click()
-    return
-  }
-  const sheet = page.getByRole('dialog', { name: 'More' })
-  if (!(await sheet.isVisible())) await page.getByRole('button', { name: 'More' }).click()
-  await expect(sheet).toBeVisible()
-  await sheet.getByRole('button', { name, exact: true }).click()
-  // Picking one is a navigation step, so the sheet that offered it gets out of the way.
-  await expect(sheet).toBeHidden()
+// The row of types: down the left of the desktop window, along the bottom of a phone. One nav landmark
+// in both frames, because it is one level of one model — which is what the type row replaced two
+// registries and two components with.
+export function typeRow(page: Page): Locator {
+  return page.getByRole('navigation', { name: 'Types' })
 }
 
-// What the Explorer mini-app is called in the frame under test. Its mobile rail absorbed the open-tabs
-// list and Search, so the mobile frame names the same registration "Files" (SidebarItem.mobileTitle)
-// while the desktop rail, which gained none of that, keeps "Explorer".
-export async function explorerLabel(page: Page): Promise<string> {
-  return (await isMobileFrame(page)) ? 'Files' : 'Explorer'
+// A type's key in the row. Its accessible name carries the count when it has one ("Notes, 3 open"), so
+// this matches the title at the start rather than whole.
+export function typeKey(page: Page, title: string): Locator {
+  return typeRow(page).getByRole('button', { name: new RegExp(`^${title}(,|$)`) })
 }
 
-// Explorer's mobile rail is a switcher — Files, Tabs, and whatever else contributed a section (Search) —
-// over the one panel the frame summons. The segments are Ark's SegmentGroup items, a label around a
-// visually hidden radio, so the click goes to the label the owner presses. Mobile only: the desktop rail
-// has no switcher, it is the file tree it always was.
-export async function openRailSection(page: Page, section: string): Promise<void> {
-  await openNavigation(page)
-  await page.locator('.section-switcher').getByText(section, { exact: true }).click()
+// Go to a type — and only when it is not already where you are. A second tap on your own type is the
+// SECOND level on the mobile frame (the list of what is open), so "go here" applied to where you
+// already are would open a layer over it rather than doing nothing.
+export async function openType(page: Page, title: string): Promise<void> {
+  const key = typeKey(page, title)
+  if ((await key.getAttribute('aria-pressed')) !== 'true') await key.click()
+  await expect(key).toHaveAttribute('aria-pressed', 'true')
 }
 
 // The index is brought up detached from the boot — status 'opening', then a walk of the whole vault — so the
@@ -285,36 +281,34 @@ export async function waitForIndex(page: Page): Promise<void> {
   await expect(page.locator('.index-state-text')).toContainText(/\d+ in index/, { timeout: 20_000 })
 }
 
-// One registration reaches both frames, but only the desktop frame gives Search a mini-app of its own: on
-// a phone it is declared absorbed into Explorer's rail (SidebarItem.absorbedOnMobileBy), so it has no
-// bottom-bar destination and is reached as a section of that rail instead. Reaching for Explorer's key by
-// test id is also what proves the bar still carries it. Shared, because both the search and the
-// SQL-console specs start from this screen.
+// Search is a type of its own in both frames now: one registration, one key, the same gesture. It used to
+// be a mini-app on the desktop and a section of Explorer's mobile rail, which is exactly the divergence
+// the type row exists to make unrepresentable. Shared, because both the search and the SQL-console specs
+// start from this screen.
 export async function openSearchApp(page: Page): Promise<void> {
-  if (await isMobileFrame(page)) {
-    await page.getByTestId('arxhub.explorer').click()
-    await openRailSection(page, 'Search')
-  } else {
-    await openMiniApp(page, 'Search')
-  }
+  await openType(page, 'Search')
+  // On a phone the rail is a panel over the content; on the desktop it is already beside it.
+  await openNavigation(page)
   await expect(page.getByRole('textbox', { name: 'Search' }).first()).toBeVisible()
   // Every screen reached from here reads the index: the result list, the console's queries, the Reindex
   // control. Waiting for the walk once, here, is what keeps each of them from racing it.
   await waitForIndex(page)
 }
 
-// The list of what is open. A bottom-bar "Notes" key used to hold it; it is now the Tabs section of
-// Explorer's rail on a phone, and the panel tab strip on the desktop — so this is mobile-only, the way
-// the tab strip is desktop-only.
+// The list of what is open inside the active type — the second level. On a phone it is a second tap on
+// the type you are already in; on the desktop both levels are on screen at once and the tab strip is
+// that list, so this is mobile-only the way the tab strip is desktop-only.
 export async function openDocumentList(page: Page): Promise<Locator> {
-  await openRailSection(page, 'Tabs')
+  await openType(page, 'Notes')
+  // The second tap, which is what opens it.
+  await typeKey(page, 'Notes').click()
   const list = page.getByRole('menu', { name: 'Open documents' })
   await expect(list).toBeVisible()
   return list
 }
 
 export async function openSettingsSection(page: Page, section: string): Promise<void> {
-  await openMiniApp(page, 'Settings')
+  await openType(page, 'Settings')
   // The section list is the mini-app's own rail, which on the mobile frame has to be summoned. On
   // desktop it is already beside the content.
   await openNavigation(page)

@@ -237,7 +237,8 @@ export class Workspace {
 
   objectOf(typeId: string, key: string): OpenedObject | undefined {
     const space = this.spaces.get(typeId)
-    return space?.kind === 'objects' ? space.objects.get(key) : undefined
+    if (space?.kind !== 'objects') return undefined
+    return space.objects.get(key) ?? this.adopted(space, key)
   }
 
   // The active type's dock: declared by the type, filled by the active object.
@@ -347,11 +348,26 @@ export class Workspace {
     return type.open.count?.() ?? this.tabsOf(type.id).length
   }
 
+  // A panel the host holds that the workspace never opened. Every opener in the application still
+  // writes to the panel store directly (the second half of F-21/F-22), so while that is true a type's
+  // host legitimately holds tabs the workspace has no object for — and a list of what is open that
+  // silently omits them would be worse than no list. Deliberately NOT put into `space.objects`:
+  // `serialize` walks that map, and a panel with no snapshot has nothing to write down.
+  private adopted(space: Extract<TypeWorkspace, { kind: 'objects' }>, key: string): OpenedObject | undefined {
+    const panel = space.panels.panel(key)
+    if (panel == null) return undefined
+    return { key: panel.key, title: panel.title, component: panel.component, props: panel.props, snapshot: () => null }
+  }
+
   private tabOf(typeId: string, key: string): OpenedTab | null {
     const space = this.spaces.get(typeId)
     if (space?.kind !== 'objects') return null
-    const object = space.objects.get(key)
+    const own = space.objects.get(key)
+    const object = own ?? this.adopted(space, key)
     if (object == null) return null
+    // An adopted panel has no type-side object, so there is nothing to ask `label()` about: its title
+    // is whatever the host is showing.
+    if (own == null) return { typeId, key, title: object.title, gone: false }
 
     const gone = this.isGone(typeId, key)
     const type = this.types.get(typeId)

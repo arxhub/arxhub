@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, explorerLabel, openSettingsSection, test, waitForApp, withShellChrome } from './fixtures'
+import { expect, openNavigation, openSettingsSection, openType, test, waitForApp, withShellChrome } from './fixtures'
 
 // Matches BootPolicy's storage key. Written from the page rather than through the UI where a test needs
 // the app to come up already in that state.
@@ -18,13 +18,18 @@ test.describe('maintenance mode', () => {
   test('boots the essentials only, and says so', async ({ app }) => {
     await bootWith(app, { maintenance: true })
 
-    const explorer = await explorerLabel(app)
     await withShellChrome(app, async (chrome) => {
       await expect(chrome.getByRole('button', { name: 'Maintenance mode' })).toBeVisible()
-      // Explorer is not essential, so a maintenance boot leaves it out entirely — no entry at all.
-      await expect(chrome.getByRole('button', { name: explorer, exact: true })).toHaveCount(0)
-      await expect(chrome.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
     })
+
+    // Explorer is not essential, so a maintenance boot leaves it out — and the tree it contributes is
+    // the navigation of the Notes type, not a place of its own. The type is still there (notes is
+    // essential); its navigation says in as many words that there is no tree, rather than showing an
+    // empty column.
+    await openType(app, 'Notes')
+    await openNavigation(app)
+    await expect(app.getByText('The explorer is switched off')).toBeVisible()
+    await expect(app.getByRole('tree', { name: 'Files' })).toHaveCount(0)
   })
 
   test('leaves again from the Plugins page and brings the app back whole', async ({ app }) => {
@@ -34,11 +39,13 @@ test.describe('maintenance mode', () => {
     await expect(app.getByText('Maintenance mode is on')).toBeVisible()
     await app.getByRole('button', { name: 'Leave and restart' }).click()
 
-    const explorer = await explorerLabel(app)
     await withShellChrome(app, async (chrome) => {
       await expect(chrome.getByRole('button', { name: 'Maintenance mode' })).toHaveCount(0)
-      await expect(chrome.getByRole('button', { name: explorer, exact: true })).toBeVisible()
     })
+    // And the vault tree is back where it belongs: inside the Notes type's navigation.
+    await openType(app, 'Notes')
+    await openNavigation(app)
+    await expect(app.getByRole('tree', { name: 'Files' })).toBeVisible()
   })
 })
 

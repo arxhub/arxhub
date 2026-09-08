@@ -24,10 +24,19 @@ export interface HostedPanel {
 // cell a panel sits in is the host's business — `Workspace` only ever wanted "make this key the active
 // one", which is `activate`.
 export interface PanelHost {
+  // What draws this host on screen. The frame renders it and knows nothing else about it — which is
+  // what keeps `PanelsLayout` out of the shell: whoever builds the host (the composition root) is the
+  // one that already imports the panels plugin.
+  readonly view: Component
   // The open keys in the order they are shown. This is what a tab list and the type's counter read, so
   // it has to be backed by reactive state or neither will ever update.
   keys(): string[]
   has(key: string): boolean
+  // What a key shows right now, as the host holds it. `Workspace` asks this for a key it did not open
+  // itself: every opener in the application still writes to the panel store directly (the second half
+  // of F-21/F-22), and "what is open in this type" is a question about the host, not about the
+  // workspace's own bookkeeping. A tab the workspace cannot describe is still a tab.
+  panel(key: string): HostedPanel | undefined
   open(panel: HostedPanel): void
   // Swap what a key shows, in place. The tab keeps its position: the person did not move it, so it
   // does not move.

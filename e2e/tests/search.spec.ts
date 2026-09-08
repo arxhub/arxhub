@@ -2,10 +2,10 @@ import type { Locator, Page } from '@playwright/test'
 import {
   expect,
   isMobileFrame,
-  openMiniApp,
+  openNavigation,
   openNote,
-  openRailSection,
   openSearchApp as openSearch,
+  openType,
   test,
   waitForApp,
   waitForIndex,
@@ -154,11 +154,10 @@ test.describe('finding a note by a word in its text', () => {
         .filter({ hasText: new RegExp(body) }),
     ).toHaveCount(0)
 
-    // Leaving the mini-app and coming back finds the switch as it was left: the setting is device-local and
-    // does not live in the component that showed it. Where "away" is differs by frame: on a phone Search IS
-    // a section of Explorer's rail, so Explorer is not away at all — and on the desktop Settings is not
-    // usable as "away" either, since its section list holds a row called Search too.
-    await openMiniApp(app, (await isMobileFrame(app)) ? 'Settings' : 'Explorer')
+    // Leaving the type and coming back finds the switch as it was left: the setting is device-local and
+    // does not live in the component that showed it. Away is the same place in both frames now — Search
+    // is a type of its own, so leaving it means going to another one.
+    await openType(app, 'Notes')
     await openSearch(app)
     await expect(app.getByRole('checkbox', { name: 'Titles only' })).toBeChecked()
 
@@ -286,20 +285,19 @@ test.describe('finding a note by a word in its text', () => {
 
     // Still the same running app. The walk is finished and nothing re-walks on its own, so the only way
     // this document can answer is the observation path picking the save up while the session is up.
-    if (mobile) await openRailSection(app, 'Search')
+    await openSearch(app)
     await searchFor(app, 'трилобит', new RegExp(live))
 
     // Deleted through the app, not behind its back: the watcher wraps the vault view every writer goes
     // through, and a bare unlink on disk is not a write the app ever made.
-    if (mobile) await openRailSection(app, 'Files')
-    else await openMiniApp(app, 'Explorer')
+    await openType(app, 'Notes')
+    await openNavigation(app)
     await app.getByRole('treeitem', { name: live }).click({ button: 'right' })
     await app.getByRole('menuitem', { name: 'Delete' }).click()
     await app.getByRole('button', { name: 'Delete', exact: true }).last().click()
     await expect.poll(() => vault.read(live).catch(() => null)).toBeNull()
 
-    if (mobile) await openRailSection(app, 'Search')
-    else await openSearch(app)
+    await openSearch(app)
     // The same question as before, asked until the deleted note is no longer among the answers. Paired
     // with the control note, which must still be found: an empty list would say "gone" just as loudly if
     // search had stopped working altogether.

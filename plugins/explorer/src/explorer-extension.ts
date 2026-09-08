@@ -25,9 +25,10 @@ export interface RailTab {
   component: Component
 }
 
-// The one place this id is spelled out — a plugin contributing a rail tab needs it to mark its own
-// sidebar item absorbedOnMobileBy (see SidebarItem), and a literal repeated at each call site is a typo
-// waiting to drift from explorer-plugin.ts's own registration.
+// The one place this id is spelled out. The explorer no longer registers a mini-app under it — the
+// tree became the navigation of the "Notes" type when the frames moved to the type registry (F-14/F-16)
+// — and what is left is the name a plugin contributing a rail tab marks its own sidebar item
+// absorbedOnMobileBy with (see SidebarItem). It goes together with `registerRailTab`, in F-24.
 export const EXPLORER_SIDEBAR_ITEM = 'arxhub.explorer'
 
 type ExplorerExtensionArgs = ExtensionArgs & {

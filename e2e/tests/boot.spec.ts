@@ -1,15 +1,12 @@
-import { expect, explorerLabel, openSettingsSection, test, waitForApp, withShellChrome } from './fixtures'
+import { expect, openSettingsSection, test, typeRow, waitForApp } from './fixtures'
 
 test.describe('application boot', () => {
-  test('comes up with the shell and its mini-apps', async ({ app }) => {
-    // The list is a permanent rail on desktop and lives behind the More key on a phone; the fixture
-    // hands back whichever scope holds it. Explorer answers to a different name in each frame — see
-    // explorerLabel — because its mobile rail took on more than the desktop one did.
-    const explorer = await explorerLabel(app)
-    await withShellChrome(app, async (chrome) => {
-      await expect(chrome.getByRole('button', { name: explorer, exact: true })).toBeVisible()
-      await expect(chrome.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
-    })
+  test('comes up with the row of types', async ({ app }) => {
+    // The first level of navigation, and the same one in both frames: a rail down the left of a window,
+    // a row along the bottom of a phone. A type is named the same in both — there is one registration,
+    // so there is nothing left for the two frames to disagree about.
+    await expect(typeRow(app).getByRole('button', { name: /^Notes(,|$)/ })).toBeVisible()
+    await expect(typeRow(app).getByRole('button', { name: /^Settings(,|$)/ })).toBeVisible()
   })
 
   test('reaches the working tree over the protected API', async ({ app }) => {

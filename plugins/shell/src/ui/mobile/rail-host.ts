@@ -11,6 +11,9 @@ export interface RailClaim {
   // Unset when the mini-app did not name its rail; the frame falls back to the mini-app's own title,
   // which is never actively wrong.
   title?: string
+  // Kept in the claim, deliberately not read by the frame: the key that reveals the panel is ONE
+  // control with one meaning, so it takes one glyph across every type (DS-7). A per-mini-app icon there
+  // would say "this is a different key" about a key that is always the same one.
   icon: string
 }
 

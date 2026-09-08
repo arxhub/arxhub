@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useNavHost } from '@arxhub/plugin-shell/ui'
 import { actionMenu, IconButton, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted } from 'vue'
@@ -9,6 +10,11 @@ import { useTreeNavigation } from './use-tree-navigation'
 
 const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
+// The frame's own control over this navigation: collapse the column on the desktop, put the panel away
+// on the phone. It is contributed into this strip rather than drawn in a head of the frame's own above
+// it — two bands for one role is what that would be. Absent wherever the tree is not a frame's
+// navigation, and then there is simply no button.
+const navHost = useNavHost()
 const actions = useFileActions()
 const { onKeydown } = useTreeNavigation(explorer.tree, explorer)
 
@@ -44,6 +50,14 @@ function newFolder() {
         <IconButton size="lg" icon="lu:file-plus" tooltip="New file" @click="newFile" />
         <IconButton size="lg" icon="lu:refresh-cw" tooltip="Refresh" @click="explorer.loadRoot()" />
         <IconButton size="lg" icon="lu:chevrons-down-up" tooltip="Collapse tree" @click="explorer.collapseAll()" />
+        <IconButton
+          v-if="navHost != null"
+          size="lg"
+          :icon="navHost.icon"
+          data-testid="nav-toggle"
+          :tooltip="navHost.label"
+          @click="navHost.dismiss()"
+        />
       </template>
     </Strip>
 

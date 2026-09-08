@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid'
 import { type Component, defineComponent, h, markRaw, type PropType } from 'vue'
 import { getAllGroupIds } from './panel-store'
 import type { LayoutNode, PanelGroup, PanelInstance, PanelStore } from './types'
+import PanelsLayout from './ui/PanelsLayout.vue'
 
 // The panels side of the navigation model: one `PanelStore` per tab type, seen through the shell's
 // `PanelHost` port. The port lives in `@arxhub/plugin-shell/ui` and its implementation lives here,
@@ -75,6 +76,13 @@ function hostedKeyOf(instance: { props?: { readonly [key: string]: unknown } }):
   return typeof key === 'string' ? key : null
 }
 
+// The key a panel answers to. A hosted panel carries its own stable one; a panel opened straight on
+// the store falls back to its instance id, so it is addressable — and closable, and activatable — the
+// same way, without the store having to grow a second identity.
+function keyOf(instance: PanelInstance): string {
+  return hostedKeyOf(instance) ?? instance.instanceId
+}
+
 function hostedProps(panel: HostedPanel): Record<string, unknown> {
   // markRaw on the component: it goes into the store's reactive `groups`, and a reactive proxy over a
   // component definition breaks identity comparison and makes Vue walk the whole definition.
@@ -90,21 +98,57 @@ interface Located {
 // store this wraps, and `store` is exposed so a frame can render the type's own `PanelsLayout` over it.
 export class StorePanelHost implements PanelHost {
   readonly store: PanelStore
+  // The frame renders this and asks nothing else about the host. `markRaw` because it goes straight
+  // into a `<component :is>`; a reactive proxy over a component definition breaks identity comparison
+  // and makes Vue walk the whole definition.
+  readonly view: Component
 
   constructor(store: PanelStore) {
     this.store = store
-    this.store.registerPanel({ id: HOSTED_DEFINITION_ID, title: 'Panel', component: HostedPanelView })
+    // Guarded, because a store can legitimately be handed to more than one host over an application's
+    // life — a type taken out of the row and entered again builds a new one, and while there is a single
+    // application store the wiring hands that same one over. Registering twice is not an error the store
+    // has any use for, and the warning it prints is noise about nothing.
+    if (this.store.getDefinition(HOSTED_DEFINITION_ID) == null) {
+      this.store.registerPanel({ id: HOSTED_DEFINITION_ID, title: 'Panel', component: HostedPanelView })
+    }
+    this.view = markRaw(defineComponent({ name: 'StorePanels', setup: () => () => h(PanelsLayout, { store }) }))
   }
 
   keys(): string[] {
     return this.store.getOrderedGroupIds().flatMap((groupId) => {
       const group = this.store.groups.value[groupId]
-      return group == null ? [] : group.instances.flatMap((instance) => hostedKeyOf(instance) ?? [])
+      return group == null ? [] : group.instances.map((instance) => keyOf(instance))
     })
   }
 
   has(key: string): boolean {
     return this.locate(key) != null
+  }
+
+  // What the key is showing, as the store holds it. A panel opened straight on the store — every
+  // opener in the application still does that — has no hosted key, so its instance id stands in: the
+  // workspace treats a key as opaque, and this is what lets a type's list of what is open name tabs
+  // the workspace itself never opened.
+  panel(key: string): HostedPanel | undefined {
+    const found = this.locate(key)
+    if (found == null) return undefined
+    const group = this.store.groups.value[found.groupId]
+    const instance = group?.instances.find((it) => it.instanceId === found.instanceId)
+    if (instance == null) return undefined
+    const props = instance.props ?? {}
+    const hosted = hostedKeyOf(instance)
+    if (hosted != null) {
+      return {
+        key: hosted,
+        title: instance.title,
+        component: props.component as Component,
+        props: (props.componentProps ?? {}) as Record<string, unknown>,
+      }
+    }
+    const definition = this.store.getDefinition(instance.definitionId)
+    if (definition == null) return undefined
+    return { key, title: instance.title, component: definition.component, props: { ...props } }
   }
 
   open(panel: HostedPanel): void {
@@ -146,7 +190,7 @@ export class StorePanelHost implements PanelHost {
     const group = this.store.groups.value[groupId]
     if (group == null || group.activeInstanceId == null) return null
     const instance = group.instances.find((it) => it.instanceId === group.activeInstanceId)
-    return instance == null ? null : hostedKeyOf(instance)
+    return instance == null ? null : keyOf(instance)
   }
 
   serializeLayout(): Json | null {
@@ -184,15 +228,24 @@ export class StorePanelHost implements PanelHost {
 
     // Every panel that is open, in the order it was opened. The layout only arranges these — it can
     // neither raise a tab nor drop one.
+    //
+    // `open` is what the snapshot's keys are matched against, so it holds only panels the workspace
+    // raised itself. `foreign` is everything else in the store — a panel an opener put there directly —
+    // and it is kept apart rather than ignored: a rebuilt layout REPLACES the store's groups, so a
+    // panel missing from both lists is not "left where it was", it is closed.
     const open = new Map<string, PanelInstance>()
+    const foreign: PanelInstance[] = []
     for (const groupId of this.store.getOrderedGroupIds()) {
       const group = this.store.groups.value[groupId]
       if (group == null) continue
       for (const instance of group.instances) {
         const key = hostedKeyOf(instance)
-        if (key != null) open.set(key, { ...instance })
+        if (key == null) foreign.push({ ...instance })
+        else open.set(key, { ...instance })
       }
     }
+    // The workspace raised nothing, so it has nothing to arrange — and no business rebuilding a layout
+    // made entirely of somebody else's panels.
     if (open.size === 0) return
 
     const taken = new Set<string>()
@@ -233,9 +286,9 @@ export class StorePanelHost implements PanelHost {
 
     const tree = build(snapshot)
 
-    // A panel the recorded layout says nothing about — opened later, or on another device — lands in
-    // the first cell rather than getting lost.
-    const orphans = [...open.entries()].filter(([key]) => !taken.has(key)).map(([, instance]) => instance)
+    // A panel the recorded layout says nothing about — opened later, on another device, or by an opener
+    // that never went through the workspace — lands in the first cell rather than getting lost.
+    const orphans = [...[...open.entries()].filter(([key]) => !taken.has(key)).map(([, instance]) => instance), ...foreign]
     if (orphans.length > 0 && firstGroupId != null) {
       const group = built[firstGroupId]
       built[firstGroupId] = {
@@ -267,7 +320,7 @@ export class StorePanelHost implements PanelHost {
 
   private locate(key: string): Located | undefined {
     for (const [groupId, group] of Object.entries(this.store.groups.value)) {
-      const instance = group.instances.find((it) => hostedKeyOf(it) === key)
+      const instance = group.instances.find((it) => keyOf(it) === key)
       if (instance != null) return { groupId, instanceId: instance.instanceId }
     }
     return undefined

@@ -43,10 +43,11 @@ Every value below comes from a token. A literal in place of one of these is a vi
   `useShellFrame()`; the consumer gets no density prop. A single-line row lands exactly on the value; a row that
   legitimately wraps grows down from it.
 - **Control** — an interactive element: button, input, switch, stepper, segmented control. `var(--size-xs)` (32px).
-- **Status bar** — `var(--size-md)` (40px) on the desktop frame, matching the rail's own `size="lg"` `NavItem`
-  it now runs the full height beside — a shorter footer left a jog where the two met instead of one level seam. Its
-  own items (Logs, Sync, the maintenance/auth/pending-changes alerts) fill that height edge to edge rather than
-  sitting as a smaller control centred inside it — the same reasoning as the Tab role below, applied to the same bar.
+- **Status bar** — `var(--size-md)` (40px) on the desktop frame, matching the type rail's own `size="lg"`
+  `NavItem` — it spans the whole window under the rail, and a shorter bar left a jog where the two met instead of
+  one level seam. Its own items (Logs, Sync, the maintenance/auth/pending-changes alerts) fill that height edge to
+  edge rather than sitting as a smaller control centred inside it — the same reasoning as the Tab role below,
+  applied to the same bar.
 - **Page frame** — a full-height page (a settings section, a full-screen mini-app): `PageLayout`, padding
   `24px 24px 20px`, and it sets no measure. A panel of the workspace is NOT a page: it starts with a strip.
 - **Tab** — keeps its own component (it carries drag-and-drop and a close control) but matches the Strip it sits in

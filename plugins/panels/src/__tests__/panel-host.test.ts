@@ -174,6 +174,44 @@ describe('splitting still works inside a type', () => {
     expect(restored.keys()).toEqual(['a', 'b', 'd', 'c'])
   })
 
+  // A rebuilt layout REPLACES the store's groups, so a panel in neither the snapshot nor the workspace's
+  // own tabs is not left where it was — it is closed. Every opener in the application still puts panels
+  // in the store directly (the second half of F-21/F-22), so this is not a hypothetical.
+  test('a panel the workspace never raised survives a layout it is not named in', () => {
+    split()
+    const snapshot = host.serializeLayout()
+
+    const restored = newHost()
+    restored.open(panel('a'))
+    restored.open(panel('b'))
+    restored.open(panel('c'))
+    restored.store.registerPanel({ id: 'welcome', title: 'Welcome', component: { name: 'welcome' } })
+    restored.store.openPanel('welcome', {}, 'Welcome')
+
+    restored.applyLayout(snapshot)
+
+    expect(restored.keys().filter((key) => key === 'a' || key === 'b' || key === 'c')).toEqual(['a', 'b', 'c'])
+    expect(restored.store.getOrderedGroupIds().flatMap((id) => restored.store.groups.value[id].instances.map((it) => it.title))).toContain(
+      'Welcome',
+    )
+  })
+
+  // The other side of the same rule: a store holding nothing but panels the workspace never raised has
+  // no layout of the workspace's to apply, so the store is left exactly as it is.
+  test('a layout is not applied at all when the workspace raised nothing', () => {
+    split()
+    const snapshot = host.serializeLayout()
+
+    const restored = newHost()
+    restored.store.registerPanel({ id: 'welcome', title: 'Welcome', component: { name: 'welcome' } })
+    restored.store.openPanel('welcome', {}, 'Welcome')
+    const before = restored.store.getOrderedGroupIds()
+
+    restored.applyLayout(snapshot)
+
+    expect(restored.store.getOrderedGroupIds()).toEqual(before)
+  })
+
   test('a key the layout mentions but nothing opened is not resurrected', () => {
     split()
     const snapshot = host.serializeLayout()

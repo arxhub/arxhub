@@ -1,12 +1,10 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { basename } from '@arxhub/path'
 import { NotesExtension } from '@arxhub/plugin-notes/ui'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { VaultVfs } from '@arxhub/vfs'
 import { markRaw } from 'vue'
-import { EXPLORER_SIDEBAR_ITEM, ExplorerExtension } from './explorer-extension'
+import { ExplorerExtension } from './explorer-extension'
 import { manifest } from './manifest'
-import ExplorerLayout from './ui/ExplorerLayout.vue'
 import FileTreeView from './ui/FileTreeView.vue'
 
 type ExplorerPluginArgs = PluginArgs & {
@@ -36,10 +34,11 @@ export class ExplorerPlugin extends Plugin {
     const explorer = ctx.extensions.get(ExplorerExtension)
     const notes = ctx.extensions.get(NotesExtension)
 
-    // The tree is the navigation of the "Notes" type, not a place of its own. That is the whole of
-    // F-21 that can land before a frame reads the type registry: the mini-app registration below stays
-    // until the two frames are rewritten on the new model (F-14/F-16), because it is the only thing
-    // either frame reads today. Removing it now would take the file tree off the screen.
+    // The tree is the navigation of the "Notes" type, not a place of its own — and now that both
+    // frames read the type registry, that is the ONLY way it reaches the screen. The mini-app
+    // registration that stood beside it is gone with them (F-21): a second "Explorer" in the type row,
+    // whose content was the same tree beside the same panels, would have been the old model wearing
+    // the new row.
     notes.setNav(markRaw(FileTreeView))
 
     // Creation is intercepted here because the tree knows the place and the type does not: a note has
@@ -52,18 +51,6 @@ export class ExplorerPlugin extends Plugin {
       const path = await notes.freePath(parent, 'New note', '.arx')
       await explorer.createFile(parent, basename(path))
       return path
-    })
-
-    const shell = ctx.extensions.get(ShellExtension)
-    shell.sidebar.register({
-      id: EXPLORER_SIDEBAR_ITEM,
-      icon: 'lu:folder-open',
-      title: 'Explorer',
-      // Its mobile rail now also holds Tabs and (if Search registers) Search sections — "Explorer"
-      // undersells that, but the desktop rail icon is unrelated and keeps its own name.
-      mobileTitle: 'Files',
-      layout: ExplorerLayout,
-      order: 0,
     })
   }
 }
