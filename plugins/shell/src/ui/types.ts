@@ -11,7 +11,7 @@ export interface SidebarItem {
   region?: 'top' | 'bottom'
   order?: number
   // When true the item renders NO rail icon, but its `layout` still shows as content when made active
-  // (e.g. via shell.sidebar.setActive from a footer button). Use for footer-triggered mini-apps.
+  // (e.g. via shell.sidebar.setActive from a status item). Use for mini-apps opened from the bar.
   hidden?: boolean
   // Names another sidebar item's id whose mobile rail this one has contributed a section to instead of
   // getting its own bottom-bar destination — the mobile frame drops it from the tab row on that account.

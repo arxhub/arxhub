@@ -1,6 +1,6 @@
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { type ComputedRef, computed } from 'vue'
-import { type FooterItem, type MobileTab, ShellExtension } from './extension'
+import { type MobileTab, ShellExtension } from './extension'
 import type { SidebarItem } from './types'
 
 // Both frames read the same registries — what differs is where the items land, not what they are.
@@ -10,8 +10,6 @@ export interface Shell {
   readonly activeItem: ComputedRef<SidebarItem | undefined>
   readonly activeTitle: ComputedRef<string>
   readonly sidebarItems: ComputedRef<SidebarItem[]>
-  readonly footerLeft: ComputedRef<FooterItem[]>
-  readonly footerRight: ComputedRef<FooterItem[]>
   readonly tabs: ComputedRef<MobileTab[]>
   setActive(id: string): void
   readonly activeId: ComputedRef<string>
@@ -51,8 +49,6 @@ export function useShell(): Shell {
         mobileTitle: item.mobileTitle,
       })),
     ),
-    footerLeft: computed(() => byOrder(shell.footer.items.filter((i) => i.region === 'left'))),
-    footerRight: computed(() => byOrder(shell.footer.items.filter((i) => i.region === 'right'))),
     tabs: computed(() => byOrder(shell.tabs.items)),
     setActive: (id: string) => shell.sidebar.setActive(id),
     // The resolved item's id, not the raw registry value: with the fallback above, the rail and the

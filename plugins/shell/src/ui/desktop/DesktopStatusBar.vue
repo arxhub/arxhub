@@ -1,27 +1,17 @@
 <script setup lang="ts">
 import { Icon } from '@arxhub/uikit/core'
 import { computed } from 'vue'
-import type { FooterItem } from '../extension'
 import type { StatusRegistry } from '../status'
 import type { Workspace } from '../workspace'
 
-// The status bar: states on the left, actions on the right, and nothing else ever.
-//
-// It reads BOTH registries on purpose. `status` is the grammar a plugin declares WHAT it contributes
-// in ('status' | 'action'), and it is where the fifteen existing registrations are going (F-11); until
-// they move, `footer.register({ region })` is what every one of them still uses, and dropping it here
-// would empty the bar. Two sources, one bar — and the bar is the thing that ends up with one of them.
+// The status bar: states on the left, actions on the right, and nothing else ever. Which side an item
+// lands on is decided here, from the `kind` it declared — no plugin names a region.
 //
 // There is no background line on the desktop: the bar is permanently on screen, and a second strip over
 // it would repeat it one row down. But `busy` IS read here, and not as a strip — as a road. The phone's
 // background line leads to the object the work belongs to, and a desktop that led nowhere would be a
 // divergence in MEANING rather than in layout.
-const props = defineProps<{
-  status: StatusRegistry
-  workspace: Workspace
-  left: FooterItem[]
-  right: FooterItem[]
-}>()
+const props = defineProps<{ status: StatusRegistry; workspace: Workspace }>()
 
 // Only work that has an owner: indexing and sync legitimately have none, and pretending there is
 // somewhere to go would be a lie.
@@ -31,7 +21,6 @@ const owned = computed(() => props.status.busy.value.filter((it) => it.owner != 
 <template>
   <footer class="status-bar" data-testid="shell-footer">
     <div class="states">
-      <component :is="item.component" v-for="item in props.left" :key="item.id" />
       <component :is="item.component" v-for="item in props.status.statuses.value" :key="item.id" />
 
       <!-- A target of its own rather than a click on the whole item: the component comes from a
@@ -52,7 +41,6 @@ const owned = computed(() => props.status.busy.value.filter((it) => it.owner != 
     </div>
     <span class="spacer" />
     <div class="actions">
-      <component :is="item.component" v-for="item in props.right" :key="item.id" />
       <component :is="item.component" v-for="item in props.status.actions.value" :key="item.id" />
     </div>
   </footer>

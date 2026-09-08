@@ -78,6 +78,19 @@ describe('the background line is a projection of the status items', () => {
     expect(status.busy.value).toEqual([])
   })
 
+  test('a busy reading a plain variable answers once and then goes stale — the documented footgun', () => {
+    const status = new StatusRegistry()
+    // Deliberately not a ref. `busy` is read through a computed, so a value Vue cannot track leaves the
+    // line frozen at whatever it said the first time it was asked — which looks like a bug in the line
+    // rather than in the item, and is why the field's contract says the state has to be reactive.
+    let syncing = false
+    status.register({ id: 'sync', kind: 'status', component: SyncFooter, busy: () => (syncing ? { label: 'Syncing' } : null) })
+
+    expect(status.busy.value).toEqual([])
+    syncing = true
+    expect(status.busy.value).toEqual([])
+  })
+
   test('work with an owner has somewhere to lead, work without one honestly has nowhere', () => {
     const status = new StatusRegistry()
     status.register({

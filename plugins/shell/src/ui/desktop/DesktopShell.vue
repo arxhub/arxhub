@@ -5,7 +5,6 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { provideNavHost } from '../nav-host'
 import { isObjectType } from '../tab-type'
 import { useNavigation } from '../use-navigation'
-import { useShell } from '../use-shell'
 import DesktopDock from './DesktopDock.vue'
 import DesktopNavColumn from './DesktopNavColumn.vue'
 import DesktopStatusBar from './DesktopStatusBar.vue'
@@ -22,9 +21,6 @@ import { navColumn } from './use-nav-column'
 provideShellFrame('desktop')
 
 const { workspace, types, storage, status } = useNavigation()
-// The fifteen footer registrations that have not moved to the status registry yet (F-11). The frame
-// renders them beside the new ones rather than dropping them.
-const shell = useShell()
 
 const activeType = computed(() => {
   const id = workspace.activeTypeId.value
@@ -110,7 +106,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       </div>
     </div>
 
-    <DesktopStatusBar :status="status" :workspace="workspace" :left="shell.footerLeft.value" :right="shell.footerRight.value" />
+    <DesktopStatusBar :status="status" :workspace="workspace" />
     <Toaster />
   </div>
   <ModalsProvider />

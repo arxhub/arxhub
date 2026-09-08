@@ -23,7 +23,7 @@ import { railClaim } from './rail-host'
 provideShellFrame('mobile')
 
 const { workspace, types, status } = useNavigation()
-const { sidebarItems, activeId, footerLeft, footerRight, setActive } = useShell()
+const { sidebarItems, activeId, setActive } = useShell()
 
 // The frame gives up the height the keyboard takes instead of letting it cover the bottom of the app.
 // Everything that can be operated is down there, so this is the difference between typing blind and
@@ -90,8 +90,9 @@ function openWhatsOpen(): void {
 }
 
 // What the desktop frame keeps permanently in the status bar. On a phone it is worth a look, not a
-// reserved strip, so it lives at the top of the sheet behind the row's own immobile key.
-const statusItems = computed(() => [...footerLeft.value, ...footerRight.value, ...status.statuses.value, ...status.actions.value])
+// reserved strip, so it lives at the top of the sheet behind the row's own immobile key. States before
+// actions, the same reading order the bar has left to right — this frame has no two sides to use.
+const statusItems = computed(() => [...status.statuses.value, ...status.actions.value])
 </script>
 
 <template>

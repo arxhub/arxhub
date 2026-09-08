@@ -1,5 +1,5 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { type Component, markRaw, reactive, shallowRef } from 'vue'
+import { markRaw, reactive, shallowRef } from 'vue'
 import { StatusRegistry } from './status'
 import { TabTypeRegistry } from './tab-type-registry'
 import type { SidebarItem } from './types'
@@ -7,15 +7,6 @@ import type { Workspace } from './workspace'
 import type { WorkspaceStorage } from './workspace-storage'
 
 export type { SidebarItem }
-
-export interface ShellItem {
-  id: string
-  component: Component
-  region: string
-  order?: number
-}
-
-export type FooterItem = ShellItem & { region: 'left' | 'right' }
 
 // A key in the mobile frame's bottom bar. The bar is the only navigation a phone gets, so a plugin
 // that owns something reachable there contributes a tab instead of a strip widget — the desktop frame
@@ -47,23 +38,17 @@ export interface MobileTab {
   gesture?: 'left-edge' | 'right-edge'
 }
 
-// The three registries are typed by hand rather than inferred. `reactive()` infers through
+// The two remaining registries are typed by hand rather than inferred. `reactive()` infers through
 // `UnwrapNestedRefs`, whose declaration reaches `LooseRequired` in `@vue/shared` — a name the emitted
 // `.d.ts` cannot get to, so the build reports the field as unnameable (TS2883). An annotation is what
-// the compiler asks for, and it costs nothing here: these are three fixed shapes, all of which go away
-// with the last mini-app (F-18/F-21).
+// the compiler asks for, and it costs nothing here: two fixed shapes, both of which go away with the
+// last mini-app (F-18/F-21).
 export interface SidebarRegistry {
   items: SidebarItem[]
   activeId: string
   register(item: SidebarItem): void
   unregister(id: string): void
   setActive(id: string): void
-}
-
-export interface FooterRegistry {
-  items: FooterItem[]
-  register(item: FooterItem): void
-  unregister(id: string): void
 }
 
 export interface MobileTabRegistry {
@@ -76,22 +61,22 @@ export interface MobileTabRegistry {
 //
 // `types` is it: a plugin declares a tab TYPE once instead of describing the same thing twice (a rail
 // item for the desktop, a bar key for the phone), and both frames draw the same registry. `status` is
-// the same idea for the bar — a plugin says WHAT it contributes rather than WHERE to put it.
+// the same idea for the bar — a plugin says WHAT it contributes rather than WHERE to put it, and one
+// registration is laid out three ways (the desktop bar, the phone's status block, the background line).
 //
-// The old `sidebar` + `tabs` + `footer` are still here because four plugins still register through
-// them and fifteen status items still name a region. `use-navigation.ts` reads a `SidebarItem` as a
-// type with no objects so those keep reaching the screen, and the desktop status bar renders
-// `footer.items` beside `status`; both bridges empty themselves as each plugin moves over
-// (F-11, F-18, F-23…F-25). `tabs` has no registrar left at all and no renderer — it goes with F-18.
+// The old `sidebar` is still here because four plugins still register through it. `use-navigation.ts`
+// reads a `SidebarItem` as a type with no objects so those keep reaching the screen; the bridge empties
+// itself as each plugin moves over (F-23…F-25). `tabs` has no registrar left at all and no renderer —
+// it goes with F-18.
 //
-// What is already gone: `header`, `content` and `setContent`. Not replaced by anything — they had zero
-// call sites in the whole repository and the header never rendered once. That was not an API, it was
-// code nobody had deleted.
+// What is already gone: `header`, `content` and `setContent` (F-12) — zero call sites, and the header
+// never rendered once — and `footer` with `FooterItem`/`ShellItem.region` (F-13), whose five call sites
+// now say what they contribute instead of where to put it. Both were removed rather than reworked.
 export class ShellExtension extends Extension {
   // The tab-type registry: the row and the "open new" section of the search sheet are built from it.
   readonly types: TabTypeRegistry
-  // The desktop status bar, the status block of the phone's search sheet and the background line, all
-  // from the same registrations. Successor to `footer.register({ region })`, which still works.
+  // The desktop status bar, the status block of the phone's sheet and the background line, all from the
+  // same registrations.
   readonly status: StatusRegistry
 
   // shallowRef, not a plain field: the two halves are put here by the composition root before the
@@ -113,16 +98,6 @@ export class ShellExtension extends Extension {
     },
     setActive(id: string): void {
       this.activeId = id
-    },
-  })
-
-  readonly footer: FooterRegistry = reactive({
-    items: [] as FooterItem[],
-    register(item: FooterItem): void {
-      this.items = [...this.items, { ...item, component: markRaw(item.component) }]
-    },
-    unregister(id: string): void {
-      this.items = this.items.filter((i) => i.id !== id)
     },
   })
 

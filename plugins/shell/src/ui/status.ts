@@ -25,9 +25,9 @@ export interface StatusItem {
 
 export type StatusBusyEntry = StatusBusy & { id: string }
 
-// The status registry, and with it the source of the background line. It stands beside
-// `footer.register({ region })` and will replace it once the fifteen existing call sites move over;
-// `header` and `content`/`setContent` are replaced by nothing — they had zero call sites in the whole
+// The status registry, and with it the source of the background line. It replaced
+// `footer.register({ region })`, whose five call sites now declare a `kind` instead of a side; `header`
+// and `content`/`setContent` were replaced by nothing — they had zero call sites in the whole
 // repository, and the header never rendered once.
 export class StatusRegistry {
   private readonly entries = shallowRef<StatusItem[]>([])
