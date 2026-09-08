@@ -29,6 +29,11 @@ export class PublishPlugin extends Plugin {
     ctx.extensions.register(PublishExtension, () => ({}))
   }
 
+  // Publishing registers NO tab type on `shell.types`, and that is a decision, not an omission (A-33): the
+  // mobile prototype declares a «Публикация» type and this plugin deliberately does not. A type is a place
+  // with objects of its own and a view for them, and publishing has neither — it is something done TO a note
+  // that already belongs to another type, so its whole surface is the tree actions below plus one settings
+  // section. A key in the type row that opens an empty panel is worse than no key at all.
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
 
