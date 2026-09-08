@@ -2,6 +2,7 @@
 import { Icon, Row, SectionLabel } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, watch } from 'vue'
+import { useSheetLayer } from './hotkeys'
 import { chooseEntry, type SheetEntry, sheetSections } from './search-sheet'
 import type { TabTypeRegistry } from './tab-type-registry'
 import type { Workspace } from './workspace'
@@ -14,6 +15,11 @@ const emit = defineEmits<{ chosen: [] }>()
 
 const sections = computed(() => sheetSections(props.workspace, props.types))
 const listEl = ref<HTMLElement | null>(null)
+
+// While the sheet is up it is the only thing the keyboard talks to: ⌘B must not collapse the column
+// from under an open dialog. Pushed from the list rather than from its container, because the
+// container is a uikit control and uikit may not depend on a plugin — the frame owns the layer.
+useSheetLayer(listEl)
 
 // DS-8: the icon's size follows the row it sits in, and the row's density is the frame's. Read once —
 // the frame never changes while the app is up.

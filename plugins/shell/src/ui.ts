@@ -1,5 +1,6 @@
 export { default as AboutSettingsPage } from './ui/AboutSettingsPage.vue'
 export { ShellExtension } from './ui/extension'
+export { overlayLayerId, SHEET_LAYER, typeLayerId, useHotkeysExtension, useOpenSheetKey, useSheetLayer } from './ui/hotkeys'
 export { default as MiniAppShell } from './ui/MiniAppShell.vue'
 export type { WorkspaceEmit, WorkspaceEvents } from './ui/nav-events'
 export type { NavHost } from './ui/nav-host'

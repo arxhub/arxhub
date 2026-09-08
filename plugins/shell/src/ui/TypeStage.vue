@@ -33,7 +33,7 @@ const nothing = computed(() => !stages.value.some((it) => it.typeId === activeTy
 </script>
 
 <template>
-  <TypeStageView v-for="stage in stages" :key="stage.typeId" :view="stage.view" :visible="stage.typeId === activeTypeId" />
+  <TypeStageView v-for="stage in stages" :key="stage.typeId" :view="stage.view" :type-id="stage.typeId" :visible="stage.typeId === activeTypeId" />
   <p v-if="nothing" class="nothing">{{ empty }}</p>
 </template>
 

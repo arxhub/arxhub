@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { useHotkeys } from '@arxhub/plugin-hotkeys/ui'
+import { typeLayerId, useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { Button, StatusDot } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, watch } from 'vue'
+import { SETTINGS_TYPE_ID } from '../contributions'
 import { SettingsExtension } from '../settings-extension'
 
 const arxhub = useArxHub()
@@ -39,15 +42,30 @@ watch(
   },
 )
 
-// ⌘S applies the whole pending set from anywhere in settings, which is the point of staging them.
-function onKeydown(event: KeyboardEvent): void {
-  if (event.key !== 's' || !(event.metaKey || event.ctrlKey)) return
-  event.preventDefault()
-  if (sections.value > 0 && !changes.invalid.value) void apply()
-}
-
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+// ⌘S applies the whole pending set from anywhere in settings, which is the point of staging them —
+// and from NOWHERE else, which the window listener this replaced could not manage. That listener was
+// added in onMounted and removed in onBeforeUnmount, but a type's stage is never unmounted (it is
+// v-show, so an editor's buffer and a staged draft survive a switch), so one visit to Settings left
+// ⌘S intercepted app-wide for the rest of the session — and applied the whole set from a screen that
+// was not Settings.
+//
+// The layer is what fixes it, and fixes it by construction rather than by remembering to unregister:
+// a type's layer is only on the stack while its stage is on screen, so this binding cannot win from
+// behind another type however long the component stays alive.
+//
+// `when` rather than a guard inside `run`: with nothing staged the chord is claimed by nobody at all,
+// so ⌘S reaches the browser instead of being swallowed for no result.
+const hotkeys = useHotkeysExtension()
+useHotkeys(hotkeys, [
+  {
+    id: 'settings.save-all',
+    chord: 'Mod-s',
+    layer: typeLayerId(SETTINGS_TYPE_ID),
+    title: 'Save & apply settings',
+    when: () => sections.value > 0 && !changes.invalid.value,
+    run: () => void apply(),
+  },
+])
 </script>
 
 <template>
@@ -59,7 +77,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         <span class="detail">{{ changes.staged.value.map((c) => `${c.title}: ${c.keys.join(', ')}`).join(' · ') }}</span>
       </div>
       <span v-if="changes.invalid.value" class="blocked">Fix the highlighted fields to apply</span>
-      <kbd v-else class="shortcut">⌘S</kbd>
+      <!-- Drawn per platform from the one function that knows how (F-02): the sign used to be typed
+           in, and read "⌘S" on Linux and Windows, where it is Ctrl. -->
+      <kbd v-else class="shortcut">{{ hotkeys.label('Mod-s') }}</kbd>
       <Button size="sm" variant="secondary" :disabled="changes.saving.value" @click="changes.revertAll()">Revert</Button>
       <Button size="sm" variant="primary" :disabled="changes.saving.value || changes.invalid.value" @click="apply">
         Save &amp; apply

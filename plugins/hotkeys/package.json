@@ -1,8 +1,8 @@
 {
-  "name": "@arxhub/plugin-codemirror",
+  "name": "@arxhub/plugin-hotkeys",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "CodeMirror text editor plugin for ArxHub",
+  "description": "Keyboard ownership for ArxHub: a layered chord registry and the one dispatcher",
   "keywords": [
     "arxhub"
   ],
@@ -20,14 +20,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "codemirror": "catalog:client",
-    "@codemirror/language": "catalog:client",
-    "@codemirror/language-data": "catalog:client",
-    "@codemirror/state": "catalog:client",
-    "vue": "catalog:client",
-    "@codemirror/lang-markdown": "catalog:client",
-    "@codemirror/view": "catalog:client",
-    "@lezer/highlight": "catalog:client"
+    "vue": "catalog:client"
   },
   "devDependencies": {
     "@arxhub/logger": "workspace:*",
@@ -37,13 +30,7 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/plugin-hotkeys": "workspace:*",
-    "@arxhub/plugin-notes": "workspace:*",
-    "@arxhub/plugin-panels": "workspace:*",
-    "@arxhub/plugin-shell": "workspace:*",
-    "@arxhub/stdlib": "workspace:*",
-    "@arxhub/uikit": "workspace:*",
-    "@arxhub/vfs": "workspace:*"
+    "@arxhub/events": "workspace:*"
   },
   "publishConfig": {
     "exports": {

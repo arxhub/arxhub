@@ -93,6 +93,11 @@ function onGlobalPointerDown(event: PointerEvent) {
   actionMenu.close()
 }
 
+// Stays a listener of its own, and is not a hotkey. Escape on your own open menu is the CONTROL's
+// key — the boundary the registry draws is that it owns the chords of the application while the keys
+// inside a focused control belong to the control and to Ark UI under it. `packages/uikit` also may not
+// depend on a plugin, which is the other half of the same rule: reversing that would make the design
+// system depend on the app it is a system for.
 function onGlobalKeydown(event: KeyboardEvent) {
   if (state.value.open && event.key === 'Escape') actionMenu.close()
 }

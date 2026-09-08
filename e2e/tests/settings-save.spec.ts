@@ -99,6 +99,40 @@ test.describe('applying settings', () => {
     expect(await readConfig(vault, 'storage/sync/config.toml')).toContain(`kept-${testInfo.project.name}.example.com`)
   })
 
+  // The second live bug the hotkeys registry was written for. ⌘S was a window listener added in
+  // onMounted and removed in onBeforeUnmount — but a type's stage is never unmounted (it is v-show, so
+  // an editor's buffer and a staged draft survive a switch), so onBeforeUnmount never ran and one visit
+  // to Settings left ⌘S intercepted app-wide. With something staged it then applied the whole set from
+  // a screen that was not Settings.
+  //
+  // It is now a binding in the Settings type's LAYER, and a layer is on the stack only while its stage
+  // is on screen — so the leak is unrepresentable rather than merely fixed. Lives in this file, and not
+  // in one of its own, because it stages an edit in the same config the tests above write: this
+  // describe is serial and desktop-only, and a spec of its own would race them.
+  test('⌘S applies the staged set inside settings and does nothing at all outside it', async ({ app, vault }, testInfo) => {
+    const staged = `https://chord-${testInfo.project.name}.example.com`
+
+    await openSettingsSection(app, 'Sync')
+    await setServerUrl(app, staged)
+    await expect(app.getByRole('button', { name: 'Save & apply' })).toBeVisible()
+
+    // Out of settings, then the chord. Nothing must happen — not the apply, and not a swallowed key.
+    await openType(app, 'Notes')
+    await app.keyboard.press('ControlOrMeta+s')
+
+    // Still staged is the whole assertion: an applied set empties the bar, so a bar that is still
+    // there is the proof the chord did not reach Settings from outside it.
+    await openType(app, 'Settings')
+    await expect(app.getByRole('button', { name: 'Save & apply' })).toBeVisible()
+    expect(await readConfig(vault, 'storage/sync/config.toml')).not.toContain(`chord-${testInfo.project.name}`)
+
+    // And the other half: inside settings the chord still does its job, or the fix would just be the
+    // binding deleted.
+    await app.keyboard.press('ControlOrMeta+s')
+    await expect(app.getByRole('button', { name: 'Save & apply' })).toBeHidden()
+    expect(await readConfig(vault, 'storage/sync/config.toml')).toContain(`chord-${testInfo.project.name}.example.com`)
+  })
+
   test('reverting drops every staged edit and writes nothing', async ({ app, vault }, testInfo) => {
     const discarded = `https://discarded-${testInfo.project.name}.example.com`
     const before = await readConfig(vault, 'storage/sync/config.toml')

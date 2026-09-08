@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { APP_LAYER, useHotkeys } from '@arxhub/plugin-hotkeys/ui'
 import { ActionMenuHost, ModalsProvider, Toaster } from '@arxhub/uikit/core'
 import { provideShellFrame } from '@arxhub/uikit/hooks'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useHotkeysExtension, useOpenSheetKey } from '../hotkeys'
 import { provideNavHost } from '../nav-host'
-import { useOpenSheetKey } from '../search-sheet'
 import TypeStage from '../TypeStage.vue'
 import { useNavigation } from '../use-navigation'
 import DesktopDock from './DesktopDock.vue'
@@ -42,31 +43,38 @@ const column = computed(() => {
 // declared role is never unreachable.
 const dockCreate = computed(() => (activeType.value?.nav == null ? (activeType.value?.create ?? null) : null))
 
+const hotkeys = useHotkeysExtension()
+
 // The one control the frame contributes into the navigation's own strip. It is here rather than in a
 // strip of the column's own, because a second band above the tree's would be two heads for one role.
-provideNavHost({ dismiss: () => column.value?.toggle(), icon: 'lu:panel-left-close', label: 'Collapse navigation (⌘B)' })
+// The chord in the label is drawn per platform rather than typed in: the sign used to be a hardcoded
+// ⌘B, which was simply wrong on Linux and Windows.
+provideNavHost({
+  dismiss: () => column.value?.toggle(),
+  icon: 'lu:panel-left-close',
+  label: `Collapse navigation (${hotkeys.label('Mod-b')})`,
+})
 
-// Open or switch to, on ⌘K, from anywhere — including from inside a note, which is what took the chord
-// off the editor's insert-link binding and put that on ⌘⇧K (F-10). The listener and the reason it
-// reaches an editor at all live in `useOpenSheetKey`.
+// Open or switch to, on ⌘K, from anywhere — including from inside a note.
 const sheet = ref(false)
 useOpenSheetKey(() => {
   sheet.value = true
 })
 
-// On the window rather than on the root: ⌘B has to work from anywhere, including from inside an editor
-// whose own keymap swallows the default action but not the bubbling.
-function onKeydown(event: KeyboardEvent): void {
-  if (!(event.metaKey || event.ctrlKey)) return
-  if (event.key.toLowerCase() !== 'b') return
-  const it = column.value
-  if (it == null) return
-  event.preventDefault()
-  it.toggle()
-}
-
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+// ⌘B in the `app` layer: the bottom of the stack, so it works everywhere nothing above has claimed it.
+// The editors claim it in their own layer (F-06), which is what stops one keystroke from bolding the
+// word AND collapsing the column — and a frame with no navigation column claims nothing at all, so the
+// chord reaches the browser untouched instead of being swallowed for no result.
+useHotkeys(hotkeys, [
+  {
+    id: 'shell.toggle-nav-column',
+    chord: 'Mod-b',
+    layer: APP_LAYER,
+    title: 'Collapse navigation',
+    when: () => column.value != null,
+    run: () => column.value?.toggle(),
+  },
+])
 </script>
 
 <template>

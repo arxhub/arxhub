@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useHotkeyLayer, useHotkeys } from '@arxhub/plugin-hotkeys/ui'
+import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
@@ -13,6 +15,7 @@ import { deserialize, emptyDoc, serialize } from '../editor-format'
 import { buildInputRules } from '../editor-input-rules'
 import { buildKeymap } from '../editor-keymap'
 import { schema } from '../editor-schema'
+import { PROSEMIRROR_BINDINGS, PROSEMIRROR_LAYER } from '../hotkeys'
 import EditorToolbar from './EditorToolbar.vue'
 import 'prosemirror-view/style/prosemirror.css'
 
@@ -26,6 +29,13 @@ const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
 const editorEl = ref<HTMLDivElement>()
 const view = shallowRef<EditorView | null>(null)
+
+// The keymap `buildKeymap` installs, declared to the registry rather than handed to it (F-06). While
+// the caret is in the document this layer sits above the app's, so ⌘B reaches ProseMirror alone
+// instead of also collapsing the navigation column on its way past the window.
+const editorHotkeys = useHotkeysExtension()
+useHotkeyLayer(editorHotkeys, { id: PROSEMIRROR_LAYER, kind: 'editor' }, editorEl)
+useHotkeys(editorHotkeys, PROSEMIRROR_BINDINGS)
 
 function buildPlugins() {
   return [history(), keymap(buildKeymap(schema)), inputRules({ rules: buildInputRules(schema) })]

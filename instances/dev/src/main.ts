@@ -11,6 +11,7 @@ import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { ConfigPlugin } from '@arxhub/plugin-config/ui'
 import { EditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
+import { HotkeysPlugin } from '@arxhub/plugin-hotkeys/ui'
 import { KeyStorePlugin, resolveKeyStore } from '@arxhub/plugin-keystore/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { BootPolicy, MaintenancePlugin, startWithCrashScreen } from '@arxhub/plugin-maintenance/ui'
@@ -46,6 +47,10 @@ const vfs = new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer 
 arxhub.plugins.register(VfsPlugin, () => ({ fs: vfs }))
 arxhub.plugins.register(LoggerPlugin)
 arxhub.plugins.register(ConfigPlugin)
+// The owner of the keyboard: one window listener and the layer stack every chord resolves through.
+// Essential, so no boot can reach a state where the shell advertises a chord that nothing answers —
+// and not registered on the headless server, which has no DOM to listen on.
+arxhub.plugins.register(HotkeysPlugin)
 arxhub.plugins.register(ShellPlugin)
 arxhub.plugins.register(PanelsPlugin)
 // The "Notes" type owns the vault objects and the registry of what opens them; the explorer below

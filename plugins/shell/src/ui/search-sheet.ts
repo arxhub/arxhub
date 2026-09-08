@@ -1,4 +1,3 @@
-import { onBeforeUnmount, onMounted } from 'vue'
 import type { TabType } from './tab-type'
 import type { TabTypeRegistry } from './tab-type-registry'
 import type { Workspace } from './workspace'
@@ -48,29 +47,6 @@ export function sheetSections(workspace: Workspace, types: TabTypeRegistry): She
 export function chooseEntry(workspace: Workspace, entry: SheetEntry): void {
   if (entry.objectKey == null) workspace.activateType(entry.typeId)
   else workspace.activateObject(entry.typeId, entry.objectKey)
-}
-
-// ⌘K / Ctrl-K, listened for on the WINDOW rather than on the app root, because the key has to work while
-// the caret is inside an editor.
-//
-// That rests on someone else's implementation detail and is worth stating: CodeMirror's keymap calls
-// `preventDefault` on a binding it handled but never `stopPropagation`, so a keydown the editor consumed
-// still reaches the window. It is the behaviour we want — but if that ever changes, the global key goes
-// dead only while focus is in a note, which is the hardest possible place to notice. `e2e/tests/notes.spec.ts`
-// presses the chord with the caret in the editor for exactly that reason.
-//
-// Shift is excluded rather than ignored: ⌘⇧K is the note editor's own insert-link chord (F-10), and a
-// listener that took every ⌘K-with-modifiers would open the sheet on top of the link it just inserted.
-export function useOpenSheetKey(open: () => void): void {
-  function onKeydown(event: KeyboardEvent): void {
-    if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
-    if (event.key.toLowerCase() !== 'k') return
-    event.preventDefault()
-    open()
-  }
-
-  onMounted(() => window.addEventListener('keydown', onKeydown))
-  onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 }
 
 function openEntries(workspace: Workspace, types: TabTypeRegistry): SheetEntry[] {
