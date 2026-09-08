@@ -7,7 +7,18 @@
 // This is a MEASUREMENT, so it asserts against the role's token value rather than a number typed twice:
 // the expected values are read out of the running document's own custom properties.
 import type { Page } from '@playwright/test'
-import { expect, isMobileFrame, openDocumentList, openNavigation, openSettingsSection, openType, test, withShellChrome } from './fixtures'
+import {
+  expect,
+  isMobileFrame,
+  openDocumentList,
+  openNavigation,
+  openSettingsSection,
+  openType,
+  SHEET_LABEL,
+  searchSheet,
+  test,
+  withShellChrome,
+} from './fixtures'
 
 async function token(page: Page, name: string): Promise<number> {
   const value = await page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name)
@@ -83,7 +94,7 @@ test.describe('the visual language holds on screen', () => {
     const expected = await token(app, mobile ? '--size-xl' : '--size-2xs')
 
     // The log is where the boot writes itself down, so it has entries without seeding any. It is a hidden
-    // mini-app opened from the status item, which lives in the More sheet on a phone.
+    // mini-app opened from the status item, which lives in the search sheet on a phone.
     await withShellChrome(app, (chrome) => chrome.getByRole('button', { name: 'Open logs' }).click())
     await expect(app.locator('.log-panel')).toBeVisible()
 
@@ -98,11 +109,11 @@ test.describe('the visual language holds on screen', () => {
     await app.reload()
     const expected = await token(app, '--size-xl')
 
-    // The type list: one line each, so it lands exactly on the role's touch value.
-    await app.getByRole('button', { name: 'More' }).click()
-    const sheet = app.getByRole('dialog', { name: 'More' })
+    // The search sheet: one line each, so it lands exactly on the role's touch value.
+    await app.getByRole('button', { name: SHEET_LABEL }).click()
+    const sheet = searchSheet(app)
     await expect(sheet).toBeVisible()
-    const apps = await heights(app, '.more-list .row')
+    const apps = await heights(app, '.sheet-list .row')
     expect(apps.length).toBeGreaterThan(0)
     for (const height of apps) expect(height).toBe(expected)
     await app.goBack()

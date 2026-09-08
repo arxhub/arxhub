@@ -6,13 +6,14 @@ import { useShellFrame } from '@arxhub/uikit/hooks'
 const mobile = useShellFrame() === 'mobile'
 
 // Only chords that are really bound — an empty state listing a shortcut the app does not answer is
-// worse than one listing none. Save is in both editors, the formatting chords are markdown-only, and
-// F2 belongs to the file tree.
+// worse than one listing none. The open key is global and works from anywhere, save is in both editors,
+// the formatting chords are markdown-only, and F2 belongs to the file tree.
 const SHORTCUTS: { keys: string[]; does: string }[] = [
+  { keys: ['Ctrl', 'K'], does: 'Open or switch to' },
   { keys: ['Ctrl', 'S'], does: 'Save the open file' },
   { keys: ['Ctrl', 'B'], does: 'Bold' },
   { keys: ['Ctrl', 'I'], does: 'Italic' },
-  { keys: ['Ctrl', 'K'], does: 'Insert a link' },
+  { keys: ['Ctrl', 'Shift', 'K'], does: 'Insert a link' },
   { keys: ['F2'], does: 'Rename in the file tree' },
 ]
 </script>
@@ -103,12 +104,13 @@ h1 {
   gap: 12px;
 }
 
-/* Fixed width, so the descriptions form a column instead of stepping in and out with the key names. */
+/* Fixed width, so the descriptions form a column instead of stepping in and out with the key names.
+   Wide enough for the longest chord in the list — three keys, since the link moved to Ctrl+Shift+K. */
 dt {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
-  width: 88px;
+  width: 120px;
 }
 
 dd {

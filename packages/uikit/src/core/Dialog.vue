@@ -78,6 +78,14 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   padding: 1rem;
 }
 
+/* The closed state has to win over the box. Ark marks the content `hidden` while the dialog is closed and
+   leaves it mounted until the exit presence resolves; `[hidden]` from the browser's own sheet is an
+   attribute selector, so it ties with this rule's class and loses to it — which left a closed dialog
+   painted over the app. Nothing caught it while every dialog in the app was itself behind a `v-if`. */
+.dialog-content[hidden] {
+  display: none;
+}
+
 .dialog-content {
   display: flex;
   flex-direction: column;

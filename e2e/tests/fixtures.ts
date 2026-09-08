@@ -223,17 +223,17 @@ export async function openNavigation(page: Page): Promise<void> {
   await expect(panel).toBeVisible()
 }
 
-// The status widgets: a permanent bar on the desktop frame, one level down behind the row's own
-// immobile key on a phone — everything not needed while reading is behind that key, which is the whole
+// The status widgets: a permanent bar on the desktop frame, one level down inside the search sheet on a
+// phone — everything not needed while reading is behind the row's own immobile key, which is the whole
 // point of the row. Hands the scope they are in to `read`, so a test looks in the right place without
 // knowing which frame it got, and leaves the frame as it found it: a sheet left open would swallow the
 // next click.
 export async function withShellChrome<T>(page: Page, read: (chrome: Locator) => Promise<T>): Promise<T> {
   if (!(await isMobileFrame(page))) return read(page.locator('body'))
 
-  const sheet = page.getByRole('dialog', { name: 'More' })
+  const sheet = searchSheet(page)
   const wasOpen = await sheet.isVisible()
-  if (!wasOpen) await page.getByRole('button', { name: 'More' }).click()
+  if (!wasOpen) await page.getByRole('button', { name: SHEET_LABEL }).click()
   await expect(sheet).toBeVisible()
   try {
     return await read(sheet)
@@ -246,6 +246,15 @@ export async function withShellChrome<T>(page: Page, read: (chrome: Locator) => 
       await expect(sheet).toBeHidden()
     }
   }
+}
+
+// The one sheet both frames open on ⌘K — a dialog on the desktop, a bottom sheet on the phone — holding
+// everything that is open and everything that can be opened, plus (on the phone only) the status block
+// the desktop keeps permanently in its bar.
+export const SHEET_LABEL = 'Open or switch to'
+
+export function searchSheet(page: Page): Locator {
+  return page.getByRole('dialog', { name: SHEET_LABEL })
 }
 
 // The row of types: down the left of the desktop window, along the bottom of a phone. One nav landmark

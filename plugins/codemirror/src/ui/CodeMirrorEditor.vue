@@ -5,7 +5,7 @@ import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
-import { EditorState } from '@codemirror/state'
+import { EditorState, Prec } from '@codemirror/state'
 import { keymap } from '@codemirror/view'
 import { basicSetup, EditorView } from 'codemirror'
 import { computed, onUnmounted, ref, shallowRef, toRef } from 'vue'
@@ -21,11 +21,15 @@ const AUTOSAVE_DEBOUNCE_MS = 1500
 
 const props = defineProps<{ path: string }>()
 
+// ⌘⇧K for the link, not ⌘K: the plain chord is the application's global "open or switch to" (F-10), and
+// a key that means one thing everywhere except inside a note is a key the owner cannot trust. CodeMirror
+// binds the shifted chord as its own, so the global listener — which ignores anything carrying shift —
+// never sees it.
 const markdownKeymap = [
   { key: 'Mod-b', run: toggleBold },
   { key: 'Mod-i', run: toggleItalic },
   { key: 'Mod-e', run: toggleInlineCode },
-  { key: 'Mod-k', run: insertLink },
+  { key: 'Mod-Shift-k', run: insertLink },
 ]
 
 const arxhub = useArxHub()
@@ -52,7 +56,11 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
       // A note is prose: no band on the caret's line. Passed rather than overridden downstream, so
       // there is one rule and no precedence race between two themes setting the same property.
       editorTheme({ activeLine: !note }),
-      ...(note ? [markdownProfile(), keymap.of(markdownKeymap)] : []),
+      // Prec.high, and not a matter of taste: ⌘⇧K is `deleteLine` in CodeMirror's own default keymap,
+      // which `basicSetup` installs at higher precedence than anything declared after it — so the plain
+      // binding emptied the line instead of inserting a link. A note gives the chord up; a code file,
+      // which never gets this keymap, keeps it.
+      ...(note ? [markdownProfile(), Prec.high(keymap.of(markdownKeymap))] : []),
       ...(langSupport ? [langSupport] : []),
       // Guard on transactions: a programmatic setState() during a file switch reports docChanged but
       // carries no transaction, so it must NOT autosave — a plain file switch would immediately

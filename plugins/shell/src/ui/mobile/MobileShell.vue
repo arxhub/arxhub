@@ -3,15 +3,15 @@ import { ActionMenuHost, ModalsProvider, Toaster } from '@arxhub/uikit/core'
 import { provideShellFrame, useKeyboardInset } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import { provideNavHost } from '../nav-host'
+import { useOpenSheetKey } from '../search-sheet'
 import { isObjectType } from '../tab-type'
 import { useNavigation } from '../use-navigation'
-import { useShell } from '../use-shell'
 import MobileBackgroundBar from './MobileBackgroundBar.vue'
 import MobileDock from './MobileDock.vue'
 import MobileEdgeGestures from './MobileEdgeGestures.vue'
-import MobileMoreSheet from './MobileMoreSheet.vue'
 import MobileNavPanel from './MobileNavPanel.vue'
 import MobileOpenLayer from './MobileOpenLayer.vue'
+import MobileSearchSheet from './MobileSearchSheet.vue'
 import MobileTypeRow from './MobileTypeRow.vue'
 import { railClaim } from './rail-host'
 
@@ -23,7 +23,6 @@ import { railClaim } from './rail-host'
 provideShellFrame('mobile')
 
 const { workspace, types, status } = useNavigation()
-const { sidebarItems, activeId, setActive } = useShell()
 
 // The frame gives up the height the keyboard takes instead of letting it cover the bottom of the app.
 // Everything that can be operated is down there, so this is the difference between typing blind and
@@ -32,7 +31,7 @@ const keyboardInset = useKeyboardInset()
 
 // One layer at a time: opening the second would bury the first, and back would then have to unwind two
 // things the owner only opened once.
-type Layer = 'nav' | 'open' | 'more'
+type Layer = 'nav' | 'open' | 'search'
 const layer = ref<Layer | null>(null)
 
 const activeType = computed(() => {
@@ -89,10 +88,11 @@ function openWhatsOpen(): void {
   if (hasOpen.value) layer.value = 'open'
 }
 
-// What the desktop frame keeps permanently in the status bar. On a phone it is worth a look, not a
-// reserved strip, so it lives at the top of the sheet behind the row's own immobile key. States before
-// actions, the same reading order the bar has left to right — this frame has no two sides to use.
-const statusItems = computed(() => [...status.statuses.value, ...status.actions.value])
+// A phone rarely has a keyboard, but when one is attached the chord has to mean the same thing it means
+// on the desktop: there is one open-or-switch-to operation, not one per frame.
+useOpenSheetKey(() => {
+  layer.value = 'search'
+})
 </script>
 
 <template>
@@ -136,23 +136,16 @@ const statusItems = computed(() => [...status.statuses.value, ...status.actions.
 
     <MobileTypeRow
       :row="workspace.row.value"
-      :more-active="layer === 'more'"
+      :sheet-open="layer === 'search'"
       @select="workspace.activateType($event)"
       @peek="toggle('open')"
-      @more="toggle('more')"
+      @sheet="toggle('search')"
     />
     <Toaster />
   </div>
 
   <MobileOpenLayer :open="layer === 'open'" :type="activeType" :workspace="workspace" @close="layer = null" />
-  <MobileMoreSheet
-    :open="layer === 'more'"
-    :items="sidebarItems"
-    :active-id="activeId"
-    :status="statusItems"
-    @item-select="setActive($event)"
-    @close="layer = null"
-  />
+  <MobileSearchSheet :open="layer === 'search'" :workspace="workspace" :types="types" :status="status" @close="layer = null" />
   <ModalsProvider />
   <ActionMenuHost />
 </template>

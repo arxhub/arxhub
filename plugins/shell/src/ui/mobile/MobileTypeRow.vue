@@ -2,8 +2,8 @@
 import { Icon } from '@arxhub/uikit/core'
 import type { TypeRowItem } from '../workspace'
 
-const props = defineProps<{ row: TypeRowItem[]; moreActive: boolean }>()
-const emit = defineEmits<{ select: [typeId: string]; peek: [typeId: string]; more: [] }>()
+const props = defineProps<{ row: TypeRowItem[]; sheetOpen: boolean }>()
+const emit = defineEmits<{ select: [typeId: string]; peek: [typeId: string]; sheet: [] }>()
 
 // A count is part of what the key says, so it belongs in the accessible name and not only in the
 // badge — "Notes" and "Notes, 3 open" are different controls to someone who cannot see the dot.
@@ -48,17 +48,20 @@ function tap(item: TypeRowItem): void {
 
     <!-- Immobile, and immobile in the literal sense: it sits outside the scrolling ribbon, so its
          width does not depend on how many types are open. It is the way to everything that is not on
-         the screen right now — today the status block and any type with no place in the row. -->
+         the screen right now: what is open elsewhere, every type with no place in the row, and the
+         status block this frame has no permanent bar for.
+         The palette glyph rather than a magnifier: the magnifier belongs to the Search type, which
+         stands in this very row, and one glyph answering two things is worse than an unfamiliar one. -->
     <button
       type="button"
       class="key opener"
-      :class="{ active: props.moreActive }"
-      data-testid="arxhub.shell.more"
-      aria-label="More"
-      :aria-pressed="props.moreActive"
-      @click="emit('more')"
+      :class="{ active: props.sheetOpen }"
+      data-testid="arxhub.shell.search"
+      aria-label="Open or switch to"
+      :aria-pressed="props.sheetOpen"
+      @click="emit('sheet')"
     >
-      <span class="glyph"><Icon name="lu:ellipsis" :size="16" /></span>
+      <span class="glyph"><Icon name="lu:command" :size="16" /></span>
     </button>
   </nav>
 </template>

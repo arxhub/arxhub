@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ActionMenuHost, ModalsProvider, Toaster } from '@arxhub/uikit/core'
 import { provideShellFrame } from '@arxhub/uikit/hooks'
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { provideNavHost } from '../nav-host'
+import { useOpenSheetKey } from '../search-sheet'
 import { isObjectType } from '../tab-type'
 import { useNavigation } from '../use-navigation'
 import DesktopDock from './DesktopDock.vue'
 import DesktopNavColumn from './DesktopNavColumn.vue'
+import DesktopSearchSheet from './DesktopSearchSheet.vue'
 import DesktopStatusBar from './DesktopStatusBar.vue'
 import DesktopTypeRail from './DesktopTypeRail.vue'
 import { navColumn } from './use-nav-column'
@@ -54,6 +56,14 @@ const dockCreate = computed(() => (activeType.value?.nav == null ? (activeType.v
 // The one control the frame contributes into the navigation's own strip. It is here rather than in a
 // strip of the column's own, because a second band above the tree's would be two heads for one role.
 provideNavHost({ dismiss: () => column.value?.toggle(), icon: 'lu:panel-left-close', label: 'Collapse navigation (⌘B)' })
+
+// Open or switch to, on ⌘K, from anywhere — including from inside a note, which is what took the chord
+// off the editor's insert-link binding and put that on ⌘⇧K (F-10). The listener and the reason it
+// reaches an editor at all live in `useOpenSheetKey`.
+const sheet = ref(false)
+useOpenSheetKey(() => {
+  sheet.value = true
+})
 
 // On the window rather than on the root: ⌘B has to work from anywhere, including from inside an editor
 // whose own keymap swallows the default action but not the bubbling.
@@ -107,6 +117,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     </div>
 
     <DesktopStatusBar :status="status" :workspace="workspace" />
+    <DesktopSearchSheet :open="sheet" :workspace="workspace" :types="types" @close="sheet = false" />
     <Toaster />
   </div>
   <ModalsProvider />
