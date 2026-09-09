@@ -5,6 +5,14 @@ import type { Disposer, HotkeyBinding, HotkeyLayer, HotkeysExtension } from './h
 // than reaching for `useArxHub()`: that would put `@arxhub/uikit` in this package's dependencies, and
 // the registry is the one thing in the product that nothing should have to depend on a UI library to
 // reach.
+//
+// For a surface that exists at most ONCE — a frame, a mini-app's bar — whose `run` needs that
+// component's own state. A component the product mounts several times at once (a viewer of a type: an
+// open note is one of several) declares from its plugin's `configure()` instead, because the layer id
+// is per type while the mount is per object: N mounts would be N declarations of one fact, of which
+// the registry keeps the first and refuses the rest — and then the first one to unmount takes the
+// surviving declaration with it and the chord is claimed by nobody. `declareCodeMirrorChords` is the
+// worked example.
 
 export function useHotkeys(hotkeys: HotkeysExtension, bindings: HotkeyBinding[]): void {
   const disposers: Disposer[] = []

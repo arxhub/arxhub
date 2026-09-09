@@ -1,12 +1,14 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { basename, dirname } from '@arxhub/path'
 import { ExplorerExtension, type TreeNode } from '@arxhub/plugin-explorer/ui'
+import { HotkeysExtension } from '@arxhub/plugin-hotkeys/ui'
 import { NotesExtension, type NoteViewer } from '@arxhub/plugin-notes/ui'
 import { type PanelStore, PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
 import { serialize } from './editor-format'
+import { declareProseMirrorChords } from './hotkeys'
 import { manifest } from './manifest'
 import { arxPathFor, isMarkdownPath, markdownToArx } from './md-to-arx'
 import EditorPanel from './ui/EditorPanel.vue'
@@ -51,6 +53,10 @@ export class EditorPlugin extends Plugin {
     })
 
     ctx.extensions.get(NotesExtension).registerViewer(EDITOR_VIEWER)
+
+    // Beside the viewer, and for the same reason: both say what this editor IS, independently of
+    // whether a panel showing one is open.
+    declareProseMirrorChords(ctx.extensions.get(HotkeysExtension))
 
     // The conversion is offered where the note is — as an action on the file itself, through the
     // explorer's contribution channel rather than an import in either direction. A build without the

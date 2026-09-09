@@ -1,6 +1,8 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { HotkeysExtension } from '@arxhub/plugin-hotkeys/ui'
 import { NotesExtension, type NoteViewer } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { declareCodeMirrorChords } from './hotkeys'
 import { manifest } from './manifest'
 import CodeMirrorEditor from './ui/CodeMirrorEditor.vue'
 
@@ -89,5 +91,9 @@ export class CodeMirrorPlugin extends Plugin {
     })
 
     ctx.extensions.get(NotesExtension).registerViewer(CODEMIRROR_VIEWER)
+
+    // Beside the viewer, and for the same reason: both say what this editor IS, independently of
+    // whether a panel showing one is open.
+    declareCodeMirrorChords(ctx.extensions.get(HotkeysExtension))
   }
 }

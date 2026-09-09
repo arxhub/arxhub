@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useHotkeyLayer, useHotkeys } from '@arxhub/plugin-hotkeys/ui'
+import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button, Strip } from '@arxhub/uikit/core'
@@ -12,7 +12,7 @@ import { keymap } from '@codemirror/view'
 import { basicSetup, EditorView } from 'codemirror'
 import { computed, onUnmounted, ref, shallowRef, toRef } from 'vue'
 import { editorTheme } from '../editor-theme'
-import { CODEMIRROR_LAYER, codemirrorBindings } from '../hotkeys'
+import { CODEMIRROR_LAYER } from '../hotkeys'
 import { insertLink, toggleBold, toggleInlineCode, toggleItalic } from '../markdown-commands'
 import { isMarkdown, markdownProfile } from '../markdown-profile'
 import MarkdownToolbar from './MarkdownToolbar.vue'
@@ -45,20 +45,17 @@ const note = computed(() => isMarkdown(props.path))
 // highlighting has a reactive reason to recompute — mutating `view.value` in place never gives Vue one.
 const revision = ref(0)
 
-// The editor's keymap, declared to the registry rather than handed to it (F-06). The layer is on the
-// stack only while the caret is inside the text — which is what makes ⌘B mean "bold" here and
-// "collapse the navigation column" everywhere else, instead of meaning both at once.
+// Where the layer IS, while the chords it claims are declared once by the plugin (`hotkeys.ts`). The
+// layer is on the stack only while the caret is inside the text — which is what makes ⌘B mean "bold"
+// here and "collapse the navigation column" everywhere else, instead of meaning both at once (F-06).
 //
 // `editorEl` and not the panel root: focus on the toolbar is not the caret in the note, and the
-// library's keymap does not fire there either.
-const codemirrorHotkeys = useHotkeysExtension()
-useHotkeyLayer(codemirrorHotkeys, { id: CODEMIRROR_LAYER, kind: 'editor' }, editorEl)
-// Conditional, because the profile is: a code file never gets this keymap, so ⌘B over one is free and
-// still collapses the column.
-useHotkeys(
-  codemirrorHotkeys,
-  codemirrorBindings(() => note.value),
-)
+// library's keymap does not fire there either. And only for a note: the markdown keymap below is
+// installed for a note alone, so over a code file this editor claims nothing and ⌘B collapses the
+// column. That condition is the layer's rather than each binding's because the layer is per open
+// panel while the four chords are declared once for every panel — see `declareCodeMirrorChords`.
+const noteEditorEl = computed(() => (note.value ? editorEl.value : null))
+useHotkeyLayer(useHotkeysExtension(), { id: CODEMIRROR_LAYER, kind: 'editor' }, noteEditorEl)
 
 async function buildState(path: string, bytes: Uint8Array): Promise<EditorState> {
   const doc = new TextDecoder().decode(bytes)

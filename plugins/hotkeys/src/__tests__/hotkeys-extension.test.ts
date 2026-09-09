@@ -289,3 +289,28 @@ describe('enumerability (F-11)', () => {
     expect(seen.size).toBe(hotkeys.bindings.value.length)
   })
 })
+
+// A layer id names a viewer TYPE while a mount is one open object, so SEVERAL occurrences of one id
+// are the normal case rather than a mistake: two open notes are two of them, and both stay mounted.
+// Releasing one has to take away only that one — the defect this pins down had the second note's ⌘B
+// collapsing the navigation column the moment the first note was closed.
+describe('several occurrences of one layer', () => {
+  it('keeps the layer up while another occurrence still holds focus', () => {
+    const { warnings, logger } = fakeLogger()
+    const first = {} as HTMLElement
+    const second = {} as HTMLElement
+    // The caret is in the second one, which is what a probe reading the live document would answer.
+    const probe: LayerProbe = (it) => (it.element === second ? { reason: 'focus', depth: 12 } : null)
+    const hotkeys = new HotkeysExtension({ logger, probe, platform: 'mac' })
+    const closeFirst = hotkeys.pushLayer({ id: 'editor:codemirror', kind: 'editor', element: first })
+    hotkeys.pushLayer({ id: 'editor:codemirror', kind: 'editor', element: second })
+    hotkeys.register({ id: 'shell.column', chord: 'Mod-b', layer: 'app', title: 'Column', run: () => {} })
+    hotkeys.register({ id: 'codemirror.bold', chord: 'Mod-b', layer: 'editor:codemirror', title: 'Bold' })
+
+    closeFirst()
+
+    expect(hotkeys.stack()).toEqual(['editor:codemirror', 'app'])
+    expect(hotkeys.dispatch(keydown({ key: 'b', code: 'KeyB', metaKey: true })).kind).toBe('yielded')
+    expect(warnings).toEqual([])
+  })
+})

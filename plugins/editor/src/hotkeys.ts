@@ -1,4 +1,4 @@
-import type { HotkeyBinding } from '@arxhub/plugin-hotkeys/ui'
+import type { HotkeyBinding, HotkeysExtension } from '@arxhub/plugin-hotkeys/ui'
 
 export const PROSEMIRROR_LAYER = 'editor:arxhub.editor'
 
@@ -22,3 +22,17 @@ export const PROSEMIRROR_BINDINGS: HotkeyBinding[] = [
   { id: 'editor.redo', chord: 'Mod-Shift-z', layer: PROSEMIRROR_LAYER, title: 'Redo' },
   { id: 'editor.redo-alt', chord: 'Mod-y', layer: PROSEMIRROR_LAYER, title: 'Redo' },
 ]
+
+// Declared ONCE for the viewer type, from `configure()`, and never from a panel's `onMounted`.
+//
+// A chord is a fact about the type — every `.arx` panel there will ever be handles `Mod-b` the same
+// way — while a mounted panel is one OCCURRENCE of the layer, and the registry already keeps those
+// apart: `register` records what the layer claims, `pushLayer` records where the layer currently is.
+// Two open notes are two occurrences, and both stay mounted (panels keep every instance alive and
+// `TypeStage` hides its stages with `v-show`), so declaring per mount registered these nine bindings
+// twice — the second set refused as a collision with the first — and then the FIRST note's unmount
+// disposed the surviving copy. From that moment ⌘B in the still-open second note collapsed the
+// navigation column again: the bug this layer exists to fix, resurrected by closing an unrelated tab.
+export function declareProseMirrorChords(hotkeys: HotkeysExtension): void {
+  for (const binding of PROSEMIRROR_BINDINGS) hotkeys.register(binding)
+}
