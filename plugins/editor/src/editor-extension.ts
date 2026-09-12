@@ -1,6 +1,7 @@
 import { Extension } from '@arxhub/core'
 import { illegalState } from '@arxhub/errors'
 import { Container } from '@arxhub/stdlib/collections/container'
+import type { ActionItem } from '@arxhub/uikit/core'
 import { type MarkSpec, type NodeSpec, Schema } from 'prosemirror-model'
 import type { Plugin } from 'prosemirror-state'
 import type { Component } from 'vue'
@@ -34,9 +35,11 @@ export interface ArxEditorContribution {
   commands?: (schema: Schema) => BlockCommand[]
   plugins?: (schema: Schema) => Plugin[]
   dataSources?: Record<string, ArxDataSource>
+  publishText?: Record<string, (node: ArxJsonNode) => string>
 }
 
 export interface ArxEditorKit {
+  publishText: Readonly<Record<string, (node: ArxJsonNode) => string>>
   dataSources: Readonly<Record<string, ArxDataSource>>
   format: ArxFormatConfig
   schema: Schema
@@ -53,6 +56,7 @@ export class ArxEditorExtension extends Extension {
   links: ArxDocumentLinks | null = null
   history: ArxHistoryStore | null = null
   drafts: ArxDraftStore | null = null
+  publicationActions: ((path: string) => ActionItem[]) | null = null
   private readonly contributions = new Container<ArxEditorContribution>('Editor contribution')
   private built: ArxEditorKit | null = null
 
@@ -71,6 +75,7 @@ export class ArxEditorExtension extends Extension {
     if (this.built) return
     let nodes = baseSchema.spec.nodes
     let marks = baseSchema.spec.marks
+    const publishText: Record<string, (node: ArxJsonNode) => string> = {}
     const dataSources: Record<string, ArxDataSource> = {}
     const components: Record<string, ArxEditorComponent> = {}
     const controls: Record<string, ControlPolicy> = { ...DEFAULT_CONTROL_POLICIES }
@@ -81,6 +86,11 @@ export class ArxEditorExtension extends Extension {
       for (const [id, source] of Object.entries(contribution.dataSources ?? {})) {
         if (Object.hasOwn(dataSources, id) || !id || !source.layouts.length) throw illegalState(`Invalid or duplicate data source: ${id}`)
         dataSources[id] = source
+      }
+      for (const [name, render] of Object.entries(contribution.publishText ?? {})) {
+        if (!contribution.nodes?.[name] || publishText[name])
+          throw illegalState(`Publication renderer must belong to a contributed node: ${name}`)
+        publishText[name] = render
       }
       const version = contribution.version ?? 1
       if (!Number.isSafeInteger(version) || version < 1) throw illegalState(`Invalid data version: ${contribution.id}`)
@@ -136,6 +146,7 @@ export class ArxEditorExtension extends Extension {
     }
     this.built = Object.freeze({
       dataSources: Object.freeze(dataSources),
+      publishText: Object.freeze(publishText),
       format: {
         versions: contributions.map((owner) => ({
           id: owner.id,

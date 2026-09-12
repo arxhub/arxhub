@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { Page, Route } from '@playwright/test'
 import { expect, openNavigation, test } from './fixtures'
@@ -109,4 +110,29 @@ test('an installed plugin migrates its saved data before editing', async ({ app,
   expect(JSON.parse(await vault.read(path)).doc.content[0].attrs).toEqual({ value: 3, maximum: 5, arxId: expect.any(String) })
   await app.reload()
   await expect(app.getByTestId('plugin-rating').getByLabel('Rating value')).toHaveText('3')
+})
+
+test('a plugin supplies its publication representation without shipping its UI to the reader', async ({ app, vault }) => {
+  await withComponents(app)
+  const path = await vault.write(
+    `${test.info().project.name}-plugin-export.arx`,
+    JSON.stringify({
+      version: 1,
+      plugins: { 'fixture.rating': 2 },
+      doc: { type: 'doc', content: [{ type: 'fixture_rating', attrs: { value: 4, maximum: 5 } }] },
+    }),
+  )
+  await app.reload()
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click()
+  await expect(app.getByTestId('plugin-rating').getByLabel('Rating value')).toHaveText('4')
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  const pending = app.waitForEvent('download')
+  await app.getByRole('menuitem', { name: 'Export HTML', exact: true }).click()
+  const download = await pending
+  const file = await download.path()
+  if (!file) throw new Error('Missing exported document')
+  const html = await readFile(file, 'utf8')
+  expect(html).toContain('Rating: 4')
+  expect(html).not.toContain('Some formatting is not supported')
 })

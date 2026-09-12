@@ -16,4 +16,5 @@ export interface PublishManifest {
   // vault pathname → file record. Pathnames are the vault-relative POSIX paths (what /p/<path> asks
   // for). A folder is represented only by its contained files, never an entry of its own.
   files: Record<string, SnapshotFile>
+  rendered?: Record<string, SnapshotFile & { status?: number }>
 }

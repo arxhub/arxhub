@@ -149,3 +149,67 @@ footer a {
   align-items: center;
   min-height: var(--size-xl);
 }
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 2), minmax(0, 1fr));
+  gap: 24px;
+}
+.columns > div {
+  min-width: 0;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+td,
+th {
+  border: 1px solid var(--gray-7);
+  padding: 8px;
+  vertical-align: top;
+}
+th {
+  background: var(--gray-3);
+}
+figure {
+  margin: 16px 0;
+}
+figcaption {
+  color: var(--gray-11);
+  font-size: var(--font-size-sm);
+}
+details {
+  margin-block: 16px;
+}
+summary {
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  .columns {
+    display: block;
+  }
+}
+@media print {
+  main {
+    max-width: none;
+    padding: 0;
+  }
+  footer {
+    display: none;
+  }
+  pre,
+  figure,
+  tr {
+    break-inside: avoid;
+  }
+  .table-scroll,
+  pre {
+    overflow: visible;
+  }
+  a {
+    color: inherit;
+  }
+}

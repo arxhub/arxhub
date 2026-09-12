@@ -5,6 +5,7 @@ import { HotkeysExtension } from '@arxhub/plugin-hotkeys/ui'
 import { NOTES_TYPE_ID, NotesExtension, type NoteViewer } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
+import { PublishExtension } from '@arxhub/plugin-publish/ui'
 import { SearchExtension } from '@arxhub/plugin-search/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
@@ -17,7 +18,7 @@ import { createDraftStore } from './document-drafts'
 import { createHistoryStore } from './document-history'
 import { createDocumentLinkStore } from './document-link-store'
 import { ArxEditorExtension } from './editor-extension'
-import { serialize } from './editor-format'
+import { deserialize, serialize } from './editor-format'
 import { declareProseMirrorChords } from './hotkeys'
 import { manifest } from './manifest'
 import { arxPathFor, isMarkdownPath, markdownToArx } from './md-to-arx'
@@ -64,6 +65,12 @@ export class ArxEditorPlugin extends Plugin {
     const editor = ctx.extensions.get(ArxEditorExtension)
     if (ctx.extensions.has(SearchExtension))
       editor.register({ id: 'arxhub.search-data', dataSources: searchDataSources(ctx.extensions.get(SearchExtension)) })
+    if (ctx.extensions.has(PublishExtension)) {
+      const publish = ctx.extensions.get(PublishExtension)
+      publish.normalizeArx = (raw) => JSON.stringify({ version: 1, doc: deserialize(editor.kit.schema, raw, editor.kit.format).toJSON() })
+      editor.publicationActions = (path) => publish.documentActions(path)
+      publish.registerArxTextProvider('ArxEditor', (node) => editor.kit.publishText[node.type]?.({ ...node }) ?? null)
+    }
     const keyring = ctx.extensions.has(KeyringExtension) ? ctx.extensions.get(KeyringExtension).keyring : null
     if (keyring) editor.drafts ??= createDraftStore(keyring.encryptionKey, keyring.authPublicKey)
     editor.history ??= createHistoryStore(ctx.services.get(PluginVfs).storage)

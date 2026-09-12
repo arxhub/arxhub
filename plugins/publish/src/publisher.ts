@@ -3,8 +3,9 @@ import { illegalState } from '@arxhub/errors'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { stableStringify } from '@arxhub/stdlib/record/stable-stringify'
 import { Chunker, type SnapshotFile, type SyncRemote } from '@arxhub/sync'
-import type { VirtualFileSystem } from '@arxhub/vfs'
+import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
 import type { PublishManifest } from './publish-manifest'
+import { arxAssetPaths, arxReader } from './server/arx-reader'
 
 const ROOTS_FILE = '/published.json'
 const STAT_BATCH = 512
@@ -23,6 +24,8 @@ export type PublisherOptions = {
   // NO EncryptedSyncRemote wrapper). Chunks + the manifest land here as plaintext public objects.
   remote: SyncRemote
   logger: Logger
+  render?: (raw: string, path: string) => { html: string; status: number }
+  beforeRead?: (path: string) => Promise<boolean>
 }
 
 // Publishes vault content as an UNENCRYPTED, content-addressed public site: each file is Rabin-
@@ -38,12 +41,17 @@ export class Publisher {
   private readonly logger: Logger
   private readonly chunker = new Chunker()
   private roots = new Set<string>()
+  private pending: Promise<void> = Promise.resolve()
+  private readonly render: (raw: string, path: string) => { html: string; status: number }
+  private readonly beforeRead?: (path: string) => Promise<boolean>
 
   constructor(options: PublisherOptions) {
     this.vault = options.vault
     this.storage = options.storage
     this.remote = options.remote
     this.logger = options.logger
+    this.render = options.render ?? ((raw, path) => arxReader(raw, path))
+    this.beforeRead = options.beforeRead
   }
 
   async load(): Promise<void> {
@@ -63,49 +71,95 @@ export class Publisher {
     return [...this.roots]
   }
 
-  async publish(path: string): Promise<void> {
-    this.roots.add(path)
-    await this.rebuild()
-    this.logger.info(`Published ${path}`)
+  publish(path: string): Promise<void> {
+    return this.changeRoots((roots) => roots.add(path), `Published ${path}`)
   }
 
-  async unpublish(path: string): Promise<void> {
-    // Drop the exact root plus any roots nested under it (unpublishing a parent unpublishes children).
-    for (const root of [...this.roots]) {
-      if (root === path || root.startsWith(`${path}/`)) this.roots.delete(root)
-    }
-    await this.rebuild()
-    this.logger.info(`Unpublished ${path}`)
+  unpublish(path: string): Promise<void> {
+    return this.changeRoots((roots) => {
+      for (const root of roots) if (root === path || root.startsWith(`${path}/`)) roots.delete(root)
+    }, `Unpublished ${path}`)
+  }
+
+  private changeRoots(change: (roots: Set<string>) => void, message: string): Promise<void> {
+    const operation = this.pending.then(async () => {
+      const roots = new Set(this.roots)
+      change(roots)
+      await this.rebuild(roots)
+      this.roots = roots
+      this.logger.info(message)
+    })
+    this.pending = operation.catch(() => {})
+    return operation
   }
 
   // Rebuild the whole manifest from the current root set and push the delta. Full-rebuild (not
   // incremental) keeps the manifest authoritative and simple; chunk dedup via hasObjects means an
   // unchanged file re-uploads nothing.
-  private async rebuild(): Promise<void> {
-    await this.storage.file(ROOTS_FILE).writeJSON([...this.roots])
-
+  private async rebuild(roots: Set<string>): Promise<void> {
     const files: Record<string, SnapshotFile> = {}
     const chunks = new Map<string, Uint8Array>()
 
-    for (const root of this.roots) {
-      for await (const file of this.vault.walk(root)) {
-        const fileChunks: { hash: string }[] = []
-        for await (const chunk of this.chunker.split(file)) {
-          const hash = sha256(chunk)
-          if (!chunks.has(hash)) chunks.set(hash, chunk)
-          fileChunks.push({ hash })
+    const sources = new Map<string, string>()
+    const attachments = new Set<string>()
+    const consume = async (file: VirtualFile) => {
+      if (files[file.pathname]) return
+      if (this.beforeRead && !(await this.beforeRead(file.pathname))) throw illegalState('Save or recover open documents before publishing')
+      const fileChunks: { hash: string }[] = []
+      const source: Uint8Array[] = []
+      const arx = file.pathname.toLowerCase().endsWith('.arx')
+      for await (const chunk of this.chunker.split(file)) {
+        const hash = sha256(chunk)
+        if (!chunks.has(hash)) chunks.set(hash, chunk)
+        fileChunks.push({ hash })
+        if (arx) source.push(chunk)
+      }
+      const fileHash = (await file.info.get('hash')) ?? sha256(await file.read())
+      files[file.pathname] = { hash: fileHash, pathname: file.pathname, chunks: fileChunks }
+      if (arx) {
+        const bytes = new Uint8Array(source.reduce((size, part) => size + part.length, 0))
+        let offset = 0
+        for (const part of source) {
+          bytes.set(part, offset)
+          offset += part.length
         }
-        const fileHash = (await file.info.get('hash')) ?? sha256(await file.read())
-        files[file.pathname] = { hash: fileHash, pathname: file.pathname, chunks: fileChunks }
+        files[file.pathname].hash = sha256(bytes)
+        const raw = new TextDecoder().decode(bytes)
+        sources.set(file.pathname, raw)
+        try {
+          for (const asset of arxAssetPaths(raw)) attachments.add(asset)
+        } catch {
+          /* Invalid sources still offer their original download. */
+        }
       }
     }
-
-    const manifest: PublishManifest = { version: 1, roots: [...this.roots], files }
+    for (const root of roots) for await (const file of this.vault.walk(root)) await consume(file)
+    for (const asset of attachments) await consume(this.vault.file(asset))
+    const rendered: Record<string, SnapshotFile & { status: number }> = {}
+    for (const [path, raw] of sources) {
+      const page = this.render(raw, path)
+      const bytes = encoder.encode(page.html)
+      const renderedChunks: { hash: string }[] = []
+      for (let offset = 0; offset < bytes.length; offset += 1024 * 1024) {
+        const chunk = bytes.slice(offset, offset + 1024 * 1024)
+        const hash = sha256(chunk)
+        chunks.set(hash, chunk)
+        renderedChunks.push({ hash })
+      }
+      rendered[path] = { status: page.status, hash: sha256(bytes), pathname: path, chunks: renderedChunks }
+    }
+    const manifest: PublishManifest = { version: 1, roots: [...roots], files, ...(sources.size ? { rendered } : {}) }
     const manifestBytes = encoder.encode(stableStringify(manifest))
     const manifestHash = sha256(manifestBytes)
 
     await this.upload(chunks, manifestHash, manifestBytes)
-    await this.commit(manifestHash)
+    await this.storage.file(ROOTS_FILE).writeJSON([...roots])
+    try {
+      await this.commit(manifestHash)
+    } catch (error) {
+      await this.storage.file(ROOTS_FILE).writeJSON([...this.roots])
+      throw error
+    }
   }
 
   // Upload the manifest + every referenced chunk the server lacks, in bounded batches. The manifest

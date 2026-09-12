@@ -46,6 +46,9 @@ export class ArxComponentsFixturePlugin extends Plugin {
     ctx.extensions.get(ArxEditorExtension).register({
       id: 'fixture.rating',
       version: 2,
+      publishText: {
+        fixture_rating: (node) => `Rating: ${node.attrs && typeof node.attrs === 'object' && 'value' in node.attrs ? node.attrs.value : ''}`,
+      },
       migrations: {
         1: (node) => {
           if (node.type !== 'fixture_rating' || !node.attrs || typeof node.attrs !== 'object' || !('score' in node.attrs)) return node

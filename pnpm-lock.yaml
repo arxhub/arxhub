@@ -1365,6 +1365,9 @@ importers:
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../protection
+      '@arxhub/plugin-publish':
+        specifier: workspace:*
+        version: link:../publish
       '@arxhub/plugin-search':
         specifier: workspace:*
         version: link:../search
@@ -1819,6 +1822,9 @@ importers:
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../gateway
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../notes
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../protection

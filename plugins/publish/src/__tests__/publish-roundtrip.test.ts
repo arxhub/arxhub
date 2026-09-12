@@ -45,6 +45,56 @@ describe('publish round-trip (chunks + manifest, unencrypted)', () => {
 
   const get = (path: string) => app.handle(new Request(`http://localhost${path}`))
 
+  test('publishes an attachment and a plugin-rendered snapshot while retaining exact source bytes', async () => {
+    const raw = JSON.stringify({
+      version: 1,
+      doc: { type: 'doc', content: [{ type: 'image_block', attrs: { path: 'attachments/picture.png' } }] },
+    })
+    await vaultVfs.file('note.arx').writeText(raw)
+    await vaultVfs.file('attachments/picture.png').write(new Uint8Array([1, 2, 3]))
+    const custom = new Publisher({
+      vault: vaultVfs,
+      storage: storageVfs,
+      remote: new VfsSyncRemote(publicVfs),
+      logger: new ConsoleLogger(),
+      render: () => ({ html: '<!doctype html><p>Plugin snapshot</p>', status: 200 }),
+    })
+    await custom.load()
+    await custom.publish('note.arx')
+    expect(await (await get('/public/note.arx')).text()).toContain('Plugin snapshot')
+    expect(await (await get('/public/note.arx?source=1')).text()).toBe(raw)
+    expect((await get('/public/note.arx?html=1')).headers.get('content-disposition')).toContain('attachment')
+    expect((await get('/public/attachments/picture.png')).status).toBe(200)
+    await custom.unpublish('note.arx')
+    expect((await get('/public/note.arx')).status).toBe(404)
+    expect((await get('/public/attachments/picture.png')).status).toBe(404)
+  })
+
+  test('a refused buffer save leaves publication roots unchanged and later operations still work', async () => {
+    await vaultVfs.file('first.md').writeText('First')
+    await vaultVfs.file('second.md').writeText('Second')
+    let refused = true
+    const guarded = new Publisher({
+      vault: vaultVfs,
+      storage: storageVfs,
+      remote: new VfsSyncRemote(publicVfs),
+      logger: new ConsoleLogger(),
+      beforeRead: async (path) => !(refused && path === 'second.md'),
+    })
+    await guarded.load()
+    await guarded.publish('first.md')
+    await expect(guarded.publish('second.md')).rejects.toThrow('Save or recover')
+    expect(guarded.list()).toEqual(['first.md'])
+    expect(await storageVfs.file('/published.json').readJSON()).toEqual(['first.md'])
+    expect((await get('/public/first.md')).status).toBe(200)
+    expect((await get('/public/second.md')).status).toBe(404)
+    refused = false
+    await Promise.all([guarded.publish('second.md'), guarded.unpublish('first.md')])
+    expect(guarded.list()).toEqual(['second.md'])
+    expect((await get('/public/first.md')).status).toBe(404)
+    expect((await get('/public/second.md')).status).toBe(200)
+  })
+
   test('publishing a markdown file serves its RAW source at /p (client renders)', async () => {
     await vaultVfs.file('notes/hello.md').writeText('# Hello\n\nworld')
     await publisher.publish('notes/hello.md')

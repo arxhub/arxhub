@@ -61,7 +61,8 @@
     "@arxhub/uikit": "workspace:*",
     "@arxhub/vfs": "workspace:*",
     "@arxhub/crypto": "workspace:*",
-    "@arxhub/plugin-protection": "workspace:*"
+    "@arxhub/plugin-protection": "workspace:*",
+    "@arxhub/plugin-publish": "workspace:*"
   },
   "publishConfig": {
     "exports": {

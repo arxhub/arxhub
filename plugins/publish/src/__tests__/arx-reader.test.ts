@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { publicUrl } from '../public-url'
-import { arxReader } from '../server/arx-reader'
+import { arxMarkdown, arxReader } from '../server/arx-reader'
 
 const document = (content: unknown[]) => JSON.stringify({ version: 1, doc: { type: 'doc', content } })
 const text = (value: string) => ({ type: 'text', text: value })
@@ -95,4 +95,86 @@ describe('public .arx rendering', () => {
     expect(page.status).toBe(422)
     expect(page.html).toContain('Download source')
   })
+})
+
+test('renders structured editor blocks and escaped plugin text with stable anchors', () => {
+  const { html, status } = arxReader(
+    document([
+      {
+        type: 'columns',
+        attrs: { arxId: 'layout' },
+        content: [
+          {
+            type: 'column',
+            content: [{ type: 'section', attrs: { title: 'Details' }, content: [{ type: 'paragraph', content: [text('Inside')] }] }],
+          },
+          {
+            type: 'column',
+            content: [
+              {
+                type: 'table',
+                content: [
+                  { type: 'table_row', content: [{ type: 'table_header', content: [{ type: 'paragraph', content: [text('Cell')] }] }] },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      { type: 'rating', attrs: { value: '<script>bad</script>' } },
+      { type: 'image_block', attrs: { path: 'attachments/image.png', alt: 'Picture' } },
+    ]),
+    'note.arx',
+    { text: (node) => (node.type === 'rating' ? String(node.attrs.value) : null) },
+  )
+  expect(status).toBe(200)
+  expect(html).toContain('id="block-layout"')
+  expect(html).toContain('<details open><summary>Details</summary>')
+  expect(html).toContain('<table><tr><th colspan="1" rowspan="1">')
+  expect(html).toContain('&lt;script&gt;bad&lt;/script&gt;')
+  expect(html).not.toContain('<script>bad')
+  expect(html).toContain('/attachments/image.png')
+})
+
+test('markdown export preserves nesting and literal code while escaping plugin text', () => {
+  const markdown = arxMarkdown(
+    document([
+      {
+        type: 'task_list',
+        content: [{ type: 'task_item', attrs: { checked: true }, content: [{ type: 'paragraph', content: [text('Finished')] }] }],
+      },
+      { type: 'code_block', attrs: { language: 'ts' }, content: [text('const code = "```"')] },
+      { type: 'rating', attrs: { value: '<script>bad()</script>' } },
+    ]),
+    'note.arx',
+    { text: (node) => (node.type === 'rating' ? String(node.attrs.value) : null) },
+  )
+  expect(markdown).toContain('- [x] Finished')
+  expect(markdown).toContain('````ts')
+  expect(markdown).not.toContain('<script>')
+  expect(markdown).toContain('&lt;script&gt;')
+})
+
+test('nested markdown lists render each plugin value once and keep parentheses in link destinations', () => {
+  let value: unknown = { type: 'rating' }
+  for (let i = 0; i < 10; i++) value = { type: 'bullet_list', content: [{ type: 'list_item', content: [value] }] }
+  let calls = 0
+  const markdown = arxMarkdown(
+    document([
+      value,
+      {
+        type: 'paragraph',
+        content: [{ ...text('Link'), marks: [{ type: 'link', attrs: { href: 'https://example.org/a(b)' } }] }],
+      },
+    ]),
+    'note.arx',
+    {
+      text: () => {
+        calls++
+        return 'Rating'
+      },
+    },
+  )
+  expect(calls).toBe(1)
+  expect(markdown).toContain('[Link](<https://example.org/a(b)>)')
 })

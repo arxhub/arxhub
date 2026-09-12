@@ -476,7 +476,7 @@ onUnmounted(() => {
 
 <template>
   <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :path="path" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
+    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
     <DocumentFind v-if="findOpen && view && canSave" :view="view" :revision="revision" :mode="mode" @close="closeFind" />
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />

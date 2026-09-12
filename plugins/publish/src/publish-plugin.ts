@@ -2,6 +2,7 @@ import { PluginConfig } from '@arxhub/config'
 import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
 import { ExplorerExtension } from '@arxhub/plugin-explorer/ui'
+import { NotesExtension } from '@arxhub/plugin-notes/ui'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { HttpSyncRemote } from '@arxhub/sync'
@@ -45,6 +46,8 @@ export class PublishPlugin extends Plugin {
     settings.register({ id: 'publish', title: 'Publishing', schema: PublishConfigSchema, order: 11, config })
 
     const publish = ctx.extensions.get(PublishExtension)
+    publish.readFile = (path) => ctx.services.get(VaultVfs).read(path)
+    publish.beforeRead = (path) => ctx.extensions.get(NotesExtension).beforeClose(path)
     const explorer = ctx.extensions.get(ExplorerExtension)
     // Menu invokers don't await onSelect, so failures are logged here instead of surfacing as
     // unhandled rejections (same policy as the explorer's own actions).
@@ -55,9 +58,11 @@ export class PublishPlugin extends Plugin {
       })
     }
     explorer.registerNodeActions((node) => {
-      if (!publish.enabled) return []
       const path = node.entry.pathname
+      const exports = node.entry.kind === 'file' ? publish.documentActions(path) : []
+      if (!publish.enabled) return exports
       const actions: ActionItem[] = [
+        ...exports,
         {
           id: 'publish',
           label: publish.isPublished(path) ? 'Republish' : 'Publish',
@@ -132,6 +137,8 @@ export class PublishPlugin extends Plugin {
       storage: ctx.services.get(PluginVfs).storage,
       remote,
       logger: this.logger,
+      render: (raw, path) => ctx.extensions.get(PublishExtension).renderArx(raw, path),
+      beforeRead: (path) => ctx.extensions.get(NotesExtension).beforeClose(path),
     })
     try {
       await publisher.load()

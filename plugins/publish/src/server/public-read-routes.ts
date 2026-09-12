@@ -58,11 +58,17 @@ export function publicReadRoutes(vfs: VirtualFileSystem): AnyElysia {
             },
           })
         }
-        const page = arxReader(new TextDecoder().decode(served.bytes), served.pathname)
+        const rendered = manifest.rendered?.[served.pathname]
+          ? await reader.readFile({ ...manifest, files: manifest.rendered }, served.pathname)
+          : null
+        const page = rendered
+          ? { html: new TextDecoder().decode(rendered), status: manifest.rendered?.[served.pathname]?.status === 422 ? 422 : 200 }
+          : arxReader(new TextDecoder().decode(served.bytes), served.pathname)
         return new Response(page.html, {
           status: page.status,
           headers: {
             'content-type': 'text/html; charset=utf-8',
+            ...(query.html === '1' ? { 'content-disposition': `attachment; filename="document.html"` } : {}),
             'content-security-policy':
               "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https: http:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
             'referrer-policy': 'no-referrer',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { actionMenu, Button, Dropdown, FormattingToolbar, IconButton, MenuItem, Strip } from '@arxhub/uikit/core'
+import { type ActionItem, actionMenu, Button, Dropdown, FormattingToolbar, IconButton, MenuItem, Strip } from '@arxhub/uikit/core'
 import { toggleMark } from 'prosemirror-commands'
 import type { MarkType } from 'prosemirror-model'
 import type { Command } from 'prosemirror-state'
@@ -27,6 +27,7 @@ const props = defineProps<{
   links?: ArxDocumentLinks | null
   path?: string
   hasHistory?: boolean
+  publicationActions?: readonly ActionItem[]
 }>()
 const linkOpen = ref(false)
 const emit = defineEmits<{ find: []; outline: []; backlinks: []; copyLink: []; versions: [] }>()
@@ -163,6 +164,7 @@ const actions = computed(() => {
         <MenuItem value="outline" @select="emit('outline')">Document outline</MenuItem>
         <MenuItem v-if="links" value="backlinks" @select="emit('backlinks')">Backlinks</MenuItem>
         <MenuItem v-if="links" value="copy-block-link" @select="emit('copyLink')">Copy link to block</MenuItem>
+        <MenuItem v-for="action in publicationActions" :key="action.id" :value="action.id" :disabled="!canSave || busy || action.disabled" @select="action.onSelect?.()">{{ action.label }}</MenuItem>
         <MenuItem v-if="hasHistory" value="versions" @select="emit('versions')">Saved versions</MenuItem>
       </Dropdown>
       <Dropdown>

@@ -48,7 +48,8 @@
     "@arxhub/sync": "workspace:*",
     "@arxhub/uikit": "workspace:*",
     "@arxhub/vfs": "workspace:*",
-    "@arxhub/vfs-http": "workspace:*"
+    "@arxhub/vfs-http": "workspace:*",
+    "@arxhub/plugin-notes": "workspace:*"
   },
   "publishConfig": {
     "exports": {
