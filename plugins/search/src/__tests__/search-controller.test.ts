@@ -1,7 +1,7 @@
 import { type SearchOptions, type SearchResult, searchRegexInvalid } from '@arxhub/sql'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { createSearchController, DEFAULT_SEARCH_DEBOUNCE_MS, searchOptionsFor } from '../ui/search-controller'
+import { createSearchController, DEFAULT_SEARCH_DEBOUNCE_MS, SEARCH_REVALIDATE_MS, searchOptionsFor } from '../ui/search-controller'
 import { DEFAULT_SEARCH_PREFERENCES, type SearchPreferences } from '../ui/search-preferences'
 
 // Everything here is the controller alone: the debounce, which answer is allowed to reach the list, and
@@ -75,6 +75,75 @@ describe('searchOptionsFor', () => {
 })
 
 describe('the search controller', () => {
+  test('refreshes when the index changes before the first answer arrives', async () => {
+    const first = deferred<SearchResult>()
+    const search = vi
+      .fn()
+      .mockImplementationOnce(() => first.promise)
+      .mockResolvedValue(result(['saved.md']))
+    const query = ref('')
+    const indexRevision = ref(0)
+    const controller = createSearchController({ search, query, preferences: preferences(), indexRevision })
+    query.value = 'needle'
+    await settle()
+    expect(search).toHaveBeenCalledTimes(1)
+
+    indexRevision.value++
+    await nextTick()
+    first.resolve(result([]))
+    await settle(0)
+    expect(controller.documents.value).toEqual([])
+    await settle(SEARCH_REVALIDATE_MS)
+
+    expect(search).toHaveBeenCalledTimes(2)
+    expect(controller.documents.value.map((doc) => doc.path)).toEqual(['saved.md'])
+    controller.dispose()
+  })
+
+  test('keeps keyboard selection stable and stops refreshing after disposal', async () => {
+    const search = vi.fn(async () => result(['saved.md']))
+    const query = ref('')
+    const indexRevision = ref(0)
+    const selected = ref(true)
+    const controller = createSearchController({
+      search,
+      query,
+      preferences: preferences(),
+      indexRevision,
+      canRefresh: () => !selected.value,
+    })
+    query.value = 'needle'
+    await settle()
+    indexRevision.value++
+    await settle(SEARCH_REVALIDATE_MS)
+    expect(search).toHaveBeenCalledTimes(1)
+    selected.value = false
+    indexRevision.value++
+    await settle(SEARCH_REVALIDATE_MS)
+    expect(search).toHaveBeenCalledTimes(2)
+    controller.dispose()
+    indexRevision.value++
+    query.value = 'changed'
+    await settle(SEARCH_REVALIDATE_MS)
+    expect(search).toHaveBeenCalledTimes(2)
+  })
+
+  test('index batches do not postpone a query the owner has typed', async () => {
+    const search = vi.fn(async () => result(['saved.md']))
+    const query = ref('')
+    const indexRevision = ref(0)
+    const controller = createSearchController({ search, query, preferences: preferences(), indexRevision })
+    query.value = 'needle'
+    for (let batch = 0; batch < 4; batch++) {
+      indexRevision.value++
+      await settle(DEFAULT_SEARCH_DEBOUNCE_MS / 4)
+    }
+    expect(search).toHaveBeenCalledTimes(1)
+    controller.dispose()
+    await settle(SEARCH_REVALIDATE_MS)
+    expect(search).toHaveBeenCalledTimes(1)
+  })
+
   test('five characters in a row are one search', async () => {
     const search = vi.fn(async () => result(['a.md']))
     const query = ref('')

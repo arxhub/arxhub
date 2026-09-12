@@ -6,6 +6,7 @@ import type { SearchPreferences } from './search-preferences'
 // How long after the last keystroke the search runs. A search is three statements against the index, so
 // one per character would spend the whole budget answering strings the owner never finished (FR-230).
 export const DEFAULT_SEARCH_DEBOUNCE_MS = 200
+export const SEARCH_REVALIDATE_MS = 500
 
 // Turns the toggles into what the engine takes. `offset` is always 0: a changed query or a flipped toggle
 // is a different question, and answering its second page would be answering nothing the owner asked.
@@ -26,6 +27,8 @@ export interface SearchControllerOptions {
   preferences: Ref<SearchPreferences>
   debounceMs?: number
   limit?: number
+  indexRevision?: Ref<number>
+  canRefresh?: () => boolean
   // A failure that is not the owner's typo — reported as well as shown, because the owner cannot act on it.
   onError?: (error: unknown) => void
 }
@@ -63,6 +66,7 @@ export function createSearchController(options: SearchControllerOptions): Search
   const resultsError = ref<string | null>(null)
 
   let timer: ReturnType<typeof setTimeout> | null = null
+  let revalidateTimer: ReturnType<typeof setTimeout> | null = null
   let inFlight: Promise<void> = Promise.resolve()
   // Every request gets a number and only a higher one may write to the list: a slow answer to a query the
   // owner has already replaced would otherwise put the wrong documents on screen (FR-230.1.3).
@@ -134,7 +138,20 @@ export function createSearchController(options: SearchControllerOptions): Search
     }, debounceMs)
   }
 
-  watch([query, preferences], schedule, { deep: true })
+  const unwatchQuery = watch([query, preferences], () => schedule(), { deep: true })
+  const unwatchIndex = options.indexRevision
+    ? watch(options.indexRevision, () => {
+        // The first answer can already be stale while it is in flight, before `answered` is populated.
+        if (query.value.trim() === '' || options.canRefresh?.() === false) return
+        if (revalidateTimer != null) clearTimeout(revalidateTimer)
+        // Index batches must not keep postponing the owner's pending keystroke query.
+        revalidateTimer = setTimeout(() => {
+          revalidateTimer = null
+          clearTimer()
+          inFlight = run()
+        }, SEARCH_REVALIDATE_MS)
+      })
+    : undefined
 
   return {
     documents,
@@ -151,7 +168,10 @@ export function createSearchController(options: SearchControllerOptions): Search
       await inFlight
     },
     dispose(): void {
+      unwatchQuery()
+      unwatchIndex?.()
       clearTimer()
+      if (revalidateTimer != null) clearTimeout(revalidateTimer)
       // Nothing on screen after this, so an answer still in flight has nowhere to land.
       applied = ++issued
       void inFlight.catch(() => undefined)

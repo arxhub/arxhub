@@ -23,6 +23,9 @@ const controller = createSearchController({
   search: (input, options) => search.search(input, options),
   query,
   preferences,
+  indexRevision: search.revision,
+  // Refreshing the results would move the keyboard selection under the owner.
+  canRefresh: () => selected.value < 0,
   // Named rather than left to the engine's own default, so the page size is visible at the call site —
   // APP-01-06 routes it (and the debounce) through the plugin's config schema.
   limit: DEFAULT_SEARCH_LIMIT,
@@ -114,39 +117,6 @@ watch(selected, async (index) => {
   await nextTick()
   listEl.value?.querySelector(`#${optionId(index)}`)?.scrollIntoView({ block: 'nearest' })
 })
-
-// How long after the index last moved the question is asked again. The first walk after a cold start fills
-// the index a batch at a time, so this is trailing and coalesced: one re-ask once the batches stop landing,
-// not one per batch.
-const REVALIDATE_MS = 500
-let revalidateTimer: ReturnType<typeof setTimeout> | null = null
-
-function cancelRevalidate(): void {
-  if (revalidateTimer == null) return
-  clearTimeout(revalidateTimer)
-  revalidateTimer = null
-}
-
-// A list on screen goes stale the moment the index moves under it — the first walk is still filling it, or a
-// note was saved in the panel next door. Re-asking the same question is the only way the list catches up,
-// which is what makes a note findable *as soon as* it is saved rather than at the next keystroke (FR-225).
-watch(
-  () => search.revision.value,
-  () => {
-    // Nothing on screen to go stale.
-    if (controller.answered.value === '') return
-    // The owner is walking the list with the arrow keys, and a refresh drops the selection (see the `entries`
-    // watcher). Their place in the list is worth more than a second of freshness; the next keystroke, or the
-    // next revision after they leave the list, catches it up.
-    if (selected.value >= 0) return
-    cancelRevalidate()
-    revalidateTimer = setTimeout(() => {
-      revalidateTimer = null
-      void controller.flush()
-    }, REVALIDATE_MS)
-  },
-)
-onUnmounted(cancelRevalidate)
 
 function move(delta: number): void {
   const total = entries.value.length
