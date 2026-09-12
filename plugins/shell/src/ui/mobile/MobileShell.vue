@@ -97,8 +97,8 @@ useOpenSheetKey(() => {
              undo history gone, selection lost (F-05). -->
         <TypeStage :workspace="workspace" :types="types" empty="Nothing is open. Pick a type in the row below." />
         <MobileEdgeGestures
-          :left="navTitle != null && layer == null"
-          :right="hasOpen && layer == null"
+          :left="navTitle != null && layer == null && !keyboardInset"
+          :right="hasOpen && layer == null && !keyboardInset"
           @left="openNav"
           @right="openWhatsOpen"
         />
