@@ -123,7 +123,7 @@ function move(event: PointerEvent) {
     const range = selectedBlocks(props.view.state)
     if (!range) return
     dragging.value = true
-    props.view.dispatch(props.view.state.tr.setSelection(BlockSelection.create(props.view.state.doc, range.from, range.to)))
+    if (!(props.view.state.selection instanceof BlockSelection)) props.view.dispatch(props.view.state.tr.setSelection(BlockSelection.create(props.view.state.doc, range.from, range.to)))
     animation = requestAnimationFrame(scroll)
   }
   if (dragging.value) locate()

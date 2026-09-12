@@ -4,6 +4,7 @@ import { schema as basicSchema } from 'prosemirror-schema-basic'
 import { addListNodes } from 'prosemirror-schema-list'
 import { tableNodes } from 'prosemirror-tables'
 import { assetNodes } from './asset-schema'
+import { columnNodes } from './columns'
 import { isRecord } from './document-migrations'
 import { safeLink } from './link-commands'
 
@@ -22,6 +23,7 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
   })
   .append(tableNodes({ tableGroup: 'block', cellContent: 'block+', cellAttributes: {} }))
   .append(assetNodes)
+  .append(columnNodes)
   .append({
     unknown_block: {
       group: 'block',

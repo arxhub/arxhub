@@ -35,6 +35,8 @@ const CONTAINERS = new Set([
   'table',
   'table_row',
   'table_cell',
+  'columns',
+  'column',
   'table_header',
 ])
 

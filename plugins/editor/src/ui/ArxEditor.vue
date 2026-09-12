@@ -6,7 +6,7 @@ import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button } from '@arxhub/uikit/core'
-import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useFileDocument, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { closeHistory, history } from 'prosemirror-history'
 import { inputRules } from 'prosemirror-inputrules'
@@ -21,6 +21,7 @@ import { blockIdentityPlugin, identifyBlocks } from '../block-identity'
 import { blockMarqueePlugin } from '../block-marquee'
 import { blockSelectionPlugin } from '../block-selection'
 import { codeHighlighting } from '../code-highlighting'
+import { columnsView } from '../columns-view'
 import { createControlViews } from '../control-views'
 import type { ArxDraft } from '../document-drafts'
 import { documentId, withDocumentId } from '../document-history'
@@ -75,6 +76,7 @@ const historyId = computed(() => {
 })
 const slashMenuId = useId()
 const { controls, nodeViews } = createControlViews(kit.components)
+nodeViews.columns = columnsView(useShellFrame())
 const slashMenu = computed(() => {
   void revision.value
   return view.value ? slashKey.getState(view.value.state) : null
@@ -563,6 +565,9 @@ onUnmounted(() => {
 }
 .editor-content :deep(.arx-find-match) { background: var(--warning-4); }
 .editor-content :deep(.arx-find-current) { outline: 2px solid var(--accent-8); outline-offset: 1px; }
+.editor-content :deep(.arx-columns-desktop) { display: grid; gap: 24px; align-items: start; }
+.editor-content :deep(.arx-columns-mobile) { display: flex; flex-direction: column; gap: 16px; }
+.editor-content :deep(.arx-column) { min-width: 0; }
 .editor-content :deep(.tableWrapper) { overflow-x: auto; margin-block: 16px; }
 .editor-content :deep(table) { border-collapse: collapse; table-layout: fixed; width: 100%; overflow: hidden; }
 .editor-content :deep(td), .editor-content :deep(th) { border: 1px solid var(--gray-7); padding: 8px; min-width: 80px; vertical-align: top; position: relative; }

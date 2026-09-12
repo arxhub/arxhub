@@ -2,6 +2,7 @@ import { closeHistory } from 'prosemirror-history'
 import { Fragment, type Node, type Schema } from 'prosemirror-model'
 import type { Command } from 'prosemirror-state'
 import { BlockSelection, selectedBlocks } from './block-selection'
+import { runPreparedCommand } from './command-state'
 import { editorMode } from './editor-mode'
 
 export const BLOCK_TRANSFORMS = [
@@ -24,13 +25,13 @@ const text = new Set(['paragraph', 'heading', 'code_block'])
 
 function paragraph(node: Node, schema: Schema): Node | null {
   if (!text.has(node.type.name)) return null
-  if (node.type.name !== 'code_block') return schema.nodes.paragraph.create(null, node.content)
+  if (node.type.name !== 'code_block') return schema.nodes.paragraph.create({ arxId: node.attrs.arxId ?? null }, node.content)
   const content: Node[] = []
   node.textContent.split('\n').forEach((line, index) => {
     if (index) content.push(schema.nodes.hard_break.create())
     if (line) content.push(schema.text(line))
   })
-  return schema.nodes.paragraph.create(null, content)
+  return schema.nodes.paragraph.create({ arxId: node.attrs.arxId ?? null }, content)
 }
 
 function flatten(node: Node): Node[] | null {
@@ -51,6 +52,26 @@ export const transformBlocks =
     if (editorMode(state) !== 'editable') return false
     const range = selectedBlocks(state)
     if (!range) return false
+    if (range.spans.length > 1) {
+      const tr = state.tr
+      const transformed: { from: number; to: number; step: number }[] = []
+      for (const span of [...range.spans].reverse()) {
+        tr.setSelection(BlockSelection.create(tr.doc, span.from, span.to))
+        if (!runPreparedCommand(state, tr, transformBlocks(target))) return false
+        transformed.push({ from: tr.selection.from, to: tr.selection.to, step: tr.steps.length })
+      }
+      tr.setSelection(
+        BlockSelection.fromSpans(
+          tr.doc,
+          transformed.map((span) => ({
+            from: tr.mapping.slice(span.step).map(span.from, 1),
+            to: tr.mapping.slice(span.step).map(span.to, -1),
+          })),
+        ),
+      )
+      if (dispatch) dispatch(closeHistory(tr).scrollIntoView())
+      return true
+    }
     const { schema } = state
     let nodes: Node[] = []
     if (wrappers.has(target)) {
@@ -80,11 +101,15 @@ export const transformBlocks =
           if (target === 'code_block') {
             if (node.children.some((child) => !child.isText && child.type.name !== 'hard_break')) return false
             const value = node.textBetween(0, node.content.size, '\n', '\n')
-            nodes.push(schema.nodes.code_block.create(null, value ? schema.text(value) : null))
+            nodes.push(schema.nodes.code_block.create({ arxId: node.attrs.arxId ?? null }, value ? schema.text(value) : null))
           } else {
             const converted = paragraph(node, schema)
             if (!converted) return false
-            nodes.push(target === 'paragraph' ? converted : schema.nodes.heading.create({ level: Number(target.at(-1)) }, converted.content))
+            nodes.push(
+              target === 'paragraph'
+                ? converted
+                : schema.nodes.heading.create({ level: Number(target.at(-1)), arxId: node.attrs.arxId ?? null }, converted.content),
+            )
           }
         }
       }

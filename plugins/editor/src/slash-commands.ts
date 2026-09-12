@@ -3,6 +3,7 @@ import { closeHistory } from 'prosemirror-history'
 import type { Schema } from 'prosemirror-model'
 import { wrapInList } from 'prosemirror-schema-list'
 import { type Command, type EditorState, Plugin, PluginKey, TextSelection, type Transaction } from 'prosemirror-state'
+import { arrangeColumns } from './columns'
 import { runPreparedCommand } from './command-state'
 import { editorMode } from './editor-mode'
 import { schema as defaultSchema } from './editor-schema'
@@ -65,6 +66,8 @@ export function buildBlockCommands(schema: Schema): BlockCommand[] {
       keywords: 'toggle details fold секция свернуть',
       run: wrapIn(schema.nodes.section),
     },
+    { id: 'columns-2', label: 'Two columns', icon: 'lu:columns-2', keywords: 'layout колонки', run: arrangeColumns(2) },
+    { id: 'columns-3', label: 'Three columns', icon: 'lu:columns-3', keywords: 'layout колонки', run: arrangeColumns(3) },
     { id: 'table', label: 'Table', icon: 'lu:table', keywords: 'grid rows columns таблица', run: insertTable },
     { id: 'divider', label: 'Divider', icon: 'lu:minus', keywords: 'hr разделитель', run: insertLeaf('horizontal_rule') },
     { id: 'select', label: 'Dropdown', icon: 'lu:list-filter', keywords: 'select status список выбор статус', run: insertLeaf('select') },

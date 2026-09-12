@@ -3,6 +3,7 @@ import type { EditorView } from 'prosemirror-view'
 import { changeBlock } from '../block-actions'
 import { selectBlocks, selectedBlocks } from '../block-selection'
 import { BLOCK_TRANSFORMS, transformBlocks } from '../block-transforms'
+import { arrangeColumns } from '../columns'
 
 export function openBlockMenu(view: EditorView, x: number, y: number): void {
   const items = [
@@ -25,6 +26,16 @@ export function openBlockMenu(view: EditorView, x: number, y: number): void {
           },
         }),
       ),
+      ...([1, 2, 3] as const).map((count) => ({
+        id: `columns-${count}`,
+        label: count === 1 ? 'Stack columns' : `${count} columns`,
+        icon: 'lu:columns-2',
+        disabled: !arrangeColumns(count)(view.state),
+        onSelect: () => {
+          arrangeColumns(count)(view.state, view.dispatch)
+          view.focus()
+        },
+      })),
       { id: 'transform', label: 'Turn into', icon: 'lu:repeat-2', onSelect: () => openTransformMenu(view, x, y) },
       ...(
         [
