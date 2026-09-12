@@ -2,6 +2,7 @@ import { closeHistory } from 'prosemirror-history'
 import type { Node } from 'prosemirror-model'
 import { type Command, Plugin, PluginKey, TextSelection } from 'prosemirror-state'
 import { Decoration, DecorationSet, type EditorView } from 'prosemirror-view'
+import { expandDocumentPosition } from './document-navigation'
 import { editorMode } from './editor-mode'
 
 export interface DocumentMatch {
@@ -81,6 +82,7 @@ export function revealDocumentMatch(view: EditorView, direction = 0): void {
   if (!search?.matches.length) return
   const index = (search.index + direction + search.matches.length) % search.matches.length
   const match = search.matches[index]
+  expandDocumentPosition(view, match.from)
   view.dispatch(
     view.state.tr
       .setMeta(documentSearchKey, { index })

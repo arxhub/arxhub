@@ -22,6 +22,10 @@
     "test": "vitest"
   },
   "dependencies": {
+    "prosemirror-tables": "catalog:client",
+    "@codemirror/language": "catalog:client",
+    "@codemirror/language-data": "catalog:client",
+    "@lezer/highlight": "catalog:client",
     "prosemirror-model": "catalog:client",
     "prosemirror-state": "catalog:client",
     "prosemirror-view": "catalog:client",

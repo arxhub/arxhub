@@ -2,12 +2,40 @@ import { validation } from '@arxhub/errors'
 import { type Mark, type Node, Schema } from 'prosemirror-model'
 import { schema as basicSchema } from 'prosemirror-schema-basic'
 import { addListNodes } from 'prosemirror-schema-list'
+import { tableNodes } from 'prosemirror-tables'
 import { assetNodes } from './asset-schema'
 import { safeLink } from './link-commands'
 
 const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
+  .update('code_block', {
+    ...basicSchema.spec.nodes.get('code_block'),
+    content: 'text*',
+    group: 'block',
+    marks: '',
+    code: true,
+    defining: true,
+    attrs: { language: { default: '', validate: 'string' } },
+    parseDOM: [{ tag: 'pre', preserveWhitespace: 'full', getAttrs: (dom: HTMLElement) => ({ language: dom.dataset.language ?? '' }) }],
+    toDOM: (node: Node) => ['pre', { 'data-language': node.attrs.language }, ['code', 0]],
+  })
+  .append(tableNodes({ tableGroup: 'block', cellContent: 'block+', cellAttributes: {} }))
   .append(assetNodes)
   .append({
+    section: {
+      group: 'block',
+      content: 'block+',
+      defining: true,
+      attrs: { title: { default: 'Section', validate: 'string' } },
+      parseDOM: [
+        {
+          tag: 'details[data-arx-section]',
+          contentElement: 'div[data-section-content]',
+          getAttrs: (dom: HTMLElement) => ({ title: dom.querySelector('summary')?.textContent ?? 'Section' }),
+        },
+      ],
+      toDOM: (node: Node) =>
+        ['details', { 'data-arx-section': '', open: '' }, ['summary', node.attrs.title], ['div', { 'data-section-content': '' }, 0]] as const,
+    },
     task_list: {
       group: 'block',
       content: 'task_item+',

@@ -19,7 +19,7 @@ export function buildInputRules(schema: Schema): InputRule[] {
   if (schema.nodes.code_block) {
     rules.push(
       textblockTypeInputRule(/^```(\w*)$/, schema.nodes.code_block, (match) => ({
-        language: match[1] || null,
+        language: match[1] || '',
       })),
     )
   }

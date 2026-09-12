@@ -49,14 +49,14 @@ describe('md → arx: blocks', () => {
     expect(levels).toEqual([1, 2, 3, 4, 5, 6])
   })
 
-  it('reads a fenced code block verbatim and says the language was dropped', () => {
+  it('keeps fenced code verbatim with its language', () => {
     const { json, warnings } = convert('```ts\nconst a = 1\n```\n')
-    expect(childrenOf(json)[0]).toEqual({ type: 'code_block', content: [{ type: 'text', text: 'const a = 1' }] })
-    expect(warnings.join(' ')).toContain('"ts"')
+    expect(childrenOf(json)[0]).toEqual({ type: 'code_block', attrs: { language: 'ts' }, content: [{ type: 'text', text: 'const a = 1' }] })
+    expect(warnings).toEqual([])
   })
 
   it('never emits an empty text node for an empty code fence', () => {
-    expect(blocks('```\n```\n')[0]).toEqual({ type: 'code_block' })
+    expect(blocks('```\n```\n')[0]).toEqual({ type: 'code_block', attrs: { language: '' } })
   })
 
   it('gives an empty file a document rather than nothing', () => {
@@ -178,7 +178,7 @@ describe('md → arx: what the format has no node for', () => {
   it('keeps front matter at the top instead of losing the title and tags', () => {
     const { json, warnings } = convert('---\ntitle: Note\ntags: [a, b]\n---\n\n# Body\n')
     const [head, body] = childrenOf(json)
-    expect(head).toEqual({ type: 'code_block', content: [{ type: 'text', text: 'title: Note\ntags: [a, b]' }] })
+    expect(head).toEqual({ type: 'code_block', attrs: { language: '' }, content: [{ type: 'text', text: 'title: Note\ntags: [a, b]' }] })
     expect(body.type).toBe('heading')
     expect(warnings.join(' ')).toContain('front matter')
   })

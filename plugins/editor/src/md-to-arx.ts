@@ -153,11 +153,7 @@ class Converter {
   }
 
   private code(node: Code): JsonNode {
-    // `code_block` carries no language attribute, so ```ts loses the `ts`. Adding one is a schema
-    // change (it would have to reach the index's own reader in packages/sql/src/arx.ts) and belongs
-    // to F-02, not here.
-    if (node.lang) this.warn(`the language of a code block ("${node.lang}") is not part of the document format and was dropped`)
-    return codeBlock(node.value)
+    return { ...codeBlock(node.value), attrs: { language: node.lang ?? '' } }
   }
 
   private blockquote(node: Blockquote): JsonNode {

@@ -72,6 +72,9 @@ catalogs:
     prosemirror-state:
       specifier: ^1.4.3
       version: 1.4.4
+    prosemirror-tables:
+      specifier: ^1.8.5
+      version: 1.8.5
     prosemirror-view:
       specifier: ^1.38.0
       version: 1.41.8
@@ -1362,6 +1365,15 @@ importers:
       '@arxhub/vfs':
         specifier: workspace:*
         version: link:../../packages/vfs
+      '@codemirror/language':
+        specifier: catalog:client
+        version: 6.12.3
+      '@codemirror/language-data':
+        specifier: catalog:client
+        version: 6.5.2
+      '@lezer/highlight':
+        specifier: catalog:client
+        version: 1.2.3
       mdast-util-from-markdown:
         specifier: catalog:client
         version: 2.0.3
@@ -1395,6 +1407,9 @@ importers:
       prosemirror-state:
         specifier: catalog:client
         version: 1.4.4
+      prosemirror-tables:
+        specifier: catalog:client
+        version: 1.8.5
       prosemirror-view:
         specifier: catalog:client
         version: 1.41.8
@@ -3807,6 +3822,9 @@ packages:
 
   prosemirror-state@1.4.4:
     resolution: {integrity: sha512-6jiYHH2CIGbCfnxdHbXZ12gySFY/fz/ulZE333G6bPqIZ4F+TXo9ifiR86nAHpWnfoNjOb3o5ESi7J8Uz1jXHw==}
+
+  prosemirror-tables@1.8.5:
+    resolution: {integrity: sha512-V/0cDCsHKHe/tfWkeCmthNUcEp1IVO3p6vwN8XtwE9PZQLAZJigbw3QoraAdfJPir4NKJtNvOB8oYGKRl+t0Dw==}
 
   prosemirror-transform@1.12.0:
     resolution: {integrity: sha512-GxboyN4AMIsoHNtz5uf2r2Ru551i5hWeCMD6E2Ib4Eogqoub0NflniaBPVQ4MrGE5yZ8JV9tUHg9qcZTTrcN4w==}
@@ -6575,6 +6593,14 @@ snapshots:
   prosemirror-state@1.4.4:
     dependencies:
       prosemirror-model: 1.25.4
+      prosemirror-transform: 1.12.0
+      prosemirror-view: 1.41.8
+
+  prosemirror-tables@1.8.5:
+    dependencies:
+      prosemirror-keymap: 1.2.3
+      prosemirror-model: 1.25.4
+      prosemirror-state: 1.4.4
       prosemirror-transform: 1.12.0
       prosemirror-view: 1.41.8
 

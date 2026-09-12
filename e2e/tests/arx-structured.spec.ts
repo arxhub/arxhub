@@ -1,0 +1,85 @@
+import type { Page } from '@playwright/test'
+import { expect, openNavigation, test } from './fixtures'
+
+const document = (content: unknown[]) => JSON.stringify({ version: 1, doc: { type: 'doc', content } })
+async function open(app: Page, path: string) {
+  await app.reload()
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click()
+  const editor = app.locator('.ProseMirror:visible')
+  await expect(editor).toBeVisible()
+  return editor
+}
+
+test('document tables insert, navigate cells and preserve structural edits through reopen', async ({ app, vault }) => {
+  const path = await vault.write(`${test.info().project.name}-table.arx`, document([{ type: 'paragraph' }]))
+  const editor = await open(app, path)
+  await editor.click()
+  await app.keyboard.insertText('/table')
+  await app.getByRole('option', { name: 'Table', exact: true }).click()
+  await expect(editor.locator('tr')).toHaveCount(3)
+  await app.keyboard.insertText('Name')
+  await app.keyboard.press('Tab')
+  await app.keyboard.insertText('Value')
+  await expect(editor.locator('th').nth(0)).toHaveText('Name')
+  await expect(editor.locator('th').nth(1)).toHaveText('Value')
+  await app.getByRole('button', { name: 'Table actions', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Insert row below', exact: true }).click()
+  await expect(editor.locator('tr')).toHaveCount(4)
+  await app.getByRole('button', { name: 'Table actions', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Select row', exact: true }).click()
+  await app.getByRole('button', { name: 'Table actions', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Merge cells', exact: true }).click()
+  await expect(editor.locator('th').first()).toHaveAttribute('colspan', '3')
+  await expect(editor.locator('th').first()).toContainText('Value')
+  await app.getByRole('button', { name: 'Table actions', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Split cell', exact: true }).click()
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect.poll(() => vault.read(path)).toContain('Value')
+  await open(app, path)
+  await expect(editor.locator('tr')).toHaveCount(4)
+  await expect(editor.locator('th').first()).toContainText('Value')
+  await app.getByRole('button', { name: /^Editor mode:/ }).click()
+  await app.getByRole('menuitem', { name: 'Interactive', exact: true }).click()
+  await expect(app.getByRole('button', { name: 'Table actions', exact: true })).toHaveCount(0)
+})
+
+test('sections collapse while reading and code language persists with highlighted editable text', async ({ app, vault }) => {
+  const path = await vault.write(
+    `${test.info().project.name}-section-code.arx`,
+    document([
+      { type: 'section', attrs: { title: 'Details' }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hidden body' }] }] },
+      { type: 'code_block', content: [{ type: 'text', text: 'const answer = 42' }] },
+    ]),
+  )
+  const editor = await open(app, path)
+  await editor.getByRole('textbox', { name: 'Section title' }).fill('Saved section')
+  await editor.getByRole('button', { name: 'Code language' }).click()
+  const language = app.getByRole('dialog', { name: 'Code language' })
+  await language.getByRole('textbox', { name: 'Search code languages' }).fill('JavaScript')
+  await language.getByRole('button', { name: 'JavaScript', exact: true }).click()
+  await expect(editor.locator('.tok-keyword')).toHaveText('const')
+  await editor.locator('pre code').click()
+  await app.keyboard.press('End')
+  await app.keyboard.insertText(' + 1')
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect.poll(() => vault.read(path)).toContain('42 + 1')
+  await open(app, path)
+  await expect(editor.getByRole('textbox', { name: 'Section title' })).toHaveValue('Saved section')
+  await expect(editor.locator('.tok-keyword')).toHaveText('const')
+  await app.getByRole('button', { name: /^Editor mode:/ }).click()
+  await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
+  const summary = editor.locator('summary')
+  await expect(summary).toContainText('Saved section')
+  await summary.click()
+  await expect(editor.locator('.section-content')).toBeHidden()
+  await summary.focus()
+  await app.keyboard.press('Enter')
+  await expect(editor.locator('.section-content')).toBeVisible()
+  await summary.click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Find in document', exact: true }).click()
+  await app.getByRole('textbox', { name: 'Find text', exact: true }).fill('Hidden body')
+  await expect(editor.locator('.section-content')).toBeVisible()
+  await expect(editor.getByRole('button', { name: 'Code language' })).toHaveCount(0)
+})

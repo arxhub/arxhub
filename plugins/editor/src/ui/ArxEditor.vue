@@ -10,11 +10,13 @@ import { history } from 'prosemirror-history'
 import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
 import { EditorState } from 'prosemirror-state'
+import { columnResizing, tableEditing } from 'prosemirror-tables'
 import { EditorView } from 'prosemirror-view'
 import { computed, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
 import { ARX_ASSETS, createAssetSession } from '../asset-session'
 import { createAssetStore } from '../assets'
 import { blockSelectionPlugin } from '../block-selection'
+import { codeHighlighting } from '../code-highlighting'
 import { createControlViews } from '../control-views'
 import { documentBlocks, documentHref, documentLinksPlugin, revealBlock } from '../document-links'
 import { focusDocument } from '../document-navigation'
@@ -83,11 +85,13 @@ useHotkeyLayer(useHotkeysExtension(), { id: PROSEMIRROR_LAYER, kind: 'editor' },
 
 function buildPlugins() {
   return [
-    modePlugin(mode.value, kit.controls, [...Object.keys(kit.components), 'image_block', 'attachment']),
+    modePlugin(mode.value, kit.controls, [...Object.keys(kit.components), 'image_block', 'attachment', 'code_block', 'section']),
     slashCommands(slashMenuId, kit.commands),
     history(),
     blockSelectionPlugin(),
     assets.plugin,
+    codeHighlighting(),
+    columnResizing(),
     documentLinksPlugin(
       () => props.path,
       extension.links,
@@ -100,6 +104,7 @@ function buildPlugins() {
     ...kit.plugins(),
     keymap(buildKeymap(schema)),
     inputRules({ rules: buildInputRules(schema) }),
+    tableEditing({ allowTableNodeSelection: true }),
   ]
 }
 
@@ -374,6 +379,23 @@ onUnmounted(() => {
 }
 .editor-content :deep(.arx-find-match) { background: var(--warning-4); }
 .editor-content :deep(.arx-find-current) { outline: 2px solid var(--accent-8); outline-offset: 1px; }
+.editor-content :deep(.tableWrapper) { overflow-x: auto; margin-block: 16px; }
+.editor-content :deep(table) { border-collapse: collapse; table-layout: fixed; width: 100%; overflow: hidden; }
+.editor-content :deep(td), .editor-content :deep(th) { border: 1px solid var(--gray-7); padding: 8px; min-width: 80px; vertical-align: top; position: relative; }
+.editor-content :deep(th) { background: var(--gray-3); font-weight: 600; }
+.editor-content :deep(.selectedCell) { background: var(--accent-3); }
+.editor-content :deep(.column-resize-handle) { position: absolute; inset-block: 0; right: -1px; width: 4px; background: var(--accent-8); pointer-events: none; }
+.editor-content :deep(.resize-cursor) { cursor: col-resize; }
+.editor-content :deep(details[data-type="section"]) { padding: 8px; border: 1px solid var(--gray-6); border-radius: var(--radius-sm); margin-block: 12px; }
+.editor-content :deep(details[data-type="section"] > summary) { cursor: pointer; }
+.editor-content :deep(details[data-type="section"] > summary:focus-visible) { outline: 2px solid var(--accent-8); outline-offset: 1px; }
+.editor-content :deep(details[data-type="section"] > summary > .arx-control) { display: inline-block; width: calc(100% - 32px); vertical-align: middle; }
+.editor-content :deep(.section-content) { padding: 8px; }
+.editor-content :deep(.tok-keyword), .editor-content :deep(.tok-operator) { color: var(--info-11); }
+.editor-content :deep(.tok-string), .editor-content :deep(.tok-string2) { color: var(--success-11); }
+.editor-content :deep(.tok-number), .editor-content :deep(.tok-bool), .editor-content :deep(.tok-atom) { color: var(--warning-11); }
+.editor-content :deep(.tok-comment), .editor-content :deep(.tok-meta) { color: var(--gray-11); }
+.editor-content :deep(.tok-typeName), .editor-content :deep(.tok-className), .editor-content :deep(.tok-labelName) { color: var(--info-11); }
 /* design-ignore DS type ramp: this is the CONTENT of a note, not chrome. A heading inside a document
    scales with the body it sits in, so these are relative to --font-size-md rather than steps of the
    chrome ramp — the ramp has no note-heading step and should not grow one. */

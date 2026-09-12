@@ -5,6 +5,8 @@ import { shallowReactive } from 'vue'
 import type { ArxEditorComponent } from './editor-extension'
 import { type EditorMode, editorMode } from './editor-mode'
 import AssetBlock from './ui/AssetBlock.vue'
+import CodeBlockTools from './ui/CodeBlockTools.vue'
+import SectionTitle from './ui/SectionTitle.vue'
 
 export interface ArxEditorControlProps {
   node: Node
@@ -22,14 +24,19 @@ export function createControlViews(components: Readonly<Record<string, ArxEditor
   const definitions: Readonly<Record<string, ArxEditorComponent>> = {
     image_block: { component: AssetBlock },
     attachment: { component: AssetBlock },
+    code_block: { component: CodeBlockTools, content: true },
+    section: { component: SectionTitle, content: true },
     ...components,
   }
   const controls = shallowReactive(new Map<number, ControlView>())
   let nextId = 0
   const nodeView: NonNullable<EditorProps['nodeViews']>[string] = (node, view, getPos) => {
     const task = node.type.name === 'task_item'
+    const code = node.type.name === 'code_block'
+    const section = node.type.name === 'section'
     const definition = definitions[node.type.name]
-    const dom = document.createElement(definition?.tag ?? (task ? 'li' : 'div'))
+    const dom = document.createElement(section ? 'details' : (definition?.tag ?? (task ? 'li' : 'div')))
+    if (section) dom.setAttribute('open', '')
     dom.dataset.type = node.type.name
     const host = document.createElement('div')
     host.contentEditable = 'false'
@@ -43,11 +50,20 @@ export function createControlViews(components: Readonly<Record<string, ArxEditor
     // A component consumes its own input events, so ProseMirror cannot infer the active block.
     host.addEventListener('pointerdown', selectControl)
     host.addEventListener('focusin', selectControl)
-    dom.append(host)
-    const contentDOM = (definition?.content ?? task) ? document.createElement('div') : undefined
+    if (section) {
+      const summary = document.createElement('summary')
+      summary.setAttribute('aria-label', 'Toggle section')
+      summary.append(host)
+      dom.append(summary)
+    } else dom.append(host)
+    const contentDOM = (definition?.content ?? task) ? document.createElement(code ? 'code' : 'div') : undefined
     if (contentDOM) {
-      contentDOM.className = 'task-content'
-      dom.append(contentDOM)
+      contentDOM.className = code ? 'code-content' : section ? 'section-content' : 'task-content'
+      if (code) {
+        const pre = document.createElement('pre')
+        pre.append(contentDOM)
+        dom.append(pre)
+      } else dom.append(contentDOM)
     }
     const control = shallowReactive<ControlView>({
       id: nextId++,

@@ -3,6 +3,7 @@ import { redo, undo } from 'prosemirror-history'
 import type { Schema } from 'prosemirror-model'
 import { liftListItem, sinkListItem, splitListItem } from 'prosemirror-schema-list'
 import type { Command } from 'prosemirror-state'
+import { goToNextCell } from 'prosemirror-tables'
 import { editorMode } from './editor-mode'
 
 export function buildKeymap(schema: Schema): Record<string, Command> {
@@ -31,6 +32,11 @@ export function buildKeymap(schema: Schema): Record<string, Command> {
     keys.Tab = chainCommands(sinkListItem(schema.nodes.task_item), keys.Tab)
     keys['Shift-Tab'] = chainCommands(liftListItem(schema.nodes.task_item), keys['Shift-Tab'])
     keys.Enter = chainCommands(splitListItem(schema.nodes.task_item, { checked: false }), liftListItem(schema.nodes.task_item), keys.Enter)
+  }
+
+  if (schema.nodes.table) {
+    keys.Tab = chainCommands(goToNextCell(1), keys.Tab)
+    keys['Shift-Tab'] = chainCommands(goToNextCell(-1), keys['Shift-Tab'])
   }
 
   return Object.fromEntries(

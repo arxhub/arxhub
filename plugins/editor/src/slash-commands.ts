@@ -6,6 +6,7 @@ import { type Command, type EditorState, Plugin, PluginKey, TextSelection, type 
 import { runPreparedCommand } from './command-state'
 import { editorMode } from './editor-mode'
 import { schema as defaultSchema } from './editor-schema'
+import { insertTable } from './table-actions'
 
 export interface BlockCommand {
   id: string
@@ -57,6 +58,14 @@ export function buildBlockCommands(schema: Schema): BlockCommand[] {
     { id: 'quote', label: 'Quote', icon: 'lu:quote', keywords: 'blockquote цитата', run: wrapIn(schema.nodes.blockquote) },
     { id: 'callout', label: 'Callout', icon: 'lu:info', keywords: 'info выноска', run: wrapIn(schema.nodes.callout) },
     { id: 'code', label: 'Code block', icon: 'lu:code', keywords: 'код', run: setBlockType(schema.nodes.code_block) },
+    {
+      id: 'section',
+      label: 'Collapsible section',
+      icon: 'lu:chevrons-up-down',
+      keywords: 'toggle details fold секция свернуть',
+      run: wrapIn(schema.nodes.section),
+    },
+    { id: 'table', label: 'Table', icon: 'lu:table', keywords: 'grid rows columns таблица', run: insertTable },
     { id: 'divider', label: 'Divider', icon: 'lu:minus', keywords: 'hr разделитель', run: insertLeaf('horizontal_rule') },
     { id: 'select', label: 'Dropdown', icon: 'lu:list-filter', keywords: 'select status список выбор статус', run: insertLeaf('select') },
     { id: 'image', label: 'Image', icon: 'lu:image', keywords: 'picture photo изображение фото', run: insertLeaf('image_block') },

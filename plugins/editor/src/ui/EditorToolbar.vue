@@ -3,6 +3,7 @@ import { actionMenu, Button, Dropdown, FormattingToolbar, IconButton, MenuItem, 
 import { toggleMark } from 'prosemirror-commands'
 import type { MarkType } from 'prosemirror-model'
 import type { Command } from 'prosemirror-state'
+import { isInTable } from 'prosemirror-tables'
 import type { EditorView } from 'prosemirror-view'
 import { computed, nextTick, ref } from 'vue'
 import { insertBlock } from '../block-actions'
@@ -11,6 +12,7 @@ import { focusDocument } from '../document-navigation'
 import { buildKeymap } from '../editor-keymap'
 import type { EditorMode } from '../editor-mode'
 import type { BlockCommand } from '../slash-commands'
+import { TABLE_ACTIONS } from '../table-actions'
 import { openBlockMenu } from './block-menu'
 import LinkDialog from './LinkDialog.vue'
 import { HISTORY, MARKS } from './toolbar-actions'
@@ -78,10 +80,29 @@ function blocks() {
   openBlockMenu(view, rect.left, rect.bottom)
 }
 
+function tableActions() {
+  const current = props.view
+  if (!current) return
+  const rect = current.coordsAtPos(current.state.selection.from)
+  actionMenu.open(
+    TABLE_ACTIONS.map((action) => ({
+      id: action.id,
+      label: action.label,
+      icon: action.icon,
+      disabled: !action.run(current.state),
+      onSelect: () => cmd(action.run),
+    })),
+    { title: 'Table actions', x: rect.left, y: rect.bottom },
+  )
+}
+
 const actions = computed(() => {
   void props.revision
   return [
     { id: 'insert', label: 'Insert block', icon: 'lu:plus', primary: true, run: insert },
+    ...(props.view && isInTable(props.view.state)
+      ? [{ id: 'table-actions', label: 'Table actions', icon: 'lu:table', primary: true, run: tableActions }]
+      : []),
     ...MARKS.map((action) => {
       const mark = props.view?.state.schema.marks[action.mark.name] ?? action.mark
       return {
@@ -102,7 +123,7 @@ const actions = computed(() => {
       },
     },
     ...props.commands
-      .filter((action) => !['select', 'divider', 'image', 'attachment'].includes(action.id))
+      .filter((action) => !['select', 'divider', 'image', 'attachment', 'table'].includes(action.id))
       .map((action) => ({
         id: action.id,
         label: action.label,
