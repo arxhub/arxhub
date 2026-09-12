@@ -70,6 +70,13 @@ export function buildBlockCommands(schema: Schema): BlockCommand[] {
     { id: 'columns-3', label: 'Three columns', icon: 'lu:columns-3', keywords: 'layout колонки', run: arrangeColumns(3) },
     { id: 'table', label: 'Table', icon: 'lu:table', keywords: 'grid rows columns таблица', run: insertTable },
     { id: 'divider', label: 'Divider', icon: 'lu:minus', keywords: 'hr разделитель', run: insertLeaf('horizontal_rule') },
+    {
+      id: 'data-view',
+      label: 'Data view',
+      icon: 'lu:layout-list',
+      keywords: 'query tasks board calendar данные задачи доска календарь',
+      run: insertLeaf('data_view'),
+    },
     { id: 'select', label: 'Dropdown', icon: 'lu:list-filter', keywords: 'select status список выбор статус', run: insertLeaf('select') },
     { id: 'image', label: 'Image', icon: 'lu:image', keywords: 'picture photo изображение фото', run: insertLeaf('image_block') },
     { id: 'attachment', label: 'File attachment', icon: 'lu:paperclip', keywords: 'upload file файл вложение', run: insertLeaf('attachment') },

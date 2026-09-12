@@ -6,6 +6,7 @@ import type { Plugin } from 'prosemirror-state'
 import type { Component } from 'vue'
 import type { ArxAssetStore } from './assets'
 import { identityNodes } from './block-identity'
+import type { ArxDataSource } from './data-sources'
 import type { ArxDraftStore } from './document-drafts'
 import type { ArxHistoryStore } from './document-history'
 import type { ArxDocumentLinks } from './document-links'
@@ -32,9 +33,11 @@ export interface ArxEditorContribution {
   controls?: Record<string, ControlPolicy>
   commands?: (schema: Schema) => BlockCommand[]
   plugins?: (schema: Schema) => Plugin[]
+  dataSources?: Record<string, ArxDataSource>
 }
 
 export interface ArxEditorKit {
+  dataSources: Readonly<Record<string, ArxDataSource>>
   format: ArxFormatConfig
   schema: Schema
   commands: readonly BlockCommand[]
@@ -68,12 +71,17 @@ export class ArxEditorExtension extends Extension {
     if (this.built) return
     let nodes = baseSchema.spec.nodes
     let marks = baseSchema.spec.marks
+    const dataSources: Record<string, ArxDataSource> = {}
     const components: Record<string, ArxEditorComponent> = {}
     const controls: Record<string, ControlPolicy> = { ...DEFAULT_CONTROL_POLICIES }
     const contributions = this.contributions.values()
     const retiredNodes = new Set<string>()
     const retiredMarks = new Set<string>()
     for (const contribution of contributions) {
+      for (const [id, source] of Object.entries(contribution.dataSources ?? {})) {
+        if (Object.hasOwn(dataSources, id) || !id || !source.layouts.length) throw illegalState(`Invalid or duplicate data source: ${id}`)
+        dataSources[id] = source
+      }
       const version = contribution.version ?? 1
       if (!Number.isSafeInteger(version) || version < 1) throw illegalState(`Invalid data version: ${contribution.id}`)
       for (let from = 1; from < version; from++) {
@@ -127,6 +135,7 @@ export class ArxEditorExtension extends Extension {
       }
     }
     this.built = Object.freeze({
+      dataSources: Object.freeze(dataSources),
       format: {
         versions: contributions.map((owner) => ({
           id: owner.id,

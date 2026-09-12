@@ -25,6 +25,35 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
   .append(assetNodes)
   .append(columnNodes)
   .append({
+    data_view: {
+      group: 'block',
+      atom: true,
+      attrs: {
+        source: { default: 'tasks', validate: 'string' },
+        layout: {
+          default: 'list',
+          validate: (value: unknown) => {
+            if (!['list', 'board', 'calendar'].includes(String(value))) throw validation('Invalid data layout')
+          },
+        },
+        query: { default: '', validate: 'string' },
+      },
+      parseDOM: [
+        {
+          tag: 'div[data-arx-data-view]',
+          getAttrs: (dom) => ({
+            source: dom.getAttribute('data-source') || 'tasks',
+            layout: dom.getAttribute('data-layout') || 'list',
+            query: dom.getAttribute('data-query') || '',
+          }),
+        },
+      ],
+      toDOM: (node) => [
+        'div',
+        { 'data-arx-data-view': '', 'data-source': node.attrs.source, 'data-layout': node.attrs.layout, 'data-query': node.attrs.query },
+        `Data view: ${node.attrs.source}`,
+      ],
+    },
     unknown_block: {
       group: 'block',
       atom: true,

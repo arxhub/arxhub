@@ -109,7 +109,7 @@ useHotkeyLayer(useHotkeysExtension(), { id: PROSEMIRROR_LAYER, kind: 'editor' },
 
 function buildPlugins() {
   return [
-    modePlugin(mode.value, kit.controls, [...Object.keys(kit.components), 'image_block', 'attachment', 'code_block', 'section']),
+    modePlugin(mode.value, kit.controls, [...Object.keys(kit.components), 'image_block', 'attachment', 'code_block', 'section', 'data_view']),
     slashCommands(slashMenuId, kit.commands),
     history(),
     blockIdentityPlugin(),

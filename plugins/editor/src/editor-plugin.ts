@@ -12,6 +12,7 @@ import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
 import { nextTick } from 'vue'
 import { createAssetStore } from './assets'
+import { searchDataSources } from './data-sources'
 import { createDraftStore } from './document-drafts'
 import { createHistoryStore } from './document-history'
 import { createDocumentLinkStore } from './document-link-store'
@@ -61,6 +62,8 @@ export class ArxEditorPlugin extends Plugin {
     super.configure(ctx)
     ctx.extensions.get(ArxEditorExtension).assets ??= createAssetStore(ctx.services.get(VaultVfs))
     const editor = ctx.extensions.get(ArxEditorExtension)
+    if (ctx.extensions.has(SearchExtension))
+      editor.register({ id: 'arxhub.search-data', dataSources: searchDataSources(ctx.extensions.get(SearchExtension)) })
     const keyring = ctx.extensions.has(KeyringExtension) ? ctx.extensions.get(KeyringExtension).keyring : null
     if (keyring) editor.drafts ??= createDraftStore(keyring.encryptionKey, keyring.authPublicKey)
     editor.history ??= createHistoryStore(ctx.services.get(PluginVfs).storage)

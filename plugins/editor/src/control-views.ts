@@ -6,6 +6,7 @@ import type { ArxEditorComponent } from './editor-extension'
 import { type EditorMode, editorMode } from './editor-mode'
 import AssetBlock from './ui/AssetBlock.vue'
 import CodeBlockTools from './ui/CodeBlockTools.vue'
+import DataView from './ui/DataView.vue'
 import SectionTitle from './ui/SectionTitle.vue'
 import UnknownBlock from './ui/UnknownBlock.vue'
 
@@ -23,6 +24,7 @@ export interface ControlView extends ArxEditorControlProps {
 
 export function createControlViews(components: Readonly<Record<string, ArxEditorComponent>> = {}) {
   const definitions: Readonly<Record<string, ArxEditorComponent>> = {
+    data_view: { component: DataView },
     image_block: { component: AssetBlock },
     attachment: { component: AssetBlock },
     code_block: { component: CodeBlockTools, content: true },
