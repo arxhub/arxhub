@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { validation } from '@arxhub/errors'
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
 import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
@@ -6,10 +7,10 @@ import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
-import { history } from 'prosemirror-history'
+import { closeHistory, history } from 'prosemirror-history'
 import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
-import { EditorState } from 'prosemirror-state'
+import { EditorState, Selection } from 'prosemirror-state'
 import { columnResizing, tableEditing } from 'prosemirror-tables'
 import { EditorView } from 'prosemirror-view'
 import { computed, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
@@ -18,6 +19,7 @@ import { createAssetStore } from '../assets'
 import { blockSelectionPlugin } from '../block-selection'
 import { codeHighlighting } from '../code-highlighting'
 import { createControlViews } from '../control-views'
+import { documentId, withDocumentId } from '../document-history'
 import { documentBlocks, documentHref, documentLinksPlugin, revealBlock } from '../document-links'
 import { focusDocument } from '../document-navigation'
 import { documentSearchKey, documentSearchPlugin } from '../document-search'
@@ -33,6 +35,7 @@ import BlockHandle from './BlockHandle.vue'
 import DocumentBacklinks from './DocumentBacklinks.vue'
 import DocumentFind from './DocumentFind.vue'
 import DocumentOutline from './DocumentOutline.vue'
+import DocumentVersions from './DocumentVersions.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import SlashMenu from './SlashMenu.vue'
 import 'prosemirror-view/style/prosemirror.css'
@@ -60,6 +63,11 @@ const mode = ref<EditorMode>('editable')
 const findOpen = ref(false)
 const outlineOpen = ref(false)
 const backlinksOpen = ref(false)
+const versionsOpen = ref(false)
+const historyId = computed(() => {
+  void revision.value
+  return view.value ? documentId(view.value.state.doc) : null
+})
 const slashMenuId = useId()
 const { controls, nodeViews } = createControlViews(kit.components)
 const slashMenu = computed(() => {
@@ -108,13 +116,25 @@ function buildPlugins() {
   ]
 }
 
-function buildState(_path: string, bytes: Uint8Array): EditorState {
+async function buildState(path: string, bytes: Uint8Array): Promise<EditorState> {
   // Only a genuinely-empty file opens an empty document. Anything else is decoded and deserialized
   // as-is — a failure here (corrupt JSON, an incompatible schema) is left to propagate so the shared
   // load hook can route it through the same error path as a read failure, rather than silently
   // substituting an empty document a Save could flush over the original bytes.
-  if (bytes.length === 0) return EditorState.create({ schema, doc: emptyDoc(schema), plugins: buildPlugins() })
-  const doc = deserialize(schema, new TextDecoder().decode(bytes), kit.format)
+  let doc = bytes.length === 0 ? emptyDoc(schema) : deserialize(schema, new TextDecoder().decode(bytes), kit.format)
+  let id = documentId(doc)
+  if (id && extension.history) {
+    try {
+      const latest = (await extension.history.list(id))[0]
+      if (latest) {
+        const previous = await extension.history.read(id, latest)
+        if (previous.path !== path && (await vfs.exists(previous.path))) id = null
+      }
+    } catch (error) {
+      arxhub.logger.warn(`[editor] could not inspect history for ${path}; keeping the current document available:`, error)
+    }
+  }
+  doc = withDocumentId(doc, id ?? crypto.randomUUID())
   return EditorState.create({ schema, doc, plugins: buildPlugins() })
 }
 
@@ -230,11 +250,16 @@ onUnmounted(notes.registerOpenView(() => props.path, reveal, beforeClose))
 
 async function doSave() {
   if (!view.value || !canSave.value) return
+  const path = props.path
   const version = edits.value
   saving.value = true
   try {
     const content = serialize(view.value.state.doc, kit.format)
-    await vfs.write(props.path, new TextEncoder().encode(content))
+    const id = documentId(view.value.state.doc)
+    if (id && extension.history) await extension.history.record(id, new TextDecoder().decode(await vfs.read(path)), path)
+    if (!canSave.value || props.path !== path) throw validation('The document moved or became unavailable while saving. Retry Save.')
+    await vfs.write(path, new TextEncoder().encode(content))
+    if (id && extension.history) await extension.history.record(id, content, path)
     savedEdits.value = version
     saveError.value = false
   } catch (error) {
@@ -246,6 +271,21 @@ async function doSave() {
   } finally {
     saving.value = false
   }
+}
+
+async function restoreVersion(content: string): Promise<void> {
+  if (mode.value !== 'editable' || !view.value || !canSave.value) throw validation('Switch to Editable to restore a version.')
+  const id = documentId(view.value.state.doc)
+  if (!id) throw validation('The document has no history identity.')
+  const restored = withDocumentId(deserialize(schema, content, kit.format), id)
+  if (!(await beforeClose())) throw validation('Your current draft could not be saved. Retry before restoring a version.')
+  const current = view.value
+  if (!current || !canSave.value || mode.value !== 'editable') throw validation('The document is no longer editable.')
+  const tr = current.state.tr
+    .replaceWith(0, current.state.doc.content.size, restored.content)
+    .setDocAttribute('arxEnvelope', restored.attrs.arxEnvelope)
+  current.dispatch(closeHistory(tr).setSelection(Selection.atStart(tr.doc)).scrollIntoView())
+  await autosave.flush()
 }
 
 // One write path for both the explicit Save (button / Ctrl+S) and autosave: the explicit path flushes
@@ -298,10 +338,11 @@ onUnmounted(() => {
 
 <template>
   <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" :busy="assets.pending.value > 0" :links="extension.links" :path="path" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" />
+    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :path="path" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
     <DocumentFind v-if="findOpen && view && canSave" :view="view" :revision="revision" :mode="mode" @close="closeFind" />
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
+    <DocumentVersions v-if="versionsOpen && extension.history && historyId" :store="extension.history" :document-id="historyId" :kit="kit" :mode="mode" :restore="restoreVersion" @close="versionsOpen = false" />
     <div v-if="loadError" class="editor-error">
       <span>{{ (loadError instanceof Error ? loadError.message : String(loadError)) || "Couldn't load this file." }} Saving is disabled.</span>
       <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>

@@ -1,5 +1,6 @@
 export type { ArxAsset, ArxAssetStore } from './assets'
 export type { ArxEditorControlProps } from './control-views'
+export type { ArxHistoryStore, ArxSavedVersion, ArxVersionContent } from './document-history'
 export type { ArxDocumentLinks, BlockDestination, DocumentDestination } from './document-links'
 export type { ArxFormatConfig, ArxJsonNode } from './document-migrations'
 export { type ArxEditorComponent, type ArxEditorContribution, ArxEditorExtension, type ArxEditorKit } from './editor-extension'

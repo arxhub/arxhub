@@ -26,9 +26,10 @@ const props = defineProps<{
   busy?: boolean
   links?: ArxDocumentLinks | null
   path?: string
+  hasHistory?: boolean
 }>()
 const linkOpen = ref(false)
-const emit = defineEmits<{ find: []; outline: []; backlinks: []; copyLink: [] }>()
+const emit = defineEmits<{ find: []; outline: []; backlinks: []; copyLink: []; versions: [] }>()
 const mode = defineModel<EditorMode>('mode', { default: 'editable' })
 const modes: { value: EditorMode; label: string; description: string }[] = [
   { value: 'readonly', label: 'Read only', description: 'Read and copy; no changes' },
@@ -162,6 +163,7 @@ const actions = computed(() => {
         <MenuItem value="outline" @select="emit('outline')">Document outline</MenuItem>
         <MenuItem v-if="links" value="backlinks" @select="emit('backlinks')">Backlinks</MenuItem>
         <MenuItem v-if="links" value="copy-block-link" @select="emit('copyLink')">Copy link to block</MenuItem>
+        <MenuItem v-if="hasHistory" value="versions" @select="emit('versions')">Saved versions</MenuItem>
       </Dropdown>
       <Dropdown>
         <template #trigger>

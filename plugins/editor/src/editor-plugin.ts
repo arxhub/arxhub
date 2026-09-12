@@ -8,9 +8,10 @@ import { SearchExtension } from '@arxhub/plugin-search/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
-import { VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
+import { PluginVfs, VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
 import { nextTick } from 'vue'
 import { createAssetStore } from './assets'
+import { createHistoryStore } from './document-history'
 import { createDocumentLinkStore } from './document-link-store'
 import { ArxEditorExtension } from './editor-extension'
 import { serialize } from './editor-format'
@@ -58,6 +59,7 @@ export class ArxEditorPlugin extends Plugin {
     super.configure(ctx)
     ctx.extensions.get(ArxEditorExtension).assets ??= createAssetStore(ctx.services.get(VaultVfs))
     const editor = ctx.extensions.get(ArxEditorExtension)
+    editor.history ??= createHistoryStore(ctx.services.get(PluginVfs).storage)
     editor.links ??= createDocumentLinkStore(
       ctx.services.get(VaultVfs),
       () => editor.kit.schema,
