@@ -4,15 +4,20 @@ import { defineConfig } from 'vite'
 export default defineConfig((env) =>
   createVueConfig(__dirname, env, {
     entries: ['src/ui.ts'],
+    // Exact subpaths keep extension constructors and UI singletons owned by their peer packages.
     external: [
       '@arxhub/core',
+      '@arxhub/errors',
+      '@arxhub/stdlib/collections/container',
+      '@arxhub/stdlib/scheduling/debounced-task',
       '@arxhub/path',
-      '@arxhub/plugin-explorer',
-      '@arxhub/plugin-hotkeys',
-      '@arxhub/plugin-notes',
-      '@arxhub/plugin-shell',
-      '@arxhub/plugin-panels',
-      '@arxhub/uikit',
+      '@arxhub/plugin-explorer/ui',
+      '@arxhub/plugin-hotkeys/ui',
+      '@arxhub/plugin-notes/ui',
+      '@arxhub/plugin-shell/ui',
+      '@arxhub/plugin-panels/ui',
+      '@arxhub/uikit/core',
+      '@arxhub/uikit/hooks',
       '@arxhub/vfs',
       'prosemirror-model',
       'prosemirror-state',

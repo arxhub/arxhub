@@ -249,9 +249,21 @@ importers:
 
   e2e:
     devDependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../packages/errors
+      '@arxhub/plugin-editor':
+        specifier: workspace:*
+        version: link:../plugins/editor
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../toolchains/tsconfig
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../packages/uikit
       '@playwright/test':
         specifier: catalog:toolchain
         version: 1.62.0
@@ -261,6 +273,9 @@ importers:
       typescript:
         specifier: catalog:toolchain
         version: 6.0.3
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
 
   instances/app:
     dependencies:
@@ -1314,6 +1329,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@arxhub/path':
         specifier: workspace:*
         version: link:../../packages/path

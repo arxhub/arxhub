@@ -1,24 +1,66 @@
-import { Schema } from 'prosemirror-model'
+import { validation } from '@arxhub/errors'
+import { type Mark, type Node, Schema } from 'prosemirror-model'
 import { schema as basicSchema } from 'prosemirror-schema-basic'
 import { addListNodes } from 'prosemirror-schema-list'
+import { safeLink } from './link-commands'
 
 const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block').append({
   task_list: {
     group: 'block',
     content: 'task_item+',
-    parseDOM: [{ tag: 'ul[data-type="task_list"]' }],
+    parseDOM: [{ tag: 'ul[data-type="task_list"]', priority: 100 }],
     toDOM: () => ['ul', { 'data-type': 'task_list' }, 0] as const,
   },
   task_item: {
-    attrs: { checked: { default: false } },
-    content: 'paragraph+',
+    attrs: { checked: { default: false, validate: 'boolean' } },
+    content: 'paragraph block*',
     parseDOM: [
       {
         tag: 'li[data-type="task_item"]',
+        priority: 100,
         getAttrs: (dom: HTMLElement) => ({ checked: dom.dataset.checked === 'true' }),
       },
     ],
-    toDOM: (node: any) => ['li', { 'data-type': 'task_item', 'data-checked': String(node.attrs.checked) }, 0] as const,
+    toDOM: (node: Node) => ['li', { 'data-type': 'task_item', 'data-checked': String(node.attrs.checked) }, 0] as const,
+  },
+  select: {
+    group: 'block',
+    atom: true,
+    attrs: {
+      label: { default: 'Status', validate: 'string' },
+      options: {
+        default: ['Not started', 'In progress', 'Done'],
+        validate: (value: unknown) => {
+          if (!Array.isArray(value) || !value.every((option) => typeof option === 'string')) throw validation('Invalid dropdown options')
+        },
+      },
+      value: { default: null, validate: 'string|null' },
+    },
+    parseDOM: [
+      {
+        tag: 'div[data-type="select"]',
+        getAttrs: (dom: HTMLElement) => {
+          try {
+            const options: unknown = JSON.parse(dom.dataset.options ?? '[]')
+            if (!Array.isArray(options) || !options.every((option) => typeof option === 'string')) return false
+            return { label: dom.dataset.label ?? 'Status', options, value: dom.dataset.value ?? null }
+          } catch {
+            return false
+          }
+        },
+      },
+    ],
+    toDOM: (node: Node) =>
+      [
+        'div',
+        {
+          'data-type': 'select',
+          'data-label': node.attrs.label,
+          'data-options': JSON.stringify(node.attrs.options),
+          'data-value': node.attrs.value,
+        },
+        `${node.attrs.label}: ${node.attrs.value ?? '—'}`,
+      ] as const,
   },
   callout: {
     attrs: { type: { default: 'info' } },
@@ -30,7 +72,7 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block').
         getAttrs: (dom: HTMLElement) => ({ type: dom.dataset.type ?? 'info' }),
       },
     ],
-    toDOM: (node: any) => ['div', { class: 'callout', 'data-type': node.attrs.type }, 0] as const,
+    toDOM: (node: Node) => ['div', { class: 'callout', 'data-type': node.attrs.type }, 0] as const,
   },
 })
 
@@ -59,7 +101,7 @@ const marks = basicSchema.spec.marks.append({
         }),
       },
     ],
-    toDOM: (node: any) => ['a', { href: node.attrs.href, title: node.attrs.title }, 0] as const,
+    toDOM: (node: Mark) => ['a', { href: safeLink(String(node.attrs.href)), title: node.attrs.title, rel: 'noopener noreferrer' }, 0] as const,
   },
 })
 

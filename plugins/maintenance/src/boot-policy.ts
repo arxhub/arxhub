@@ -20,7 +20,10 @@ function parse(raw: string | null): BootPolicyState {
     if (parsed == null || typeof parsed !== 'object') return EMPTY
     const { disabled, maintenance } = parsed as Partial<BootPolicyState>
     return {
-      disabled: Array.isArray(disabled) ? disabled.filter((it) => typeof it === 'string') : [],
+      // Renaming the editor must not re-enable a plugin the owner disabled to recover a boot.
+      disabled: Array.isArray(disabled)
+        ? [...new Set(disabled.filter((it) => typeof it === 'string').map((it) => (it === 'Editor' ? 'ArxEditor' : it)))]
+        : [],
       maintenance: maintenance === true,
     }
   } catch {

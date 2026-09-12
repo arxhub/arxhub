@@ -150,11 +150,12 @@ describe('md → arx: lists', () => {
     expect(typesOf(blocks('- [ ] task\n- plain\n- [x] task again'))).toEqual(['task_list', 'bullet_list', 'task_list'])
   })
 
-  // The one thing markdown can say that the document format cannot: `task_item` is `paragraph+`.
-  it('hoists what a task cannot hold out of the task list, and says so', () => {
+  it('keeps nested content attached to the task that owns it', () => {
     const { json, warnings } = convert('- [ ] task\n  - nested\n- [ ] after')
-    expect(typesOf(childrenOf(json))).toEqual(['task_list', 'bullet_list', 'task_list'])
-    expect(warnings.join(' ')).toContain('a task can only hold paragraphs')
+    expect(typesOf(childrenOf(json))).toEqual(['task_list'])
+    const task = childrenOf(childrenOf(json)[0])[0]
+    expect(typesOf(childrenOf(task))).toEqual(['paragraph', 'bullet_list'])
+    expect(warnings).toEqual([])
   })
 })
 

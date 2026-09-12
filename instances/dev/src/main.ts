@@ -9,7 +9,7 @@ import { ArxHub, apiBaseUrl } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { ConfigPlugin } from '@arxhub/plugin-config/ui'
-import { EditorPlugin } from '@arxhub/plugin-editor/ui'
+import { ArxEditorPlugin } from '@arxhub/plugin-editor/ui'
 import { ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
 import { HotkeysPlugin } from '@arxhub/plugin-hotkeys/ui'
 import { KeyStorePlugin, resolveKeyStore } from '@arxhub/plugin-keystore/ui'
@@ -59,7 +59,7 @@ arxhub.plugins.register(PanelsPlugin)
 arxhub.plugins.register(NotesPlugin, () => ({ root: '' }))
 arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
-arxhub.plugins.register(EditorPlugin)
+arxhub.plugins.register(ArxEditorPlugin)
 arxhub.plugins.register(SettingsPlugin)
 // The index is device-local and lives in the browser's own storage — never in the content store, so
 // sync never walks it (FR-214). A headless server has no index at all (FR-218).

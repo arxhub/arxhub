@@ -1,0 +1,248 @@
+import type { Page } from '@playwright/test'
+import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+
+const document = (content: unknown[]) => JSON.stringify({ version: 1, doc: { type: 'doc', content } })
+const paragraph = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
+
+async function openArx(app: Page, path: string) {
+  await app.reload()
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click()
+  await expect(app.locator('.ProseMirror:visible')).toBeVisible()
+  return app.locator('.ProseMirror:visible')
+}
+
+async function mode(app: Page, label: string) {
+  await app.getByRole('button', { name: /^Editor mode:/ }).click()
+  await app.getByRole('menuitem', { name: label, exact: true }).click()
+  await expect(app.getByRole('menu', { name: /^Editor mode:/ })).toBeHidden()
+}
+
+test('arx modes preserve text while saving control values', async ({ app, vault }) => {
+  const path = await vault.write(
+    `${test.info().project.name}-modes.arx`,
+    document([
+      paragraph('Original text'),
+      { type: 'task_list', content: [{ type: 'task_item', attrs: { checked: false }, content: [paragraph('Ship the editor')] }] },
+      { type: 'select', attrs: { label: 'Priority', options: ['Low', 'High'], value: 'Low' } },
+    ]),
+  )
+  const editor = await openArx(app, path)
+  await editor.locator('p').first().click()
+  await app.keyboard.press('End')
+  await app.keyboard.insertText(' unsaved')
+  await mode(app, 'Interactive')
+  await expect(editor).toHaveAttribute('contenteditable', 'false')
+  await expect(app.getByRole('toolbar', { name: 'Formatting' })).toHaveCount(0)
+  await expect(app.getByRole('button', { name: 'Configure', exact: true })).toHaveCount(0)
+  await editor.locator('p').first().click()
+  await app.keyboard.press('ControlOrMeta+z')
+  await app.keyboard.insertText('/forbidden')
+  await app.keyboard.press('Backspace')
+  await expect(editor.locator('p').first()).toHaveText('Original text unsaved')
+  const checkbox = editor.getByRole('checkbox')
+  await editor.locator('[data-scope="checkbox"][data-part="control"]').click()
+  await expect(checkbox).toBeChecked()
+  await editor.getByRole('button', { name: 'Priority', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'High', exact: true }).click()
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect.poll(() => vault.read(path)).toContain('"value": "High"')
+  expect(await vault.read(path)).toContain('"checked": true')
+  expect(await vault.read(path)).toContain('Original text unsaved')
+  await mode(app, 'Read only')
+  await expect(checkbox).toBeDisabled()
+  await expect(editor.getByRole('button', { name: 'Priority', exact: true })).toBeDisabled()
+  await expect(app.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0)
+  await mode(app, 'Editable')
+  await expect(editor).toHaveAttribute('contenteditable', 'true')
+  await expect(checkbox).toBeChecked()
+  await expect(editor.getByRole('button', { name: 'Priority', exact: true })).toHaveText('High')
+  await openArx(app, path)
+  await expect(editor.getByRole('checkbox')).toBeChecked()
+  await expect(editor.getByRole('button', { name: 'Priority', exact: true })).toHaveText('High')
+})
+
+test('slash builds tasks and a configurable dropdown with keyboard and pointer', async ({ app, vault }) => {
+  const path = await vault.write(`${test.info().project.name}-slash.arx`, document([{ type: 'paragraph' }]))
+  const editor = await openArx(app, path)
+  await editor.click()
+  await app.keyboard.insertText('/task')
+  await expect(app.getByRole('listbox', { name: 'Insert block' })).toBeVisible()
+  await app.keyboard.press('Enter')
+  await app.keyboard.insertText('First task')
+  await app.keyboard.press('Enter')
+  await app.keyboard.insertText('Second task')
+  await app.keyboard.press('Enter')
+  await app.keyboard.press('Enter')
+  await expect(editor.getByRole('checkbox')).toHaveCount(2)
+  await app.keyboard.insertText('/drop')
+  await app.getByRole('option', { name: 'Dropdown', exact: true }).click()
+  await editor.getByRole('button', { name: 'Configure', exact: true }).click()
+  await app.getByRole('textbox', { name: 'Dropdown label', exact: true }).fill('Stage')
+  await app.getByRole('textbox', { name: 'Dropdown options', exact: true }).fill('Draft\nReview\nPublished')
+  await app.getByRole('button', { name: 'Apply', exact: true }).click()
+  await mode(app, 'Interactive')
+  await editor.getByRole('button', { name: 'Stage', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Review', exact: true }).click()
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect.poll(() => vault.read(path)).toContain('"value": "Review"')
+  const saved = await vault.read(path)
+  expect(saved).toContain('First task')
+  expect(saved).toContain('Second task')
+  expect(saved).not.toContain('/task')
+  expect(saved).not.toContain('/drop')
+})
+
+async function formatting(app: Page, label: string) {
+  const more = app.getByRole('button', { name: 'More formatting', exact: true })
+  if (await more.isVisible()) {
+    await more.click()
+    await app.getByRole('menuitem', { name: label, exact: true }).click()
+  } else {
+    await app.getByRole('button', { name: label, exact: true }).click()
+  }
+}
+
+test('touch insertion and block actions preserve neighboring content and undo', async ({ app, vault }) => {
+  const path = await vault.write(`${test.info().project.name}-blocks.arx`, document([paragraph('First'), paragraph('Second')]))
+  const editor = await openArx(app, path)
+  await editor.locator('p').first().click()
+  await app.getByRole('button', { name: 'Insert block', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Dropdown', exact: true }).click()
+  await expect(editor.getByRole('button', { name: 'Status', exact: true })).toBeVisible()
+  await expect(editor.locator('p').first()).toHaveText('First')
+  await expect(editor.locator('p').last()).toHaveText('Second')
+  await editor.getByRole('button', { name: 'Status', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Done', exact: true }).click()
+  await app.getByRole('button', { name: 'Block actions', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Duplicate block', exact: true }).click()
+  await expect(editor.getByRole('button', { name: 'Status', exact: true })).toHaveCount(2)
+  await formatting(app, 'Undo')
+  await expect(editor.getByRole('button', { name: 'Status', exact: true })).toHaveCount(1)
+  await editor.locator('p').last().click()
+  await formatting(app, 'Current block')
+  await app.getByRole('menuitem', { name: 'Duplicate block', exact: true }).click()
+  await expect(editor.locator('p').filter({ hasText: /^Second$/ })).toHaveCount(2)
+  await formatting(app, 'Undo')
+  await expect(editor.locator('p').filter({ hasText: /^Second$/ })).toHaveCount(1)
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(app.locator('.editor-status')).toContainText('Saved')
+  await expect.poll(() => vault.read(path)).toContain('"type": "select"')
+})
+
+test('unsupported plugin blocks never become an empty writable document', async ({ app, vault }) => {
+  const original = document([{ type: 'missing_plugin_block', attrs: { payload: 'Keep this data' } }])
+  const path = await vault.write(`${test.info().project.name}-unsupported.arx`, original)
+  await app.reload()
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click()
+  await expect(app.locator('.editor-error')).toContainText('missing_plugin_block')
+  await expect(app.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
+  await app.getByRole('button', { name: 'Retry', exact: true }).click()
+  await expect(app.locator('.editor-error')).toContainText('Enable its editor plugin')
+  expect(await vault.read(path)).toBe(original)
+})
+
+test('block handle and link editing work without losing the text selection', async ({ app, vault }) => {
+  const path = await vault.write(`${test.info().project.name}-links.arx`, document([paragraph('Useful words'), paragraph('Second')]))
+  const editor = await openArx(app, path)
+  await editor.locator('p').first().click()
+  await app.keyboard.press('Home')
+  await app.keyboard.down('Shift')
+  await app.keyboard.press('End')
+  await app.keyboard.up('Shift')
+  await formatting(app, 'Link')
+  const dialog = app.getByRole('dialog', { name: 'Link', exact: true })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('textbox', { name: 'Link address' }).fill('https://example.com')
+  await dialog.getByRole('button', { name: 'Apply link', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(editor.getByRole('link', { name: 'Useful words' })).toHaveAttribute('href', 'https://example.com')
+  await editor.locator('p').last().click()
+  await app.getByRole('button', { name: 'Block actions', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Move block up', exact: true }).click()
+  await expect(editor.locator('p').first()).toHaveText('Second')
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect.poll(() => vault.read(path)).toContain('https://example.com')
+})
+
+test('nested tasks keep their structure and checked values through copy and paste', async ({ app, vault }) => {
+  const path = await vault.write(
+    `${test.info().project.name}-clipboard.arx`,
+    document([
+      {
+        type: 'task_list',
+        content: [
+          { type: 'task_item', attrs: { checked: true }, content: [paragraph('Parent task')] },
+          { type: 'task_item', attrs: { checked: false }, content: [paragraph('Child task')] },
+        ],
+      },
+      { type: 'paragraph' },
+    ]),
+  )
+  const editor = await openArx(app, path)
+  await editor.locator('p').filter({ hasText: 'Child task' }).click()
+  await formatting(app, 'Indent list item')
+  await expect(editor.locator('ul[data-type="task_list"] ul[data-type="task_list"]')).toHaveCount(1)
+  await editor.focus()
+  await app.keyboard.press('ControlOrMeta+a')
+  const copied = await editor.evaluate((element) => {
+    const clipboardData = new DataTransfer()
+    element.dispatchEvent(new ClipboardEvent('copy', { clipboardData, bubbles: true, cancelable: true }))
+    return { html: clipboardData.getData('text/html'), text: clipboardData.getData('text/plain') }
+  })
+  expect(copied.html).toContain('data-checked="true"')
+  expect(copied.text).toContain('Child task')
+  await editor.locator(':scope > p').last().click()
+  await app.keyboard.insertText('Pasted copy: ')
+  await expect(editor.locator(':scope > p').last()).toHaveText('Pasted copy: ')
+  await editor.evaluate((element, data) => {
+    const clipboardData = new DataTransfer()
+    clipboardData.setData('text/html', data.html)
+    clipboardData.setData('text/plain', data.text)
+    const event = new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true })
+    element.dispatchEvent(event)
+  }, copied)
+  await expect(editor.getByRole('checkbox')).toHaveCount(4)
+  await expect(editor.getByRole('checkbox', { name: 'Parent task', exact: true })).toHaveCount(2)
+  await expect(editor.locator('ul[data-type="task_list"] ul[data-type="task_list"]')).toHaveCount(2)
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect.poll(async () => (await vault.read(path)).match(/"checked": true/g)?.length).toBe(2)
+})
+
+test('mobile insertion and formatting stay above the on-screen keyboard', async ({ app, vault }) => {
+  test.skip(!(await isMobileFrame(app)), 'The mobile frame owns the keyboard inset')
+  await app.setViewportSize({ width: 360, height: 640 })
+  const path = await vault.write('keyboard.arx', document([{ type: 'paragraph' }]))
+  const editor = await openArx(app, path)
+  await editor.click()
+  await app.keyboard.insertText('/task')
+  await app.evaluate(() => {
+    const viewport = window.visualViewport
+    if (!viewport) throw new Error('Visual viewport is required for keyboard geometry')
+    Object.defineProperties(viewport, { height: { configurable: true, value: 320 }, offsetTop: { configurable: true, value: 0 } })
+    viewport.dispatchEvent(new Event('resize'))
+  })
+  const menu = app.getByRole('listbox', { name: 'Insert block' })
+  await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().bottom)).toBeLessThanOrEqual(320)
+  await app.evaluate(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+    Object.defineProperty(viewport, 'offsetTop', { configurable: true, value: 40 })
+    viewport.dispatchEvent(new Event('scroll'))
+  })
+  await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThanOrEqual(48)
+  await app.getByRole('option', { name: 'Task list', exact: true }).click()
+  await app.keyboard.insertText('A task above the keyboard')
+  await app.getByRole('button', { name: 'More formatting', exact: true }).click()
+  const sheet = app.getByRole('dialog', { name: 'Formatting', exact: true })
+  await expect(sheet).toBeVisible()
+  await expect.poll(() => sheet.evaluate((el) => el.getBoundingClientRect().bottom)).toBeLessThanOrEqual(360)
+  const screenshot = test.info().outputPath('keyboard-formatting.png')
+  await app.screenshot({ path: screenshot, scale: 'css' })
+  await test.info().attach('keyboard-formatting', { path: screenshot, contentType: 'image/png' })
+  await app.keyboard.press('Escape')
+  await expect(editor).toContainText('A task above the keyboard')
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect.poll(() => vault.read(path)).toContain('A task above the keyboard')
+})

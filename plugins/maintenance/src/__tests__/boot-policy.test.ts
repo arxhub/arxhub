@@ -22,6 +22,15 @@ beforeEach(() => {
 })
 
 describe('BootPolicy', () => {
+  test('keeps the renamed ArxEditor disabled until explicitly enabled', () => {
+    storage.setItem(BOOT_POLICY_KEY, JSON.stringify({ disabled: ['Editor', 'ArxEditor', 'sync'], maintenance: false }))
+    const policy = new BootPolicy(storage)
+    expect(policy.disabled).toEqual(['ArxEditor', 'sync'])
+    expect(policy.isDisabled('ArxEditor')).toBe(true)
+    policy.setEnabled('ArxEditor', true)
+    expect(new BootPolicy(storage).disabled).toEqual(['sync'])
+  })
+
   test('boots everything when nothing was ever stored', () => {
     const policy = new BootPolicy(storage)
 

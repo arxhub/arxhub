@@ -11,29 +11,54 @@ import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
 import { EditorState, TextSelection } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
-import { onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, toRef, useId, watch } from 'vue'
+import { createControlViews } from '../control-views'
+import { ArxEditorExtension } from '../editor-extension'
 import { deserialize, emptyDoc, serialize } from '../editor-format'
 import { buildInputRules } from '../editor-input-rules'
 import { buildKeymap } from '../editor-keymap'
-import { schema } from '../editor-schema'
+import { type EditorMode, editorModeKey, modePlugin } from '../editor-mode'
 import { PROSEMIRROR_LAYER } from '../hotkeys'
+import { slashCommands, slashKey } from '../slash-commands'
+import ArxComponentHost from './ArxComponentHost.vue'
+import BlockHandle from './BlockHandle.vue'
 import EditorToolbar from './EditorToolbar.vue'
+import SlashMenu from './SlashMenu.vue'
 import 'prosemirror-view/style/prosemirror.css'
 
 // Fires this long after the last keystroke, mirroring the search plugin's index-queue debounce shape
 // (a burst of edits coalesces into one write, not one per keystroke).
+defineOptions({ name: 'ArxEditor' })
+
 const AUTOSAVE_DEBOUNCE_MS = 1500
 
 const props = defineProps<{ path: string; anchor?: BlockAnchor }>()
 
 const arxhub = useArxHub()
+const kit = arxhub.extensions.get(ArxEditorExtension).kit
+const { schema } = kit
 const vfs = arxhub.services.get(VaultVfs)
 const notes = arxhub.extensions.get(NotesExtension)
 const editorEl = ref<HTMLDivElement>()
 const view = shallowRef<EditorView | null>(null)
 const revision = ref(0)
-let edits = 0
-let savedEdits = 0
+const mode = ref<EditorMode>('editable')
+const slashMenuId = useId()
+const { controls, nodeViews } = createControlViews(kit.components)
+const slashMenu = computed(() => {
+  void revision.value
+  return view.value ? slashKey.getState(view.value.state) : null
+})
+const edits = ref(0)
+const savedEdits = ref(0)
+const saving = ref(false)
+const saveError = ref(false)
+const saveStatus = computed(() => {
+  if (!canSave.value) return loadError.value ? 'Document unavailable' : 'Loading…'
+  if (saveError.value) return 'Save failed — retry Save'
+  if (saving.value) return 'Saving…'
+  return edits.value === savedEdits.value ? 'Saved' : 'Unsaved changes'
+})
 
 // Where the layer IS, while the chords it claims are declared once by the plugin (`hotkeys.ts`).
 // Every open `.arx` panel pushes this same layer, and only the one holding the caret is on the stack —
@@ -42,7 +67,14 @@ let savedEdits = 0
 useHotkeyLayer(useHotkeysExtension(), { id: PROSEMIRROR_LAYER, kind: 'editor' }, editorEl)
 
 function buildPlugins() {
-  return [history(), keymap(buildKeymap(schema)), inputRules({ rules: buildInputRules(schema) })]
+  return [
+    modePlugin(mode.value, kit.controls, Object.keys(kit.components)),
+    slashCommands(slashMenuId, kit.commands),
+    history(),
+    ...kit.plugins(),
+    keymap(buildKeymap(schema)),
+    inputRules({ rules: buildInputRules(schema) }),
+  ]
 }
 
 function buildState(_path: string, bytes: Uint8Array): EditorState {
@@ -72,25 +104,60 @@ const {
     } else if (editorEl.value) {
       view.value = new EditorView(editorEl.value, {
         state,
+        nodeViews,
         dispatchTransaction(tr) {
           if (!view.value) return
-          view.value.updateState(view.value.state.apply(tr))
+          const previous = view.value.state
+          const next = previous.apply(tr)
+          view.value.updateState(next)
           revision.value++
-          if (tr.docChanged) {
+          if (!previous.doc.eq(next.doc)) {
             // Never autosave over a load that hasn't (or can no longer) resolve — `doSave` re-checks
             // canSave at fire time too, but there is no point arming a timer for a run that can only
             // no-op.
             if (canSave.value) {
-              edits++
+              edits.value++
               autosave.schedule()
             }
           }
         },
       })
     }
+    edits.value = 0
+    savedEdits.value = 0
+    saveError.value = false
+    revision.value++
     if (props.anchor) reveal(props.anchor)
   },
 })
+
+watch(
+  [mode, canSave],
+  ([selected, ready]) => {
+    const current = view.value
+    if (current) current.dispatch(current.state.tr.setMeta(editorModeKey, ready ? selected : 'readonly').setMeta(slashKey, 'dismiss'))
+  },
+  { flush: 'sync' },
+)
+
+function warnUnsaved(event: BeforeUnloadEvent) {
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+watch(
+  () => edits.value !== savedEdits.value,
+  (dirty) => {
+    if (dirty) window.addEventListener('beforeunload', warnUnsaved)
+    else window.removeEventListener('beforeunload', warnUnsaved)
+  },
+  { flush: 'sync' },
+)
+
+function dismissSlash() {
+  const current = view.value
+  if (current && slashKey.getState(current.state)) current.dispatch(current.state.tr.setMeta(slashKey, 'dismiss'))
+}
 
 function reveal(anchor: BlockAnchor): boolean {
   const current = view.value
@@ -113,16 +180,21 @@ onUnmounted(notes.registerOpenView(() => props.path, reveal, beforeClose))
 
 async function doSave() {
   if (!view.value || !canSave.value) return
-  const saving = edits
-  const content = serialize(view.value.state.doc)
+  const version = edits.value
+  saving.value = true
   try {
+    const content = serialize(view.value.state.doc)
     await vfs.write(props.path, new TextEncoder().encode(content))
-    savedEdits = saving
+    savedEdits.value = version
+    saveError.value = false
   } catch (error) {
+    saveError.value = true
     // Don't swallow a failed write — that silently loses the user's edits. Surface it loudly.
     arxhub.logger.error(`[editor] failed to save ${props.path}:`, error)
     toaster.create({ title: 'Save failed', description: `Couldn't save ${props.path}`, type: 'error' })
     throw error
+  } finally {
+    saving.value = false
   }
 }
 
@@ -132,14 +204,19 @@ async function doSave() {
 const autosave = createDebouncedTask({ run: doSave, debounceMs: AUTOSAVE_DEBOUNCE_MS })
 
 async function save() {
-  await autosave.flush()
+  if (mode.value === 'readonly' && savedEdits.value === edits.value) return
+  try {
+    await autosave.flush()
+  } catch {
+    // doSave has already reported the error; event handlers must not leak a rejected promise.
+  }
 }
 
 async function beforeClose(): Promise<boolean> {
   try {
     // flush() may join an older in-flight write. Keep the view until all edits made since it began
     // have reached storage too; a failure leaves the buffer available for retry.
-    while (savedEdits !== edits) {
+    while (savedEdits.value !== edits.value) {
       if (!view.value || !canSave.value) return false
       await autosave.flush()
     }
@@ -154,12 +231,13 @@ watch(
   () => {
     if (!canSave.value) return
     // A rename may have copied the file while an autosave still targeted its old path.
-    edits++
+    edits.value++
     autosave.schedule()
   },
 )
 
 onUnmounted(() => {
+  window.removeEventListener('beforeunload', warnUnsaved)
   autosave.cancel()
   view.value?.destroy()
   view.value = null
@@ -168,26 +246,49 @@ onUnmounted(() => {
 
 <template>
   <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <EditorToolbar :view="view" :revision="revision" :on-save="save" :can-save="canSave" />
+    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" />
     <div v-if="loadError" class="editor-error">
-      <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
+      <span>{{ (loadError instanceof Error ? loadError.message : String(loadError)) || "Couldn't load this file." }} Saving is disabled.</span>
       <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>
     </div>
-    <div v-show="!loadError" ref="editorEl" class="editor-content" />
+    <div v-show="!loadError" ref="editorEl" class="editor-content" @scroll="dismissSlash" />
+    <BlockHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" />
+    <SlashMenu v-if="view && slashMenu && !loadError" :view="view" :menu="slashMenu" :menu-id="slashMenuId" :commands="kit.commands" />
+    <div class="editor-status" role="status" aria-live="polite">
+      <span>{{ saveStatus }}</span>
+      <Button v-if="saveError" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button>
+      <span v-if="mode === 'readonly'">Read only · Select and copy text</span>
+      <span v-else-if="mode === 'interactive'">Interactive · Change values; text stays protected</span>
+    </div>
+    <Teleport v-for="control in controls.values()" :key="control.id" :to="control.host">
+      <ArxComponentHost :control="control" />
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
 .editor-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
 }
+.editor-status {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 4px 12px;
+  color: var(--gray-11);
+  font-size: var(--font-size-xs);
+}
 .editor-content {
+  min-height: 0;
+  overscroll-behavior: contain;
   flex: 1;
   overflow-y: auto;
-  padding: 24px clamp(16px, 6%, 48px);
+  padding: 24px clamp(44px, 6%, 64px);
   box-sizing: border-box;
 }
 .editor-error {
@@ -204,6 +305,10 @@ onUnmounted(() => {
 .editor-content :deep(.ProseMirror) {
   outline: none;
   min-height: 200px;
+  max-width: 760px;
+  margin-inline: auto;
+  overflow-wrap: anywhere;
+  padding-bottom: 80px;
   font-size: var(--font-size-md);
   line-height: 1.7;
   color: var(--gray-12);
@@ -243,7 +348,16 @@ onUnmounted(() => {
 .editor-content :deep(hr) { border: none; border-top: 1px solid var(--gray-5); margin: 1.5em 0; }
 .editor-content :deep(ul[data-type="task_list"]) { list-style: none; padding-left: 0.25em; }
 .editor-content :deep(li[data-type="task_item"]) { display: flex; align-items: baseline; gap: 0.5em; margin: 0.15em 0; }
-.editor-content :deep(li[data-checked="true"]) { color: var(--gray-9); text-decoration: line-through; }
+.editor-content :deep(.task-content > ul[data-type="task_list"]) { padding-left: 1.25em; }
+.editor-content :deep(.task-content) { flex: 1; min-width: 0; }
+.editor-content :deep(li[data-checked="true"] > .task-content > p) { color: var(--gray-9); text-decoration: line-through; }
+.editor-content :deep(.ProseMirror[data-mode="editable"] > p:only-child:has(> br:only-child))::before {
+  content: 'Type / to insert a block';
+  color: var(--gray-10);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
 .editor-content :deep(.callout) {
   border-left: 4px solid var(--gray-6);
   padding: 0.75em 1em;

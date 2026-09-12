@@ -3,7 +3,12 @@
   "compilerOptions": {
     "noEmit": true,
     "lib": ["ES2022", "DOM"],
-    "types": ["node"]
+    "types": ["node", "vite/client"]
   },
-  "include": ["tests/**/*.ts", "playwright.config.ts", "global-setup.ts"]
+  "include": [
+    "tests/**/*.ts",
+    "fixtures/**/*.ts",
+    "playwright.config.ts",
+    "global-setup.ts"
+  ]
 }

@@ -39,7 +39,7 @@ function stand() {
   const probe: LayerProbe = (layer) => (layer.element === caret ? { reason: 'focus', depth: 12 } : null)
   const hotkeys = new HotkeysExtension({ logger, probe, platform: 'mac' })
 
-  // What `EditorPlugin.configure()` does: once, for the viewer type.
+  // What `ArxEditorPlugin.configure()` does: once, for the viewer type.
   declareProseMirrorChords(hotkeys)
   // And the frame's app-wide ⌘B, so a chord that stops being claimed shows up as the column moving
   // rather than as nothing happening.

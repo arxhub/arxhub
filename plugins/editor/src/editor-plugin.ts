@@ -9,11 +9,12 @@ import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
 import { nextTick } from 'vue'
+import { ArxEditorExtension } from './editor-extension'
 import { serialize } from './editor-format'
 import { declareProseMirrorChords } from './hotkeys'
 import { manifest } from './manifest'
 import { arxPathFor, isMarkdownPath, markdownToArx } from './md-to-arx'
-import EditorPanel from './ui/EditorPanel.vue'
+import ArxEditor from './ui/ArxEditor.vue'
 
 const PANEL_ID = 'arxhub.editor'
 
@@ -30,14 +31,24 @@ export const EDITOR_VIEWER: NoteViewer = {
   panelId: PANEL_ID,
   title: 'Document',
   extensions: ['.arx'],
-  component: EditorPanel,
+  component: ArxEditor,
   // Ahead of the plain text editor, so a format with a richer viewer is not claimed by the plain one.
   order: 0,
 }
 
-export class EditorPlugin extends Plugin {
+export class ArxEditorPlugin extends Plugin {
   constructor(args: PluginArgs) {
     super(args, manifest)
+  }
+
+  override create(ctx: PluginContext): void {
+    super.create(ctx)
+    ctx.extensions.register(ArxEditorExtension)
+  }
+
+  override start(ctx: PluginContext): Promise<void> {
+    ctx.extensions.get(ArxEditorExtension).seal()
+    return super.start(ctx)
   }
 
   override configure(ctx: PluginContext): void {
@@ -50,8 +61,8 @@ export class EditorPlugin extends Plugin {
     const { store } = ctx.extensions.get(PanelStoreExtension)
     store.registerPanel({
       id: EDITOR_VIEWER.panelId,
-      title: 'Editor',
-      component: EditorPanel,
+      title: 'ArxEditor',
+      component: ArxEditor,
     })
 
     ctx.extensions.get(NotesExtension).registerViewer(EDITOR_VIEWER)

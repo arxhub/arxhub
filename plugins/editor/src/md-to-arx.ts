@@ -215,21 +215,9 @@ class Converter {
         continue
       }
 
-      // `task_item` is `paragraph+`: a task cannot hold a nested list, a code block or a quote. Those
-      // are hoisted to sit directly after the task list instead of being dropped — the content
-      // survives in reading order, the "belongs to this task" relation does not.
-      let split = 0
-      while (split < inner.length && inner[split].type === 'paragraph') split += 1
-      const lead = inner.slice(0, split)
-      if (lead.length === 0) lead.push({ type: 'paragraph' })
-      run.items.push({ type: 'task_item', attrs: { checked: item.checked === true }, content: lead })
-
-      const hoisted = inner.slice(split)
-      if (hoisted.length > 0) {
-        this.warn('a task can only hold paragraphs — blocks nested under one were moved out to sit after the task list')
-        flush()
-        out.push(...hoisted)
-      }
+      const content = inner.length > 0 ? inner : [{ type: 'paragraph' }]
+      if (content[0].type !== 'paragraph') content.unshift({ type: 'paragraph' })
+      run.items.push({ type: 'task_item', attrs: { checked: item.checked === true }, content })
     }
     flush()
     return out

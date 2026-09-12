@@ -1,9 +1,8 @@
-import { setBlockType, wrapIn } from 'prosemirror-commands'
 import { redo, undo } from 'prosemirror-history'
 import type { MarkType } from 'prosemirror-model'
-import { wrapInList } from 'prosemirror-schema-list'
 import type { Command } from 'prosemirror-state'
 import { schema } from '../editor-schema'
+import { BLOCK_COMMANDS } from '../slash-commands'
 
 // The toolbar as data, in a module of its own rather than inside the component — so the test beside it
 // checks the very tables the toolbar renders instead of a hand-copied list of names. A button added here
@@ -36,21 +35,19 @@ export const MARKS: MarkAction[] = [
   { label: 'Italic', icon: 'lu:italic', mark: schema.marks.em },
   { label: 'Strikethrough', icon: 'lu:strikethrough', mark: schema.marks.strike },
   { label: 'Underline', icon: 'lu:underline', mark: schema.marks.underline },
+  { label: 'Highlight', icon: 'lu:highlighter', mark: schema.marks.highlight },
   { label: 'Inline code', icon: 'lu:code', mark: schema.marks.code },
 ]
 
-export const BLOCKS: CommandAction[] = [
-  { label: 'Heading 1', icon: 'lu:heading-1', run: () => setBlockType(schema.nodes.heading, { level: 1 }) },
-  { label: 'Heading 2', icon: 'lu:heading-2', run: () => setBlockType(schema.nodes.heading, { level: 2 }) },
-  { label: 'Heading 3', icon: 'lu:heading-3', run: () => setBlockType(schema.nodes.heading, { level: 3 }) },
-  { label: 'Paragraph', icon: 'lu:pilcrow', run: () => setBlockType(schema.nodes.paragraph) },
-]
+const textBlocks = new Set(['paragraph', 'heading-1', 'heading-2', 'heading-3'])
+const toolbarCommand = (command: (typeof BLOCK_COMMANDS)[number]): CommandAction => ({
+  label: command.label,
+  icon: command.icon,
+  run: () => command.run,
+})
 
-export const LISTS: CommandAction[] = [
-  { label: 'Bulleted list', icon: 'lu:list', run: () => wrapInList(schema.nodes.bullet_list) },
-  { label: 'Numbered list', icon: 'lu:list-ordered', run: () => wrapInList(schema.nodes.ordered_list) },
-  { label: 'Quote', icon: 'lu:quote', run: () => wrapIn(schema.nodes.blockquote) },
-]
+export const BLOCKS: CommandAction[] = BLOCK_COMMANDS.filter((command) => textBlocks.has(command.id)).map(toolbarCommand)
+export const LISTS: CommandAction[] = BLOCK_COMMANDS.filter((command) => !textBlocks.has(command.id)).map(toolbarCommand)
 
 export const HISTORY: { label: string; icon: string; run: Command }[] = [
   { label: 'Undo', icon: 'lu:undo', run: undo },

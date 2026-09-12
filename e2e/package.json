@@ -11,9 +11,14 @@
     "report": "playwright show-report"
   },
   "devDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/plugin-editor": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
     "@playwright/test": "catalog:toolchain",
     "@types/node": "catalog:toolchain",
-    "typescript": "catalog:toolchain"
+    "typescript": "catalog:toolchain",
+    "vue": "catalog:client"
   }
 }
