@@ -70,7 +70,6 @@ const summary = computed(() => {
        against — and the description moved into the body, which is read once. -->
   <div class="sql-console" data-testid="sql-console">
     <Strip title="SQL console">
-      <span class="limits">{{ meta.join(' · ') }}</span>
       <template #actions>
         <!-- Inert while a query runs: a second one over the first is refused rather than queued (FE 6). -->
         <Button size="sm" :disabled="!canRun" @click="run">{{ controller.running.value ? 'Running…' : 'Run' }}</Button>
@@ -80,6 +79,7 @@ const summary = computed(() => {
     </Strip>
 
     <div class="console">
+      <p class="limits">{{ meta.join(' · ') }}</p>
       <p class="about">
         Ask the index a question in SQL. A query runs inside a read-only transaction, so nothing here can change the
         index — the files of the content store are the source of truth either way.
@@ -176,6 +176,7 @@ const summary = computed(() => {
 }
 
 .limits {
+  margin: 0;
   color: var(--gray-10);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);

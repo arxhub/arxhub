@@ -87,6 +87,7 @@ export class Workspace {
   private readonly createPanels: () => PanelHost
   private readonly goneView: Component
 
+  private readonly closing = new WeakMap<OpenedObject, Promise<void>>()
   private readonly spaces = new Map<string, TypeWorkspace>()
   // The order of the types open right now. Pinned ones stand in the row without it — this order is
   // about what the person opened, not about what is available to them.
@@ -145,12 +146,15 @@ export class Workspace {
     this.spaces.delete(typeId)
     this.order.value = this.order.value.filter((it) => it !== typeId)
     this.forgetGone((id) => id === typeId)
+    if (this.active.value === typeId) {
+      const next =
+        this.order.value[this.order.value.length - 1] ??
+        (this.types.get(typeId)?.pinned === false ? this.types.pinned.value[0]?.id : null) ??
+        null
+      this.active.value = null
+      if (next != null) this.activateType(next)
+    }
     this.emit('workspace:type-closed', { typeId })
-
-    if (this.active.value !== typeId) return
-    const next = this.order.value[this.order.value.length - 1] ?? null
-    this.active.value = next
-    if (next != null) this.emit('workspace:type-activated', { typeId: next })
   }
 
   // Open an object — which is also the operation "switch to it". Callers do not need to check whether
@@ -169,7 +173,7 @@ export class Workspace {
 
     if (!space.panels.has(object.key)) {
       space.objects.set(object.key, object)
-      space.panels.open({ key: object.key, title: object.title, component: object.component, props: object.props })
+      space.panels.open(this.hosted(typeId, object))
       this.emit('workspace:object-opened', { typeId, key: object.key })
     } else {
       // The object came back: the file was created again, or a rename was undone. The "this object is
@@ -178,12 +182,7 @@ export class Workspace {
       // gone message on screen on top of an object that exists.
       if (this.isGone(typeId, object.key)) {
         space.objects.set(object.key, object)
-        space.panels.replace(object.key, {
-          key: object.key,
-          title: object.title,
-          component: object.component,
-          props: object.props,
-        })
+        space.panels.replace(object.key, this.hosted(typeId, object))
         this.forgetGone((id, key) => id === typeId && key === object.key)
       }
       space.panels.activate(object.key)
@@ -204,19 +203,47 @@ export class Workspace {
     this.emit('workspace:object-activated', { typeId, key })
   }
 
-  // Closing deletes nothing and therefore asks for no confirmation. It does not throw you out of the
-  // type: the neighbouring tab becomes active, and when no tabs are left the type shows itself.
-  closeObject(typeId: string, key: string): void {
+  closeObject(typeId: string, key: string, options: { discard?: boolean } = {}): void | Promise<void> {
     const space = this.spaces.get(typeId)
     if (space?.kind !== 'objects' || !space.panels.has(key)) return
+    const object = space.objects.get(key)
+    const finish = () => {
+      // A rename, deletion or replacement while saving supersedes this close request.
+      if (this.spaces.get(typeId) !== space || space.objects.get(key) !== object) return
+      space.panels.close(key)
+      space.objects.delete(key)
+      this.forgetGone((id, objectKey) => id === typeId && objectKey === key)
+      this.emit('workspace:object-closed', { typeId, key })
+      const next = this.activeTab(typeId)
+      if (next != null) this.emit('workspace:object-activated', { typeId, key: next.key })
+    }
+    if (options.discard || object?.beforeClose == null) return finish()
+    const pending = this.closing.get(object)
+    if (pending != null) return pending
+    const beforeClose = object.beforeClose
+    const operation = Promise.resolve()
+      .then(beforeClose)
+      .then(
+        (saved) => {
+          if (saved) finish()
+        },
+        () => {
+          // The object owns error reporting. A rejected save must never become permission to close it.
+        },
+      )
+      .finally(() => this.closing.delete(object))
+    this.closing.set(object, operation)
+    return operation
+  }
 
-    space.panels.close(key)
-    space.objects.delete(key)
-    this.forgetGone((id, objectKey) => id === typeId && objectKey === key)
-    this.emit('workspace:object-closed', { typeId, key })
-
-    const next = this.activeTab(typeId)
-    if (next != null) this.emit('workspace:object-activated', { typeId, key: next.key })
+  private hosted(typeId: string, object: OpenedObject) {
+    return {
+      key: object.key,
+      title: object.title,
+      component: object.component,
+      props: object.props,
+      requestClose: () => this.closeObject(typeId, object.key),
+    }
   }
 
   tabsOf(typeId: string): OpenedTab[] {
@@ -253,6 +280,28 @@ export class Workspace {
 
   isGone(typeId: string, key: string): boolean {
     return this.gone.value.has(goneId(typeId, key))
+  }
+
+  replaceObject(typeId: string, key: string, object: OpenedObject): void {
+    const space = this.spaces.get(typeId)
+    if (space?.kind !== 'objects' || !space.panels.has(key)) return
+    if (object.key !== key && space.panels.has(object.key)) this.closeObject(typeId, object.key, { discard: true })
+    space.objects.delete(key)
+    space.objects.set(object.key, object)
+    space.panels.replace(key, this.hosted(typeId, object))
+    this.forgetGone((id, candidate) => id === typeId && candidate === key)
+    this.emit('workspace:object-opened', { typeId, key: object.key })
+  }
+
+  markGone(typeId: string, key: string): void {
+    const space = this.spaces.get(typeId)
+    const object = this.objectOf(typeId, key)
+    if (space?.kind !== 'objects' || object == null || !space.panels.has(key)) return
+    const placeholder = this.placeholderFor(typeId, { key, title: object.title, object: object.snapshot() })
+    space.objects.set(key, placeholder)
+    space.panels.replace(key, this.hosted(typeId, placeholder))
+    this.gone.value = new Set([...this.gone.value, goneId(typeId, key)])
+    this.emit('workspace:object-gone', { typeId, key })
   }
 
   // The workspace snapshot. Data only: where to keep it and how to version it is the storage layer's
@@ -307,13 +356,13 @@ export class Workspace {
         if (isObjectGone(revived)) {
           const placeholder = this.placeholderFor(type.id, tab)
           space.objects.set(tab.key, placeholder)
-          space.panels.open({ key: tab.key, title: placeholder.title, component: placeholder.component, props: placeholder.props })
+          space.panels.open(this.hosted(type.id, placeholder))
           this.gone.value = new Set([...this.gone.value, goneId(type.id, tab.key)])
           this.emit('workspace:object-gone', { typeId: type.id, key: tab.key })
           continue
         }
         space.objects.set(revived.key, revived)
-        space.panels.open({ key: revived.key, title: revived.title, component: revived.component, props: revived.props })
+        space.panels.open(this.hosted(type.id, revived))
       }
 
       // The layout is applied AFTER every tab has been raised: it only arranges them. Did not make

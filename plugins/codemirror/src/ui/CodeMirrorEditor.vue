@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
+import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button, Strip } from '@arxhub/uikit/core'
@@ -10,7 +11,7 @@ import { languages } from '@codemirror/language-data'
 import { EditorState, Prec } from '@codemirror/state'
 import { keymap } from '@codemirror/view'
 import { basicSetup, EditorView } from 'codemirror'
-import { computed, onUnmounted, ref, shallowRef, toRef } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
 import { editorTheme } from '../editor-theme'
 import { CODEMIRROR_LAYER } from '../hotkeys'
 import { insertLink, toggleBold, toggleInlineCode, toggleItalic } from '../markdown-commands'
@@ -22,7 +23,7 @@ import MarkdownToolbar from './MarkdownToolbar.vue'
 // autosave, so the two note editors behave identically.
 const AUTOSAVE_DEBOUNCE_MS = 1500
 
-const props = defineProps<{ path: string }>()
+const props = defineProps<{ path: string; anchor?: BlockAnchor }>()
 
 // ⌘⇧K for the link, not ⌘K: the plain chord is the application's global "open or switch to" (F-10), and
 // a key that means one thing everywhere except inside a note is a key the owner cannot trust. CodeMirror
@@ -37,6 +38,7 @@ const markdownKeymap = [
 
 const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
+const notes = arxhub.extensions.get(NotesExtension)
 const editorEl = ref<HTMLDivElement>()
 // shallowRef so the markdown toolbar can reach the live view; the view is not reactive data.
 const view = shallowRef<EditorView | null>(null)
@@ -44,6 +46,8 @@ const note = computed(() => isMarkdown(props.path))
 // Bumped on every selection/doc change (see the updateListener below) so the toolbar's active-state
 // highlighting has a reactive reason to recompute — mutating `view.value` in place never gives Vue one.
 const revision = ref(0)
+let edits = 0
+let savedEdits = 0
 
 // Where the layer IS, while the chords it claims are declared once by the plugin (`hotkeys.ts`). The
 // layer is on the stack only while the caret is inside the text — which is what makes ⌘B mean "bold"
@@ -82,31 +86,53 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
       // re-write the file it just opened.
       EditorView.updateListener.of((update) => {
         if (update.docChanged || update.selectionSet) revision.value++
-        if (update.docChanged && update.transactions.length > 0 && canSave.value) autosave.schedule()
+        if (update.docChanged && update.transactions.length > 0 && canSave.value) {
+          edits++
+          autosave.schedule()
+        }
       }),
     ],
   })
 }
 
 // Shared composable owns the load lifecycle: staleness guard on rapid file switches, open-empty
-// only on a genuine FileNotFound, and canSave gating so a failed/in-flight read can't be saved over.
+// is refused for missing files, and canSave prevents writing over a failed or in-flight read.
 const {
   error: loadError,
   canSave,
   reload,
 } = useFileDocument<EditorState>(toRef(props, 'path'), {
+  retainOnPathChange: true,
+  allowMissing: false,
   read: (path) => vfs.read(path),
   build: (path, bytes) => buildState(path, bytes),
   apply: (_path, state) => {
     if (view.value) view.value.setState(state)
     else if (editorEl.value) view.value = new EditorView({ state, parent: editorEl.value })
+    if (props.anchor) reveal(props.anchor)
   },
 })
 
+function reveal(anchor: BlockAnchor): boolean {
+  const current = view.value
+  if (current == null) return false
+  const text = current.state.doc.toString()
+  let from = text.indexOf(anchor.text)
+  if (from < 0) from = text.toLowerCase().indexOf(anchor.text.toLowerCase())
+  if (from < 0) return false
+  current.dispatch({ selection: { anchor: from, head: from + anchor.text.length }, scrollIntoView: true })
+  requestAnimationFrame(() => current.focus())
+  return true
+}
+
+onUnmounted(notes.registerOpenView(() => props.path, reveal, beforeClose))
+
 async function doSave() {
   if (!view.value || !canSave.value) return
+  const saving = edits
   try {
     await vfs.write(props.path, new TextEncoder().encode(view.value.state.doc.toString()))
+    savedEdits = saving
   } catch (error) {
     // Don't swallow — a failed write silently loses edits.
     arxhub.logger.error(`[codemirror] failed to save ${props.path}:`, error)
@@ -124,6 +150,30 @@ async function save() {
   await autosave.flush()
 }
 
+async function beforeClose(): Promise<boolean> {
+  try {
+    // flush() may join an older in-flight write. Keep the view until all edits made since it began
+    // have reached storage too; a failure leaves the buffer available for retry.
+    while (savedEdits !== edits) {
+      if (!view.value || !canSave.value) return false
+      await autosave.flush()
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+watch(
+  () => props.path,
+  () => {
+    if (!canSave.value) return
+    // A rename may have copied the file while an autosave still targeted its old path.
+    edits++
+    autosave.schedule()
+  },
+)
+
 onUnmounted(() => {
   autosave.cancel()
   view.value?.destroy()
@@ -139,7 +189,7 @@ onUnmounted(() => {
       <span class="codemirror-path">{{ path }}</span>
       <MarkdownToolbar v-if="note && !loadError" :view="view" :revision="revision" />
       <template #actions>
-        <Button size="sm" variant="secondary" :disabled="!canSave" @click="save">Save</Button>
+        <Button variant="secondary" :disabled="!canSave" @click="save">Save</Button>
       </template>
     </Strip>
     <div v-if="loadError" class="codemirror-error">
@@ -163,7 +213,7 @@ onUnmounted(() => {
 /* The path takes the slack, so the formatting keys and Save stay put as the file name changes length
    rather than sliding along the strip from note to note. */
 .codemirror-path {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
   font-size: var(--font-size-xs);
   color: var(--gray-9);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconButton, Separator } from '@arxhub/uikit/core'
+import { FormattingToolbar } from '@arxhub/uikit/core'
 import type { EditorView } from '@codemirror/view'
 import { computed } from 'vue'
 import {
@@ -60,39 +60,20 @@ const GROUPS: { label: string; icon: string; run: (view: EditorView) => boolean;
   ],
 ]
 
-const isActive = computed(() => {
+const actions = computed(() => {
   void props.revision
   const view = props.view
-  return (action: { active?: (view: EditorView) => boolean }): boolean => (view != null && action.active != null ? action.active(view) : false)
+  return GROUPS.flat().map((action) => ({
+    id: action.label,
+    label: action.label,
+    icon: action.icon,
+    primary: ['Bold', 'Italic', 'Link'].includes(action.label),
+    active: view != null && action.active != null ? action.active(view) : false,
+    run: () => run(action.run),
+  }))
 })
 </script>
 
 <template>
-  <!-- mousedown is prevented so pressing a button never moves focus out of the editor: losing focus
-       collapses the selection, and the marker would land at the caret instead of around the text. -->
-  <div class="md-toolbar" role="toolbar" aria-label="Formatting" @mousedown.prevent>
-    <template v-for="(group, index) in GROUPS" :key="index">
-      <Separator v-if="index > 0" />
-      <IconButton
-        v-for="action in group"
-        :key="action.label"
-        :icon="action.icon"
-        :tooltip="action.label"
-        :active="isActive(action)"
-        @click="run(action.run)"
-      />
-    </template>
-  </div>
+  <FormattingToolbar :actions="actions" />
 </template>
-
-<style scoped>
-/* A group inside a strip, not a strip of its own: no surface, no rule, no wrapping — the row it sits
-   in owns all three. It used to be a full-width band with its own bottom border, which is how the
-   editor came to have three stacked bars above the first line of a note. */
-.md-toolbar {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 2px;
-}
-</style>

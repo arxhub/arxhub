@@ -32,6 +32,7 @@ export interface FieldModel {
   required: boolean
   // Rendered under the control in mono — the schema line the design shows ("server.url · string · uri").
   signature: string
+  deviceLocal?: boolean
   choices: Choice[]
   min?: number
   max?: number
@@ -174,6 +175,7 @@ export function buildFields(schema: TObject, values: Record<string, unknown>): F
       // A value nobody can type is never "required" of the reader, whatever the schema says.
       required: required.has(key) && kind !== 'readonly',
       signature: signatureFor(key, field, choices),
+      deviceLocal: isDeviceLocal(field),
       choices,
       min: field.minimum,
       max: field.maximum,

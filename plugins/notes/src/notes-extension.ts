@@ -59,6 +59,23 @@ export class NotesExtension extends Extension {
   // What creates a note when somebody knows the place better. The explorer does: it has a selected
   // folder and a tree that has to show the result.
   private creator: Creator | null = null
+  private readonly openViews = new Set<{ path: () => string; reveal: (anchor: BlockAnchor) => boolean; beforeClose?: () => Promise<boolean> }>()
+
+  registerOpenView(path: () => string, reveal: (anchor: BlockAnchor) => boolean, beforeClose?: () => Promise<boolean>): () => void {
+    const entry = { path, reveal, beforeClose }
+    this.openViews.add(entry)
+    return () => {
+      this.openViews.delete(entry)
+    }
+  }
+
+  reveal(path: string, anchor: BlockAnchor): boolean {
+    return [...this.openViews].find((entry) => entry.path() === path)?.reveal(anchor) ?? false
+  }
+
+  beforeClose(path: string): Promise<boolean> {
+    return [...this.openViews].find((entry) => entry.path() === path)?.beforeClose?.() ?? Promise.resolve(true)
+  }
 
   constructor(args: NotesExtensionArgs) {
     super(args)
@@ -118,9 +135,7 @@ export class NotesExtension extends Extension {
     for (let n = 0; n < 1000; n++) {
       const name = n === 0 ? `${stem}${ext}` : `${stem} ${n + 1}${ext}`
       const candidate = join(dir, name)
-      // A failed check is no reason not to create the note: it is about the name, not about the right
-      // to write.
-      const taken = await this.vfs.exists(candidate).catch(() => false)
+      const taken = await this.vfs.exists(candidate)
       if (!taken) return candidate
     }
     return join(dir, `${stem} ${Date.now()}${ext}`)

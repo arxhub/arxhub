@@ -4,7 +4,7 @@ import { ConfigForm } from '@arxhub/config/ui'
 import { PageLayout } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import type { TObject } from '@sinclair/typebox'
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { SettingsExtension } from '../settings-extension'
 
 const props = defineProps<{
@@ -20,9 +20,6 @@ const settings = arxhub.extensions.get(SettingsExtension)
 const values = ref<Record<string, unknown>>({})
 const draft = ref<Record<string, unknown> | undefined>(undefined)
 const form = ref<{ revert: () => void } | null>(null)
-
-const fieldCount = computed(() => Object.keys(props.schema.properties ?? {}).length)
-const meta = computed(() => [`${fieldCount.value} field${fieldCount.value === 1 ? '' : 's'}`, `${props.sectionId}.toml`])
 
 // Reload whenever the section changes (not just on mount) — the host may reuse this component
 // for a different section. immediate:true covers the initial load.
@@ -68,7 +65,7 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
 </script>
 
 <template>
-  <PageLayout :title="title" :description="schema.description" :meta="meta">
+  <PageLayout :title="title" :description="schema.description">
     <ConfigForm ref="form" :schema="schema" :values="values" :draft="draft" @change="onChange" />
   </PageLayout>
 </template>

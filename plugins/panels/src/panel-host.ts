@@ -86,7 +86,12 @@ function keyOf(instance: PanelInstance): string {
 function hostedProps(panel: HostedPanel): Record<string, unknown> {
   // markRaw on the component: it goes into the store's reactive `groups`, and a reactive proxy over a
   // component definition breaks identity comparison and makes Vue walk the whole definition.
-  return { hostedKey: panel.key, component: markRaw(panel.component), componentProps: panel.props }
+  return {
+    hostedKey: panel.key,
+    component: markRaw(panel.component),
+    componentProps: panel.props,
+    ...(panel.requestClose ? { requestClose: panel.requestClose } : {}),
+  }
 }
 
 interface Located {
@@ -126,10 +131,7 @@ export class StorePanelHost implements PanelHost {
     return this.locate(key) != null
   }
 
-  // What the key is showing, as the store holds it. A panel opened straight on the store — every
-  // opener in the application still does that — has no hosted key, so its instance id stands in: the
-  // workspace treats a key as opaque, and this is what lets a type's list of what is open name tabs
-  // the workspace itself never opened.
+  // Utility panels have no object snapshot; their instance id lets the workspace list and activate them.
   panel(key: string): HostedPanel | undefined {
     const found = this.locate(key)
     if (found == null) return undefined
@@ -164,9 +166,8 @@ export class StorePanelHost implements PanelHost {
   replace(key: string, panel: HostedPanel): void {
     const found = this.locate(key)
     if (found == null) return
-    // The key is the one already open, never the incoming panel's: a different key would be a
-    // different tab, and this operation is "the same tab now shows this".
-    this.store.retargetPanel(found.instanceId, found.groupId, hostedProps({ ...panel, key }), panel.title)
+    // Keep the live instance even when a rename changes its object key.
+    this.store.retargetPanel(found.instanceId, found.groupId, hostedProps(panel), panel.title)
   }
 
   close(key: string): void {
@@ -206,8 +207,8 @@ export class StorePanelHost implements PanelHost {
         const active = group.activeInstanceId
         const instances = group.instances
         return {
-          keys: instances.flatMap((it) => hostedKeyOf(it) ?? []),
-          active: instances.flatMap((it) => (it.instanceId === active ? (hostedKeyOf(it) ?? []) : []))[0] ?? null,
+          keys: instances.map(keyOf),
+          active: instances.filter((it) => it.instanceId === active).map(keyOf)[0] ?? null,
         }
       }
       const a = walk(node.first)
@@ -229,24 +230,20 @@ export class StorePanelHost implements PanelHost {
     // Every panel that is open, in the order it was opened. The layout only arranges these — it can
     // neither raise a tab nor drop one.
     //
-    // `open` is what the snapshot's keys are matched against, so it holds only panels the workspace
-    // raised itself. `foreign` is everything else in the store — a panel an opener put there directly —
-    // and it is kept apart rather than ignored: a rebuilt layout REPLACES the store's groups, so a
-    // panel missing from both lists is not "left where it was", it is closed.
+    // Include utility panels: replacing the groups must preserve everything already open.
     const open = new Map<string, PanelInstance>()
-    const foreign: PanelInstance[] = []
+    let hosted = false
     for (const groupId of this.store.getOrderedGroupIds()) {
       const group = this.store.groups.value[groupId]
       if (group == null) continue
       for (const instance of group.instances) {
-        const key = hostedKeyOf(instance)
-        if (key == null) foreign.push({ ...instance })
-        else open.set(key, { ...instance })
+        hosted ||= hostedKeyOf(instance) != null
+        open.set(keyOf(instance), { ...instance })
       }
     }
     // The workspace raised nothing, so it has nothing to arrange — and no business rebuilding a layout
     // made entirely of somebody else's panels.
-    if (open.size === 0) return
+    if (!hosted) return
 
     const taken = new Set<string>()
     const built: Record<string, PanelGroup> = {}
@@ -288,7 +285,7 @@ export class StorePanelHost implements PanelHost {
 
     // A panel the recorded layout says nothing about — opened later, on another device, or by an opener
     // that never went through the workspace — lands in the first cell rather than getting lost.
-    const orphans = [...[...open.entries()].filter(([key]) => !taken.has(key)).map(([, instance]) => instance), ...foreign]
+    const orphans = [...open.entries()].filter(([key]) => !taken.has(key)).map(([, instance]) => instance)
     if (orphans.length > 0 && firstGroupId != null) {
       const group = built[firstGroupId]
       built[firstGroupId] = {

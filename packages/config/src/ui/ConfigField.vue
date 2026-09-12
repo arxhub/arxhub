@@ -4,7 +4,7 @@ import { toaster } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { type FieldModel, isInline } from './field-model'
 
-const props = defineProps<{ field: FieldModel; modelValue: unknown; error: string | null }>()
+const props = defineProps<{ field: FieldModel; modelValue: unknown; error: string | null; technical?: boolean }>()
 const emit = defineEmits<(e: 'update:modelValue', value: unknown) => void>()
 
 const inline = computed(() => isInline(props.field.kind))
@@ -41,16 +41,21 @@ async function copy(): Promise<void> {
         <span v-if="field.disabled" class="tag">Unavailable</span>
         <span v-else-if="field.required" class="tag required">Required</span>
       </div>
+      <p v-if="field.deviceLocal" class="description">Only on this device</p>
+      <p v-if="field.min != null || field.max != null" class="description">
+        {{ field.min != null && field.max != null ? `From ${field.min} to ${field.max}` : field.min != null ? `At least ${field.min}` : `Up to ${field.max}` }}{{ field.unit ? ` ${field.unit}` : '' }}
+      </p>
       <p v-if="field.description" class="description">{{ field.description }}</p>
       <p v-if="field.disabled && field.disabledBy" class="description">Available once “{{ field.disabledBy }}” is on.</p>
       <!-- Inline rows put the signature under the label; stacked rows put it under the control, which
            is where the eye lands last. -->
-      <code v-if="inline" class="signature">{{ field.signature }}</code>
+      <code v-if="technical && inline" class="signature">{{ field.signature }}</code>
     </div>
 
     <div class="control">
       <Switch
         v-if="field.kind === 'switch'"
+        :aria-label="field.label"
         :model-value="modelValue === true"
         :disabled="field.disabled"
         @update:model-value="set($event)"
@@ -160,7 +165,7 @@ async function copy(): Promise<void> {
       <Icon name="lu:x" :size="12" />
       <span>{{ error }}</span>
     </div>
-    <code v-if="!inline" class="signature">{{ field.signature }}</code>
+    <code v-if="technical && !inline" class="signature">{{ field.signature }}</code>
   </div>
 </template>
 

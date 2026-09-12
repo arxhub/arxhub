@@ -32,7 +32,8 @@ export function useOpenTabsList(store: PanelStore): OpenTabsList {
 
   // File panels carry the path they were opened with; a settings page or the welcome panel does not.
   function pathOf(instance: { props?: Record<string, unknown> }): string | null {
-    const path = instance.props?.path
+    const props = instance.props?.componentProps as Record<string, unknown> | undefined
+    const path = props?.path ?? instance.props?.path
     return typeof path === 'string' ? path : null
   }
 

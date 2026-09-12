@@ -122,12 +122,11 @@ describe('creating a note', () => {
     expect(await notes.freePath('/', 'New note', '.md')).toBe('/New note 3.md')
   })
 
-  // The check is about the name, not about the right to write: a vault that will not answer must not
-  // stop a note from being created.
-  test('a failing existence check does not stop the creation', async () => {
+  // An unreadable name is not a free name: guessing here could overwrite an existing note.
+  test('a failing existence check prevents choosing a possibly occupied name', async () => {
     const notes = extension(fakeVfs({ existsThrows: true }))
 
-    expect(await notes.freePath('/', 'New note', '.md')).toBe('/New note.md')
+    await expect(notes.freePath('/', 'New note', '.md')).rejects.toThrow('unreachable')
   })
 
   test('without a creator the note is written into the type’s own root', async () => {

@@ -1,5 +1,5 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { basename, dirname, join } from '@arxhub/path'
+import { basename, dirname, extname, join } from '@arxhub/path'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { type VirtualEntry, type VirtualFileSystem, renameEntry as vfsRenameEntry } from '@arxhub/vfs'
 import { ref } from 'vue'
@@ -43,6 +43,7 @@ export class ExplorerExtension extends Extension {
   // stop. Lives here rather than in a component because the recursive FileTreeNode tree has no other
   // shared channel between a row and its siblings elsewhere in the structure.
   readonly focusedPath = ref<string | null>(null)
+  private creation: Promise<unknown> = Promise.resolve()
   private readonly nodeActionContributors: NodeActionContributor[] = []
 
   constructor(args: ExplorerExtensionArgs) {
@@ -59,14 +60,33 @@ export class ExplorerExtension extends Extension {
     return this.nodeActionContributors.flatMap((contribute) => contribute(node))
   }
 
+  expandedPaths(): string[] {
+    const paths: string[] = []
+    const visit = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        if (node.expanded) paths.push(node.entry.pathname)
+        if (node.children) visit(node.children)
+      }
+    }
+    visit(this.tree.value)
+    return paths
+  }
+
+  async restoreExpanded(paths: readonly string[]): Promise<void> {
+    for (const path of [...paths].sort((a, b) => a.split('/').length - b.split('/').length)) {
+      const node = findNode(this.tree.value, path)
+      if (node?.entry.kind === 'dir' && !node.expanded) await this.expand(node)
+    }
+  }
+
   async loadRoot(): Promise<void> {
     const entries = await this.vfs.list(this.root)
-    this.tree.value = entries.filter(isVisible).map(toNode)
+    this.tree.value = reconcile(entries, this.tree.value)
   }
 
   async expand(node: TreeNode): Promise<void> {
     const entries = await this.vfs.list(node.entry.pathname)
-    node.children = entries.filter(isVisible).map(toNode)
+    node.children = reconcile(entries, node.children ?? [])
     node.expanded = true
   }
 
@@ -86,13 +106,32 @@ export class ExplorerExtension extends Extension {
     walk(this.tree.value)
   }
 
-  async createFile(parentPath: string, name: string): Promise<void> {
-    await this.vfs.file(join(parentPath, name)).writeText(emptyContentFor(name))
+  private serializeCreation<T>(run: () => Promise<T>): Promise<T> {
+    // HTTP VFS locks are no-ops; serialise local create gestures before choosing a free name.
+    const task = this.creation.then(run, run)
+    this.creation = task.catch(() => {})
+    return task
+  }
+
+  async createFile(parentPath: string, name: string): Promise<string> {
+    const path = await this.serializeCreation(async () => {
+      const ext = extname(name)
+      const stem = ext ? name.slice(0, -ext.length) : name
+      let candidate = join(parentPath, name)
+      for (let n = 2; await this.vfs.exists(candidate); n++) candidate = join(parentPath, `${stem} ${n}${ext}`)
+      await this.vfs.file(candidate).writeText(emptyContentFor(name))
+      return candidate
+    })
     await this.refreshDir(parentPath)
+    return path
   }
 
   async createDir(parentPath: string, name: string): Promise<void> {
-    await this.vfs.file(join(parentPath, name, '.keep')).write(new Uint8Array())
+    await this.serializeCreation(async () => {
+      let candidate = join(parentPath, name)
+      for (let n = 2; await this.vfs.exists(candidate); n++) candidate = join(parentPath, `${name} ${n}`)
+      await this.vfs.file(join(candidate, '.keep')).write(new Uint8Array())
+    })
     await this.refreshDir(parentPath)
   }
 
@@ -133,6 +172,15 @@ export class ExplorerExtension extends Extension {
 
 function toNode(entry: VirtualEntry): TreeNode {
   return { entry, children: null, expanded: false }
+}
+
+function reconcile(entries: VirtualEntry[], previous: TreeNode[]): TreeNode[] {
+  return entries.filter(isVisible).map((entry) => {
+    const existing = previous.find((node) => node.entry.pathname === entry.pathname && node.entry.kind === entry.kind)
+    if (existing == null) return toNode(entry)
+    existing.entry = entry
+    return existing
+  })
 }
 
 function isVisible(entry: VirtualEntry): boolean {

@@ -1,4 +1,6 @@
+import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { ShellExtension, useNavHost } from '@arxhub/plugin-shell/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { SQL_CONSOLE_PANEL } from '../contributions'
 
@@ -13,7 +15,12 @@ export function useOpenConsole(): OpenConsole {
   const arxhub = useArxHub()
   const { store } = arxhub.extensions.get(PanelStoreExtension)
 
+  const shell = arxhub.extensions.get(ShellExtension)
+  const navHost = useNavHost()
+
   function open(): void {
+    shell.workspace.activateType(NOTES_TYPE_ID)
+    navHost?.navigated?.()
     store.openPanel(SQL_CONSOLE_PANEL, {}, 'SQL console', undefined, () => true)
   }
 

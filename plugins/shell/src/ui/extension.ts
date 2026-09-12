@@ -54,6 +54,10 @@ export class ShellExtension extends Extension {
     return desk.workspace
   }
 
+  get attachedWorkspace(): Workspace | null {
+    return this.desk.value?.workspace ?? null
+  }
+
   get workspaceStorage(): WorkspaceStorage {
     const desk = this.desk.value
     if (desk == null) throw new Error('No workspace attached to the shell: the instance must call attachWorkspace() before mounting a frame')

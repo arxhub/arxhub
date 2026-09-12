@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SectionLabel } from '@arxhub/uikit/core'
+import { Button, SectionLabel } from '@arxhub/uikit/core'
 import type { TObject } from '@sinclair/typebox'
 import { computed, reactive, ref, watch } from 'vue'
 import ConfigField from './ConfigField.vue'
@@ -20,6 +20,7 @@ const emit = defineEmits<{
   change: [draft: { values: Record<string, unknown>; changedKeys: string[]; invalid: boolean }]
 }>()
 
+const technical = ref(false)
 const local = reactive<Record<string, unknown>>({})
 // A field only shows its error once it has been edited. An empty required field is what is actually
 // on disk, so complaining about it before anyone has typed would flag the file, not a mistake.
@@ -91,11 +92,13 @@ defineExpose({ revert })
         v-for="field in group.fields"
         :key="field.key"
         :field="field"
+        :technical="technical"
         :model-value="local[field.key]"
         :error="touched.has(field.key) ? (errors[field.key] ?? null) : null"
         @update:model-value="edit(field.key, $event)"
       />
     </section>
+    <Button variant="ghost" :aria-pressed="technical" @click="technical = !technical">{{ technical ? 'Hide technical details' : 'Technical details' }}</Button>
   </div>
 </template>
 

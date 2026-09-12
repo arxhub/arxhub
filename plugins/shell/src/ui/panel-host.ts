@@ -8,6 +8,7 @@ export interface HostedPanel {
   title: string
   component: Component
   props: Record<string, unknown>
+  requestClose?(): void | Promise<void>
 }
 
 // What `Workspace` needs from a panel container, and nothing else.

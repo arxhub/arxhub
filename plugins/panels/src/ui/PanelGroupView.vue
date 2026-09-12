@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
 import { calculateDropZone, type DropZone, type PanelGroupBodyDropData } from '../composables/drag-types'
 import { usePanels } from '../use-panels'
 import PanelTabBar from './PanelTabBar.vue'
 import PanelView from './PanelView.vue'
+import { PanelTargetsKey } from './panel-targets'
 import SplitDropOverlay from './SplitDropOverlay.vue'
 
 const props = defineProps<{
   groupId: string
 }>()
 
+const targets = inject(PanelTargetsKey, null)
 const store = usePanels()
 const group = computed(() => store.groups.value[props.groupId])
 
@@ -22,6 +24,7 @@ let cleanup: (() => void) | null = null
 onMounted(() => {
   if (!panelContentEl.value) return
   const el = panelContentEl.value
+  targets?.set(props.groupId, el)
   cleanup = dropTargetForElements({
     element: el,
     canDrop: ({ source }) => {
@@ -59,6 +62,10 @@ onUnmounted(() => {
   cleanup?.()
 })
 
+onBeforeUnmount(() => {
+  if (targets?.get(props.groupId) === panelContentEl.value) targets?.delete(props.groupId)
+})
+
 function onClick() {
   store.activateGroup(props.groupId)
 }
@@ -74,6 +81,7 @@ function onClick() {
       ref="panelContentEl"
       class="panel-content"
     >
+      <template v-if="targets == null">
       <PanelView
         v-for="instance in group?.instances"
         :key="instance.instanceId"
@@ -81,6 +89,7 @@ function onClick() {
         :group-id="groupId"
         :is-active="instance.instanceId === group?.activeInstanceId"
       />
+      </template>
       <SplitDropOverlay :zone="activeZone" />
     </div>
   </div>

@@ -57,6 +57,7 @@ const WATCHED: ReadonlySet<keyof WorkspaceEvents> = new Set<keyof WorkspaceEvent
   'workspace:object-opened',
   'workspace:object-closed',
   'workspace:object-activated',
+  'workspace:object-gone',
 ])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -145,8 +146,8 @@ export class WorkspaceStorage {
     this.save()
   }
 
-  save(): void {
-    if (this.restoring) return
+  save(): boolean {
+    if (this.restoring) return false
     const record: WorkspaceRecord = {
       v: WORKSPACE_VERSION,
       workspace: this.workspace.serialize(),
@@ -157,8 +158,10 @@ export class WorkspaceStorage {
     // work without a memory — but we work.
     try {
       this.storage.setItem(this.key, JSON.stringify(record))
+      return true
     } catch {
       // No room — the desk lives for this session only.
+      return false
     }
   }
 

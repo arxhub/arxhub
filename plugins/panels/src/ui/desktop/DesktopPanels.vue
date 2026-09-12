@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, provide, shallowReactive, useId } from 'vue'
 import { type DropZone, isPanelTabDragData } from '../../composables/drag-types'
 import type { PanelStore } from '../../types'
 import LayoutRenderer from '../LayoutRenderer.vue'
 import PanelView from '../PanelView.vue'
+import { PanelTargetsKey } from '../panel-targets'
 
 const props = withDefaults(
   defineProps<{
@@ -14,6 +15,10 @@ const props = withDefaults(
   }>(),
   { mode: 'tiled' },
 )
+
+const targets = shallowReactive(new Map<string, HTMLElement>())
+const parkingId = `panels-parking-${useId()}`
+provide(PanelTargetsKey, targets)
 
 const layout = computed(() => props.store.layout.value)
 
@@ -90,8 +95,16 @@ onUnmounted(() => {
     </div>
   </template>
   <template v-else>
+    <div :id="parkingId" hidden />
     <LayoutRenderer v-if="layout" :node="layout" />
-    <div v-else class="panels-empty">
+    <Teleport v-for="page in pages" :key="page.instance.instanceId" :to="targets.get(page.groupId) ?? `#${parkingId}`" defer>
+      <PanelView
+        :instance="page.instance"
+        :group-id="page.groupId"
+        :is-active="page.instance.instanceId === store.groups.value[page.groupId]?.activeInstanceId"
+      />
+    </Teleport>
+    <div v-if="!layout" class="panels-empty">
       <p>No panels open</p>
     </div>
   </template>

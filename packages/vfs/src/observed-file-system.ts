@@ -2,6 +2,7 @@ import { isRenameCapable, type RenameCapable } from './capabilities/rename'
 import { GenericVirtualFileSystem } from './generic-virtual-file-system'
 import { appendEntry } from './ops/append'
 import { renameEntry } from './ops/rename'
+import { ScopedFileSystem } from './scoped-file-system'
 import { INFO_FILE_SUFFIX, type VfsChange, type VfsWatcher } from './vfs-watcher'
 import type { VirtualEntry } from './virtual-entry'
 import type { DeleteOptions, FileHead, VirtualFileSystem } from './virtual-file-system'
@@ -14,16 +15,12 @@ import type { DeleteOptions, FileHead, VirtualFileSystem } from './virtual-file-
 // GenericVirtualFileSystem and therefore dispatch through this decorator's write/delete, which means
 // every writer — an editor's `file.writeText()`, a stream, the explorer — is covered without any of
 // them knowing anything is watching.
-export class ObservedFileSystem extends GenericVirtualFileSystem {
+export class ObservedFileSystem extends GenericVirtualFileSystem implements RenameCapable {
   protected readonly inner: VirtualFileSystem
   protected readonly watcher: VfsWatcher
 
-  // Use this rather than `new`: rename is a per-backend capability that isRenameCapable() detects by
-  // looking for the method, so a decorator over a backend without a native rename must not have one
-  // either. renameEntry then falls back to copy + delete *through* this decorator, which is already
-  // reported as written + deleted and needs no rename change of its own.
   static wrap(inner: VirtualFileSystem, watcher: VfsWatcher): ObservedFileSystem {
-    return isRenameCapable(inner) ? new RenamingObservedFileSystem(inner, watcher) : new ObservedFileSystem(inner, watcher)
+    return new ObservedFileSystem(inner, watcher)
   }
 
   constructor(inner: VirtualFileSystem, watcher: VfsWatcher) {
@@ -36,6 +33,17 @@ export class ObservedFileSystem extends GenericVirtualFileSystem {
     if (change.pathname.endsWith(INFO_FILE_SUFFIX)) return
     if (change.from?.endsWith(INFO_FILE_SUFFIX) === true) return
     this.watcher.notify(change)
+  }
+
+  async rename(src: string, dest: string): Promise<void> {
+    // Copy/delete is still one logical rename. Reporting its removal as a delete would tear down
+    // open document buffers before subscribers learn their new path. Copies are reported as they
+    // succeed, so a partially failed operation still leaves observers aware of its destination files.
+    const target = isRenameCapable(this.inner)
+      ? this.inner
+      : new RenameCopyFileSystem(this.inner, (pathname) => this.notify({ kind: 'written', pathname }))
+    await renameEntry(target, src, dest)
+    this.notify({ kind: 'renamed', pathname: dest, from: src })
   }
 
   override async list(prefix: string): Promise<VirtualEntry[]> {
@@ -109,12 +117,16 @@ export class ObservedFileSystem extends GenericVirtualFileSystem {
   }
 }
 
-// The rename-capable ObservedFileSystem, reachable only through ObservedFileSystem.wrap over a backend
-// that renames natively. One 'renamed' change carries both paths, so a subscriber can drop what was at
-// the old path without re-reading the store to find out it is gone.
-class RenamingObservedFileSystem extends ObservedFileSystem implements RenameCapable {
-  async rename(src: string, dest: string): Promise<void> {
-    await renameEntry(this.inner, src, dest)
-    this.notify({ kind: 'renamed', pathname: dest, from: src })
+class RenameCopyFileSystem extends ScopedFileSystem {
+  constructor(
+    inner: VirtualFileSystem,
+    private readonly copied: (pathname: string) => void,
+  ) {
+    super(inner, '')
+  }
+
+  override async write(pathname: string, content: Uint8Array): Promise<void> {
+    await super.write(pathname, content)
+    this.copied(pathname)
   }
 }

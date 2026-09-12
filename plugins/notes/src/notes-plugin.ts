@@ -1,7 +1,7 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { dirname } from '@arxhub/path'
 import { type ObjectGone, type ObjectRef, type OpenedObject, objectGone, ShellExtension } from '@arxhub/plugin-shell/ui'
-import { VaultVfs } from '@arxhub/vfs'
+import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { type Component, h, markRaw } from 'vue'
 import { manifest } from './manifest'
 import { NotesExtension } from './notes-extension'
@@ -14,11 +14,10 @@ export interface NotesPluginArgs extends PluginArgs {
   root?: string
 }
 
-// The owner of the "Notes" type. The type lives apart from the navigation into it: the vault tree and
-// the search rail both open into the same global `PanelsLayout`, which makes them two roads to ONE
-// space. Handing that space to either road would set the confusion in stone.
+// The tree and search both open Notes objects through Workspace, so a document has one live buffer.
 export class NotesPlugin extends Plugin {
   private readonly root: string
+  private unwatch: (() => void) | null = null
   // The dock wrapper of the note that is active right now. `dock()` is asked on every render, so the
   // wrapper is remembered rather than rebuilt: a fresh closure each time is a fresh component
   // identity, and the bar would be torn down and remounted — losing focus and state — on every tick.
@@ -51,7 +50,7 @@ export class NotesPlugin extends Plugin {
       // The note is already open — then the mounted editor's props cannot be changed and the place has
       // to be shown directly. A miss is deliberately silent: nothing was found, so the reader simply
       // stays at the top of the note instead of being told about something they did not ask for.
-      if (anchor != null) viewer?.reveal?.(path, anchor)
+      if (anchor != null) notes.reveal(path, anchor)
 
       return {
         key: path,
@@ -62,6 +61,7 @@ export class NotesPlugin extends Plugin {
         // editor and one that does not exist yet.
         props: { path, ...(viewer != null && anchor != null ? { anchor } : {}) },
         snapshot: () => ({ path }),
+        beforeClose: () => notes.beforeClose(path),
       }
     }
 
@@ -92,12 +92,9 @@ export class NotesPlugin extends Plugin {
       create: {
         title: 'New note',
         icon: 'lu:file-plus',
-        // Creating and opening are one gesture for the reader, but opening goes through
-        // `Workspace.openObject` — the single place the "already open" check lives — and nothing
-        // constructs a `Workspace` yet. Until a frame does, this creates the note and the tree shows
-        // it, which is exactly what the explorer's own New File does today.
         run: async () => {
-          await notes.createNote()
+          const path = await notes.createNote()
+          if (path != null) await shell.workspace.openObject(NOTES_TYPE_ID, { id: path })
         },
       },
       open: { title: 'Open notes' },
@@ -114,5 +111,39 @@ export class NotesPlugin extends Plugin {
         return this.dockCache.component
       },
     })
+  }
+
+  override async start(ctx: PluginContext): Promise<void> {
+    const shell = ctx.extensions.get(ShellExtension)
+    const notes = ctx.extensions.get(NotesExtension)
+    this.unwatch = ctx.services.get(VaultWatcher).subscribe((change) => {
+      if (change.kind === 'written') return
+      const workspace = shell.attachedWorkspace
+      if (workspace == null) return
+      const previous = change.kind === 'renamed' ? change.from : change.pathname
+      if (previous == null) return
+      for (const tab of workspace.tabsOf(NOTES_TYPE_ID)) {
+        const object = workspace.objectOf(NOTES_TYPE_ID, tab.key)
+        const path = object?.props.path
+        if (object == null || typeof path !== 'string' || (path !== previous && !path.startsWith(`${previous}/`))) continue
+        if (change.kind === 'deleted') workspace.markGone(NOTES_TYPE_ID, tab.key)
+        else {
+          const next = change.pathname + path.slice(previous.length)
+          workspace.replaceObject(NOTES_TYPE_ID, tab.key, {
+            ...object,
+            key: next,
+            title: notes.titleOf(next),
+            props: { ...object.props, path: next },
+            snapshot: () => ({ path: next }),
+            beforeClose: () => notes.beforeClose(next),
+          })
+        }
+      }
+    })
+  }
+
+  override async stop(): Promise<void> {
+    this.unwatch?.()
+    this.unwatch = null
   }
 }

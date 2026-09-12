@@ -35,8 +35,10 @@ function place(): void {
 
 function run(item: { disabled?: boolean; onSelect: () => void }) {
   if (item.disabled) return
-  item.onSelect()
   actionMenu.close()
+  // A selected action can focus an inline rename or open another dialog. Let the old sheet release
+  // its focus trap and restore its opener before handing focus to that action.
+  nextTick(() => requestAnimationFrame(() => item.onSelect()))
 }
 
 // Roving focus over the enabled items (desktop menu — see onMenuKeydown).

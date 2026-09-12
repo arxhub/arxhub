@@ -1,6 +1,6 @@
 import { AppError } from '@arxhub/errors'
 import { describe, expect, test } from 'vitest'
-import { ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 import { useFileDocument } from '../hooks/useFileDocument'
 
 // useFileDocument calls onMounted() to kick off the first load — a no-op outside a component instance,
@@ -14,6 +14,50 @@ function transportError(): AppError {
 }
 
 describe('useFileDocument', () => {
+  test('an existing document that disappeared cannot become an editable empty file', async () => {
+    const applied: unknown[] = []
+    const doc = useFileDocument(ref('gone.md'), {
+      allowMissing: false,
+      read: () => Promise.reject(fileNotFoundError()),
+      build: (_path, bytes) => bytes,
+      apply: (_path, state) => applied.push(state),
+    })
+    await doc.reload('gone.md')
+    expect(applied).toEqual([])
+    expect(doc.canSave.value).toBe(false)
+    expect(doc.error.value).toBeInstanceOf(AppError)
+  })
+
+  test('renaming a loaded document retains its buffer until an explicit reload', async () => {
+    const path = ref('before.md')
+    const reads: string[] = []
+    const applied: string[] = []
+    const scope = effectScope()
+    const doc = scope.run(() =>
+      useFileDocument(path, {
+        retainOnPathChange: true,
+        read: async (name) => {
+          reads.push(name)
+          return new Uint8Array()
+        },
+        build: (name) => name,
+        apply: (_path, state) => applied.push(state),
+      }),
+    )!
+    try {
+      await doc.reload(path.value)
+      path.value = 'after.md'
+      await nextTick()
+      expect(reads).toEqual(['before.md'])
+      expect(applied).toEqual(['before.md'])
+      expect(doc.canSave.value).toBe(true)
+      await doc.reload(path.value)
+      expect(applied).toEqual(['before.md', 'after.md'])
+    } finally {
+      scope.stop()
+    }
+  })
+
   test('a genuine FileNotFound opens empty and allows saving', async () => {
     const applied: unknown[] = []
     const doc = useFileDocument<string>(ref('a.md'), {

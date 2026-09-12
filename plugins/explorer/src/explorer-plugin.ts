@@ -1,5 +1,4 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { basename } from '@arxhub/path'
 import { NotesExtension } from '@arxhub/plugin-notes/ui'
 import { VaultVfs } from '@arxhub/vfs'
 import { markRaw } from 'vue'
@@ -48,9 +47,7 @@ export class ExplorerPlugin extends Plugin {
       const parent = explorer.selectedPath.value ?? explorer.root
       // '.arx' is the primary format (A-29) and `createFile` is what seeds it — an '.arx' reader
       // rejects a bare file.
-      const path = await notes.freePath(parent, 'New note', '.arx')
-      await explorer.createFile(parent, basename(path))
-      return path
+      return explorer.createFile(parent, 'New note.arx')
     })
   }
 }

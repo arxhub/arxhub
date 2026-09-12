@@ -67,6 +67,8 @@ export interface PanelStore {
     dedupe?: (instance: PanelInstance) => boolean,
   ): string
   activatePanel(instanceId: string, groupId: string): void
+  requestClosePanel(instanceId: string, groupId: string): void
+  // Internal removal after saving, or deliberate deletion/replacement. UI uses requestClosePanel.
   closePanel(instanceId: string, groupId: string): void
   // Updates an already-open panel's identity in place — the file it shows moved (a vault rename), it did
   // not become a different document. Same instanceId, so PanelView (keyed by instanceId, not path) never

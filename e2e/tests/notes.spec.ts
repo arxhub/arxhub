@@ -50,7 +50,10 @@ test.describe('editing a note', () => {
     await openNote(app, path)
     await expect(app.locator('.cm-content')).toContainText('title')
     await app.locator('.cm-line').first().click()
-    await app.getByRole('button', { name: 'Heading 2' }).click()
+    if (await isMobileFrame(app)) {
+      await app.getByRole('button', { name: 'More formatting' }).click()
+      await app.getByRole('menuitem', { name: 'Heading 2', exact: true }).click()
+    } else await app.getByRole('button', { name: 'Heading 2', exact: true }).click()
     await app.getByRole('button', { name: 'Save' }).click()
 
     await expect.poll(() => vault.read(path)).toBe('## title\n')

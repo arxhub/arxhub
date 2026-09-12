@@ -1,21 +1,32 @@
 <script setup lang="ts">
-import { useShellFrame } from '@arxhub/uikit/hooks'
+import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
+import { SEARCH_TYPE_ID } from '@arxhub/plugin-search/ui'
+import { ShellExtension, useHotkeysExtension } from '@arxhub/plugin-shell/ui'
+import { Button } from '@arxhub/uikit/core'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 
 // The frame is already decided and published at boot, so the copy can name the control the reader is
 // actually looking at instead of describing both and leaving them to work out which one they have.
 const mobile = useShellFrame() === 'mobile'
 
-// Only chords that are really bound — an empty state listing a shortcut the app does not answer is
-// worse than one listing none. The open key is global and works from anywhere, save is in both editors,
-// the formatting chords are markdown-only, and F2 belongs to the file tree.
-const SHORTCUTS: { keys: string[]; does: string }[] = [
-  { keys: ['Ctrl', 'K'], does: 'Open or switch to' },
-  { keys: ['Ctrl', 'S'], does: 'Save the open file' },
-  { keys: ['Ctrl', 'B'], does: 'Bold' },
-  { keys: ['Ctrl', 'I'], does: 'Italic' },
-  { keys: ['Ctrl', 'Shift', 'K'], does: 'Insert a link' },
-  { keys: ['F2'], does: 'Rename in the file tree' },
+const shell = useArxHub().extensions.get(ShellExtension)
+const hotkeys = useHotkeysExtension()
+const SHORTCUTS = [
+  { chord: 'Mod-k', does: 'Open or switch to' },
+  { chord: 'Mod-s', does: 'Save the open file' },
+  { chord: 'Mod-b', does: 'Bold in a note' },
+  { chord: 'Mod-i', does: 'Italic' },
+  { chord: 'Mod-Shift-k', does: 'Insert a link in markdown' },
+  { chord: 'F2', does: 'Rename in the file tree' },
 ]
+
+async function createNote(): Promise<void> {
+  try {
+    await shell.types.get(NOTES_TYPE_ID)?.create?.run()
+  } catch (error) {
+    toaster.create({ title: 'Could not create the note', description: String(error), type: 'error' })
+  }
+}
 </script>
 
 <template>
@@ -23,24 +34,21 @@ const SHORTCUTS: { keys: string[]; does: string }[] = [
     <div class="sheet">
       <h1>ArxHub</h1>
       <p class="lede">
-        A local-first markdown vault. Every note is a plain file on disk — no database, no lock-in, and
-        nothing leaves this device until you set up sync.
+        Your notes, stored as files in your vault. Create structured .arx notes, or read and edit markdown alongside them.
       </p>
 
-      <p class="next">
-        {{
-          mobile
-            ? 'Tap Vault to browse the notes, or Search to find one.'
-            : 'Open a note from the file tree, or search the vault from the rail on the left.'
-        }}
-      </p>
+      <div class="welcome-actions">
+        <Button @click="createNote">New note</Button>
+        <Button v-if="shell.types.has(SEARCH_TYPE_ID)" variant="secondary" @click="shell.workspace.activateType(SEARCH_TYPE_ID)">Find a note</Button>
+      </div>
+      <p class="next">Use Vault to browse files, or Open or switch to to reach all your tools.</p>
 
       <!-- Desktop only: a phone has no keyboard to press these on until something is focused, and the
            list would be five rows of noise on the smaller screen. -->
       <dl v-if="!mobile" class="shortcuts">
         <div v-for="shortcut in SHORTCUTS" :key="shortcut.does" class="shortcut">
           <dt>
-            <kbd v-for="key in shortcut.keys" :key="key">{{ key }}</kbd>
+            <kbd>{{ hotkeys.label(shortcut.chord) }}</kbd>
           </dt>
           <dd>{{ shortcut.does }}</dd>
         </div>
@@ -87,6 +95,13 @@ h1 {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   color: var(--gray-12);
+}
+
+.welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .shortcuts {

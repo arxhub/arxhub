@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { IconButton, Strip } from '@arxhub/uikit/core'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { usePanels } from '../use-panels'
 import DraggableTab from './DraggableTab.vue'
 
@@ -35,16 +35,26 @@ function onTabClick(instanceId: string) {
 }
 
 function onCloseTab(instanceId: string) {
-  store.closePanel(instanceId, props.groupId)
+  store.requestClosePanel(instanceId, props.groupId)
 }
 
 function onSplit(direction: 'horizontal' | 'vertical') {
-  const newGroupId = store.splitGroup(props.groupId, direction)
+  if ((group.value?.instances.length ?? 0) < 2) return
   const activeInstance = group.value?.instances.find((i) => i.instanceId === group.value?.activeInstanceId)
   if (activeInstance) {
-    store.openPanel(activeInstance.definitionId, activeInstance.props, activeInstance.title, newGroupId)
+    const newGroupId = store.splitGroup(props.groupId, direction)
+    store.movePanel(activeInstance.instanceId, props.groupId, newGroupId, 0)
   }
 }
+watch(
+  () => group.value?.activeInstanceId,
+  async () => {
+    await nextTick()
+    tabsEl.value
+      ?.querySelector<HTMLElement>('[aria-selected="true"], [aria-pressed="true"], .active')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  },
+)
 </script>
 
 <template>
@@ -63,8 +73,8 @@ function onSplit(direction: 'horizontal' | 'vertical') {
       />
     </div>
     <template #actions>
-      <IconButton size="lg" icon="lu:columns-2" tooltip="Split right" @click="onSplit('horizontal')" />
-      <IconButton size="lg" icon="lu:rows-2" tooltip="Split down" @click="onSplit('vertical')" />
+      <IconButton size="lg" icon="lu:columns-2" tooltip="Split right" :disabled="(group?.instances.length ?? 0) < 2" @click="onSplit('horizontal')" />
+      <IconButton size="lg" icon="lu:rows-2" tooltip="Split down" :disabled="(group?.instances.length ?? 0) < 2" @click="onSplit('vertical')" />
     </template>
   </Strip>
 </template>

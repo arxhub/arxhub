@@ -25,6 +25,8 @@ export interface OpenedObject {
   title: string
   component: Component
   props: Record<string, unknown>
+  // Save while the view is still mounted; false keeps the tab open and the owner reports why.
+  beforeClose?(): Promise<boolean>
   // What to write into the workspace. Exactly this comes back to `revive` after a restart.
   snapshot(): Json
 }

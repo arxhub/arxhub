@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { basename, dirname } from '@arxhub/path'
 import { actionMenu, Icon, Input, Row } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, watch } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
 import { useFileActions } from './use-file-actions'
@@ -31,6 +31,7 @@ const typeIcon = computed((): string => {
   return 'lu:file'
 })
 
+const iconSize = useShellFrame() === 'mobile' ? 16 : 14
 const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
 const actions = useFileActions()
@@ -127,10 +128,10 @@ function handleFocus() {
     @keydown.enter.prevent="handleEnter"
   >
     <span class="chevron">
-      <Icon v-if="node.entry.kind === 'dir'" :name="node.expanded ? 'lu:chevron-down' : 'lu:chevron-right'" :size="14" />
+      <Icon v-if="node.entry.kind === 'dir'" :name="node.expanded ? 'lu:chevron-down' : 'lu:chevron-right'" :size="iconSize" />
     </span>
     <span class="type-glyph">
-      <Icon :name="typeIcon" :size="14" />
+      <Icon :name="typeIcon" :size="iconSize" />
     </span>
 
     <span v-if="renaming" ref="renameWrap" class="rename-wrap">

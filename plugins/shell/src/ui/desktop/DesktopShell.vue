@@ -80,7 +80,7 @@ useHotkeys(hotkeys, [
 <template>
   <div class="desktop-shell">
     <div class="middle">
-      <DesktopTypeRail :row="workspace.row.value" @select="workspace.activateType($event)" />
+      <DesktopTypeRail :row="workspace.row.value" @select="workspace.activateType($event)" @sheet="sheet = true" />
 
       <!-- The navigation column is not a tab: it is neither opened nor closed. A type that declares no
            navigation gets no column at all, and that is visible rather than hidden behind a

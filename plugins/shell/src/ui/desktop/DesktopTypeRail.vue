@@ -7,7 +7,7 @@ import type { TypeRowItem } from '../workspace'
 // the rail exists: the types beside the window, the active type's objects as the tab strip above the
 // content.
 const props = defineProps<{ row: TypeRowItem[] }>()
-defineEmits<{ select: [typeId: string] }>()
+defineEmits<{ select: [typeId: string]; sheet: [] }>()
 
 // A count is part of what the key says, so it belongs in the accessible name and not only in the
 // badge — "Notes" and "Notes, 3 open" are different controls to someone who cannot see the dot.
@@ -30,6 +30,7 @@ function label(item: TypeRowItem): string {
            number. -->
       <span v-if="item.count > 0" class="count" aria-hidden="true">{{ item.count > 99 ? '99+' : item.count }}</span>
     </div>
+    <NavItem icon="lu:command" title="Open or switch to" @click="$emit('sheet')" />
   </nav>
 </template>
 

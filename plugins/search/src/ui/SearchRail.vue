@@ -167,7 +167,8 @@ function enterList(): void {
 }
 
 function openEntry(entry: ResultEntry): void {
-  workspace.open(entry.path, entry.blockId)
+  const text = entry.snippet == null ? undefined : snippetSegments(entry.snippet.text).find((part) => part.match)?.text
+  workspace.open(entry.path, text)
 }
 
 function openSelected(): void {
@@ -210,10 +211,7 @@ onMounted(focusInput)
 
 <template>
   <div class="search-rail">
-    <!-- The mobile frame dismisses its rail panel when something in it is activated, because everything in
-         a rail is normally a navigation target. A search field is not: typing and flipping a toggle happen
-         where the results are, so those clicks stop here and only a result closes the panel. -->
-    <div ref="headEl" class="search-head" @click.stop>
+    <div ref="headEl" class="search-head">
       <Input
         v-model="query"
         placeholder="Search notes…"
@@ -283,8 +281,6 @@ onMounted(focusInput)
       @keydown.esc.prevent="reset"
     >
       <template v-for="(entry, index) in entries" :key="entry.key">
-        <!-- A real button, so the mobile frame's rail panel recognises the one click that IS navigation and
-             gets out of the way. The keyboard model stays on the list, hence tabindex -1. -->
         <Row
           v-if="entry.kind === 'document'"
           :id="optionId(index)"
@@ -355,9 +351,7 @@ onMounted(focusInput)
          a static name. Unbordered: this divides a hairline inside the rail, not a boundary between two
          regions (--gray-4, not Strip's own --gray-6), and it needs the rule above it, not below. -->
     <Strip class="index-strip" :bordered="false" flush-actions>
-      <!-- Stops here, because a rebuild is not navigation: the mobile frame dismisses its rail panel when
-           something in it is activated, and the owner asking for a reindex has not gone anywhere. -->
-      <span class="index-state" @click.stop>
+      <span class="index-state">
         <StatusDot :tone="index.tone.value" :pulse="index.scanning.value" />
         <span class="index-state-text" :class="{ danger: index.unavailable.value }">{{ index.text.value }}</span>
       </span>
@@ -367,10 +361,8 @@ onMounted(focusInput)
           icon="lu:refresh-cw"
           tooltip="Reindex"
           :disabled="index.unavailable.value || index.busy.value"
-          @click.stop="index.reindex()"
+          @click="index.reindex()"
         />
-        <!-- Deliberately NOT stopped: opening the console IS navigation — it puts a panel in the content
-             area, which on a phone sits behind the rail panel, so that panel has to get out of the way. -->
         <IconButton size="lg" icon="lu:database" tooltip="SQL console" @click="sqlConsole.open()" />
       </template>
     </Strip>
@@ -381,7 +373,8 @@ onMounted(focusInput)
 .search-rail {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -466,7 +459,7 @@ onMounted(focusInput)
 .qualifiers {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   margin: 8px 0 0;
 }
 

@@ -67,11 +67,11 @@ onBeforeUnmount(() => stop?.())
       data-testid="nav-toggle"
       :aria-expanded="false"
       aria-label="Expand navigation"
-      title="Expand navigation (⌘B)"
+      title="Expand navigation"
       @click="emit('toggle')"
     />
 
-    <div v-if="!props.collapsed" class="body">
+    <div v-show="!props.collapsed" class="body">
       <component :is="props.nav.component" />
     </div>
 
@@ -80,7 +80,16 @@ onBeforeUnmount(() => stop?.())
       class="resize"
       role="separator"
       aria-orientation="vertical"
-      title="Drag to resize"
+      tabindex="0"
+      :aria-label="`Resize ${title} navigation`"
+      :aria-valuemin="NAV_MIN"
+      :aria-valuemax="NAV_MAX"
+      :aria-valuenow="width"
+      @keydown.left.prevent="emit('resize', width - 16)"
+      @keydown.right.prevent="emit('resize', width + 16)"
+      @keydown.home.prevent="emit('resize', NAV_MIN)"
+      @keydown.end.prevent="emit('resize', NAV_MAX)"
+      title="Drag or use arrow keys to resize"
       @pointerdown="startResize"
     />
   </div>
@@ -137,6 +146,11 @@ onBeforeUnmount(() => stop?.())
   bottom: 0;
   width: 8px;
   cursor: col-resize;
+}
+
+.resize:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -1px;
 }
 
 .resize:hover,

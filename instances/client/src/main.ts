@@ -16,11 +16,11 @@ import { KeyStorePlugin, resolveKeyStore } from '@arxhub/plugin-keystore/ui'
 import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { BootPolicy, MaintenancePlugin, startWithCrashScreen } from '@arxhub/plugin-maintenance/ui'
 import { NOTES_TYPE_ID, NotesPlugin } from '@arxhub/plugin-notes/ui'
-import { PanelStoreExtension, PanelsPlugin, StorePanelHost } from '@arxhub/plugin-panels/ui'
+import { PanelStoreExtension, PanelsPlugin, restoreNavigationWorkspace, StorePanelHost } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { SearchPlugin } from '@arxhub/plugin-search/ui'
 import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
-import { AboutSettingsPage, ShellExtension, ShellPlugin, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell/ui'
+import { AboutSettingsPage, ObjectGonePage, ShellExtension, ShellPlugin, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
 import { type Theme, ThemePlugin } from '@arxhub/plugin-theme/ui'
 import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
@@ -110,11 +110,8 @@ store.openPanel('arxhub.welcome', {}, 'Welcome', undefined, () => true)
 // the workspace tells the storage what the person did.
 const workspace = new Workspace({
   types: shell.types,
-  // A store per type is the model; the wiring hands the SAME one to the only object type there is.
-  // Every opener in the application still writes straight to the application store — the explorer's
-  // tree, a search result, the SQL console, this instance's own Welcome panel (the second half of
-  // F-21/F-22) — so a type given a private store would be a type in which nothing anyone clicks ever
-  // opens. A SECOND object type is what makes this wrong, and it arrives together with those openers.
+  goneView: markRaw(ObjectGonePage),
+  // Notes owns documents; the same host also carries Welcome and the SQL console.
   createPanels: () => new StorePanelHost(store),
   emit: (event, payload) => desk.observe(event, payload),
 })
@@ -124,15 +121,8 @@ const desk = new WorkspaceStorage({ workspace })
 // application: it reads storage, storage can be unavailable, and an unhandled rejection here would
 // fail BEFORE app.mount() and leave a blank white page instead of a shell.
 //
-// The visible layout is still restored by `plugins/panels`' own device-local record, not by this one:
-// the tabs on screen are panels the openers put in the store directly, and the workspace has no
-// snapshot of them to revive. The two records converge when the openers do (the second half of
-// F-21/F-22) — until then this one carries which TYPE you were in, and that one carries what was open.
 shell.attachWorkspace(workspace, desk)
-const restored = await desk.restore().catch(() => false)
-// A first run, or a record that cannot be read, is a clean desk rather than an error. A clean desk
-// opens on notes: the type the product exists for beats an empty screen inviting you to go looking.
-if (!restored && shell.types.has(NOTES_TYPE_ID)) workspace.activateType(NOTES_TYPE_ID)
+await restoreNavigationWorkspace(arxhub.extensions.get(PanelStoreExtension), workspace, desk, NOTES_TYPE_ID)
 
 // One browser build is served to phones and desktops alike, so this bundle cannot know its frame and
 // probes once, here, at boot. Everything below the shell reads the answer from injection — nothing in

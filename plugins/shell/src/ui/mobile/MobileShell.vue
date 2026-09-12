@@ -65,7 +65,7 @@ watch(
 // The frame's own control over the active type's navigation, contributed into the navigation's own
 // strip rather than drawn in a second band above it. On this frame it means "put the panel away"; on
 // the desktop the same control collapses the column.
-provideNavHost({ dismiss: () => (layer.value = null), icon: 'lu:x', label: 'Close navigation' })
+provideNavHost({ dismiss: () => (layer.value = null), navigated: () => (layer.value = null), icon: 'lu:x', label: 'Close navigation' })
 
 function toggle(which: Layer): void {
   layer.value = layer.value === which ? null : which
@@ -96,6 +96,12 @@ useOpenSheetKey(() => {
              open: a return to Notes would otherwise be a freshly mounted editor — scroll at the top,
              undo history gone, selection lost (F-05). -->
         <TypeStage :workspace="workspace" :types="types" empty="Nothing is open. Pick a type in the row below." />
+        <MobileEdgeGestures
+          :left="navTitle != null && layer == null"
+          :right="hasOpen && layer == null"
+          @left="openNav"
+          @right="openWhatsOpen"
+        />
       </main>
 
       <!-- Three bands from the bottom up: the background line (only while something is running), the
@@ -110,15 +116,6 @@ useOpenSheetKey(() => {
       />
 
       <MobileNavPanel :open="layer === 'nav'" :title="navTitle ?? 'Navigation'" :nav="nav?.component ?? null" @close="layer = null" />
-
-      <!-- Only while nothing is open. An edge that opens the panel says nothing once the panel is up,
-           and the strip went on painting over the scrim, which read as a rendering fault. -->
-      <MobileEdgeGestures
-        :left="navTitle != null && layer == null"
-        :right="hasOpen && layer == null"
-        @left="openNav"
-        @right="openWhatsOpen"
-      />
     </div>
 
     <MobileTypeRow
@@ -161,6 +158,7 @@ useOpenSheetKey(() => {
 }
 
 .mobile-content {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: hidden;

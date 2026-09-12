@@ -19,7 +19,7 @@ test.describe('maintenance mode', () => {
     await bootWith(app, { maintenance: true })
 
     await withShellChrome(app, async (chrome) => {
-      await expect(chrome.getByRole('button', { name: 'Maintenance mode' })).toBeVisible()
+      await expect(chrome.getByRole('button', { name: 'Maintenance mode', exact: true })).toBeVisible()
     })
 
     // Explorer is not essential, so a maintenance boot leaves it out — and the tree it contributes is
@@ -40,7 +40,7 @@ test.describe('maintenance mode', () => {
     await app.getByRole('button', { name: 'Leave and restart' }).click()
 
     await withShellChrome(app, async (chrome) => {
-      await expect(chrome.getByRole('button', { name: 'Maintenance mode' })).toHaveCount(0)
+      await expect(chrome.getByRole('button', { name: 'Maintenance mode', exact: true })).toHaveCount(0)
     })
     // And the vault tree is back where it belongs: inside the Notes type's navigation.
     await openType(app, 'Notes')

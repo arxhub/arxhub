@@ -1,12 +1,13 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { Dialog } from '@ark-ui/vue'
+import { watch } from 'vue'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import Icon from './Icon.vue'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import Strip from './Strip.vue'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     open: boolean
     title?: string
@@ -18,12 +19,23 @@ withDefaults(
   { centered: false, size: 'md', closeOnInteractOutside: true, closeOnEscape: true },
 )
 
+let opener: HTMLElement | null = null
+watch(
+  () => props.open,
+  (open) => {
+    if (open) opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  },
+  { flush: 'sync', immediate: true },
+)
+const finalFocus = () => (opener?.isConnected && opener.getClientRects().length ? opener : null)
+
 const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 </script>
 
 <template>
   <Dialog.Root
     :open="open"
+    :final-focus-el="finalFocus"
     :close-on-interact-outside="closeOnInteractOutside"
     :close-on-escape="closeOnEscape"
     @update:open="emit('update:open', $event)"

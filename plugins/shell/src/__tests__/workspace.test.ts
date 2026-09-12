@@ -93,6 +93,58 @@ beforeEach(() => {
   openCalls = []
 })
 
+test('closing waits for the object save, and repeated requests join it', async () => {
+  const { workspace, log } = build(notesType())
+  await workspace.openObject('notes', { id: 'a.md' })
+  const object = workspace.objectOf('notes', 'note:a.md')!
+  let complete: (saved: boolean) => void = () => {}
+  object.beforeClose = () =>
+    new Promise<boolean>((resolve) => {
+      complete = resolve
+    })
+  const closing = workspace.closeObject('notes', object.key)
+  expect(workspace.closeObject('notes', object.key)).toBe(closing)
+  await Promise.resolve()
+  expect(workspace.tabsOf('notes')).toHaveLength(1)
+  expect(log.some((entry) => entry.event === 'workspace:object-closed')).toBe(false)
+  complete(true)
+  await closing
+  expect(workspace.tabsOf('notes')).toHaveLength(0)
+})
+
+test('a refused or failed save keeps the object open; explicit replacement can discard it', async () => {
+  const { workspace } = build(notesType())
+  await workspace.openObject('notes', { id: 'a.md' })
+  const object = workspace.objectOf('notes', 'note:a.md')!
+  object.beforeClose = async () => false
+  await workspace.closeObject('notes', object.key)
+  expect(workspace.tabsOf('notes')).toHaveLength(1)
+  object.beforeClose = async () => {
+    throw new Error('offline')
+  }
+  await workspace.closeObject('notes', object.key)
+  expect(workspace.serialize().types[0].tabs).toHaveLength(1)
+  workspace.closeObject('notes', object.key, { discard: true })
+  expect(workspace.tabsOf('notes')).toHaveLength(0)
+})
+
+test('retargeting over another open object removes its superseded buffer without saving it', async () => {
+  const { workspace } = build(notesType())
+  await workspace.openObject('notes', { id: 'a.md' })
+  await workspace.openObject('notes', { id: 'b.md' })
+  const source = workspace.objectOf('notes', 'note:a.md')!
+  const target = workspace.objectOf('notes', 'note:b.md')!
+  let saves = 0
+  target.beforeClose = async () => {
+    saves++
+    return true
+  }
+  workspace.replaceObject('notes', source.key, { ...source, key: target.key })
+  expect(hostOf(workspace, 'notes').keys()).toEqual([target.key])
+  await Promise.resolve()
+  expect(saves).toBe(0)
+})
+
 describe('Workspace: panels it did not open itself', () => {
   // Every opener in the application still writes straight to the panel store (the second half of
   // F-21/F-22), so a type's host legitimately holds tabs the workspace has no object for. A list of

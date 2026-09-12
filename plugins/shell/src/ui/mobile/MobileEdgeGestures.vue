@@ -64,12 +64,11 @@ function onClick(edge: 'left' | 'right'): void {
 </template>
 
 <style scoped>
-/* Only across the bottom two-fifths — that is the arc a thumb covers, and a full-height strip would
-   swallow every tap within 24px of either edge of the note as well as reading as a page border. */
+/* Keep the gesture inside the content, away from the document controls and dock. */
 .edge {
   position: absolute;
-  bottom: 0;
-  height: 40%;
+  bottom: 20%;
+  height: 24%;
   width: 24px;
   border: none;
   padding: 0;
@@ -101,5 +100,8 @@ function onClick(edge: 'left' | 'right'): void {
 .edge.right {
   right: 0;
   background: linear-gradient(to left, var(--accent-a4), transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .edge { transition: none; }
 }
 </style>

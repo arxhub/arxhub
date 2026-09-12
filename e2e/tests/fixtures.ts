@@ -315,8 +315,6 @@ export async function waitForIndex(page: Page): Promise<void> {
 // unrepresentable. Shared, because both the search and the SQL-console specs start from this screen.
 export async function openSearchApp(page: Page): Promise<void> {
   await openType(page, 'Search', 'arxhub.search')
-  // On a phone the rail is a panel over the content; on the desktop it is already beside it.
-  await openNavigation(page)
   await expect(page.getByRole('textbox', { name: 'Search' }).first()).toBeVisible()
   // Every screen reached from here reads the index: the result list, the console's queries, the Reindex
   // control. Waiting for the walk once, here, is what keeps each of them from racing it.

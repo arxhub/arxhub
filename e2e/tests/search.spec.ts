@@ -247,7 +247,6 @@ test.describe('finding a note by a word in its text', () => {
     // The reload is here and nowhere later: the boot walk indexes this note WITHOUT the word, so the index
     // starts out unable to answer for it.
     await openNote(app, live)
-    const mobile = await isMobileFrame(app)
     // And the walk has to be OVER before the word is typed — the status line says "N in index" only once it
     // is. A walk still in flight would reach this file by itself and index the saved bytes, which would let
     // the search below pass with nothing observing anything.
@@ -265,12 +264,7 @@ test.describe('finding a note by a word in its text', () => {
       })
       .toEqual({ live: 0, control: 1 })
 
-    // On the desktop the rail sits beside the editor, so there is nothing to move out of the way. On a
-    // phone the rail IS the panel over the note, and the Save button is underneath it.
-    if (mobile) {
-      await app.getByRole('button', { name: 'Close navigation' }).click()
-      await expect(app.getByRole('region', { name: /navigation$/ })).toBeHidden()
-    }
+    await openType(app, 'Notes')
 
     await app.locator('.cm-content:visible .cm-line').last().click()
     await app.keyboard.press('End')

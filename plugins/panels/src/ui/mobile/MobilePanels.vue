@@ -47,9 +47,9 @@ const { openTabs, current, pathOf } = useOpenTabsList(props.store)
       </span>
       <IconButton
         icon="lu:x"
-        size="xs"
+        size="lg"
         aria-label="Close document"
-        @click="props.store.closePanel(current.instance.instanceId, current.groupId)"
+        @click="props.store.requestClosePanel(current.instance.instanceId, current.groupId)"
       />
     </div>
   </div>

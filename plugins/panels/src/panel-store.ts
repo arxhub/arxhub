@@ -140,6 +140,13 @@ export function createPanelStore(bus: EventBus): PanelStore {
       }
     },
 
+    requestClosePanel(instanceId: string, groupId: string): void {
+      const instance = groups.value[groupId]?.instances.find((item) => item.instanceId === instanceId)
+      const requestClose = instance?.props?.requestClose
+      if (typeof requestClose === 'function') requestClose()
+      else store.closePanel(instanceId, groupId)
+    },
+
     closePanel(instanceId: string, groupId: string): void {
       const group = groups.value[groupId]
       if (!group) return

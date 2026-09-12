@@ -8,6 +8,7 @@ type PanelStoreExtensionArgs = ExtensionArgs & { bus: EventBus }
 
 export class PanelStoreExtension extends Extension {
   readonly store: PanelStore
+  readonly stopLegacyPersistence: () => void
 
   constructor(args: PanelStoreExtensionArgs) {
     super(args)
@@ -15,6 +16,6 @@ export class PanelStoreExtension extends Extension {
     // Definitions aren't restored (they come fresh from each plugin's own registration this boot), but
     // groups/layout/activeGroupId are — a restored group's definitionId resolves the moment a plugin
     // registers it, and every plugin's configure() runs well before this is ever rendered.
-    restoreAndPersistWorkspace(this.store)
+    this.stopLegacyPersistence = restoreAndPersistWorkspace(this.store)
   }
 }

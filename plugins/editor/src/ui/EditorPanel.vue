@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
+import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button } from '@arxhub/uikit/core'
@@ -8,9 +9,9 @@ import { VaultVfs } from '@arxhub/vfs'
 import { history } from 'prosemirror-history'
 import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
-import { EditorState } from 'prosemirror-state'
+import { EditorState, TextSelection } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
-import { onUnmounted, ref, shallowRef, toRef } from 'vue'
+import { onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
 import { deserialize, emptyDoc, serialize } from '../editor-format'
 import { buildInputRules } from '../editor-input-rules'
 import { buildKeymap } from '../editor-keymap'
@@ -23,12 +24,16 @@ import 'prosemirror-view/style/prosemirror.css'
 // (a burst of edits coalesces into one write, not one per keystroke).
 const AUTOSAVE_DEBOUNCE_MS = 1500
 
-const props = defineProps<{ path: string }>()
+const props = defineProps<{ path: string; anchor?: BlockAnchor }>()
 
 const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
+const notes = arxhub.extensions.get(NotesExtension)
 const editorEl = ref<HTMLDivElement>()
 const view = shallowRef<EditorView | null>(null)
+const revision = ref(0)
+let edits = 0
+let savedEdits = 0
 
 // Where the layer IS, while the chords it claims are declared once by the plugin (`hotkeys.ts`).
 // Every open `.arx` panel pushes this same layer, and only the one holding the caret is on the stack —
@@ -51,12 +56,14 @@ function buildState(_path: string, bytes: Uint8Array): EditorState {
 }
 
 // Shared composable owns the load lifecycle: staleness guard on rapid file switches, open-empty
-// only on a genuine FileNotFound, and canSave gating so a failed/in-flight read can't be saved over.
+// is refused for missing files, and canSave prevents writing over a failed or in-flight read.
 const {
   error: loadError,
   canSave,
   reload,
 } = useFileDocument<EditorState>(toRef(props, 'path'), {
+  retainOnPathChange: true,
+  allowMissing: false,
   read: (path) => vfs.read(path),
   build: (path, bytes) => buildState(path, bytes),
   apply: (_path, state) => {
@@ -68,23 +75,49 @@ const {
         dispatchTransaction(tr) {
           if (!view.value) return
           view.value.updateState(view.value.state.apply(tr))
+          revision.value++
           if (tr.docChanged) {
             // Never autosave over a load that hasn't (or can no longer) resolve — `doSave` re-checks
             // canSave at fire time too, but there is no point arming a timer for a run that can only
             // no-op.
-            if (canSave.value) autosave.schedule()
+            if (canSave.value) {
+              edits++
+              autosave.schedule()
+            }
           }
         },
       })
     }
+    if (props.anchor) reveal(props.anchor)
   },
 })
 
+function reveal(anchor: BlockAnchor): boolean {
+  const current = view.value
+  if (current == null) return false
+  let found: number | null = null
+  current.state.doc.descendants((node, pos) => {
+    if (found != null) return false
+    if (!node.isTextblock) return true
+    const index = node.textContent.toLowerCase().indexOf(anchor.text.toLowerCase())
+    if (index >= 0) found = pos + 1 + index
+    return false
+  })
+  if (found == null) return false
+  current.dispatch(current.state.tr.setSelection(TextSelection.create(current.state.doc, found, found + anchor.text.length)).scrollIntoView())
+  requestAnimationFrame(() => current.focus())
+  return true
+}
+
+onUnmounted(notes.registerOpenView(() => props.path, reveal, beforeClose))
+
 async function doSave() {
   if (!view.value || !canSave.value) return
+  const saving = edits
   const content = serialize(view.value.state.doc)
   try {
     await vfs.write(props.path, new TextEncoder().encode(content))
+    savedEdits = saving
   } catch (error) {
     // Don't swallow a failed write — that silently loses the user's edits. Surface it loudly.
     arxhub.logger.error(`[editor] failed to save ${props.path}:`, error)
@@ -102,6 +135,30 @@ async function save() {
   await autosave.flush()
 }
 
+async function beforeClose(): Promise<boolean> {
+  try {
+    // flush() may join an older in-flight write. Keep the view until all edits made since it began
+    // have reached storage too; a failure leaves the buffer available for retry.
+    while (savedEdits !== edits) {
+      if (!view.value || !canSave.value) return false
+      await autosave.flush()
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+watch(
+  () => props.path,
+  () => {
+    if (!canSave.value) return
+    // A rename may have copied the file while an autosave still targeted its old path.
+    edits++
+    autosave.schedule()
+  },
+)
+
 onUnmounted(() => {
   autosave.cancel()
   view.value?.destroy()
@@ -111,7 +168,7 @@ onUnmounted(() => {
 
 <template>
   <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <EditorToolbar :view="view" :on-save="save" :can-save="canSave" />
+    <EditorToolbar :view="view" :revision="revision" :on-save="save" :can-save="canSave" />
     <div v-if="loadError" class="editor-error">
       <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
       <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>
@@ -130,7 +187,7 @@ onUnmounted(() => {
 .editor-content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 48px;
+  padding: 24px clamp(16px, 6%, 48px);
   box-sizing: border-box;
 }
 .editor-error {
@@ -168,7 +225,7 @@ onUnmounted(() => {
 .editor-content :deep(code) {
   background: var(--gray-3);
   padding: 0.1em 0.35em;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   font-family: var(--font-mono, monospace);
   /* design-ignore DS type ramp: inline code inside note content, relative to the note body. */
   font-size: 0.875em;
@@ -177,7 +234,7 @@ onUnmounted(() => {
   background: var(--gray-2);
   border: 1px solid var(--gray-4);
   padding: 1em;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   overflow-x: auto;
   margin: 0.5em 0;
 }
@@ -190,7 +247,7 @@ onUnmounted(() => {
 .editor-content :deep(.callout) {
   border-left: 4px solid var(--gray-6);
   padding: 0.75em 1em;
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin: 0.75em 0;
   background: var(--gray-2);
 }

@@ -114,22 +114,25 @@ onMounted(loadSessions)
           type="button"
           class="chip"
           :class="[lvl.name, { off: !enabled[lvl.name] }]"
+          :aria-pressed="enabled[lvl.name]"
           @click="toggle(lvl.name)"
         >
           {{ lvl.name }}
         </button>
       </div>
-      <div class="search">
-        <Input v-model="search" placeholder="Filter logs…" />
-      </div>
-      <select v-model="source" class="session" @change="onSourceChange">
-        <option value="">Live</option>
-        <option v-for="s in sessions" :key="s" :value="s">{{ s.replace('logs/', '') }}</option>
-      </select>
       <template #actions>
         <IconButton icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
         <Button variant="secondary" size="sm" :disabled="source !== ''" @click="ext.clear()">Clear</Button>
       </template>
+    </Strip>
+    <Strip>
+      <div class="search">
+        <Input v-model="search" placeholder="Filter logs…" aria-label="Filter logs" />
+      </div>
+      <select v-model="source" class="session" aria-label="Log session" @change="onSourceChange">
+        <option value="">Live</option>
+        <option v-for="s in sessions" :key="s" :value="s">{{ s.replace('logs/', '') }}</option>
+      </select>
     </Strip>
 
     <div ref="scroller" class="rows" @scroll="onScroll">
@@ -161,7 +164,8 @@ onMounted(loadSessions)
 }
 
 .chip {
-  padding: 2px 8px;
+  height: var(--size-xs);
+  padding: 0 8px;
   border-radius: var(--radius-full);
   border: 1px solid var(--gray-6);
   background: var(--gray-3);
@@ -173,7 +177,9 @@ onMounted(loadSessions)
 }
 
 .chip.off {
-  opacity: 0.4;
+  background: var(--gray-2);
+  color: var(--gray-9);
+  border-color: var(--gray-6);
 }
 
 .chip.debug { border-color: var(--gray-7); color: var(--gray-11); }
@@ -183,22 +189,31 @@ onMounted(loadSessions)
 
 .search {
   flex: 1;
-  min-width: 80px;
+  min-width: 0;
 }
 
 .session {
+  width: 40%;
   max-width: 220px;
-  height: var(--size-sm);
+  min-width: 0;
+  height: var(--size-xs);
   background: var(--gray-1);
   color: var(--gray-12);
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
   font-family: var(--font-sans);
-  padding: 0 6px;
+  padding: 0 8px;
+}
+
+.chip:focus-visible,
+.session:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -1px;
 }
 
 .rows {
+  min-height: 0;
   flex: 1;
   overflow-y: auto;
   font-family: var(--font-mono, monospace);

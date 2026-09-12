@@ -148,12 +148,7 @@ test.describe('the visual language holds on screen', () => {
       .evaluate((n) => Math.round(n.getBoundingClientRect().top))
 
     await openType(app, 'Search', 'arxhub.search')
-    // On a phone the rail is a panel over the content; on the desktop it is already beside it.
-    await openNavigation(app)
     await app.locator('.search-rail').getByRole('button', { name: 'SQL console' }).click()
-    // The visible one: every type entered this session keeps its stage mounted (F-05), and both of
-    // these types still draw the ONE application panel store, so the console is in the document once
-    // per stage — the debt AGENTS.md files under "one shared panel store for every type".
     const console = app.getByTestId('sql-console').filter({ visible: true })
     await expect(console).toBeVisible()
     const consoleTop = await console.locator('.console').evaluate((n) => Math.round(n.getBoundingClientRect().top))

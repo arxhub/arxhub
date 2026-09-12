@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon, Row, SectionLabel } from '@arxhub/uikit/core'
+import { Icon, IconButton, Row, SectionLabel } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useSheetLayer } from './hotkeys'
@@ -64,18 +64,25 @@ function choose(entry: SheetEntry): void {
     <section v-for="section in sections" :key="section.id" class="sheet-section">
       <SectionLabel class="sheet-heading">{{ section.title }}</SectionLabel>
       <p v-if="section.entries.length === 0" class="sheet-empty">{{ section.empty }}</p>
-      <Row
-        v-for="entry in section.entries"
-        :key="entry.id"
-        as="button"
-        type="button"
-        :data-testid="`sheet:${entry.id}`"
-        @click="choose(entry)"
-      >
-        <Icon :name="entry.icon" :size="iconSize" />
-        <span class="sheet-row-title">{{ entry.title }}</span>
-        <span v-if="entry.meta" class="sheet-row-meta">{{ entry.meta }}</span>
-      </Row>
+      <div v-for="entry in section.entries" :key="entry.id" class="sheet-entry">
+        <Row
+          as="button"
+          type="button"
+          :data-testid="`sheet:${entry.id}`"
+          @click="choose(entry)"
+        >
+          <Icon :name="entry.icon" :size="iconSize" />
+          <span class="sheet-row-title">{{ entry.title }}</span>
+          <span v-if="entry.meta" class="sheet-row-meta">{{ entry.meta }}</span>
+        </Row>
+        <IconButton
+          v-if="section.id === 'open' && entry.objectKey == null && types.get(entry.typeId)?.pinned === false"
+          icon="lu:x"
+          size="lg"
+          :aria-label="`Close ${entry.title}`"
+          @click="workspace.closeType(entry.typeId)"
+        />
+      </div>
     </section>
   </div>
 </template>
@@ -89,6 +96,9 @@ function choose(entry: SheetEntry): void {
      not sit against the edge of the phone's sheet. */
   padding: 0 8px;
 }
+
+.sheet-entry { display: flex; align-items: center; }
+.sheet-entry > .row { flex: 1; min-width: 0; }
 
 .sheet-section {
   display: flex;

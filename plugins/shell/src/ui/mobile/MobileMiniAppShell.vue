@@ -49,12 +49,10 @@ onUnmounted(release)
 </script>
 
 <template>
-  <!-- Deferred because the host is mounted by the frame after this content: the panel sits below the
-       stage in the tree, so its target does not exist yet on our first render. isActive, not just
-       hasRail, gates the Teleport itself — otherwise the claim stops naming this mini-app on
-       deactivation while its content keeps teleporting into the shared host regardless. -->
-  <Teleport v-if="hasRail && isActive" :to="`#${MOBILE_RAIL_HOST_ID}`" defer>
-    <slot name="rail" />
+  <Teleport v-if="hasRail" :to="`#${MOBILE_RAIL_HOST_ID}`" defer>
+    <div v-show="isActive" class="rail-content">
+      <slot name="rail" />
+    </div>
   </Teleport>
 
   <!-- The content is the whole screen. A mini-app's navigation is a layer you summon, not a column
@@ -65,6 +63,11 @@ onUnmounted(release)
 </template>
 
 <style scoped>
+.rail-content {
+  height: 100%;
+  min-height: 0;
+}
+
 .mini-app-shell {
   width: 100%;
   height: 100%;

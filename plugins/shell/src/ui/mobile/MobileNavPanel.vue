@@ -12,15 +12,6 @@ useBackStack(
   () => props.open,
   () => emit('close'),
 )
-
-// Everything in here is a navigation target, so choosing one dismisses the panel — including the one
-// already active, which raises no event to react to. Expanding a folder is the exception: it has not
-// navigated anywhere yet. [role="option"] covers Search's result listbox — a result is never
-// expandable, so it carries none of the treeitem selector's aria-expanded exception.
-function onActivate(event: MouseEvent): void {
-  const target = event.target as HTMLElement | null
-  if (target?.closest('button, [role="treeitem"]:not([aria-expanded]), [role="option"]')) emit('close')
-}
 </script>
 
 <template>
@@ -28,7 +19,7 @@ function onActivate(event: MouseEvent): void {
        host below, and a target that comes and goes with the panel tears the teleport apart the first
        time it is opened. -->
   <div v-show="open" class="nav-scrim" @click.self="emit('close')">
-    <section class="nav-panel" :aria-label="`${title} navigation`" @click="onActivate">
+    <section class="nav-panel" :aria-label="`${title} navigation`">
       <!-- A head of the panel's own ONLY for a navigation that draws none. A type's `nav` names itself
            and carries the frame's close control inside its own strip (see nav-host.ts); a `MiniAppShell`
            teleports in a bare rail, and then this is the only thing naming what is in the panel and the

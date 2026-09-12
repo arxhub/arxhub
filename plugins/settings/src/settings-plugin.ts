@@ -6,6 +6,7 @@ import { manifest } from './manifest'
 import { SettingsExtension } from './settings-extension'
 import PendingChangesStatus from './ui/PendingChangesStatus.vue'
 import SettingsLayout from './ui/SettingsLayout.vue'
+import SettingsNav from './ui/SettingsNav.vue'
 
 export class SettingsPlugin extends Plugin {
   constructor(args: PluginArgs) {
@@ -30,6 +31,7 @@ export class SettingsPlugin extends Plugin {
       title: 'Settings',
       order: 1000,
       content: markRaw(SettingsLayout),
+      nav: { component: markRaw(SettingsNav), title: 'Sections' },
     })
     // Staged settings edits are app-wide, so the status bar reports them even when Settings is closed.
     // It reports and leads back; applying them is SettingsChangesBar's job, so this is a state.

@@ -15,6 +15,7 @@ import { type InjectionKey, inject, provide } from 'vue'
 // nothing to dismiss, which is why the default is `null` rather than a stub that throws.
 export interface NavHost {
   readonly dismiss: () => void
+  readonly navigated?: () => void
   // Icon spec string resolved by uikit's Icon registry.
   readonly icon: string
   readonly label: string

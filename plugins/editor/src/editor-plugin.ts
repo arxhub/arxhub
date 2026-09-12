@@ -2,11 +2,13 @@ import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { basename, dirname } from '@arxhub/path'
 import { ExplorerExtension, type TreeNode } from '@arxhub/plugin-explorer/ui'
 import { HotkeysExtension } from '@arxhub/plugin-hotkeys/ui'
-import { NotesExtension, type NoteViewer } from '@arxhub/plugin-notes/ui'
-import { type PanelStore, PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { NOTES_TYPE_ID, NotesExtension, type NoteViewer } from '@arxhub/plugin-notes/ui'
+import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
+import { nextTick } from 'vue'
 import { serialize } from './editor-format'
 import { declareProseMirrorChords } from './hotkeys'
 import { manifest } from './manifest'
@@ -64,10 +66,10 @@ export class EditorPlugin extends Plugin {
     if (!ctx.extensions.has(ExplorerExtension)) return
     const explorer = ctx.extensions.get(ExplorerExtension)
     const vault = ctx.services.get(VaultVfs)
-    explorer.registerNodeActions((node) => this.conversionAction(node, explorer, store, vault))
+    explorer.registerNodeActions((node) => this.conversionAction(node, explorer, ctx.extensions.get(ShellExtension), vault))
   }
 
-  private conversionAction(node: TreeNode, explorer: ExplorerExtension, store: PanelStore, vault: VirtualFileSystem): ActionItem[] {
+  private conversionAction(node: TreeNode, explorer: ExplorerExtension, shell: ShellExtension, vault: VirtualFileSystem): ActionItem[] {
     if (node.entry.kind !== 'file' || !isMarkdownPath(node.entry.pathname)) return []
     const path = node.entry.pathname
     return [
@@ -78,7 +80,7 @@ export class EditorPlugin extends Plugin {
         onSelect: () => {
           // Menu invokers don't await onSelect, so a failure that reached only the log would read as a
           // menu entry that does nothing — the same policy as the explorer's own runAction.
-          this.convert(path, explorer, store, vault).catch((error) => {
+          this.convert(path, explorer, shell, vault).catch((error) => {
             this.logger.error(`[editor] failed to convert ${path} to .arx:`, error)
             toaster.create({ title: 'Could not convert to .arx', description: reasonOf(error), type: 'error' })
           })
@@ -90,7 +92,7 @@ export class EditorPlugin extends Plugin {
   // The markdown note is never touched: converting ADDS `<name>.arx` beside it and leaves the original
   // for the owner to keep or delete. A conversion that consumed the source would make an irreversible
   // decision on the user's behalf — and markdown staying readable and editable as text is A-1.
-  private async convert(path: string, explorer: ExplorerExtension, store: PanelStore, vault: VirtualFileSystem): Promise<void> {
+  private async convert(path: string, explorer: ExplorerExtension, shell: ShellExtension, vault: VirtualFileSystem): Promise<void> {
     const target = arxPathFor(path)
     if (await vault.exists(target)) {
       const replace = await confirmReplace(basename(target))
@@ -104,13 +106,14 @@ export class EditorPlugin extends Plugin {
     // one would have the tab write the pre-conversion state straight back over the conversion. Closing
     // it first cancels that pending write (the panel cancels its autosave on unmount); it is reopened
     // on the fresh file below, so the tab ends up where it was, showing what was just written.
-    closePanelsFor(store, target)
+    shell.workspace.closeObject(NOTES_TYPE_ID, target, { discard: true })
+    await nextTick()
 
     await vault.write(target, new TextEncoder().encode(serialize(doc)))
     await explorer.refreshDir(dirname(target))
 
     const name = basename(target)
-    store.openPanel(PANEL_ID, { path: target }, name)
+    await shell.workspace.openObject(NOTES_TYPE_ID, { id: target })
 
     // What markdown said and the document format cannot say is the user's to know about — the toast
     // carries the count so it stays one line, the log carries what each one was.
@@ -124,14 +127,6 @@ export class EditorPlugin extends Plugin {
       return
     }
     toaster.create({ title: `Converted to ${name}`, description: `${basename(path)} was left in place.`, type: 'success' })
-  }
-}
-
-function closePanelsFor(store: PanelStore, path: string): void {
-  for (const group of Object.values(store.groups.value)) {
-    for (const instance of [...group.instances]) {
-      if (instance.props?.path === path) store.closePanel(instance.instanceId, group.id)
-    }
   }
 }
 

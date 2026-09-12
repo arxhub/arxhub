@@ -99,12 +99,12 @@ describe('ObservedFileSystem — what it reports', () => {
     expect(changes).toEqual([{ kind: 'renamed', pathname: 'notes/b.md', from: 'notes/a.md' }])
   })
 
-  test('is rename-capable only when the backend is', () => {
+  test('offers a logical rename over native and copy/delete backends', () => {
     expect(isRenameCapable(observe(new RenamingMemoryFileSystem()).fs)).toBe(true)
-    expect(isRenameCapable(observe().fs)).toBe(false)
+    expect(isRenameCapable(observe().fs)).toBe(true)
   })
 
-  test('reports a rename over a backend without one as the write and delete it really is', async () => {
+  test('reports copied files and one logical rename without a source deletion', async () => {
     const { fs, backend, changes } = observe()
     backend.seed('notes/a.md', 'hello')
 
@@ -112,8 +112,21 @@ describe('ObservedFileSystem — what it reports', () => {
 
     expect(changes).toEqual([
       { kind: 'written', pathname: 'notes/b.md' },
-      { kind: 'deleted', pathname: 'notes/a.md' },
+      { kind: 'renamed', pathname: 'notes/b.md', from: 'notes/a.md' },
     ])
+  })
+
+  test('a partial copy failure reports completed writes, keeps the source and never announces a rename', async () => {
+    const { fs, backend, changes } = observe()
+    backend.seed('source/a.md', 'a')
+    backend.seed('source/b.md', 'b')
+    backend.failWriteOn = 'destination/b.md'
+
+    await expect(renameEntry(fs, 'source', 'destination')).rejects.toThrow()
+
+    expect(dec(await fs.read('source/a.md'))).toBe('a')
+    expect(dec(await fs.read('source/b.md'))).toBe('b')
+    expect(changes).toEqual([{ kind: 'written', pathname: 'destination/a.md' }])
   })
 
   test('never reports a metadata sidecar, though the write machinery writes one per save', async () => {

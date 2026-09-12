@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { Dialog } from '@ark-ui/vue'
+import { ref, watch } from 'vue'
 import { useBackStack } from '../hooks/useBackStack'
 
 const props = defineProps<{ open: boolean; title?: string; label?: string }>()
@@ -8,6 +9,19 @@ const emit = defineEmits<{ close: [] }>()
 const sheetEl = ref<HTMLElement | null>(null)
 const dragOffset = ref(0)
 let startY: number | null = null
+let opener: HTMLElement | null = null
+watch(
+  () => props.open,
+  (open) => {
+    if (open) opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    else {
+      startY = null
+      dragOffset.value = 0
+    }
+  },
+  { flush: 'sync', immediate: true },
+)
+const finalFocus = () => (opener?.isConnected && opener.getClientRects().length ? opener : null)
 
 // Back closes the sheet instead of leaving the app — an overlay has no navigation of its own.
 useBackStack(
@@ -28,7 +42,7 @@ function onPointerMove(event: PointerEvent): void {
 function onPointerUp(): void {
   if (startY == null) return
   // Past a third of the sheet the gesture reads as dismissal; below that it springs back.
-  const height = sheetEl.value?.offsetHeight ?? 0
+  const height = sheetEl.value?.parentElement?.offsetHeight ?? 0
   if (dragOffset.value > height / 3) emit('close')
   startY = null
   dragOffset.value = 0
@@ -36,33 +50,32 @@ function onPointerUp(): void {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="open" class="sheet-backdrop" @click.self="emit('close')">
-      <div
-        ref="sheetEl"
-        class="sheet"
-        role="dialog"
-        aria-modal="true"
-        :aria-label="label ?? title"
-        :style="{ transform: dragOffset ? `translateY(${dragOffset}px)` : undefined }"
-        @keydown.escape="emit('close')"
-      >
-        <div
-          class="grabber-area"
-          @pointerdown="onPointerDown"
-          @pointermove="onPointerMove"
-          @pointerup="onPointerUp"
-          @pointercancel="onPointerUp"
+  <Dialog.Root :open="open" :final-focus-el="finalFocus" @update:open="$event || emit('close')">
+    <Teleport to="body">
+      <Dialog.Positioner v-if="open" class="sheet-backdrop" @click.self="emit('close')">
+        <Dialog.Content
+          class="sheet"
+          :aria-label="label ?? title"
+          :style="{ transform: dragOffset ? `translateY(${dragOffset}px)` : undefined }"
+
         >
-          <div class="grabber" aria-hidden="true" />
-          <p v-if="title" class="sheet-title">{{ title }}</p>
-        </div>
-        <div class="sheet-body">
-          <slot />
-        </div>
-      </div>
-    </div>
-  </Teleport>
+          <div
+            class="grabber-area"
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="onPointerUp"
+            @pointercancel="onPointerUp"
+          >
+            <div class="grabber" aria-hidden="true" />
+            <Dialog.Title v-if="title" class="sheet-title">{{ title }}</Dialog.Title>
+          </div>
+          <div ref="sheetEl" class="sheet-body">
+            <slot />
+          </div>
+        </Dialog.Content>
+      </Dialog.Positioner>
+    </Teleport>
+  </Dialog.Root>
 </template>
 
 <style scoped>
@@ -77,7 +90,8 @@ function onPointerUp(): void {
 
 .sheet {
   width: 100%;
-  max-height: 80vh;
+  max-height: 80dvh;
+  outline: none;
   display: flex;
   flex-direction: column;
   border-top-left-radius: var(--radius-md);

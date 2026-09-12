@@ -1,5 +1,5 @@
 import { hasErrorCode } from '@arxhub/errors'
-import { onMounted, type Ref, ref, watch } from 'vue'
+import { onMounted, onUnmounted, type Ref, ref, watch } from 'vue'
 
 // Orchestrates loading a VFS-backed file into an editor panel and keeping it safe to persist.
 // It is deliberately VFS- and editor-format-agnostic (everything is injected) so it can be shared
@@ -21,6 +21,9 @@ import { onMounted, type Ref, ref, watch } from 'vue'
 //      document that a Save (or an autosave) would then flush over the original, still-recoverable
 //      bytes.
 export interface UseFileDocumentOptions<S> {
+  // A mounted document changes path on rename; its unsaved buffer and undo still belong to it.
+  retainOnPathChange?: boolean
+  allowMissing?: boolean
   // Read the raw bytes for a path. Throw `fileNotFound` (code 'FileNotFound') for a genuinely-absent
   // file; throw anything else for a transport/IO failure.
   read(path: string): Promise<Uint8Array>
@@ -62,7 +65,7 @@ export function useFileDocument<S>(path: Ref<string>, options: UseFileDocumentOp
     try {
       bytes = await options.read(target)
     } catch (e) {
-      if (hasErrorCode(e, 'FileNotFound')) {
+      if (options.allowMissing !== false && hasErrorCode(e, 'FileNotFound')) {
         // Absent file → open empty; saving creates it. This is the only error that opens a buffer.
         bytes = EMPTY
       } else {
@@ -98,7 +101,13 @@ export function useFileDocument<S>(path: Ref<string>, options: UseFileDocumentOp
   }
 
   onMounted(() => reload(path.value))
-  watch(path, (target) => reload(target))
+  watch(path, (target) => {
+    if (options.retainOnPathChange && canSave.value) return
+    void reload(target)
+  })
+  onUnmounted(() => {
+    ticket++
+  })
 
   return { loading, error, canSave, reload }
 }

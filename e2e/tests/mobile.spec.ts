@@ -94,24 +94,23 @@ test.describe('mobile navigation', () => {
     await expect(app.locator('.cm-content:visible')).toContainText('first')
   })
 
-  // A mini-app that has not become a type yet teleports its rail into the one shared panel, and
-  // switching types deactivates the outgoing one under KeepAlive instead of destroying it — so a claim
-  // made once at setup and never released left every one visited this session still rendering into that
-  // panel, stacked under whichever named it last.
-  test('switching types does not stack rails in the shared panel', async ({ app, vault }) => {
+  test('switching types does not stack navigation in the shared panel', async ({ app, vault }) => {
     const path = await vault.write('kept.md', 'kept\n')
     await openNote(app, path)
-
     await openType(app, 'Settings')
-    await openType(app, 'Search', 'arxhub.search')
-
     await openNavigation(app)
     const panel = app.getByRole('region', { name: /navigation$/ })
-    // Search's rail, once — and Settings' section list not still hiding underneath it.
-    await expect(panel.locator('.search-rail')).toHaveCount(1)
+    await expect(panel.locator('.settings-nav')).toHaveCount(1)
+    await expect(panel.getByRole('tree')).toHaveCount(0)
+    await openType(app, 'Search', 'arxhub.search')
+    await expect(app.getByRole('textbox', { name: 'Search', exact: true })).toBeVisible()
+    await expect(panel).toBeHidden()
+    await expect(app.getByTestId('arxhub.shell.rail')).toHaveCount(0)
+    await openType(app, 'Notes')
+    await openNavigation(app)
+    await expect(panel.getByRole('tree')).toHaveCount(1)
     await expect(panel.locator('.settings-nav')).toHaveCount(0)
-    // And the key that opens it names what is actually in there.
-    await expect(app.getByTestId('arxhub.shell.rail')).toHaveAttribute('aria-label', 'Search')
+    await expect(panel.locator('.search-rail')).toHaveCount(0)
   })
 
   test('back in a confirmation means cancel, never confirm', async ({ app, vault }) => {

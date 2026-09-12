@@ -1,6 +1,6 @@
 import { basename, dirname } from '@arxhub/path'
-import { NotesExtension } from '@arxhub/plugin-notes/ui'
-import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { NOTES_TYPE_ID, NotesExtension } from '@arxhub/plugin-notes/ui'
+import { ShellExtension, useNavHost } from '@arxhub/plugin-shell/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
@@ -16,8 +16,8 @@ function reasonOf(error: unknown): string {
 export function useFileActions() {
   const arxhub = useArxHub()
   const explorer = arxhub.extensions.get(ExplorerExtension)
-  const notes = arxhub.extensions.get(NotesExtension)
-  const { store } = arxhub.extensions.get(PanelStoreExtension)
+  const shell = arxhub.extensions.get(ShellExtension)
+  const navHost = useNavHost()
 
   // Action descriptors are fire-and-forget (the menu/modal invokers don't await onSelect/onConfirm),
   // so every async action routes through here: a rejection is logged, not left to surface as an
@@ -27,43 +27,34 @@ export function useFileActions() {
   // so a failure that only reached the log left the user watching a tree that silently did not change —
   // a rejected write reads exactly like a button that does nothing.
   // `context` is a verb phrase ('create the file', 'rename to notes.md') so it reads in both places.
-  function runAction(action: Promise<void>, context: string): void {
+  function runAction(action: Promise<unknown>, context: string): void {
     action.catch((error) => {
       arxhub.logger.error(`[explorer] failed to ${context}:`, error)
       toaster.create({ title: `Could not ${context}`, description: reasonOf(error), type: 'error' })
     })
   }
 
-  function openFile(node: TreeNode): void {
-    const path = node.entry.pathname
-
-    // Already open somewhere → focus it, rather than opening a second editor over one set of bytes.
-    for (const [groupId, group] of Object.entries(store.groups.value)) {
-      const instance = group.instances.find((i) => i.props?.path === path)
-      if (instance) {
-        store.activateGroup(groupId)
-        store.activatePanel(instance.instanceId, groupId)
-        return
-      }
-    }
-
-    // What opens a file is the type's question, not the panel layout's — the same registry search asks,
-    // so one file gets one answer everywhere in the application.
-    const viewer = notes.viewerFor(path)
-    if (viewer == null) {
-      // A row of the tree that nothing can open is still a real file — the vault has it, the workspace
-      // has nothing that reads this format. A click that silently did nothing was indistinguishable
-      // from a broken tree. Same wording as search's own refusal: one concept, one phrasing.
+  async function openPath(path: string): Promise<void> {
+    if (arxhub.extensions.get(NotesExtension).viewerFor(path) == null) {
       toaster.create({ title: 'Nothing can open this file', description: path, type: 'error' })
       return
     }
+    await shell.workspace.openObject(NOTES_TYPE_ID, { id: path })
+    navHost?.navigated?.()
+  }
 
-    store.openPanel(viewer.panelId, { path }, basename(path))
+  function openFile(node: TreeNode): void {
+    runAction(openPath(node.entry.pathname), 'open the file')
+  }
+
+  async function createFile(parent: string): Promise<void> {
+    const path = await explorer.createFile(parent, 'untitled.arx')
+    await openPath(path)
   }
 
   async function newFile(node: TreeNode): Promise<void> {
     const parent = node.entry.kind === 'dir' ? node.entry.pathname : dirname(node.entry.pathname)
-    await explorer.createFile(parent, 'untitled.arx')
+    await createFile(parent)
   }
 
   async function newFolder(node: TreeNode): Promise<void> {
@@ -114,7 +105,7 @@ export function useFileActions() {
         id: 'new-file',
         label: 'New File',
         icon: 'lu:file-plus',
-        onSelect: () => runAction(explorer.createFile(explorer.root, 'untitled.arx'), 'create the file'),
+        onSelect: () => runAction(createFile(explorer.root), 'create the file'),
       },
       {
         id: 'new-folder',
@@ -127,5 +118,5 @@ export function useFileActions() {
 
   // runAction is part of the surface: the toolbar and the inline rename start the same actions from a
   // plain click, and each one that reported failures on its own is one that could stop.
-  return { openFile, newFile, newFolder, startRename, confirmDelete, getNodeActions, getRootActions, runAction }
+  return { openFile, createFile, newFile, newFolder, startRename, confirmDelete, getNodeActions, getRootActions, runAction }
 }
