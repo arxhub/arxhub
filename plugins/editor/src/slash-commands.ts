@@ -59,6 +59,8 @@ export function buildBlockCommands(schema: Schema): BlockCommand[] {
     { id: 'code', label: 'Code block', icon: 'lu:code', keywords: 'код', run: setBlockType(schema.nodes.code_block) },
     { id: 'divider', label: 'Divider', icon: 'lu:minus', keywords: 'hr разделитель', run: insertLeaf('horizontal_rule') },
     { id: 'select', label: 'Dropdown', icon: 'lu:list-filter', keywords: 'select status список выбор статус', run: insertLeaf('select') },
+    { id: 'image', label: 'Image', icon: 'lu:image', keywords: 'picture photo изображение фото', run: insertLeaf('image_block') },
+    { id: 'attachment', label: 'File attachment', icon: 'lu:paperclip', keywords: 'upload file файл вложение', run: insertLeaf('attachment') },
   ]
 }
 

@@ -9,6 +9,7 @@ import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
 import { nextTick } from 'vue'
+import { createAssetStore } from './assets'
 import { ArxEditorExtension } from './editor-extension'
 import { serialize } from './editor-format'
 import { declareProseMirrorChords } from './hotkeys'
@@ -53,6 +54,7 @@ export class ArxEditorPlugin extends Plugin {
 
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
+    ctx.extensions.get(ArxEditorExtension).assets ??= createAssetStore(ctx.services.get(VaultVfs))
 
     // Both registrations stand side by side on purpose, and not for long. The viewer registry is what
     // decides WHICH editor opens a file; the panel definition is still what mounts it, and stays until

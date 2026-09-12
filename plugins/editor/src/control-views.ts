@@ -4,6 +4,7 @@ import type { EditorProps } from 'prosemirror-view'
 import { shallowReactive } from 'vue'
 import type { ArxEditorComponent } from './editor-extension'
 import { type EditorMode, editorMode } from './editor-mode'
+import AssetBlock from './ui/AssetBlock.vue'
 
 export interface ArxEditorControlProps {
   node: Node
@@ -18,11 +19,16 @@ export interface ControlView extends ArxEditorControlProps {
 }
 
 export function createControlViews(components: Readonly<Record<string, ArxEditorComponent>> = {}) {
+  const definitions: Readonly<Record<string, ArxEditorComponent>> = {
+    image_block: { component: AssetBlock },
+    attachment: { component: AssetBlock },
+    ...components,
+  }
   const controls = shallowReactive(new Map<number, ControlView>())
   let nextId = 0
   const nodeView: NonNullable<EditorProps['nodeViews']>[string] = (node, view, getPos) => {
     const task = node.type.name === 'task_item'
-    const definition = components[node.type.name]
+    const definition = definitions[node.type.name]
     const dom = document.createElement(definition?.tag ?? (task ? 'li' : 'div'))
     dom.dataset.type = node.type.name
     const host = document.createElement('div')
@@ -75,6 +81,6 @@ export function createControlViews(components: Readonly<Record<string, ArxEditor
     }
   }
   const nodeViews: NonNullable<EditorProps['nodeViews']> = { task_item: nodeView, select: nodeView }
-  for (const name of Object.keys(components)) nodeViews[name] = nodeView
+  for (const name of Object.keys(definitions)) nodeViews[name] = nodeView
   return { controls, nodeViews }
 }

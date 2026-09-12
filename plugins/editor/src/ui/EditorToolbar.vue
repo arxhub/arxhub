@@ -19,6 +19,7 @@ const props = defineProps<{
   canSave: boolean
   revision?: number
   commands: readonly BlockCommand[]
+  busy?: boolean
 }>()
 const linkOpen = ref(false)
 const mode = defineModel<EditorMode>('mode', { default: 'editable' })
@@ -94,7 +95,7 @@ const actions = computed(() => {
       },
     },
     ...props.commands
-      .filter((action) => !['select', 'divider'].includes(action.id))
+      .filter((action) => !['select', 'divider', 'image', 'attachment'].includes(action.id))
       .map((action) => ({
         id: action.id,
         label: action.label,
@@ -129,7 +130,7 @@ const actions = computed(() => {
     <template #actions>
       <Dropdown>
         <template #trigger>
-          <Button variant="ghost" :aria-label="`Editor mode: ${modeLabel}`">{{ modeLabel }}</Button>
+          <Button variant="ghost" :disabled="busy" :aria-label="`Editor mode: ${modeLabel}`">{{ modeLabel }}</Button>
         </template>
         <MenuItem v-for="item in modes" :key="item.value" :value="item.value" :title="item.description" @select="selectMode(item.value)">{{ item.label }}</MenuItem>
       </Dropdown>

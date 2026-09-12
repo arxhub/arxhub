@@ -1,3 +1,4 @@
+export type { ArxAsset, ArxAssetStore } from './assets'
 export type { ArxEditorControlProps } from './control-views'
 export { type ArxEditorComponent, type ArxEditorContribution, ArxEditorExtension, type ArxEditorKit } from './editor-extension'
 export type { ControlPolicy, EditorMode } from './editor-mode'

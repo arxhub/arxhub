@@ -11,7 +11,9 @@ import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
 import { EditorState, TextSelection } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
-import { computed, onUnmounted, ref, shallowRef, toRef, useId, watch } from 'vue'
+import { computed, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
+import { ARX_ASSETS, createAssetSession } from '../asset-session'
+import { createAssetStore } from '../assets'
 import { blockSelectionPlugin } from '../block-selection'
 import { createControlViews } from '../control-views'
 import { ArxEditorExtension } from '../editor-extension'
@@ -36,9 +38,12 @@ const AUTOSAVE_DEBOUNCE_MS = 1500
 const props = defineProps<{ path: string; anchor?: BlockAnchor }>()
 
 const arxhub = useArxHub()
-const kit = arxhub.extensions.get(ArxEditorExtension).kit
+const extension = arxhub.extensions.get(ArxEditorExtension)
+const kit = extension.kit
 const { schema } = kit
 const vfs = arxhub.services.get(VaultVfs)
+const assets = createAssetSession(extension.assets ?? createAssetStore(vfs))
+provide(ARX_ASSETS, assets)
 const notes = arxhub.extensions.get(NotesExtension)
 const editorEl = ref<HTMLDivElement>()
 const view = shallowRef<EditorView | null>(null)
@@ -69,10 +74,11 @@ useHotkeyLayer(useHotkeysExtension(), { id: PROSEMIRROR_LAYER, kind: 'editor' },
 
 function buildPlugins() {
   return [
-    modePlugin(mode.value, kit.controls, Object.keys(kit.components)),
+    modePlugin(mode.value, kit.controls, [...Object.keys(kit.components), 'image_block', 'attachment']),
     slashCommands(slashMenuId, kit.commands),
     history(),
     blockSelectionPlugin(),
+    assets.plugin,
     ...kit.plugins(),
     keymap(buildKeymap(schema)),
     inputRules({ rules: buildInputRules(schema) }),
@@ -148,7 +154,7 @@ function warnUnsaved(event: BeforeUnloadEvent) {
 }
 
 watch(
-  () => edits.value !== savedEdits.value,
+  () => edits.value !== savedEdits.value || assets.pending.value > 0,
   (dirty) => {
     if (dirty) window.addEventListener('beforeunload', warnUnsaved)
     else window.removeEventListener('beforeunload', warnUnsaved)
@@ -216,6 +222,7 @@ async function save() {
 
 async function beforeClose(): Promise<boolean> {
   try {
+    await assets.wait()
     // flush() may join an older in-flight write. Keep the view until all edits made since it began
     // have reached storage too; a failure leaves the buffer available for retry.
     while (savedEdits.value !== edits.value) {
@@ -239,6 +246,7 @@ watch(
 )
 
 onUnmounted(() => {
+  assets.dispose()
   window.removeEventListener('beforeunload', warnUnsaved)
   autosave.cancel()
   view.value?.destroy()
@@ -248,16 +256,20 @@ onUnmounted(() => {
 
 <template>
   <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" />
+    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" :busy="assets.pending.value > 0" />
     <div v-if="loadError" class="editor-error">
       <span>{{ (loadError instanceof Error ? loadError.message : String(loadError)) || "Couldn't load this file." }} Saving is disabled.</span>
       <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>
+    </div>
+    <div v-if="assets.error.value" class="editor-error" role="alert">
+      <span>{{ assets.error.value }}</span><Button variant="secondary" @click="assets.retry">Retry upload</Button><Button variant="ghost" @click="assets.dismiss">Dismiss</Button>
     </div>
     <div v-show="!loadError" ref="editorEl" class="editor-content" @scroll="dismissSlash" />
     <BlockHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" />
     <SlashMenu v-if="view && slashMenu && !loadError" :view="view" :menu="slashMenu" :menu-id="slashMenuId" :commands="kit.commands" />
     <div class="editor-status" role="status" aria-live="polite">
       <span>{{ saveStatus }}</span>
+      <span v-if="assets.pending.value" role="status">Uploading attachment…</span>
       <Button v-if="saveError" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button>
       <span v-if="mode === 'readonly'">Read only · Select and copy text</span>
       <span v-else-if="mode === 'interactive'">Interactive · Change values; text stays protected</span>
