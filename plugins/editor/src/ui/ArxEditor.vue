@@ -9,13 +9,14 @@ import { VaultVfs } from '@arxhub/vfs'
 import { history } from 'prosemirror-history'
 import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
-import { EditorState, TextSelection } from 'prosemirror-state'
+import { EditorState } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { computed, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
 import { ARX_ASSETS, createAssetSession } from '../asset-session'
 import { createAssetStore } from '../assets'
 import { blockSelectionPlugin } from '../block-selection'
 import { createControlViews } from '../control-views'
+import { documentBlocks, documentHref, documentLinksPlugin, revealBlock } from '../document-links'
 import { focusDocument } from '../document-navigation'
 import { documentSearchKey, documentSearchPlugin } from '../document-search'
 import { ArxEditorExtension } from '../editor-extension'
@@ -27,6 +28,7 @@ import { PROSEMIRROR_LAYER } from '../hotkeys'
 import { slashCommands, slashKey } from '../slash-commands'
 import ArxComponentHost from './ArxComponentHost.vue'
 import BlockHandle from './BlockHandle.vue'
+import DocumentBacklinks from './DocumentBacklinks.vue'
 import DocumentFind from './DocumentFind.vue'
 import DocumentOutline from './DocumentOutline.vue'
 import EditorToolbar from './EditorToolbar.vue'
@@ -55,6 +57,7 @@ const revision = ref(0)
 const mode = ref<EditorMode>('editable')
 const findOpen = ref(false)
 const outlineOpen = ref(false)
+const backlinksOpen = ref(false)
 const slashMenuId = useId()
 const { controls, nodeViews } = createControlViews(kit.components)
 const slashMenu = computed(() => {
@@ -85,6 +88,12 @@ function buildPlugins() {
     history(),
     blockSelectionPlugin(),
     assets.plugin,
+    documentLinksPlugin(
+      () => props.path,
+      extension.links,
+      (error) =>
+        toaster.create({ title: 'Could not open link', description: error instanceof Error ? error.message : String(error), type: 'error' }),
+    ),
     documentSearchPlugin(() => {
       findOpen.value = true
     }),
@@ -187,18 +196,29 @@ function closeFind() {
 function reveal(anchor: BlockAnchor): boolean {
   const current = view.value
   if (current == null) return false
-  let found: number | null = null
-  current.state.doc.descendants((node, pos) => {
-    if (found != null) return false
-    if (!node.isTextblock) return true
-    const index = node.textContent.toLowerCase().indexOf(anchor.text.toLowerCase())
-    if (index >= 0) found = pos + 1 + index
-    return false
+  const selection = revealBlock(current.state.doc, anchor)
+  if (!selection) return false
+  current.dispatch(current.state.tr.setSelection(selection).scrollIntoView())
+  requestAnimationFrame(() => {
+    if (!current.isDestroyed) focusDocument(current)
   })
-  if (found == null) return false
-  current.dispatch(current.state.tr.setSelection(TextSelection.create(current.state.doc, found, found + anchor.text.length)).scrollIntoView())
-  requestAnimationFrame(() => current.focus())
   return true
+}
+
+async function copyBlockLink() {
+  const current = view.value
+  if (!current || !canSave.value) return
+  const position = current.state.selection.from
+  const block = documentBlocks(current.state.doc).find((item) => {
+    const selection = revealBlock(current.state.doc, item.anchor)
+    return selection && selection.from <= position && selection.to >= position
+  })
+  try {
+    await navigator.clipboard.writeText(documentHref(props.path, block?.anchor))
+    toaster.create({ title: block ? 'Block link copied' : 'Document link copied', type: 'success' })
+  } catch {
+    toaster.create({ title: 'Could not copy link', description: 'The browser did not allow clipboard access.', type: 'error' })
+  }
 }
 
 onUnmounted(notes.registerOpenView(() => props.path, reveal, beforeClose))
@@ -273,9 +293,10 @@ onUnmounted(() => {
 
 <template>
   <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" :busy="assets.pending.value > 0" @find="findOpen = true" @outline="outlineOpen = true" />
+    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" :busy="assets.pending.value > 0" :links="extension.links" :path="path" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" />
     <DocumentFind v-if="findOpen && view && canSave" :view="view" :revision="revision" :mode="mode" @close="closeFind" />
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
+    <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
     <div v-if="loadError" class="editor-error">
       <span>{{ (loadError instanceof Error ? loadError.message : String(loadError)) || "Couldn't load this file." }} Saving is disabled.</span>
       <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>

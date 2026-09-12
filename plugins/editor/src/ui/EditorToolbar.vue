@@ -6,6 +6,7 @@ import type { Command } from 'prosemirror-state'
 import type { EditorView } from 'prosemirror-view'
 import { computed, nextTick, ref } from 'vue'
 import { insertBlock } from '../block-actions'
+import type { ArxDocumentLinks } from '../document-links'
 import { focusDocument } from '../document-navigation'
 import { buildKeymap } from '../editor-keymap'
 import type { EditorMode } from '../editor-mode'
@@ -21,9 +22,11 @@ const props = defineProps<{
   revision?: number
   commands: readonly BlockCommand[]
   busy?: boolean
+  links?: ArxDocumentLinks | null
+  path?: string
 }>()
 const linkOpen = ref(false)
-const emit = defineEmits<{ find: []; outline: [] }>()
+const emit = defineEmits<{ find: []; outline: []; backlinks: []; copyLink: [] }>()
 const mode = defineModel<EditorMode>('mode', { default: 'editable' })
 const modes: { value: EditorMode; label: string; description: string }[] = [
   { value: 'readonly', label: 'Read only', description: 'Read and copy; no changes' },
@@ -136,6 +139,8 @@ const actions = computed(() => {
         <template #trigger><IconButton icon="lu:ellipsis-vertical" tooltip="Document tools" :disabled="!canSave" /></template>
         <MenuItem value="find" @select="emit('find')">Find in document</MenuItem>
         <MenuItem value="outline" @select="emit('outline')">Document outline</MenuItem>
+        <MenuItem v-if="links" value="backlinks" @select="emit('backlinks')">Backlinks</MenuItem>
+        <MenuItem v-if="links" value="copy-block-link" @select="emit('copyLink')">Copy link to block</MenuItem>
       </Dropdown>
       <Dropdown>
         <template #trigger>
@@ -146,5 +151,5 @@ const actions = computed(() => {
       <Button v-if="mode !== 'readonly'" variant="secondary" :disabled="!canSave" @click="onSave?.()">Save</Button>
     </template>
   </Strip>
-  <LinkDialog v-if="linkOpen && view && mode === 'editable'" :view="view" @close="linkOpen = false" />
+  <LinkDialog v-if="linkOpen && view && mode === 'editable'" :view="view" :links="links" :path="path" @close="linkOpen = false" />
 </template>

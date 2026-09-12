@@ -5,6 +5,7 @@ import { type MarkSpec, type NodeSpec, Schema } from 'prosemirror-model'
 import type { Plugin } from 'prosemirror-state'
 import type { Component } from 'vue'
 import type { ArxAssetStore } from './assets'
+import type { ArxDocumentLinks } from './document-links'
 import { type ControlPolicy, DEFAULT_CONTROL_POLICIES } from './editor-mode'
 import { schema as baseSchema } from './editor-schema'
 import { type BlockCommand, buildBlockCommands } from './slash-commands'
@@ -37,6 +38,7 @@ export interface ArxEditorKit {
 // NodeTypes cannot be replaced without rebuilding its history and component views.
 export class ArxEditorExtension extends Extension {
   assets: ArxAssetStore | null = null
+  links: ArxDocumentLinks | null = null
   private readonly contributions = new Container<ArxEditorContribution>('Editor contribution')
   private built: ArxEditorKit | null = null
 

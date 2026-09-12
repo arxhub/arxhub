@@ -2,14 +2,17 @@
 import { Button, Dialog, Input } from '@arxhub/uikit/core'
 import type { EditorView } from 'prosemirror-view'
 import { computed, ref, useId } from 'vue'
+import type { ArxDocumentLinks } from '../document-links'
 import { linkAtSelection, safeLink, setLink } from '../link-commands'
+import DocumentPicker from './DocumentPicker.vue'
 
-const props = defineProps<{ view: EditorView }>()
+const props = defineProps<{ view: EditorView; links?: ArxDocumentLinks | null; path?: string }>()
 const emit = defineEmits<{ close: [] }>()
 const formId = useId()
 const existing = linkAtSelection(props.view.state)
 const href = ref(existing?.href ?? '')
 const valid = computed(() => safeLink(href.value) !== null)
+const browsing = ref(false)
 function apply(value: string | null) {
   if (props.view.isDestroyed) return
   if (setLink(value)(props.view.state, props.view.dispatch)) emit('close')
@@ -22,6 +25,8 @@ function apply(value: string | null) {
       <label>Address<Input v-model="href" aria-label="Link address" placeholder="https://example.com" /></label>
       <p v-if="href && !valid" class="link-error" role="alert">Use a web address, email, phone number or relative path.</p>
     </form>
+    <Button v-if="links" variant="secondary" @click="browsing = !browsing">Choose document or block</Button>
+    <DocumentPicker v-if="browsing && links" :links="links" :path="path ?? ''" :view="view" @choose="href = $event; browsing = false" />
     <template #footer>
       <Button v-if="existing" variant="ghost" @click="apply(null)">Remove link</Button>
       <Button variant="ghost" @click="emit('close')">Cancel</Button>

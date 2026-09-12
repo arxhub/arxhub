@@ -1347,6 +1347,9 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
+      '@arxhub/plugin-search':
+        specifier: workspace:*
+        version: link:../search
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell

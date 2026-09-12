@@ -4,12 +4,14 @@ import { ExplorerExtension, type TreeNode } from '@arxhub/plugin-explorer/ui'
 import { HotkeysExtension } from '@arxhub/plugin-hotkeys/ui'
 import { NOTES_TYPE_ID, NotesExtension, type NoteViewer } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { SearchExtension } from '@arxhub/plugin-search/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
 import { nextTick } from 'vue'
 import { createAssetStore } from './assets'
+import { createDocumentLinkStore } from './document-link-store'
 import { ArxEditorExtension } from './editor-extension'
 import { serialize } from './editor-format'
 import { declareProseMirrorChords } from './hotkeys'
@@ -55,6 +57,18 @@ export class ArxEditorPlugin extends Plugin {
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
     ctx.extensions.get(ArxEditorExtension).assets ??= createAssetStore(ctx.services.get(VaultVfs))
+    const editor = ctx.extensions.get(ArxEditorExtension)
+    editor.links ??= createDocumentLinkStore(
+      ctx.services.get(VaultVfs),
+      () => editor.kit.schema,
+      async (path, anchor) => {
+        await ctx.extensions.get(ShellExtension).workspace.openObject(NOTES_TYPE_ID, {
+          id: path,
+          ...(anchor ? { at: { text: anchor.text, ...(anchor.skip ? { skip: anchor.skip } : {}) } } : {}),
+        })
+      },
+      ctx.extensions.has(SearchExtension) ? ctx.extensions.get(SearchExtension) : undefined,
+    )
 
     // Both registrations stand side by side on purpose, and not for long. The viewer registry is what
     // decides WHICH editor opens a file; the panel definition is still what mounts it, and stays until
