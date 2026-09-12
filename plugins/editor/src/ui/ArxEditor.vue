@@ -16,6 +16,8 @@ import { ARX_ASSETS, createAssetSession } from '../asset-session'
 import { createAssetStore } from '../assets'
 import { blockSelectionPlugin } from '../block-selection'
 import { createControlViews } from '../control-views'
+import { focusDocument } from '../document-navigation'
+import { documentSearchKey, documentSearchPlugin } from '../document-search'
 import { ArxEditorExtension } from '../editor-extension'
 import { deserialize, emptyDoc, serialize } from '../editor-format'
 import { buildInputRules } from '../editor-input-rules'
@@ -25,6 +27,8 @@ import { PROSEMIRROR_LAYER } from '../hotkeys'
 import { slashCommands, slashKey } from '../slash-commands'
 import ArxComponentHost from './ArxComponentHost.vue'
 import BlockHandle from './BlockHandle.vue'
+import DocumentFind from './DocumentFind.vue'
+import DocumentOutline from './DocumentOutline.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import SlashMenu from './SlashMenu.vue'
 import 'prosemirror-view/style/prosemirror.css'
@@ -49,6 +53,8 @@ const editorEl = ref<HTMLDivElement>()
 const view = shallowRef<EditorView | null>(null)
 const revision = ref(0)
 const mode = ref<EditorMode>('editable')
+const findOpen = ref(false)
+const outlineOpen = ref(false)
 const slashMenuId = useId()
 const { controls, nodeViews } = createControlViews(kit.components)
 const slashMenu = computed(() => {
@@ -79,6 +85,9 @@ function buildPlugins() {
     history(),
     blockSelectionPlugin(),
     assets.plugin,
+    documentSearchPlugin(() => {
+      findOpen.value = true
+    }),
     ...kit.plugins(),
     keymap(buildKeymap(schema)),
     inputRules({ rules: buildInputRules(schema) }),
@@ -165,6 +174,14 @@ watch(
 function dismissSlash() {
   const current = view.value
   if (current && slashKey.getState(current.state)) current.dispatch(current.state.tr.setMeta(slashKey, 'dismiss'))
+}
+
+function closeFind() {
+  findOpen.value = false
+  const current = view.value
+  if (!current) return
+  current.dispatch(current.state.tr.setMeta(documentSearchKey, { query: '' }))
+  focusDocument(current)
 }
 
 function reveal(anchor: BlockAnchor): boolean {
@@ -256,7 +273,9 @@ onUnmounted(() => {
 
 <template>
   <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" :busy="assets.pending.value > 0" />
+    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" :busy="assets.pending.value > 0" @find="findOpen = true" @outline="outlineOpen = true" />
+    <DocumentFind v-if="findOpen && view && canSave" :view="view" :revision="revision" :mode="mode" @close="closeFind" />
+    <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <div v-if="loadError" class="editor-error">
       <span>{{ (loadError instanceof Error ? loadError.message : String(loadError)) || "Couldn't load this file." }} Saving is disabled.</span>
       <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>
@@ -332,6 +351,8 @@ onUnmounted(() => {
   outline-offset: 1px;
   background: var(--accent-3);
 }
+.editor-content :deep(.arx-find-match) { background: var(--warning-4); }
+.editor-content :deep(.arx-find-current) { outline: 2px solid var(--accent-8); outline-offset: 1px; }
 /* design-ignore DS type ramp: this is the CONTENT of a note, not chrome. A heading inside a document
    scales with the body it sits in, so these are relative to --font-size-md rather than steps of the
    chrome ramp — the ramp has no note-heading step and should not grow one. */

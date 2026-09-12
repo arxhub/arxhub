@@ -12,6 +12,7 @@ export const PROSEMIRROR_LAYER = 'editor:arxhub.editor'
 // of the APPLICATION, and a list that reached down to Enter would be the beginning of the registry
 // learning about the caret.
 export const PROSEMIRROR_BINDINGS: HotkeyBinding[] = [
+  { id: 'editor.find', chord: 'Mod-f', layer: PROSEMIRROR_LAYER, title: 'Find in document' },
   { id: 'editor.bold', chord: 'Mod-b', layer: PROSEMIRROR_LAYER, title: 'Bold' },
   { id: 'editor.italic', chord: 'Mod-i', layer: PROSEMIRROR_LAYER, title: 'Italic' },
   { id: 'editor.code', chord: 'Mod-`', layer: PROSEMIRROR_LAYER, title: 'Inline code' },

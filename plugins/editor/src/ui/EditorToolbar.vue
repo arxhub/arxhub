@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { actionMenu, Button, Dropdown, FormattingToolbar, MenuItem, Strip } from '@arxhub/uikit/core'
+import { actionMenu, Button, Dropdown, FormattingToolbar, IconButton, MenuItem, Strip } from '@arxhub/uikit/core'
 import { toggleMark } from 'prosemirror-commands'
 import type { MarkType } from 'prosemirror-model'
 import type { Command } from 'prosemirror-state'
 import type { EditorView } from 'prosemirror-view'
 import { computed, nextTick, ref } from 'vue'
 import { insertBlock } from '../block-actions'
+import { focusDocument } from '../document-navigation'
 import { buildKeymap } from '../editor-keymap'
 import type { EditorMode } from '../editor-mode'
 import type { BlockCommand } from '../slash-commands'
@@ -22,6 +23,7 @@ const props = defineProps<{
   busy?: boolean
 }>()
 const linkOpen = ref(false)
+const emit = defineEmits<{ find: []; outline: [] }>()
 const mode = defineModel<EditorMode>('mode', { default: 'editable' })
 const modes: { value: EditorMode; label: string; description: string }[] = [
   { value: 'readonly', label: 'Read only', description: 'Read and copy; no changes' },
@@ -33,7 +35,9 @@ const modeLabel = computed(() => modes.find((item) => item.value === mode.value)
 async function selectMode(value: EditorMode) {
   mode.value = value
   await nextTick()
-  props.view?.focus()
+  requestAnimationFrame(() => {
+    if (props.view && !props.view.isDestroyed) focusDocument(props.view)
+  })
 }
 
 function cmd(command: Command) {
@@ -128,6 +132,11 @@ const actions = computed(() => {
   <Strip>
     <FormattingToolbar v-if="mode === 'editable' && canSave" :actions="actions" />
     <template #actions>
+      <Dropdown>
+        <template #trigger><IconButton icon="lu:ellipsis-vertical" tooltip="Document tools" :disabled="!canSave" /></template>
+        <MenuItem value="find" @select="emit('find')">Find in document</MenuItem>
+        <MenuItem value="outline" @select="emit('outline')">Document outline</MenuItem>
+      </Dropdown>
       <Dropdown>
         <template #trigger>
           <Button variant="ghost" :disabled="busy" :aria-label="`Editor mode: ${modeLabel}`">{{ modeLabel }}</Button>
