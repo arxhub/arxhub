@@ -79,3 +79,36 @@ test('a copied document gets its own history identity', async ({ app, vault }) =
   await expect.poll(async () => JSON.parse(await vault.read(copy)).documentId).not.toBe(JSON.parse(saved).documentId)
   expect(JSON.parse(await vault.read(original)).documentId).toBe(JSON.parse(saved).documentId)
 })
+
+test('one block can be restored while a different edited block stays current', async ({ app, vault }) => {
+  const path = await vault.write(
+    `${test.info().project.name}-partial.arx`,
+    JSON.stringify({
+      version: 1,
+      doc: {
+        type: 'doc',
+        content: ['First original', 'Second original'].map((text) => ({ type: 'paragraph', content: [{ type: 'text', text }] })),
+      },
+    }),
+  )
+  await app.reload()
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click()
+  const editor = app.locator('.ProseMirror:visible')
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(app.locator('.editor-status')).toContainText('Saved')
+  await editor.locator('p').first().fill('First changed')
+  await editor.locator('p').last().fill('Second changed')
+  const dialog = await versions(app)
+  await dialog.getByRole('navigation', { name: 'Saved document versions' }).getByRole('button').first().click()
+  await dialog
+    .getByRole('navigation', { name: 'Changes from saved version' })
+    .getByRole('button', { name: 'changed · First changed', exact: true })
+    .click()
+  await expect(dialog.getByLabel('Saved block preview')).toContainText('First original')
+  await dialog.getByRole('button', { name: 'Restore selected block', exact: true }).click()
+  await expect(dialog).toBeHidden()
+  await expect(editor.locator('p')).toHaveText(['First original', 'Second changed'])
+  await app.reload()
+  await expect(editor.locator('p')).toHaveText(['First original', 'Second changed'])
+})

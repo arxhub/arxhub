@@ -125,15 +125,19 @@ export function createHistoryStore(
 }
 
 export function versionText(doc: Node): string {
+  if (doc.isTextblock) return doc.textContent
+  if (doc.isAtom && !doc.isText)
+    return `[${doc.type.name}] ${JSON.stringify(Object.fromEntries(Object.entries(doc.attrs).filter(([key]) => key !== 'arxId')))}`
   const parts: string[] = []
   doc.descendants((node) => {
+    if (node.type.name === 'task_item') parts.push(node.attrs.checked ? '[Completed]' : '[Incomplete]')
     if (node.type.name === 'section') parts.push(String(node.attrs.title))
     if (node.isTextblock) {
       parts.push(node.textContent)
       return false
     }
     if (node.isAtom && !node.isText) {
-      parts.push(`[${node.type.name}] ${node.attrs.caption ?? node.attrs.name ?? node.attrs.label ?? ''}`)
+      parts.push(versionText(node))
       return false
     }
     return true

@@ -35,6 +35,7 @@ import { buildKeymap } from '../editor-keymap'
 import { type EditorMode, editorModeKey, modePlugin } from '../editor-mode'
 import { PROSEMIRROR_LAYER } from '../hotkeys'
 import { slashCommands, slashKey } from '../slash-commands'
+import { restoreVersionBlock } from '../version-diff'
 import ArxComponentHost from './ArxComponentHost.vue'
 import BlockHandle from './BlockHandle.vue'
 import DocumentBacklinks from './DocumentBacklinks.vue'
@@ -404,7 +405,7 @@ async function resolveRecovery(action: 'draft' | 'saved' | 'both') {
   }
 }
 
-async function restoreVersion(content: string): Promise<void> {
+async function restoreVersion(content: string, block?: string): Promise<void> {
   if (mode.value !== 'editable' || !view.value || !canSave.value) throw validation('Switch to Editable to restore a version.')
   const id = documentId(view.value.state.doc)
   if (!id) throw validation('The document has no history identity.')
@@ -412,9 +413,11 @@ async function restoreVersion(content: string): Promise<void> {
   if (!(await beforeClose())) throw validation('Your current draft could not be saved. Retry before restoring a version.')
   const current = view.value
   if (!current || !canSave.value || mode.value !== 'editable') throw validation('The document is no longer editable.')
-  const tr = current.state.tr
-    .replaceWith(0, current.state.doc.content.size, restored.content)
-    .setDocAttribute('arxEnvelope', restored.attrs.arxEnvelope)
+  const tr = block
+    ? restoreVersionBlock(current.state, restored, block)
+    : current.state.tr
+        .replaceWith(0, current.state.doc.content.size, restored.content)
+        .setDocAttribute('arxEnvelope', restored.attrs.arxEnvelope)
   current.dispatch(closeHistory(tr).setSelection(Selection.atStart(tr.doc)).scrollIntoView())
   await autosave.flush()
 }
@@ -477,7 +480,7 @@ onUnmounted(() => {
     <DocumentFind v-if="findOpen && view && canSave" :view="view" :revision="revision" :mode="mode" @close="closeFind" />
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
-    <DocumentVersions v-if="versionsOpen && extension.history && historyId" :store="extension.history" :document-id="historyId" :kit="kit" :mode="mode" :restore="restoreVersion" @close="versionsOpen = false" />
+    <DocumentVersions v-if="versionsOpen && extension.history && historyId && view" :store="extension.history" :current="view.state.doc" :document-id="historyId" :kit="kit" :mode="mode" :restore="restoreVersion" @close="versionsOpen = false" />
     <DocumentRecovery v-if="recovery" :kit="kit" :saved="recovery.saved" :draft="recovery.draft.content" :conflict="recovery.conflict" :busy="recoveryBusy" :error="recoveryError" @choose="resolveRecovery" />
     <div v-if="draftError" class="editor-error" role="alert"><span>Draft backup unavailable: {{ draftError }}</span><Button variant="secondary" @click="backupDraft()">Retry draft backup</Button></div>
     <div v-if="loadError" class="editor-error">
