@@ -16,6 +16,7 @@ import { EditorView } from 'prosemirror-view'
 import { computed, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
 import { ARX_ASSETS, createAssetSession } from '../asset-session'
 import { createAssetStore } from '../assets'
+import { blockMarqueePlugin } from '../block-marquee'
 import { blockSelectionPlugin } from '../block-selection'
 import { codeHighlighting } from '../code-highlighting'
 import { createControlViews } from '../control-views'
@@ -96,6 +97,7 @@ function buildPlugins() {
     modePlugin(mode.value, kit.controls, [...Object.keys(kit.components), 'image_block', 'attachment', 'code_block', 'section']),
     slashCommands(slashMenuId, kit.commands),
     history(),
+    blockMarqueePlugin(),
     blockSelectionPlugin(),
     assets.plugin,
     codeHighlighting(),
@@ -417,6 +419,14 @@ onUnmounted(() => {
   outline: 2px solid var(--accent-8);
   outline-offset: 1px;
   background: var(--accent-3);
+}
+.editor-content :deep(.arx-block-marquee) {
+  position: fixed;
+  pointer-events: none;
+  border: 1px solid var(--accent-8);
+  background: color-mix(in srgb, var(--accent-8) 16%, transparent);
+  box-sizing: border-box;
+  z-index: 1;
 }
 .editor-content :deep(.arx-find-match) { background: var(--warning-4); }
 .editor-content :deep(.arx-find-current) { outline: 2px solid var(--accent-8); outline-offset: 1px; }
