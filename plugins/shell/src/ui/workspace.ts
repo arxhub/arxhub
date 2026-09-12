@@ -330,14 +330,14 @@ export class Workspace {
   async restore(state: WorkspaceState): Promise<void> {
     this.reset()
 
-    for (const typeState of state.types ?? []) {
+    for (const typeState of Array.isArray(state.types) ? state.types : []) {
       const type = typeState == null ? undefined : this.types.get(typeState.id)
       if (type == null) continue
       this.ensureSpace(type)
       const space = this.spaces.get(type.id)
       if (space?.kind !== 'objects' || !isObjectType(type)) continue
 
-      for (const tab of typeState.tabs ?? []) {
+      for (const tab of Array.isArray(typeState.tabs) ? typeState.tabs : []) {
         if (tab == null || typeof tab.key !== 'string') continue
         // The type is allowed to throw: `revive` reads a store, and a store can be unavailable — the
         // network is down, the server answers 500, the disk is busy. ONE tab failing must not cost the

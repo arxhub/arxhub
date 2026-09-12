@@ -211,6 +211,14 @@ export class WorkspaceStorage {
         activeTypeId: typeof state.activeTypeId === 'string' ? state.activeTypeId : null,
         types: state.types as WorkspaceState['types'],
       })
+    } catch {
+      // A host or layout can fail after restoring some tabs. Keep the original record and recover
+      // before the composition root awaits us to mount the application.
+      this.keepAside(raw)
+      this.workspace.reset()
+      this.nav = {}
+      this.column = {}
+      return false
     } finally {
       this.restoring = false
     }

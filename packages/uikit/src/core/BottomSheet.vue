@@ -3,7 +3,7 @@ import { Dialog } from '@ark-ui/vue'
 import { ref, watch } from 'vue'
 import { useBackStack } from '../hooks/useBackStack'
 
-const props = defineProps<{ open: boolean; title?: string; label?: string }>()
+const props = withDefaults(defineProps<{ open: boolean; title?: string; label?: string; restoreFocus?: boolean }>(), { restoreFocus: true })
 const emit = defineEmits<{ close: [] }>()
 
 const sheetEl = ref<HTMLElement | null>(null)
@@ -50,7 +50,7 @@ function onPointerUp(): void {
 </script>
 
 <template>
-  <Dialog.Root :open="open" :final-focus-el="finalFocus" @update:open="$event || emit('close')">
+  <Dialog.Root :open="open" :restore-focus="restoreFocus" :final-focus-el="finalFocus" @update:open="$event || emit('close')">
     <Teleport to="body">
       <Dialog.Positioner v-if="open" class="sheet-backdrop" @click.self="emit('close')">
         <Dialog.Content

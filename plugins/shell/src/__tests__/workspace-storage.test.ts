@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Component } from 'vue'
 import { type OpenedObject, objectGone, type TabType } from '../ui/tab-type'
 import { TabTypeRegistry } from '../ui/tab-type-registry'
@@ -111,6 +111,38 @@ beforeEach(() => {
 })
 
 describe('WorkspaceStorage: a subsystem of its own, not a field on something else', () => {
+  test.each([{}, 'invalid', 12, null])('invalid tabs (%j) do not prevent restoring other types', async (tabs) => {
+    const bench = build()
+    bench.storage.setItem(
+      WORKSPACE_KEY,
+      JSON.stringify({ v: WORKSPACE_VERSION, workspace: { activeTypeId: 'settings', types: [{ id: 'notes', tabs }, { id: 'settings' }] } }),
+    )
+    expect(await bench.saved.restore()).toBe(true)
+    expect(bench.workspace.openTypeIds.value).toEqual(['notes', 'settings'])
+    expect(bench.workspace.activeTypeId.value).toBe('settings')
+    expect(bench.workspace.tabsOf('notes')).toEqual([])
+  })
+
+  test('a failed host restoration keeps the original record and allows a fresh workspace', async () => {
+    const bench = build()
+    await bench.workspace.openObject('notes', { id: 'a.md' })
+    const original = bench.storage.getItem(WORKSPACE_KEY)
+    const failingLayout = vi.spyOn(FakePanelHost.prototype, 'applyLayout').mockImplementationOnce(() => {
+      throw new Error('invalid layout')
+    })
+    try {
+      expect(await bench.saved.restore()).toBe(false)
+      expect(bench.workspace.openTypeIds.value).toEqual([])
+      expect(bench.storage.getItem(WORKSPACE_BACKUP_KEY)).toBe(original)
+      expect(bench.storage.getItem(WORKSPACE_KEY)).toBe(original)
+      await bench.workspace.openObject('notes', { id: 'b.md' })
+      expect(bench.workspace.activeTab()?.key).toBe('note:b.md')
+      expect(bench.saved.save()).toBe(true)
+    } finally {
+      failingLayout.mockRestore()
+    }
+  })
+
   test('the whole desk is one record under one key, not a scattering', async () => {
     const bench = build()
     await bench.workspace.openObject('notes', { id: 'a.md' })

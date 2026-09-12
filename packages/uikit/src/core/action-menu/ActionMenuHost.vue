@@ -10,6 +10,8 @@ const state = useActionMenuState()
 // Two presentations of one action list: a popover under the pointer, or a sheet in thumb reach.
 const isMobile = useShellFrame() === 'mobile'
 const menuEl = ref<HTMLElement | null>(null)
+let opener: HTMLElement | null = null
+let selectedAction: (() => void) | null = null
 
 // Where the menu actually lands, which is the pointer only while the whole menu fits there. A menu is
 // opened by a right-click, and a right-click near the bottom of a long list is the ordinary case, not
@@ -35,10 +37,8 @@ function place(): void {
 
 function run(item: { disabled?: boolean; onSelect: () => void }) {
   if (item.disabled) return
+  selectedAction = item.onSelect
   actionMenu.close()
-  // A selected action can focus an inline rename or open another dialog. Let the old sheet release
-  // its focus trap and restore its opener before handing focus to that action.
-  nextTick(() => requestAnimationFrame(() => item.onSelect()))
 }
 
 // Roving focus over the enabled items (desktop menu — see onMenuKeydown).
@@ -72,7 +72,19 @@ watch(
   () => state.value.open,
   (open) => {
     anchored = false
-    if (!open || isMobile) return
+    if (!open) {
+      const action = selectedAction
+      selectedAction = null
+      // Ark restores focus on a timer. This menu owns the handoff instead: release the trap,
+      // restore the opener, then let an action focus its input or open the next dialog.
+      nextTick(() => {
+        if (opener?.isConnected && opener.getClientRects().length) opener.focus()
+        action?.()
+      })
+      return
+    }
+    opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    if (isMobile) return
     placement.value = { x: state.value.x, y: state.value.y, placed: false }
     nextTick(() => {
       place()
@@ -164,7 +176,7 @@ onBeforeUnmount(() => {
   </Teleport>
 
   <!-- Narrow screens get the same items as a bottom sheet: one list of actions, declared once. -->
-  <BottomSheet :open="state.open && isMobile" :title="state.title" label="Actions" @close="actionMenu.close()">
+  <BottomSheet :open="state.open && isMobile" :title="state.title" :restore-focus="false" label="Actions" @close="actionMenu.close()">
     <div class="action-sheet" role="menu">
       <Row
         v-for="item in state.items"

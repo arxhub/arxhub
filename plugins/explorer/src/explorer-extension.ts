@@ -82,20 +82,29 @@ export class ExplorerExtension extends Extension {
   async loadRoot(): Promise<void> {
     const entries = await this.vfs.list(this.root)
     this.tree.value = reconcile(entries, this.tree.value)
+    await this.refreshExpanded(this.tree.value)
   }
 
   async expand(node: TreeNode): Promise<void> {
     const entries = await this.vfs.list(node.entry.pathname)
     node.children = reconcile(entries, node.children ?? [])
     node.expanded = true
+    await this.refreshExpanded(node.children)
+  }
+
+  private async refreshExpanded(nodes: TreeNode[]): Promise<void> {
+    for (const node of nodes) {
+      if (node.entry.kind !== 'dir' || !node.expanded) continue
+      const entries = await this.vfs.list(node.entry.pathname)
+      node.children = reconcile(entries, node.children ?? [])
+      await this.refreshExpanded(node.children)
+    }
   }
 
   collapse(node: TreeNode): void {
     node.expanded = false
   }
 
-  // Folds every open node back to the top level without discarding their fetched children, so
-  // re-expanding any of them is instant rather than a new vfs.list() round trip.
   collapseAll(): void {
     const walk = (nodes: TreeNode[]) => {
       for (const node of nodes) {
