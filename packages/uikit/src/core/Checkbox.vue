@@ -83,6 +83,10 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
   color: var(--accent-contrast);
 }
 
+.indicator[hidden] {
+  display: none;
+}
+
 .label {
   font-size: var(--font-size-sm);
   color: var(--gray-12);

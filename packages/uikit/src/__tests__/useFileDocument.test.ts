@@ -14,6 +14,27 @@ function transportError(): AppError {
 }
 
 describe('useFileDocument', () => {
+  test('a failed view application stops loading, blocks saving and can be retried', async () => {
+    let fails = true
+    const failure = new Error('component could not mount')
+    const doc = useFileDocument(ref('note.arx'), {
+      read: async () => new Uint8Array(),
+      build: () => 'document',
+      apply: () => {
+        if (fails) throw failure
+      },
+    })
+    await doc.reload('note.arx')
+    expect(doc.loading.value).toBe(false)
+    expect(doc.canSave.value).toBe(false)
+    expect(doc.error.value).toBe(failure)
+    fails = false
+    await doc.reload('note.arx')
+    expect(doc.loading.value).toBe(false)
+    expect(doc.canSave.value).toBe(true)
+    expect(doc.error.value).toBeNull()
+  })
+
   test('an existing document that disappeared cannot become an editable empty file', async () => {
     const applied: unknown[] = []
     const doc = useFileDocument(ref('gone.md'), {

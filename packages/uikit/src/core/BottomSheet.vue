@@ -2,11 +2,13 @@
 import { Dialog } from '@ark-ui/vue'
 import { ref, watch } from 'vue'
 import { useBackStack } from '../hooks/useBackStack'
+import { useKeyboardInset } from '../hooks/useKeyboardInset'
 
 const props = withDefaults(defineProps<{ open: boolean; title?: string; label?: string; restoreFocus?: boolean }>(), { restoreFocus: true })
 const emit = defineEmits<{ close: [] }>()
 
 const sheetEl = ref<HTMLElement | null>(null)
+const keyboardInset = useKeyboardInset()
 const dragOffset = ref(0)
 let startY: number | null = null
 let opener: HTMLElement | null = null
@@ -52,7 +54,7 @@ function onPointerUp(): void {
 <template>
   <Dialog.Root :open="open" :restore-focus="restoreFocus" :final-focus-el="finalFocus" @update:open="$event || emit('close')">
     <Teleport to="body">
-      <Dialog.Positioner v-if="open" class="sheet-backdrop" @click.self="emit('close')">
+      <Dialog.Positioner v-if="open" class="sheet-backdrop" :style="{ bottom: `${keyboardInset}px` }" @click.self="emit('close')">
         <Dialog.Content
           class="sheet"
           :aria-label="label ?? title"
@@ -90,7 +92,7 @@ function onPointerUp(): void {
 
 .sheet {
   width: 100%;
-  max-height: 80dvh;
+  max-height: 80%;
   outline: none;
   display: flex;
   flex-direction: column;

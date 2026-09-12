@@ -95,7 +95,16 @@ export function useFileDocument<S>(path: Ref<string>, options: UseFileDocumentOp
     }
     // A newer load started while we were reading/building — its result must win, so drop ours.
     if (current !== ticket) return
-    options.apply(target, state)
+    try {
+      options.apply(target, state)
+    } catch (e) {
+      if (current === ticket) {
+        error.value = e
+        loading.value = false
+      }
+      return
+    }
+    if (current !== ticket) return
     loading.value = false
     canSave.value = true
   }

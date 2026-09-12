@@ -45,4 +45,9 @@ withDefaults(
 .menu-content:focus {
   outline: none;
 }
+
+/* Author display styles override the browser's [hidden] rule while Ark keeps closed content mounted. */
+.menu-content[hidden] {
+  display: none;
+}
 </style>
