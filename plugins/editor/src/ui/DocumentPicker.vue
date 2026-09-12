@@ -47,6 +47,17 @@ watch(
   },
   { immediate: true },
 )
+async function choose(anchor?: BlockDestination['anchor']) {
+  const target = selected.value
+  if (!target) return
+  try {
+    busy.value = true
+    const href = props.links.href ? await props.links.href(target.path, anchor) : documentHref(target.path, anchor)
+    emit('choose', href)
+  } catch (reason) {
+    error.value = reason instanceof Error ? reason.message : String(reason)
+  } finally { busy.value = false }
+}
 </script>
 
 <template>
@@ -54,10 +65,10 @@ watch(
     <template v-if="selected">
       <Button variant="ghost" @click="selected = null">Back to documents</Button>
       <p>{{ selected.title || selected.path }}</p>
-      <Button variant="secondary" @click="emit('choose', documentHref(selected.path))">Link whole document</Button>
+      <Button variant="secondary" :disabled="busy" @click="choose()">Link whole document</Button>
       <p>Or choose a text block{{ selected.path === path ? '' : ' from the saved document' }}:</p>
       <div class="destination-list" aria-label="Document blocks">
-        <Row v-for="(block, index) in blocks" :key="index" as="button" type="button" wrap @click="emit('choose', documentHref(selected.path, block.anchor))">{{ block.label }}</Row>
+        <Row v-for="(block, index) in blocks" :key="index" as="button" type="button" wrap :disabled="busy" @click="choose(block.anchor)">{{ block.label }}</Row>
       </div>
       <p v-if="!busy && !error && !blocks.length">No text blocks available.</p>
     </template>

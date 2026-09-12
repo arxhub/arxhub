@@ -31,9 +31,15 @@ export function serialize(doc: Node, config?: ArxFormatConfig): string {
 }
 
 function expandJSON(value: Record<string, unknown>): Record<string, unknown> {
-  if (value.type === 'unknown_block' && isRecord(value.attrs) && isRecord(value.attrs.raw)) return value.attrs.raw
+  if (value.type === 'unknown_block' && isRecord(value.attrs) && isRecord(value.attrs.raw)) {
+    const raw = value.attrs.raw
+    return value.attrs.arxId ? { ...raw, attrs: { ...(isRecord(raw.attrs) ? raw.attrs : {}), arxId: value.attrs.arxId } } : raw
+  }
   return {
     ...value,
+    ...(isRecord(value.attrs) && value.attrs.arxId === null
+      ? { attrs: Object.fromEntries(Object.entries(value.attrs).filter(([key]) => key !== 'arxId')) }
+      : {}),
     ...(Array.isArray(value.content) ? { content: value.content.map((child) => (isRecord(child) ? expandJSON(child) : child)) } : {}),
   }
 }
@@ -52,7 +58,13 @@ export function deserialize(schema: Schema, raw: string, config?: ArxFormatConfi
       content.push(node)
     } else {
       if (!schema.nodes.unknown_block) throw validation(`Unsupported document block: ${String(value.type)}`)
-      content.push(schema.nodes.unknown_block.create({ raw: value, versions: migrated.versions }))
+      content.push(
+        schema.nodes.unknown_block.create({
+          raw: value,
+          versions: migrated.versions,
+          arxId: isRecord(value.attrs) && typeof value.attrs.arxId === 'string' ? value.attrs.arxId : null,
+        }),
+      )
     }
   }
   const { doc: _doc, version: _version, ...envelope } = arx

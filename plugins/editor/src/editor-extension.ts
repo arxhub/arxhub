@@ -5,6 +5,7 @@ import { type MarkSpec, type NodeSpec, Schema } from 'prosemirror-model'
 import type { Plugin } from 'prosemirror-state'
 import type { Component } from 'vue'
 import type { ArxAssetStore } from './assets'
+import { identityNodes } from './block-identity'
 import type { ArxHistoryStore } from './document-history'
 import type { ArxDocumentLinks } from './document-links'
 import type { ArxFormatConfig, ArxJsonNode } from './document-migrations'
@@ -85,6 +86,7 @@ export class ArxEditorExtension extends Extension {
         retiredMarks.add(name)
       }
       for (const [name, spec] of Object.entries(contribution.nodes ?? {})) {
+        if (spec.attrs && Object.hasOwn(spec.attrs, 'arxId')) throw illegalState(`Reserved editor attribute: ${name}.arxId`)
         if (!spec.toDOM) throw illegalState(`Editor node needs toDOM for clipboard and rendering: ${name}`)
         if (nodes.get(name) || retiredNodes.has(name)) throw illegalState(`Editor node already registered: ${name}`)
       }
@@ -103,7 +105,7 @@ export class ArxEditorExtension extends Extension {
         controls[name] = policy
       }
     }
-    const schema = new Schema({ nodes, marks })
+    const schema = new Schema({ nodes: identityNodes(nodes), marks })
     for (const [name, component] of Object.entries(components)) {
       const node = schema.nodes[name]
       if (!node.isLeaf && !node.spec.atom && !component.content) throw illegalState(`Editable component needs contentDOM: ${name}`)

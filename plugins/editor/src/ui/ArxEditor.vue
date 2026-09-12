@@ -16,6 +16,7 @@ import { EditorView } from 'prosemirror-view'
 import { computed, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
 import { ARX_ASSETS, createAssetSession } from '../asset-session'
 import { createAssetStore } from '../assets'
+import { blockIdentityPlugin, identifyBlocks } from '../block-identity'
 import { blockMarqueePlugin } from '../block-marquee'
 import { blockSelectionPlugin } from '../block-selection'
 import { codeHighlighting } from '../code-highlighting'
@@ -75,6 +76,7 @@ const slashMenu = computed(() => {
   void revision.value
   return view.value ? slashKey.getState(view.value.state) : null
 })
+const identityPending = ref(false)
 const edits = ref(0)
 const savedEdits = ref(0)
 const saving = ref(false)
@@ -97,6 +99,7 @@ function buildPlugins() {
     modePlugin(mode.value, kit.controls, [...Object.keys(kit.components), 'image_block', 'attachment', 'code_block', 'section']),
     slashCommands(slashMenuId, kit.commands),
     history(),
+    blockIdentityPlugin(),
     blockMarqueePlugin(),
     blockSelectionPlugin(),
     assets.plugin,
@@ -136,7 +139,7 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
       arxhub.logger.warn(`[editor] could not inspect history for ${path}; keeping the current document available:`, error)
     }
   }
-  doc = withDocumentId(doc, id ?? crypto.randomUUID())
+  doc = identifyBlocks(withDocumentId(doc, id ?? crypto.randomUUID()))
   return EditorState.create({ schema, doc, plugins: buildPlugins() })
 }
 
@@ -161,7 +164,7 @@ const {
         dispatchTransaction(tr) {
           if (!view.value) return
           const previous = view.value.state
-          const next = previous.apply(tr)
+          const next = previous.applyTransaction(tr).state
           view.value.updateState(next)
           revision.value++
           if (!previous.doc.eq(next.doc)) {
@@ -176,6 +179,7 @@ const {
         },
       })
     }
+    identityPending.value = true
     edits.value = 0
     savedEdits.value = 0
     saveError.value = false
@@ -241,7 +245,9 @@ async function copyBlockLink() {
     return selection && selection.from <= position && selection.to >= position
   })
   try {
-    await navigator.clipboard.writeText(documentHref(props.path, block?.anchor))
+    if (!(await beforeClose())) throw validation('Save the document before copying its link.')
+    const href = extension.links?.href ? await extension.links.href(props.path, block?.anchor) : documentHref(props.path, block?.anchor)
+    await navigator.clipboard.writeText(href)
     toaster.create({ title: block ? 'Block link copied' : 'Document link copied', type: 'success' })
   } catch {
     toaster.create({ title: 'Could not copy link', description: 'The browser did not allow clipboard access.', type: 'error' })
@@ -262,6 +268,7 @@ async function doSave() {
     if (!canSave.value || props.path !== path) throw validation('The document moved or became unavailable while saving. Retry Save.')
     await vfs.write(path, new TextEncoder().encode(content))
     if (id && extension.history) await extension.history.record(id, content, path)
+    identityPending.value = false
     savedEdits.value = version
     saveError.value = false
   } catch (error) {
@@ -309,7 +316,7 @@ async function beforeClose(): Promise<boolean> {
     await assets.wait()
     // flush() may join an older in-flight write. Keep the view until all edits made since it began
     // have reached storage too; a failure leaves the buffer available for retry.
-    while (savedEdits.value !== edits.value) {
+    while (savedEdits.value !== edits.value || identityPending.value) {
       if (!view.value || !canSave.value) return false
       await autosave.flush()
     }

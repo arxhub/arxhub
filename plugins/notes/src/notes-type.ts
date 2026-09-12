@@ -9,6 +9,8 @@ import type { Json } from '@arxhub/plugin-shell/ui'
 // and neither of them needs an editor component. A module with no `.vue` in it is also the only way to
 // keep this unit-tested.
 export interface BlockAnchor {
+  blockId?: string
+  documentId?: string
   // What matched the query. Its bounds come from `snippetSegments` in `@arxhub/sql`.
   text: string
   // A hint about which one: how many identical matches came before this one in the document. Zero is
@@ -33,9 +35,11 @@ export function blockAnchorOf(at: Json | undefined): BlockAnchor | null {
   if (at == null || typeof at !== 'object' || Array.isArray(at)) return null
   const record = at as Record<string, Json>
   const text = record.text
-  if (typeof text !== 'string' || text.trim() === '') return null
+  const blockId = typeof record.blockId === 'string' && record.blockId ? record.blockId : undefined
+  const documentId = typeof record.documentId === 'string' && record.documentId ? record.documentId : undefined
+  if (typeof text !== 'string' || (!text.trim() && !blockId && !documentId)) return null
   const skip = typeof record.skip === 'number' && Number.isFinite(record.skip) && record.skip > 0 ? Math.floor(record.skip) : undefined
-  return skip == null ? { text } : { text, skip }
+  return { text, ...(skip ? { skip } : {}), ...(blockId ? { blockId } : {}), ...(documentId ? { documentId } : {}) }
 }
 
 // A snapshot arrived from the previous session, which means from the previous build: it is read as

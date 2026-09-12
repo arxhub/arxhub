@@ -2,8 +2,9 @@ import { validation } from '@arxhub/errors'
 import { dirname, join, normalize } from '@arxhub/path'
 import type { BlockAnchor } from '@arxhub/plugin-notes/ui'
 import type { Node } from 'prosemirror-model'
-import { Plugin, TextSelection } from 'prosemirror-state'
+import { NodeSelection, Plugin, Selection, TextSelection } from 'prosemirror-state'
 import type { Ref } from 'vue'
+import { documentId } from './document-history'
 import { findDocumentMatches } from './document-search'
 import { editorMode } from './editor-mode'
 import { safeLink } from './link-commands'
@@ -18,6 +19,7 @@ export interface BlockDestination {
 }
 export interface ArxDocumentLinks {
   revision?: Ref<number>
+  href?(path: string, anchor?: BlockAnchor): Promise<string>
   documents(query: string): Promise<DocumentDestination[]>
   blocks(path: string): Promise<BlockDestination[]>
   backlinks(path: string): Promise<DocumentDestination[]>
@@ -28,6 +30,8 @@ export function documentHref(path: string, anchor?: BlockAnchor): string {
   const href = `/${path.split('/').filter(Boolean).map(encodeURIComponent).join('/')}`
   if (!anchor) return href
   const params = new URLSearchParams({ text: anchor.text })
+  if (anchor.blockId) params.set('block', anchor.blockId)
+  if (anchor.documentId) params.set('document', anchor.documentId)
   if (anchor.skip) params.set('skip', String(anchor.skip))
   return `${href}#${params}`
 }
@@ -37,13 +41,27 @@ export function documentTarget(source: string, href: string): { path: string; an
   const [rawPath, fragment] = href.split('#', 2)
   try {
     const decoded = decodeURIComponent(rawPath.split('?')[0])
-    if (decoded.includes('\\') || /[\u0000-\u001f]/.test(decoded)) return null
+    if (decoded.includes('\\') || [...decoded].some((character) => character.charCodeAt(0) < 32)) return null
     const path = normalize(decoded ? (decoded.startsWith('/') ? decoded.slice(1) : join(dirname(source), decoded)) : source)
     if (path === '..' || path.startsWith('../') || path.startsWith('/') || !/\.(arx|md|markdown)$/i.test(path)) return null
     const params = new URLSearchParams(fragment)
-    const text = params.get('text') ?? (fragment ? decodeURIComponent(fragment) : '')
+    const blockId = params.get('block')
+    const documentId = params.get('document')
+    const text = params.get('text') ?? (!blockId && !documentId && fragment ? decodeURIComponent(fragment) : '')
     const skip = Number(params.get('skip') ?? 0)
-    return { path, ...(text ? { anchor: { text, ...(Number.isSafeInteger(skip) && skip > 0 ? { skip } : {}) } } : {}) }
+    return {
+      path,
+      ...(text || blockId || documentId
+        ? {
+            anchor: {
+              text,
+              ...(blockId ? { blockId } : {}),
+              ...(documentId ? { documentId } : {}),
+              ...(Number.isSafeInteger(skip) && skip > 0 ? { skip } : {}),
+            },
+          }
+        : {}),
+    }
   } catch {
     return null
   }
@@ -51,20 +69,43 @@ export function documentTarget(source: string, href: string): { path: string; an
 
 export function documentBlocks(doc: Node): BlockDestination[] {
   const result: BlockDestination[] = []
+  const id = documentId(doc)
   doc.descendants((node, pos) => {
-    if (!node.isTextblock) return true
-    const text = node.textBetween(0, node.content.size, undefined, '\ufffc')
+    if (!node.isTextblock && !(node.isBlock && node.attrs.arxId && (node.isAtom || node.type.spec.group?.split(' ').includes('block'))))
+      return true
+    const text = node.textBetween(0, node.content.size, ' ', '\ufffc') || String(node.attrs.title ?? node.attrs.name ?? node.type.name)
     if (text.trim()) {
       const matches = findDocumentMatches(doc, text)
       const skip = matches.findIndex((match) => match.from === pos + 1)
-      result.push({ label: text, anchor: { text, ...(skip > 0 ? { skip } : {}) } })
+      result.push({
+        label: text,
+        anchor: {
+          text,
+          ...(skip > 0 ? { skip } : {}),
+          ...(node.attrs.arxId ? { blockId: String(node.attrs.arxId) } : {}),
+          ...(id ? { documentId: id } : {}),
+        },
+      })
     }
-    return false
+    return !node.isTextblock && !node.isAtom
   })
   return result
 }
 
-export function revealBlock(doc: Node, anchor: BlockAnchor): TextSelection | null {
+export function revealBlock(doc: Node, anchor: BlockAnchor): Selection | null {
+  if (anchor.blockId) {
+    let found: Selection | null = null
+    doc.descendants((node, pos) => {
+      if (node.attrs.arxId === anchor.blockId)
+        found = node.isTextblock
+          ? TextSelection.create(doc, pos + 1, pos + node.nodeSize - 1)
+          : NodeSelection.isSelectable(node)
+            ? NodeSelection.create(doc, pos)
+            : Selection.near(doc.resolve(pos))
+    })
+    return found
+  }
+  if (!anchor.text) return null
   const matches = findDocumentMatches(doc, anchor.text)
   const match = matches[anchor.skip ?? 0] ?? matches[0]
   return match ? TextSelection.create(doc, match.from, match.to) : null

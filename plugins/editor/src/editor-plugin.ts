@@ -66,10 +66,12 @@ export class ArxEditorPlugin extends Plugin {
       async (path, anchor) => {
         await ctx.extensions.get(ShellExtension).workspace.openObject(NOTES_TYPE_ID, {
           id: path,
-          ...(anchor ? { at: { text: anchor.text, ...(anchor.skip ? { skip: anchor.skip } : {}) } } : {}),
+          ...(anchor ? { at: { ...anchor } } : {}),
         })
       },
       ctx.extensions.has(SearchExtension) ? ctx.extensions.get(SearchExtension) : undefined,
+      (path) => ctx.extensions.get(NotesExtension).beforeClose(path),
+      () => editor.kit.format,
     )
 
     // Both registrations stand side by side on purpose, and not for long. The viewer registry is what

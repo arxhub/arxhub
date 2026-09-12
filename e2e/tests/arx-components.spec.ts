@@ -106,7 +106,7 @@ test('an installed plugin migrates its saved data before editing', async ({ app,
   expect(await vault.read(path)).toBe(original)
   await app.getByRole('button', { name: 'Save', exact: true }).click()
   await expect.poll(async () => JSON.parse(await vault.read(path)).plugins['fixture.rating']).toBe(2)
-  expect(JSON.parse(await vault.read(path)).doc.content[0].attrs).toEqual({ value: 3, maximum: 5 })
+  expect(JSON.parse(await vault.read(path)).doc.content[0].attrs).toEqual({ value: 3, maximum: 5, arxId: expect.any(String) })
   await app.reload()
   await expect(app.getByTestId('plugin-rating').getByLabel('Rating value')).toHaveText('3')
 })
