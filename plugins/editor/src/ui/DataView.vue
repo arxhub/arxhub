@@ -37,14 +37,17 @@ function configure(attrs: Record<string, unknown>) {
 }
 watch(
   [source, () => props.node.attrs.query, () => source.value?.revision?.value, refresh],
-  async (_, __, cleanup) => {
+  async ([currentSource, query], previous, cleanup) => {
     let active = true
     cleanup(() => {
       active = false
     })
     busy.value = true
     error.value = ''
-    items.value = []
+    if (currentSource !== previous[0] || query !== previous[1]) {
+      items.value = []
+      truncated.value = false
+    }
     try {
       if (!source.value) throw validation('Enable the plugin that provides this data source. Built-in sources require Search.')
       const result = await source.value.load(String(props.node.attrs.query))
@@ -70,14 +73,14 @@ async function open(item: ArxDataItem) {
 </script>
 
 <template>
-  <section class="data-view" aria-label="Data view">
+  <section class="data-view" aria-label="Data view" :aria-busy="busy">
     <div class="data-options">
       <Dropdown><template #trigger><Button variant="ghost" :disabled="mode !== 'editable'">{{ source?.label ?? node.attrs.source }}</Button></template><MenuItem v-for="(entry, id) in sources" :key="id" :value="String(id)" @select="configure({ source: id, layout: entry.layouts[0] })">{{ entry.label }}</MenuItem></Dropdown>
       <Dropdown><template #trigger><Button variant="ghost" :disabled="mode !== 'editable'">{{ layout }}</Button></template><MenuItem v-for="option in source?.layouts ?? ['list']" :key="option" :value="option" @select="configure({ layout: option })">{{ option }}</MenuItem></Dropdown>
       <Button variant="ghost" @click="refresh++">Refresh data</Button>
     </div>
     <Input :model-value="String(node.attrs.query)" :readonly="mode !== 'editable'" aria-label="Filter data" placeholder="Filter by text" @update:model-value="configure({ query: $event })" />
-    <p v-if="busy" role="status">Loading data…</p><p v-if="error" role="alert">{{ error }}</p>
+    <p v-if="busy && !items.length" role="status">Loading data…</p><p v-if="error" role="alert">{{ error }}</p>
     <component :is="board" v-if="layout === 'board'" :groups="groups" @open="open" />
     <template v-else-if="layout === 'calendar'">
       <Input v-model="month" type="month" aria-label="Calendar month" />
