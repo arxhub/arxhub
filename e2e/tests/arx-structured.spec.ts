@@ -71,6 +71,7 @@ test('sections collapse while reading and code language persists with highlighte
   await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
   const summary = editor.locator('summary')
   await expect(summary).toContainText('Saved section')
+  await expect(summary).toHaveAccessibleName('Toggle section: Saved section')
   await summary.click()
   await expect(editor.locator('.section-content')).toBeHidden()
   await summary.focus()

@@ -293,6 +293,46 @@ describe('parseDocument — arx', () => {
   const shape = (doc: { blocks: readonly { type: string; level: number | null; content: string }[] }) =>
     doc.blocks.map((block) => [block.type, block.level, block.content])
 
+  it('keeps headings, tasks and links structured inside sections and table cells', () => {
+    const doc = arxDoc('notes/structured.arx', {
+      type: 'section',
+      attrs: { title: 'Details' },
+      content: [
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Nested heading' }] },
+        {
+          type: 'table',
+          content: [
+            {
+              type: 'table_row',
+              content: [
+                {
+                  type: 'table_cell',
+                  content: [{ type: 'task_list', content: [{ type: 'task_item', attrs: { checked: true }, content: [para('Finished')] }] }],
+                },
+                {
+                  type: 'table_cell',
+                  content: [
+                    {
+                      type: 'paragraph',
+                      content: [{ type: 'text', text: 'Destination', marks: [{ type: 'link', attrs: { href: '/target.arx#text=Block' } }] }],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    expect(shape(doc)).toEqual([
+      ['heading', 2, 'Nested heading'],
+      ['task', 1, 'Finished'],
+      ['paragraph', null, 'Destination'],
+    ])
+    expect(doc.blocks[1].checked).toBe(true)
+    expect(doc.refs[0].targetRaw).toBe('/target.arx#text=Block')
+  })
+
   it('reads a task_item as a task, with its state and its depth', () => {
     const doc = arxDoc('notes/tasks.arx', {
       type: 'task_list',

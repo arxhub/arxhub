@@ -26,7 +26,17 @@ const BLOCK_TYPES: Record<string, BlockType> = {
   task_item: 'task',
 }
 
-const CONTAINERS = new Set(['bullet_list', 'ordered_list', 'task_list', 'callout'])
+const CONTAINERS = new Set([
+  'bullet_list',
+  'ordered_list',
+  'task_list',
+  'callout',
+  'section',
+  'table',
+  'table_row',
+  'table_cell',
+  'table_header',
+])
 
 // The containers that nest: entering one is a level deeper for the items inside it. A callout holds
 // blocks but is not a list, so it opens without changing anyone's depth.

@@ -54,7 +54,7 @@ export function createControlViews(components: Readonly<Record<string, ArxEditor
     host.addEventListener('focusin', selectControl)
     if (section) {
       const summary = document.createElement('summary')
-      summary.setAttribute('aria-label', 'Toggle section')
+      summary.setAttribute('aria-label', `Toggle section: ${node.attrs.title}`)
       summary.append(host)
       dom.append(summary)
     } else dom.append(host)
@@ -90,6 +90,7 @@ export function createControlViews(components: Readonly<Record<string, ArxEditor
         if (next.type !== node.type) return false
         control.node = next
         control.mode = editorMode(view.state)
+        if (section) dom.firstElementChild?.setAttribute('aria-label', `Toggle section: ${next.attrs.title}`)
         if (task) dom.dataset.checked = String(next.attrs.checked)
         return true
       },
