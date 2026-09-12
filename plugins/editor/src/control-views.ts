@@ -7,6 +7,7 @@ import { type EditorMode, editorMode } from './editor-mode'
 import AssetBlock from './ui/AssetBlock.vue'
 import CodeBlockTools from './ui/CodeBlockTools.vue'
 import SectionTitle from './ui/SectionTitle.vue'
+import UnknownBlock from './ui/UnknownBlock.vue'
 
 export interface ArxEditorControlProps {
   node: Node
@@ -26,6 +27,7 @@ export function createControlViews(components: Readonly<Record<string, ArxEditor
     attachment: { component: AssetBlock },
     code_block: { component: CodeBlockTools, content: true },
     section: { component: SectionTitle, content: true },
+    unknown_block: { component: UnknownBlock },
     ...components,
   }
   const controls = shallowReactive(new Map<number, ControlView>())

@@ -130,17 +130,21 @@ test('touch insertion and block actions preserve neighboring content and undo', 
   await expect.poll(() => vault.read(path)).toContain('"type": "select"')
 })
 
-test('unsupported plugin blocks never become an empty writable document', async ({ app, vault }) => {
-  const original = document([{ type: 'missing_plugin_block', attrs: { payload: 'Keep this data' } }])
+test('unknown plugin blocks survive edits to surrounding content', async ({ app, vault }) => {
+  const original = document([{ type: 'missing_plugin_block', attrs: { payload: 'Keep this data' } }, paragraph('Neighbor')])
   const path = await vault.write(`${test.info().project.name}-unsupported.arx`, original)
   await app.reload()
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path, exact: true }).click()
-  await expect(app.locator('.editor-error')).toContainText('missing_plugin_block')
-  await expect(app.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
-  await app.getByRole('button', { name: 'Retry', exact: true }).click()
-  await expect(app.locator('.editor-error')).toContainText('Enable its editor plugin')
-  expect(await vault.read(path)).toBe(original)
+  await expect(app.locator('.unknown-block')).toContainText('missing_plugin_block')
+  await app.locator('.ProseMirror > p').click()
+  await app.keyboard.press('End')
+  await app.keyboard.insertText(' edited')
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect.poll(() => vault.read(path)).toContain('Neighbor edited')
+  expect(JSON.parse(await vault.read(path)).doc.content[0]).toEqual(JSON.parse(original).doc.content[0])
+  await app.reload()
+  await expect(app.locator('.unknown-block')).toContainText('missing_plugin_block')
 })
 
 test('block handle and link editing work without losing the text selection', async ({ app, vault }) => {

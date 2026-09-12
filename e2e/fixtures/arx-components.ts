@@ -45,6 +45,14 @@ export class ArxComponentsFixturePlugin extends Plugin {
   override configure(ctx: PluginContext): void {
     ctx.extensions.get(ArxEditorExtension).register({
       id: 'fixture.rating',
+      version: 2,
+      migrations: {
+        1: (node) => {
+          if (node.type !== 'fixture_rating' || !node.attrs || typeof node.attrs !== 'object' || !('score' in node.attrs)) return node
+          const { score, ...attrs } = node.attrs
+          return { ...node, attrs: { ...attrs, value: Number(score) } }
+        },
+      },
       nodes: {
         fixture_recoverable: {
           group: 'block',

@@ -52,9 +52,12 @@ test('an installed plugin renders, validates, saves and restores its component i
   const saved = await vault.read(path)
   await uninstall()
   await app.reload()
-  await expect(app.locator('.editor-error')).toContainText('fixture_rating')
-  await expect(app.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
-  expect(await vault.read(path)).toBe(saved)
+  await expect(app.locator('.unknown-block')).toContainText('fixture_rating')
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect.poll(async () => JSON.parse(await vault.read(path))).toEqual(JSON.parse(saved))
+  await withComponents(app)
+  await app.reload()
+  await expect(app.getByTestId('plugin-rating').getByLabel('Rating value')).toHaveText('1')
 })
 
 test('a failing plugin component is contained and retried without reloading the buffer', async ({ app, vault }) => {
@@ -86,4 +89,24 @@ test('a failing plugin component is contained and retried without reloading the 
   await app.getByRole('button', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('Keep these words and edits')
   expect(await vault.read(path)).toContain('Keep plugin data too')
+})
+
+test('an installed plugin migrates its saved data before editing', async ({ app, vault }) => {
+  await withComponents(app)
+  const original = JSON.stringify({
+    version: 1,
+    plugins: { 'fixture.rating': 1 },
+    doc: { type: 'doc', content: [{ type: 'fixture_rating', attrs: { score: '3', maximum: 5 } }] },
+  })
+  const path = await vault.write(`${test.info().project.name}-migration.arx`, original)
+  await app.reload()
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click()
+  await expect(app.getByTestId('plugin-rating').getByLabel('Rating value')).toHaveText('3')
+  expect(await vault.read(path)).toBe(original)
+  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect.poll(async () => JSON.parse(await vault.read(path)).plugins['fixture.rating']).toBe(2)
+  expect(JSON.parse(await vault.read(path)).doc.content[0].attrs).toEqual({ value: 3, maximum: 5 })
+  await app.reload()
+  await expect(app.getByTestId('plugin-rating').getByLabel('Rating value')).toHaveText('3')
 })

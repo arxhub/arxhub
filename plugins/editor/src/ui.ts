@@ -1,6 +1,7 @@
 export type { ArxAsset, ArxAssetStore } from './assets'
 export type { ArxEditorControlProps } from './control-views'
 export type { ArxDocumentLinks, BlockDestination, DocumentDestination } from './document-links'
+export type { ArxFormatConfig, ArxJsonNode } from './document-migrations'
 export { type ArxEditorComponent, type ArxEditorContribution, ArxEditorExtension, type ArxEditorKit } from './editor-extension'
 export type { ControlPolicy, EditorMode } from './editor-mode'
 export { ArxEditorPlugin } from './editor-plugin'

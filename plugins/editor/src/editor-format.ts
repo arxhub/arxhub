@@ -1,51 +1,89 @@
 import { validation } from '@arxhub/errors'
 import type { Node, Schema } from 'prosemirror-model'
+import { type ArxFormatConfig, isRecord, migrateDocument } from './document-migrations'
 
-interface ArxDocument {
-  version: number
-  doc: Record<string, unknown>
-}
-
-export function serialize(doc: Node): string {
+export function serialize(doc: Node, config?: ArxFormatConfig): string {
   doc.check()
-  const arx: ArxDocument = { version: 1, doc: doc.toJSON() as Record<string, unknown> }
-  return JSON.stringify(arx, null, 2)
+  const metadata = isRecord(doc.attrs.arxEnvelope) ? doc.attrs.arxEnvelope : {}
+  const envelope = isRecord(metadata.envelope) ? metadata.envelope : {}
+  const root = isRecord(metadata.root) ? metadata.root : {}
+  const versions = { ...(isRecord(envelope.plugins) ? envelope.plugins : {}) }
+  doc.descendants((node) => {
+    if (node.type.name !== 'unknown_block' || !isRecord(node.attrs.versions)) return
+    for (const [id, version] of Object.entries(node.attrs.versions)) {
+      const previous = Object.hasOwn(versions, id) ? Number(versions[id]) : 1
+      Object.defineProperty(versions, id, { value: Math.max(previous, Number(version)), enumerable: true, configurable: true, writable: true })
+    }
+  })
+  for (const owner of config?.versions ?? []) {
+    const stored = Object.hasOwn(versions, owner.id) ? Number(versions[owner.id]) : 1
+    Object.defineProperty(versions, owner.id, { value: Math.max(stored, owner.version), enumerable: true, configurable: true, writable: true })
+  }
+  const raw = expandJSON(doc.toJSON() as Record<string, unknown>)
+  delete raw.attrs
+  const output = {
+    ...envelope,
+    version: 1,
+    ...(Object.keys(versions).length ? { plugins: versions } : {}),
+    doc: { ...raw, ...root, type: 'doc', content: raw.content },
+  }
+  return JSON.stringify(output, null, 2)
 }
 
-export function deserialize(schema: Schema, raw: string): Node {
+function expandJSON(value: Record<string, unknown>): Record<string, unknown> {
+  if (value.type === 'unknown_block' && isRecord(value.attrs) && isRecord(value.attrs.raw)) return value.attrs.raw
+  return {
+    ...value,
+    ...(Array.isArray(value.content) ? { content: value.content.map((child) => (isRecord(child) ? expandJSON(child) : child)) } : {}),
+  }
+}
+
+export function deserialize(schema: Schema, raw: string, config?: ArxFormatConfig): Node {
   const arx: unknown = JSON.parse(raw)
   if (!isRecord(arx) || arx.version !== 1 || !isRecord(arx.doc)) throw validation('Unsupported or invalid .arx document version')
-  checkJSON(schema, arx.doc)
-  const doc = schema.nodeFromJSON(arx.doc)
-  if (doc.type !== schema.topNodeType) throw validation('The file must contain an .arx document')
+  if (arx.doc.type !== schema.topNodeType.name || !Array.isArray(arx.doc.content)) throw validation('The file must contain an .arx document')
+  const migrated = migrateDocument(arx.doc, arx.plugins, config, { nodes: Object.keys(schema.nodes), marks: Object.keys(schema.marks) })
+  const content: Node[] = []
+  for (const value of migrated.doc.content as unknown[]) {
+    if (!isRecord(value)) throw validation('Invalid document content')
+    if (supportedJSON(schema, value, migrated.future)) {
+      const node = schema.nodeFromJSON(value)
+      node.check()
+      content.push(node)
+    } else {
+      if (!schema.nodes.unknown_block) throw validation(`Unsupported document block: ${String(value.type)}`)
+      content.push(schema.nodes.unknown_block.create({ raw: value, versions: migrated.versions }))
+    }
+  }
+  const { doc: _doc, version: _version, ...envelope } = arx
+  const { type: _type, content: _content, ...root } = arx.doc
+  if (Object.keys(migrated.versions).length) envelope.plugins = migrated.versions
+  const hasMetadata = Object.keys(envelope).length > 0 || Object.keys(root).length > 0
+  const doc = schema.topNodeType.create(hasMetadata ? { arxEnvelope: { envelope, root } } : null, content)
   doc.check()
   return doc
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
-
-// ProseMirror discards unknown attributes when reading JSON. Reject them before normalization,
-// otherwise opening a document without its plugin could erase that plugin's data on autosave.
-function checkJSON(schema: Schema, value: Record<string, unknown>, mark = false): void {
+function supportedJSON(schema: Schema, value: Record<string, unknown>, future: Set<string>, mark = false): boolean {
   const name = value.type
-  const type = typeof name === 'string' ? (mark ? schema.marks[name] : schema.nodes[name]) : undefined
-  if (!type) throw validation(`Unsupported document ${mark ? 'mark' : 'block'}: ${String(name)}. Enable its editor plugin and retry.`)
+  if (typeof name !== 'string') throw validation('Invalid document node type')
+  const type = mark ? schema.marks[name] : schema.nodes[name]
+  if (!type || future.has(`${mark ? 'mark' : 'node'}:${name}`)) return false
+  if (name === 'unknown_block') return false
+  let supported = Object.keys(value).every((key) => ['type', 'attrs', 'content', 'marks', 'text'].includes(key))
   if (value.attrs !== undefined) {
     if (!isRecord(value.attrs)) throw validation(`Invalid attributes for ${name}`)
-    for (const key of Object.keys(value.attrs)) {
-      if (!Object.hasOwn(type.spec.attrs ?? {}, key)) throw validation(`Unsupported attribute ${String(name)}.${key}`)
-    }
+    supported &&= Object.keys(value.attrs).every((key) => Object.hasOwn(type.spec.attrs ?? {}, key))
   }
   for (const key of ['content', 'marks'] as const) {
     if (value[key] === undefined) continue
     if (!Array.isArray(value[key])) throw validation(`Invalid ${key}`)
     for (const child of value[key]) {
       if (!isRecord(child)) throw validation(`Invalid document ${key}`)
-      checkJSON(schema, child, key === 'marks')
+      if (!supportedJSON(schema, child, future, key === 'marks')) supported = false
     }
   }
+  return supported
 }
 
 export function emptyDoc(schema: Schema): Node {

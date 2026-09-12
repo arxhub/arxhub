@@ -114,7 +114,7 @@ function buildState(_path: string, bytes: Uint8Array): EditorState {
   // load hook can route it through the same error path as a read failure, rather than silently
   // substituting an empty document a Save could flush over the original bytes.
   if (bytes.length === 0) return EditorState.create({ schema, doc: emptyDoc(schema), plugins: buildPlugins() })
-  const doc = deserialize(schema, new TextDecoder().decode(bytes))
+  const doc = deserialize(schema, new TextDecoder().decode(bytes), kit.format)
   return EditorState.create({ schema, doc, plugins: buildPlugins() })
 }
 
@@ -233,7 +233,7 @@ async function doSave() {
   const version = edits.value
   saving.value = true
   try {
-    const content = serialize(view.value.state.doc)
+    const content = serialize(view.value.state.doc, kit.format)
     await vfs.write(props.path, new TextEncoder().encode(content))
     savedEdits.value = version
     saveError.value = false

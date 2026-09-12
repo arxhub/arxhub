@@ -6,6 +6,7 @@ import type { Plugin } from 'prosemirror-state'
 import type { Component } from 'vue'
 import type { ArxAssetStore } from './assets'
 import type { ArxDocumentLinks } from './document-links'
+import type { ArxFormatConfig, ArxJsonNode } from './document-migrations'
 import { type ControlPolicy, DEFAULT_CONTROL_POLICIES } from './editor-mode'
 import { schema as baseSchema } from './editor-schema'
 import { type BlockCommand, buildBlockCommands } from './slash-commands'
@@ -18,6 +19,10 @@ export interface ArxEditorComponent {
 
 export interface ArxEditorContribution {
   id: string
+  version?: number
+  legacyNodes?: readonly string[]
+  legacyMarks?: readonly string[]
+  migrations?: Readonly<Record<number, (node: ArxJsonNode) => ArxJsonNode>>
   nodes?: Record<string, NodeSpec>
   marks?: Record<string, MarkSpec>
   components?: Record<string, ArxEditorComponent>
@@ -27,6 +32,7 @@ export interface ArxEditorContribution {
 }
 
 export interface ArxEditorKit {
+  format: ArxFormatConfig
   schema: Schema
   commands: readonly BlockCommand[]
   components: Readonly<Record<string, ArxEditorComponent>>
@@ -60,14 +66,29 @@ export class ArxEditorExtension extends Extension {
     const components: Record<string, ArxEditorComponent> = {}
     const controls: Record<string, ControlPolicy> = { ...DEFAULT_CONTROL_POLICIES }
     const contributions = this.contributions.values()
+    const retiredNodes = new Set<string>()
+    const retiredMarks = new Set<string>()
     for (const contribution of contributions) {
+      const version = contribution.version ?? 1
+      if (!Number.isSafeInteger(version) || version < 1) throw illegalState(`Invalid data version: ${contribution.id}`)
+      for (let from = 1; from < version; from++) {
+        if (!contribution.migrations?.[from]) throw illegalState(`Missing migration ${contribution.id}: ${from} → ${from + 1}`)
+      }
+      for (const name of contribution.legacyNodes ?? []) {
+        if (nodes.get(name) || retiredNodes.has(name)) throw illegalState(`Legacy editor node already registered: ${name}`)
+        retiredNodes.add(name)
+      }
+      for (const name of contribution.legacyMarks ?? []) {
+        if (marks.get(name) || retiredMarks.has(name)) throw illegalState(`Legacy editor mark already registered: ${name}`)
+        retiredMarks.add(name)
+      }
       for (const [name, spec] of Object.entries(contribution.nodes ?? {})) {
         if (!spec.toDOM) throw illegalState(`Editor node needs toDOM for clipboard and rendering: ${name}`)
-        if (nodes.get(name)) throw illegalState(`Editor node already registered: ${name}`)
+        if (nodes.get(name) || retiredNodes.has(name)) throw illegalState(`Editor node already registered: ${name}`)
       }
       for (const [name, spec] of Object.entries(contribution.marks ?? {})) {
         if (!spec.toDOM) throw illegalState(`Editor mark needs toDOM for clipboard and rendering: ${name}`)
-        if (marks.get(name)) throw illegalState(`Editor mark already registered: ${name}`)
+        if (marks.get(name) || retiredMarks.has(name)) throw illegalState(`Editor mark already registered: ${name}`)
       }
       nodes = nodes.append(contribution.nodes ?? {})
       marks = marks.append(contribution.marks ?? {})
@@ -100,6 +121,15 @@ export class ArxEditorExtension extends Extension {
       }
     }
     this.built = Object.freeze({
+      format: {
+        versions: contributions.map((owner) => ({
+          id: owner.id,
+          version: owner.version ?? 1,
+          nodes: [...Object.keys(owner.nodes ?? {}), ...(owner.legacyNodes ?? [])],
+          marks: [...Object.keys(owner.marks ?? {}), ...(owner.legacyMarks ?? [])],
+          migrations: owner.migrations ?? {},
+        })),
+      },
       schema,
       commands: Object.freeze(commands),
       components: Object.freeze(components),

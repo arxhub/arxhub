@@ -4,9 +4,11 @@ import { schema as basicSchema } from 'prosemirror-schema-basic'
 import { addListNodes } from 'prosemirror-schema-list'
 import { tableNodes } from 'prosemirror-tables'
 import { assetNodes } from './asset-schema'
+import { isRecord } from './document-migrations'
 import { safeLink } from './link-commands'
 
 const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
+  .update('doc', { content: 'block+', attrs: { arxEnvelope: { default: null } } })
   .update('code_block', {
     ...basicSchema.spec.nodes.get('code_block'),
     content: 'text*',
@@ -21,6 +23,39 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
   .append(tableNodes({ tableGroup: 'block', cellContent: 'block+', cellAttributes: {} }))
   .append(assetNodes)
   .append({
+    unknown_block: {
+      group: 'block',
+      atom: true,
+      attrs: {
+        raw: {
+          validate: (value: unknown) => {
+            if (!isRecord(value)) throw validation('Invalid preserved block')
+          },
+        },
+        versions: {
+          default: {},
+          validate: (value: unknown) => {
+            if (!isRecord(value) || Object.values(value).some((version) => !Number.isSafeInteger(version) || Number(version) < 1))
+              throw validation('Invalid preserved plugin versions')
+          },
+        },
+      },
+      parseDOM: [
+        {
+          tag: 'div[data-arx-unknown]',
+          getAttrs: (dom: HTMLElement) => {
+            try {
+              const value: unknown = JSON.parse(dom.dataset.arxUnknown ?? '')
+              return isRecord(value) && isRecord(value.raw) && isRecord(value.versions) ? value : false
+            } catch {
+              return false
+            }
+          },
+        },
+      ],
+      toDOM: (node: Node) =>
+        ['div', { 'data-arx-unknown': JSON.stringify(node.attrs) }, `Unavailable block: ${node.attrs.raw.type ?? 'unknown'}`] as const,
+    },
     section: {
       group: 'block',
       content: 'block+',

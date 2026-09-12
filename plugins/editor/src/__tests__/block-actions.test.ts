@@ -57,7 +57,7 @@ describe('document blocks', () => {
     changeBlock('delete')(state, (tr) => {
       state = state.apply(tr)
     })
-    expect(state.doc.toJSON()).toEqual({ type: 'doc', content: [{ type: 'paragraph' }] })
+    expect(state.doc.toJSON()).toEqual({ type: 'doc', attrs: { arxEnvelope: null }, content: [{ type: 'paragraph' }] })
     expect(state.selection.$from.parent.type.name).toBe('paragraph')
   })
 
@@ -126,7 +126,7 @@ describe('document blocks', () => {
     changeBlock('delete')(state, (tr) => {
       state = state.apply(tr)
     })
-    expect(state.doc.toJSON()).toEqual({ type: 'doc', content: [{ type: 'paragraph' }] })
+    expect(state.doc.toJSON()).toEqual({ type: 'doc', attrs: { arxEnvelope: null }, content: [{ type: 'paragraph' }] })
   })
 
   it('turns multiple paragraphs into tasks and back with marks intact', () => {
