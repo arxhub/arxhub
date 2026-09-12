@@ -1,0 +1,151 @@
+body {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-relaxed);
+}
+
+main {
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 24px 24px 20px;
+}
+
+article {
+  overflow-wrap: anywhere;
+}
+
+article > * + * {
+  margin-top: 16px;
+}
+
+article h1 {
+  font-size: var(--font-size-xl);
+}
+
+article h2 {
+  font-size: var(--font-size-lg);
+}
+
+article h3,
+article h4,
+article h5,
+article h6 {
+  font-size: var(--font-size-md);
+}
+
+article h1,
+article h2,
+article h3,
+article h4,
+article h5,
+article h6 {
+  line-height: var(--line-height-snug);
+  font-weight: var(--font-weight-semibold);
+}
+
+a {
+  color: var(--accent-11);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+a:focus-visible,
+pre:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: 1px;
+}
+
+pre,
+code {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  background: var(--gray-3);
+  border-radius: var(--radius-xs);
+}
+
+pre {
+  padding: 16px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+blockquote,
+.callout {
+  padding: 8px 16px;
+  border-left: 4px solid var(--gray-6);
+  background: var(--gray-2);
+}
+
+ul,
+ol {
+  padding-left: 24px;
+}
+
+li + li,
+li > * + * {
+  margin-top: 4px;
+}
+
+.tasks {
+  padding-left: 0;
+  list-style: none;
+}
+
+.task {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.task input {
+  width: var(--size-xl-half);
+  height: var(--size-xl-half);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.task > div {
+  min-width: 0;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--gray-6);
+}
+
+mark {
+  background: var(--accent-3);
+  color: var(--gray-12);
+}
+
+.notice {
+  padding: 16px;
+  margin-bottom: 24px;
+  background: var(--gray-2);
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-6);
+  font-size: var(--font-size-sm);
+  color: var(--gray-11);
+}
+
+footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-xl);
+}

@@ -1783,6 +1783,12 @@ importers:
       '@arxhub/sync':
         specifier: workspace:*
         version: link:../../packages/sync
+      '@arxhub/theme':
+        specifier: workspace:*
+        version: link:../../themes/default
+      '@arxhub/theme-preset':
+        specifier: workspace:*
+        version: link:../../packages/theme-preset
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit

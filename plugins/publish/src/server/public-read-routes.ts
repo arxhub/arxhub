@@ -1,33 +1,39 @@
-import { apiBaseUrl } from '@arxhub/core'
+import { validation } from '@arxhub/errors'
+import { extname } from '@arxhub/path'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { failOrRethrow, safePath } from '@arxhub/vfs-http/server'
 import Elysia, { type AnyElysia } from 'elysia'
-import { PUBLISH_NAMESPACE } from '../namespace'
+import { PUBLIC_ROUTE_PREFIX } from '../public-url'
 import type { PublishManifest } from '../publish-manifest'
+import { arxReader } from './arx-reader'
 import { contentTypeFor } from './content-type'
 import { PublishReader } from './publish-reader'
 
 // Anonymous read surface, RELATIVE prefix `/public`; arxhub mounts it under the publish namespace →
 // `/api/publish/public/*`. Every handler is GET so the auth guard's method-restricted allowlist covers
 // it without opening any write surface.
-export const PUBLIC_ROUTE_PREFIX = '/public'
-
-// The full path the anonymous surface resolves to, for the protection guard's publicGetPrefixes. arxhub
-// bakes `/api/<namespace>`; publish's namespace is `publish`, so instances allowlist this.
-export const PUBLIC_READ_PATH = `${apiBaseUrl('', PUBLISH_NAMESPACE)}${PUBLIC_ROUTE_PREFIX}`
+export { PUBLIC_READ_PATH, PUBLIC_ROUTE_PREFIX } from '../public-url'
 
 // A folder URL with no source file of its own tries these in order before returning 404.
 const INDEX_CANDIDATES = ['index.md', 'index.arx', 'index.html']
 
-// Public read routes for published content. The server reassembles each file from its chunks and
-// serves the source bytes with a content type — it never converts anything to HTML, so a reader who
-// opens a `.md` link gets markdown, not a page. Whoever wants the file list can read `~manifest`.
+// Resolve through the current manifest on EVERY read, including source downloads; revocation must
+// take effect even when a reader already knows a former file's URL.
 export function publicReadRoutes(vfs: VirtualFileSystem): AnyElysia {
   const reader = new PublishReader(vfs)
 
-  return new Elysia({ prefix: PUBLIC_ROUTE_PREFIX }).get('/*', async ({ params, set }) => {
+  return new Elysia({ prefix: PUBLIC_ROUTE_PREFIX }).get('/*', async ({ params, query, set }) => {
     try {
-      const path = safePath(params['*'], { allowEmpty: true })
+      set.headers['cache-control'] = 'no-store'
+      set.headers['x-content-type-options'] = 'nosniff'
+      let decoded: string
+      try {
+        // Elysia's wildcard is still URL-encoded; decode once before validating the vault path.
+        decoded = decodeURIComponent(params['*'])
+      } catch {
+        throw validation('Invalid URL encoding')
+      }
+      const path = safePath(decoded, { allowEmpty: true })
 
       const manifest = await reader.getManifest()
       if (manifest == null) {
@@ -43,7 +49,26 @@ export function publicReadRoutes(vfs: VirtualFileSystem): AnyElysia {
         set.status = 404
         return 'Not Found'
       }
-      // Source bytes as published, typed by extension — no rendering step anywhere in the path.
+      if (extname(served.pathname).toLowerCase() === '.arx') {
+        if (query.source === '1') {
+          return new Response(new Uint8Array(served.bytes), {
+            headers: {
+              'content-type': 'application/json',
+              'content-disposition': `attachment; filename="document.arx"; filename*=UTF-8''${encodeURIComponent(served.pathname.split('/').at(-1) ?? 'document.arx')}`,
+            },
+          })
+        }
+        const page = arxReader(new TextDecoder().decode(served.bytes), served.pathname)
+        return new Response(page.html, {
+          status: page.status,
+          headers: {
+            'content-type': 'text/html; charset=utf-8',
+            'content-security-policy':
+              "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https: http:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+            'referrer-policy': 'no-referrer',
+          },
+        })
+      }
       return new Response(new Uint8Array(served.bytes), { headers: { 'content-type': contentTypeFor(served.pathname) } })
     } catch (e) {
       return failOrRethrow(e, set)

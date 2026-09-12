@@ -14,7 +14,7 @@ const encoder = new TextEncoder()
 
 export type PublisherOptions = {
   // User content (plaintext source) — the same namespace the explorer shows. What is uploaded is the
-  // source itself, chunked; nothing anywhere converts it to HTML.
+  // source itself, chunked; the public reader renders .arx without changing these bytes.
   vault: VirtualFileSystem
   // Plugin storage (SYNCED): the set of published root paths lives here so every device agrees on
   // what is public and any device can rebuild + republish the manifest.
@@ -28,8 +28,8 @@ export type PublisherOptions = {
 // Publishes vault content as an UNENCRYPTED, content-addressed public site: each file is Rabin-
 // chunked (same chunker as sync), the plaintext chunks are uploaded to the public object store, and
 // a manifest (path → chunk list) is uploaded and pointed to by the store head. On read the server
-// reassembles a whole file from the manifest and serves the source bytes as they are — publishing
-// exposes data, not a rendered site. Publishing DELIBERATELY takes the selected subtree out of E2E:
+// reassembles a whole file from the manifest; .arx gets a read-only page and a source download.
+// Publishing DELIBERATELY takes the selected subtree out of E2E:
 // that is the feature. Chunking means republishing only uploads changed chunks.
 export class Publisher {
   private readonly vault: VirtualFileSystem

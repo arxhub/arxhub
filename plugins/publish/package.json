@@ -24,6 +24,8 @@
     "@arxhub/crypto": "workspace:*",
     "@arxhub/http": "workspace:*",
     "@arxhub/path": "workspace:*",
+    "@arxhub/theme": "workspace:*",
+    "@arxhub/theme-preset": "workspace:*",
     "elysia": "catalog:server"
   },
   "devDependencies": {

@@ -26,9 +26,8 @@ type PublishServerPluginArgs = PluginArgs & {
 //   - `/objects/*` + `/head` (owner-only, behind the global auth guard): the SAME batched object
 //     protocol sync uses — but the client omits the encryption wrapper, so chunks/manifest land as
 //     plaintext. Reuses @arxhub/sync's objectStoreRoutes over an unencrypted VfsSyncRemote.
-//   - `/public/*` (anonymous GET, allowlisted in the guard via PUBLIC_READ_PATH): serves the raw
-//     published source bytes + manifest. The server reassembles files from their chunks; nothing
-//     renders them, so the reader receives the source.
+//   - `/public/*` (anonymous GET, allowlisted in the guard via PUBLIC_READ_PATH): serves .arx as
+//     read-only pages (or source downloads), other file bytes and the published manifest.
 // Register alongside GatewayServerPlugin, and add PUBLIC_READ_PATH to ProtectionServerPlugin's
 // publicGetPrefixes so anonymous reads pass the guard.
 export class PublishServerPlugin extends Plugin {

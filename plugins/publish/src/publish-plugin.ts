@@ -14,10 +14,13 @@ import { PUBLISH_NAMESPACE } from './namespace'
 import { PublishExtension } from './publish-extension'
 import { Publisher } from './publisher'
 
-export const PublishConfigSchema = Type.Object({
-  // The server ORIGIN (e.g. https://hub.example.com) — the /publish route prefix is appended here.
-  serverUrl: Type.String({ title: 'Server URL', description: 'ArxHub server origin, e.g. https://hub.example.com', default: '' }),
-})
+export const PublishConfigSchema = Type.Object(
+  {
+    // The server ORIGIN (e.g. https://hub.example.com) — the /publish route prefix is appended here.
+    serverUrl: Type.String({ title: 'Server URL', description: 'ArxHub server origin, e.g. https://hub.example.com', default: '' }),
+  },
+  { description: 'Share selected notes and folders through public links. Restart ArxHub after changing the server.' },
+)
 
 export class PublishPlugin extends Plugin {
   constructor(args: PluginArgs) {
@@ -46,7 +49,10 @@ export class PublishPlugin extends Plugin {
     // Menu invokers don't await onSelect, so failures are logged here instead of surfacing as
     // unhandled rejections (same policy as the explorer's own actions).
     const run = (action: Promise<void>, context: string): void => {
-      action.catch((error) => this.logger.error(`${context} failed`, error))
+      action.catch((error) => {
+        this.logger.error(`${context} failed`, error)
+        toaster.create({ title: `Could not ${context}`, description: String(error), type: 'error' })
+      })
     }
     explorer.registerNodeActions((node) => {
       if (!publish.enabled) return []
