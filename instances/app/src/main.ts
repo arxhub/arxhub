@@ -21,6 +21,7 @@ import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection
 import { PublishPlugin } from '@arxhub/plugin-publish/ui'
 import { SearchPlugin } from '@arxhub/plugin-search/ui'
 import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
+import { SheetsPlugin } from '@arxhub/plugin-sheets/ui'
 import { AboutSettingsPage, ObjectGonePage, ShellExtension, ShellPlugin, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell/ui'
 import { SyncPlugin } from '@arxhub/plugin-sync/ui'
 import { type Theme, ThemePlugin } from '@arxhub/plugin-theme/ui'
@@ -78,6 +79,7 @@ arxhub.plugins.register(NotesPlugin, () => ({ root: '' }))
 arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
 arxhub.plugins.register(ArxEditorPlugin)
+arxhub.plugins.register(SheetsPlugin)
 arxhub.plugins.register(SettingsPlugin)
 // The index is device-local and lives in the browser's own storage — never in the content store, so
 // sync never walks it (FR-214). A headless server has no index at all (FR-218).

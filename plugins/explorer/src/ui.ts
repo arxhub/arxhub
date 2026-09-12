@@ -1,4 +1,4 @@
-export type { TreeNode } from './explorer-extension'
+export type { FileTemplate, TreeNode } from './explorer-extension'
 export { ExplorerExtension } from './explorer-extension'
 export { ExplorerPlugin } from './explorer-plugin'
 export { default as FileTreeNode } from './ui/FileTreeNode.vue'

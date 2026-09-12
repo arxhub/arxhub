@@ -1,0 +1,54 @@
+{
+  "name": "@arxhub/plugin-sheets",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Offline spreadsheets for ArxHub",
+  "keywords": [
+    "arxhub"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./ui": "./src/ui.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vue-tsc --noEmit && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain",
+    "vue-tsc": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/plugin-explorer": "workspace:*",
+    "@arxhub/plugin-hotkeys": "workspace:*",
+    "@arxhub/plugin-notes": "workspace:*",
+    "@arxhub/plugin-panels": "workspace:*",
+    "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/stdlib": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
+    "@arxhub/plugin-editor": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      }
+    }
+  }
+}

@@ -16,6 +16,7 @@ test.describe('keeping the tree in order', () => {
   test('creates a note in the format the product reasons about', async ({ app, vault }) => {
     await openNavigation(app)
     await app.getByRole('button', { name: 'New file', exact: true }).click()
+    await app.getByRole('menuitem', { name: 'New document', exact: true }).click()
 
     // '.arx' is the primary format (planning/decisions.md A-29): markdown stays readable and editable,
     // but everything structural is read from the '.arx' tree. The seed has to match the extension — an

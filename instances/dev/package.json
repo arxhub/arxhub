@@ -41,7 +41,8 @@
     "@arxhub/vfs-http": "workspace:*",
     "@arxhub/vfs-node": "workspace:*",
     "lucide-vue-next": "catalog:client",
-    "vue": "catalog:client"
+    "vue": "catalog:client",
+    "@arxhub/plugin-sheets": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

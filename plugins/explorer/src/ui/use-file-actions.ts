@@ -47,8 +47,8 @@ export function useFileActions() {
     runAction(openPath(node.entry.pathname), 'open the file')
   }
 
-  async function createFile(parent: string): Promise<void> {
-    const path = await explorer.createFile(parent, 'untitled.arx')
+  async function createFile(parent: string, extension = '.arx'): Promise<void> {
+    const path = await explorer.createFile(parent, `untitled${extension}`)
     await openPath(path)
   }
 
@@ -101,6 +101,7 @@ export function useFileActions() {
 
   function getRootActions(): ActionItem[] {
     return [
+      ...getTemplateActions(explorer.root),
       {
         id: 'new-file',
         label: 'New File',
@@ -116,7 +117,23 @@ export function useFileActions() {
     ]
   }
 
+  function getTemplateActions(parent: string): ActionItem[] {
+    return explorer.fileTemplates.value.map((template) => ({
+      id: `new:${template.extension}`,
+      label: template.label,
+      icon: template.icon,
+      onSelect: () => runAction(createFile(parent, template.extension), 'create the file'),
+    }))
+  }
+
+  function getCreationActions(parent: string): ActionItem[] {
+    return [
+      { id: 'new-document', label: 'New document', icon: 'lu:file-plus', onSelect: () => runAction(createFile(parent), 'create the file') },
+      ...getTemplateActions(parent),
+    ]
+  }
+
   // runAction is part of the surface: the toolbar and the inline rename start the same actions from a
   // plain click, and each one that reported failures on its own is one that could stop.
-  return { openFile, createFile, newFile, newFolder, startRename, confirmDelete, getNodeActions, getRootActions, runAction }
+  return { openFile, createFile, newFile, newFolder, startRename, confirmDelete, getNodeActions, getRootActions, getCreationActions, runAction }
 }

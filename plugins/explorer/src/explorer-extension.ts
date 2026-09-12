@@ -14,6 +14,13 @@ export interface TreeNode {
 // channel). Called each time a menu opens; return [] to contribute nothing for a node.
 export type NodeActionContributor = (node: TreeNode) => ActionItem[]
 
+export interface FileTemplate {
+  extension: string
+  label: string
+  icon: string
+  seed(): string
+}
+
 type ExplorerExtensionArgs = ExtensionArgs & {
   vfs: VirtualFileSystem
   root: string
@@ -45,6 +52,12 @@ export class ExplorerExtension extends Extension {
   readonly focusedPath = ref<string | null>(null)
   private creation: Promise<unknown> = Promise.resolve()
   private readonly nodeActionContributors: NodeActionContributor[] = []
+  readonly fileTemplates = ref<FileTemplate[]>([])
+
+  registerFileTemplate(template: FileTemplate): void {
+    if (this.fileTemplates.value.some((item) => item.extension === template.extension)) return
+    this.fileTemplates.value.push(template)
+  }
 
   constructor(args: ExplorerExtensionArgs) {
     super(args)
@@ -128,7 +141,8 @@ export class ExplorerExtension extends Extension {
       const stem = ext ? name.slice(0, -ext.length) : name
       let candidate = join(parentPath, name)
       for (let n = 2; await this.vfs.exists(candidate); n++) candidate = join(parentPath, `${stem} ${n}${ext}`)
-      await this.vfs.file(candidate).writeText(emptyContentFor(name))
+      const template = this.fileTemplates.value.find((item) => item.extension === ext.toLowerCase())
+      await this.vfs.file(candidate).writeText(template ? template.seed() : emptyContentFor(name))
       return candidate
     })
     await this.refreshDir(parentPath)
