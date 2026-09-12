@@ -12,6 +12,7 @@ import { keymap } from 'prosemirror-keymap'
 import { EditorState, TextSelection } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { computed, onUnmounted, ref, shallowRef, toRef, useId, watch } from 'vue'
+import { blockSelectionPlugin } from '../block-selection'
 import { createControlViews } from '../control-views'
 import { ArxEditorExtension } from '../editor-extension'
 import { deserialize, emptyDoc, serialize } from '../editor-format'
@@ -71,6 +72,7 @@ function buildPlugins() {
     modePlugin(mode.value, kit.controls, Object.keys(kit.components)),
     slashCommands(slashMenuId, kit.commands),
     history(),
+    blockSelectionPlugin(),
     ...kit.plugins(),
     keymap(buildKeymap(schema)),
     inputRules({ rules: buildInputRules(schema) }),
@@ -312,6 +314,11 @@ onUnmounted(() => {
   font-size: var(--font-size-md);
   line-height: 1.7;
   color: var(--gray-12);
+}
+.editor-content :deep(.arx-block-selected) {
+  outline: 2px solid var(--accent-8);
+  outline-offset: 1px;
+  background: var(--accent-3);
 }
 /* design-ignore DS type ramp: this is the CONTENT of a note, not chrome. A heading inside a document
    scales with the body it sits in, so these are relative to --font-size-md rather than steps of the
