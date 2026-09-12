@@ -1,4 +1,5 @@
 import { type Component, markRaw } from 'vue'
+import { resolveLucideIcon } from './default-icons'
 
 // An icon spec is `"<prefix>:<name>"` (FontAwesome-style), e.g. `lu:folder-open`, `fa:trash`.
 // A name with no registered prefix is rendered as a raw text/emoji glyph, so `📁` and custom
@@ -13,7 +14,8 @@ export interface ResolvedIcon {
   glyph?: string
 }
 
-const packs = new Map<string, IconPack>()
+// A side-effect-only registration import is removed by production tree shaking.
+const packs = new Map<string, IconPack>([['lu', resolveLucideIcon]])
 
 export function registerIconPack(prefix: string, pack: IconPack): void {
   if (typeof pack === 'function') {
