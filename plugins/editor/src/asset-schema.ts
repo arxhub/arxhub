@@ -40,8 +40,9 @@ function assetNode(image: boolean): NodeSpec {
             if (!attrs || typeof attrs !== 'object' || Array.isArray(attrs)) return false
             const values = attrs as Record<string, unknown>
             const strings = ['name', 'mime', 'caption', ...(image ? ['alt'] : [])]
-            const allowed = new Set(['path', 'size', ...strings, ...(image ? ['width'] : [])])
+            const allowed = new Set(['arxId', 'path', 'size', ...strings, ...(image ? ['width'] : [])])
             if (Object.keys(values).some((key) => !allowed.has(key))) return false
+            if (values.arxId != null && typeof values.arxId !== 'string') return false
             if (strings.some((key) => values[key] !== undefined && typeof values[key] !== 'string')) return false
             if (values.size !== undefined && (typeof values.size !== 'number' || !Number.isSafeInteger(values.size) || values.size < 0))
               return false

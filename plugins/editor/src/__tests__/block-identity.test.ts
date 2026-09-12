@@ -1,5 +1,5 @@
 import { history, undo } from 'prosemirror-history'
-import { Schema } from 'prosemirror-model'
+import { type DOMOutputSpec, Schema } from 'prosemirror-model'
 import { EditorState } from 'prosemirror-state'
 import { describe, expect, it } from 'vitest'
 import { blockIdentityPlugin, identifyBlocks, identityNodes } from '../block-identity'
@@ -11,6 +11,19 @@ const schema = new Schema({ nodes: identityNodes(baseSchema.spec.nodes), marks: 
 const doc = () => identifyBlocks(schema.node('doc', null, [schema.node('paragraph', null, schema.text('Original'))]))
 
 describe('stable block identities', () => {
+  it('does not turn an attribute array into a trusted DOM spec when adding an identity', () => {
+    const unsafe = new Schema({
+      nodes: identityNodes(
+        baseSchema.spec.nodes.append({
+          widget: { group: 'block', atom: true, attrs: { layout: {} }, toDOM: (node) => node.attrs.layout as DOMOutputSpec },
+        }),
+      ),
+      marks: baseSchema.spec.marks,
+    })
+    const node = unsafe.node('widget', { arxId: 'widget', layout: ['img', { src: 'x', onerror: 'untrusted()' }] })
+    expect(() => node.type.spec.toDOM?.(node)).toThrow('cannot come from document attributes')
+  })
+
   it('keeps the original identity when a copy is inserted before it and undo restores the original', () => {
     let state = EditorState.create({ doc: doc(), plugins: [history(), blockIdentityPlugin()] })
     const original = state.doc.firstChild!

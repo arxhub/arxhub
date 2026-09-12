@@ -142,7 +142,10 @@ test('unknown plugin blocks survive edits to surrounding content', async ({ app,
   await app.keyboard.insertText(' edited')
   await app.getByRole('button', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('Neighbor edited')
-  expect(JSON.parse(await vault.read(path)).doc.content[0]).toEqual(JSON.parse(original).doc.content[0])
+  expect(JSON.parse(await vault.read(path)).doc.content[0]).toEqual({
+    type: 'missing_plugin_block',
+    attrs: { payload: 'Keep this data', arxId: expect.any(String) },
+  })
   await app.reload()
   await expect(app.locator('.unknown-block')).toContainText('missing_plugin_block')
 })
