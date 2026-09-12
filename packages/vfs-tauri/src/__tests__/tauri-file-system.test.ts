@@ -1,3 +1,5 @@
+import { renameEntry } from '@arxhub/vfs'
+import { readDir } from '@tauri-apps/plugin-fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // An in-memory stand-in for @tauri-apps/plugin-fs, mocked because the real one only answers inside a
@@ -32,7 +34,10 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
     if (found == null) throw new Error(`ENOENT: ${path}`)
     return found
   }),
+  exists: vi.fn(async (path: string) => path === '' || files.has(path) || dirs.has(path)),
   readDir: vi.fn(async (path: string) => {
+    if (files.has(path)) throw new Error(`ENOTDIR: ${path}`)
+    if (path && !dirs.has(path)) throw new Error(`ENOENT: ${path}`)
     const prefix = path ? `${path}/` : ''
     const names = new Set<string>()
     for (const key of [...files.keys(), ...dirs]) {
@@ -59,8 +64,14 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
     if (!removed) throw new Error(`ENOENT: ${path}`)
   }),
   stat: vi.fn(async (path: string) => {
-    if (!files.has(path)) throw new Error(`ENOENT: ${path}`)
-    return { size: files.get(path)?.length ?? 0, mtime: new Date(0), birthtime: new Date(0) }
+    if (path && !files.has(path) && !dirs.has(path)) throw new Error(`ENOENT: ${path}`)
+    return {
+      isFile: files.has(path),
+      isDirectory: path === '' || dirs.has(path),
+      size: files.get(path)?.length ?? 0,
+      mtime: new Date(0),
+      birthtime: new Date(0),
+    }
   }),
 }))
 
@@ -76,6 +87,31 @@ describe('TauriFileSystem', () => {
   beforeEach(() => {
     dirs.clear()
     files.clear()
+  })
+
+  it('walks an individual file and keeps its logical path under a native base directory', async () => {
+    const fs = makeFs('root')
+    await fs.file('notes/page.arx').writeText('Original contents')
+    const found = []
+    for await (const file of fs.walk('notes/page.arx')) found.push([file.pathname, await file.readText()])
+    expect(found).toEqual([['notes/page.arx', 'Original contents']])
+    expect(await fs.list('notes/page.arx.arxmeta')).toEqual([])
+  })
+
+  it('moves a single file through the generic copy-delete rename without losing its content', async () => {
+    const fs = makeFs('root')
+    await fs.file('source.arx').writeText('Keep the note')
+    await renameEntry(fs, 'source.arx', 'folder/destination.arx')
+    expect(await fs.file('folder/destination.arx').readText()).toBe('Keep the note')
+    expect(await fs.exists('source.arx')).toBe(false)
+  })
+
+  it('keeps an unreadable folder distinguishable from an empty or absent one', async () => {
+    const fs = makeFs()
+    await fs.write('notes/a.arx', new Uint8Array([1]))
+    vi.mocked(readDir).mockRejectedValueOnce(new Error('EACCES: notes'))
+    await expect(fs.list('notes')).rejects.toThrow('EACCES')
+    expect(await fs.list('missing')).toEqual([])
   })
 
   it('creates the directory a write lands in', async () => {

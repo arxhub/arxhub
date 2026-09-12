@@ -53,7 +53,7 @@ export class PublishPlugin extends Plugin {
     // unhandled rejections (same policy as the explorer's own actions).
     const run = (action: Promise<void>, context: string): void => {
       action.catch((error) => {
-        this.logger.error(`${context} failed`, error)
+        this.logger.error({ error: error instanceof Error ? error.message : String(error) }, `${context} failed`)
         toaster.create({ title: `Could not ${context}`, description: String(error), type: 'error' })
       })
     }
@@ -151,7 +151,10 @@ export class PublishPlugin extends Plugin {
       // Publishing then stays OFF for the session rather than starting from an empty set. That file is
       // the record of what is public; a publisher that could not read it would rewrite it from nothing
       // on the next publish and quietly unpublish everything the owner had shared.
-      this.logger.error('Could not read the set of published paths — publishing is unavailable this session', error)
+      this.logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Could not read the set of published paths — publishing is unavailable this session',
+      )
       return
     }
     const publish = ctx.extensions.get(PublishExtension)

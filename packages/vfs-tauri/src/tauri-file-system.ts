@@ -1,7 +1,7 @@
 import type { Logger } from '@arxhub/core'
 import { normalizePath } from '@arxhub/path'
 import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type VirtualEntry } from '@arxhub/vfs'
-import { BaseDirectory, mkdir, readDir, readFile, remove, stat, writeFile } from '@tauri-apps/plugin-fs'
+import { BaseDirectory, mkdir, exists as pathExists, readDir, readFile, remove, stat, writeFile } from '@tauri-apps/plugin-fs'
 
 // The directory a path sits in, or '' at the root. Not `posix.dirname` — that answers '.' for a bare
 // name, which `mkdir` would then create as a literal directory called '.'.
@@ -30,14 +30,20 @@ export class TauriFileSystem extends GenericVirtualFileSystem {
     const norm = normalizePath(prefix)
     const result: VirtualEntry[] = []
     try {
-      const entries = await readDir(this.fullPath(norm), { baseDir: this.baseDir })
+      const path = this.fullPath(norm)
+      const options = { baseDir: this.baseDir }
+      if (!(await pathExists(path, options))) return result
+      const info = await stat(path, options)
+      if (info.isFile) return norm && !norm.endsWith('.arxmeta') ? [this.file(norm)] : []
+      const entries = await readDir(path, options)
       for (const entry of entries) {
         const relPath = norm ? `${norm}/${entry.name}` : entry.name
         if (entry.isDirectory) result.push(this.dir(relPath))
         else if (!entry.name.endsWith('.arxmeta')) result.push(this.file(relPath))
       }
     } catch (e) {
-      this.logger.warn(`list(${prefix}) failed:`, e)
+      this.logger.warn({ error: String(e) }, `list(${prefix}) failed`)
+      throw e
     }
     return result
   }

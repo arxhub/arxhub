@@ -33,7 +33,9 @@
     "@arxhub/toolchain-vite": "workspace:*",
     "@arxhub/vfs-node": "workspace:*",
     "@sinclair/typebox": "catalog:shared",
-    "@types/node": "catalog:toolchain"
+    "@types/node": "catalog:toolchain",
+    "@arxhub/vfs-tauri": "workspace:*",
+    "@tauri-apps/plugin-fs": "catalog:tauri"
   },
   "peerDependencies": {
     "@arxhub/config": "workspace:*",

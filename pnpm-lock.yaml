@@ -1868,9 +1868,15 @@ importers:
       '@arxhub/vfs-node':
         specifier: workspace:*
         version: link:../../packages/vfs-node
+      '@arxhub/vfs-tauri':
+        specifier: workspace:*
+        version: link:../../packages/vfs-tauri
       '@sinclair/typebox':
         specifier: catalog:shared
         version: 0.34.48
+      '@tauri-apps/plugin-fs':
+        specifier: catalog:tauri
+        version: 2.5.0
       '@types/node':
         specifier: catalog:toolchain
         version: 25.6.0

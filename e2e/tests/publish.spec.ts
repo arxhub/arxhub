@@ -96,3 +96,32 @@ test.describe('publishing a note', () => {
     expect(response.status()).toBe(404)
   })
 })
+
+test('a publication transport failure keeps its cause in the log and can be retried', async ({ app, vault, baseURL }) => {
+  const path = await vault.write(
+    `${test.info().project.name}-retry.arx`,
+    JSON.stringify({
+      version: 1,
+      doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Retry publication' }] }] },
+    }),
+  )
+  await vault.writeData('storage/publish/config.toml', `serverUrl = "${baseURL}"\n`)
+  await app.reload()
+  const endpoint = '**/api/publish/objects/stat'
+  await app.route(endpoint, (route) => route.abort('connectionrefused'))
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click({ button: 'right' })
+  const logged = app.waitForEvent('console', (message) => message.type() === 'error' && message.text().includes('[PublishPlugin]'))
+  await app.getByRole('menuitem', { name: 'Publish', exact: true }).click()
+  const args = await Promise.all((await logged).args().map((arg) => arg.jsonValue()))
+  expect(args).toContainEqual({ error: expect.stringMatching(/.+/) })
+  const notifications = app.getByRole('region', { name: /Notifications/ })
+  await expect(notifications.getByText(`Could not publish ${path}`, { exact: true })).toBeVisible()
+  expect((await app.request.get(`/api/publish/public/${encodeURIComponent(path)}`)).status()).toBe(404)
+  await app.unroute(endpoint)
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click({ button: 'right' })
+  await app.getByRole('menuitem', { name: 'Publish', exact: true }).click()
+  await expect(notifications.getByText('Published', { exact: true })).toBeVisible()
+  expect((await app.request.get(`/api/publish/public/${encodeURIComponent(path)}`)).status()).toBe(200)
+})
