@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { validation } from '@arxhub/errors'
+import { basename, dirname } from '@arxhub/path'
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
 import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
-import { VaultVfs } from '@arxhub/vfs'
+import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { closeHistory, history } from 'prosemirror-history'
 import { inputRules } from 'prosemirror-inputrules'
 import { keymap } from 'prosemirror-keymap'
 import { EditorState, Selection } from 'prosemirror-state'
 import { columnResizing, tableEditing } from 'prosemirror-tables'
 import { EditorView } from 'prosemirror-view'
-import { computed, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
+import { computed, onMounted, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
 import { ARX_ASSETS, createAssetSession } from '../asset-session'
 import { createAssetStore } from '../assets'
 import { blockIdentityPlugin, identifyBlocks } from '../block-identity'
@@ -21,6 +22,7 @@ import { blockMarqueePlugin } from '../block-marquee'
 import { blockSelectionPlugin } from '../block-selection'
 import { codeHighlighting } from '../code-highlighting'
 import { createControlViews } from '../control-views'
+import type { ArxDraft } from '../document-drafts'
 import { documentId, withDocumentId } from '../document-history'
 import { documentBlocks, documentHref, documentLinksPlugin, revealBlock } from '../document-links'
 import { focusDocument } from '../document-navigation'
@@ -37,6 +39,7 @@ import BlockHandle from './BlockHandle.vue'
 import DocumentBacklinks from './DocumentBacklinks.vue'
 import DocumentFind from './DocumentFind.vue'
 import DocumentOutline from './DocumentOutline.vue'
+import DocumentRecovery from './DocumentRecovery.vue'
 import DocumentVersions from './DocumentVersions.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import SlashMenu from './SlashMenu.vue'
@@ -76,6 +79,13 @@ const slashMenu = computed(() => {
   void revision.value
   return view.value ? slashKey.getState(view.value.state) : null
 })
+const loadedStates = new WeakMap<EditorState, string>()
+let baseContent = ''
+let draftId: string = crypto.randomUUID()
+const recovery = shallowRef<{ draft: ArxDraft; saved: string; conflict: boolean } | null>(null)
+const recoveryBusy = ref(false)
+const recoveryError = ref('')
+const draftError = ref('')
 const identityPending = ref(false)
 const edits = ref(0)
 const savedEdits = ref(0)
@@ -140,7 +150,9 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
     }
   }
   doc = identifyBlocks(withDocumentId(doc, id ?? crypto.randomUUID()))
-  return EditorState.create({ schema, doc, plugins: buildPlugins() })
+  const state = EditorState.create({ schema, doc, plugins: buildPlugins() })
+  loadedStates.set(state, new TextDecoder().decode(bytes))
+  return state
 }
 
 // Shared composable owns the load lifecycle: staleness guard on rapid file switches, open-empty
@@ -173,11 +185,21 @@ const {
             // no-op.
             if (canSave.value) {
               edits.value++
-              autosave.schedule()
+              backupDraft()
+              if (!recovery.value) autosave.schedule()
             }
           }
         },
       })
+    }
+    baseContent = loadedStates.get(state) ?? ''
+    draftId = crypto.randomUUID()
+    recovery.value = null
+    try {
+      const draft = extension.drafts?.list(props.path).find((entry) => entry.content !== baseContent)
+      if (draft) recovery.value = { draft, saved: baseContent, conflict: draft.base !== baseContent }
+    } catch (error) {
+      draftError.value = error instanceof Error ? error.message : String(error)
     }
     identityPending.value = true
     edits.value = 0
@@ -189,10 +211,11 @@ const {
 })
 
 watch(
-  [mode, canSave],
-  ([selected, ready]) => {
+  [mode, canSave, recovery],
+  ([selected, ready, pending]) => {
     const current = view.value
-    if (current) current.dispatch(current.state.tr.setMeta(editorModeKey, ready ? selected : 'readonly').setMeta(slashKey, 'dismiss'))
+    if (current)
+      current.dispatch(current.state.tr.setMeta(editorModeKey, ready && !pending ? selected : 'readonly').setMeta(slashKey, 'dismiss'))
   },
   { flush: 'sync' },
 )
@@ -258,18 +281,34 @@ onUnmounted(notes.registerOpenView(() => props.path, reveal, beforeClose))
 
 async function doSave() {
   if (!view.value || !canSave.value) return
+  if (recovery.value) throw validation('Resolve the recovery choice before saving.')
   const path = props.path
   const version = edits.value
   saving.value = true
   try {
     const content = serialize(view.value.state.doc, kit.format)
+    const saved = new TextDecoder().decode(await vfs.read(path))
+    if (saved !== baseContent && saved !== content) {
+      recovery.value = { draft: currentDraft(content), saved, conflict: true }
+      throw validation('The file changed outside this editor. Choose which version to keep.')
+    }
     const id = documentId(view.value.state.doc)
-    if (id && extension.history) await extension.history.record(id, new TextDecoder().decode(await vfs.read(path)), path)
+    if (id && extension.history) await extension.history.record(id, saved, path)
     if (!canSave.value || props.path !== path) throw validation('The document moved or became unavailable while saving. Retry Save.')
+    if (new TextDecoder().decode(await vfs.read(path)) !== saved)
+      throw validation('The file changed during saving. Retry Save to compare versions.')
     await vfs.write(path, new TextEncoder().encode(content))
+    baseContent = content
     if (id && extension.history) await extension.history.record(id, content, path)
     identityPending.value = false
     savedEdits.value = version
+    if (edits.value === version) {
+      try {
+        extension.drafts?.remove(draftId)
+      } catch (error) {
+        draftError.value = String(error)
+      }
+    } else backupDraft()
     saveError.value = false
   } catch (error) {
     saveError.value = true
@@ -279,6 +318,87 @@ async function doSave() {
     throw error
   } finally {
     saving.value = false
+  }
+}
+
+function currentDraft(content = view.value ? serialize(view.value.state.doc, kit.format) : ''): ArxDraft {
+  return { id: draftId, path: props.path, base: baseContent, content, updatedAt: Date.now() }
+}
+function backupDraft() {
+  if (!view.value || !canSave.value || !extension.drafts) return
+  try {
+    extension.drafts.write(currentDraft())
+    draftError.value = ''
+  } catch (error) {
+    draftError.value = error instanceof Error ? error.message : String(error)
+  }
+}
+async function checkExternal() {
+  if (!view.value || !canSave.value || saving.value || recovery.value || !view.value.dom.getClientRects().length) return
+  const path = props.path
+  try {
+    const saved = new TextDecoder().decode(await vfs.read(path))
+    if (props.path !== path || saving.value || recovery.value || saved === baseContent) return
+    if (edits.value === savedEdits.value) await reload(path)
+    else {
+      autosave.cancel()
+      recovery.value = { draft: currentDraft(), saved, conflict: true }
+    }
+  } catch {
+    /* Save reports read failures while the live buffer remains available. */
+  }
+}
+let externalTimer: ReturnType<typeof setInterval>
+onMounted(() => {
+  externalTimer = setInterval(checkExternal, 5000)
+  window.addEventListener('focus', checkExternal)
+})
+onUnmounted(
+  arxhub.services.get(VaultWatcher).subscribe((change) => {
+    if (change.pathname === props.path && change.kind === 'written') queueMicrotask(checkExternal)
+  }),
+)
+async function resolveRecovery(action: 'draft' | 'saved' | 'both') {
+  const pending = recovery.value
+  if (!pending || !view.value || recoveryBusy.value) return
+  recoveryBusy.value = true
+  recoveryError.value = ''
+  try {
+    const path = props.path
+    const latest = new TextDecoder().decode(await vfs.read(path))
+    if (latest !== pending.saved) {
+      recovery.value = { ...pending, saved: latest, conflict: true }
+      throw validation('The saved file changed again. Review the latest version.')
+    }
+    if (action === 'both') {
+      const copy = await notes.freePath(dirname(path), `${basename(path, '.arx')} recovered`, '.arx')
+      const doc = withDocumentId(deserialize(schema, pending.draft.content, kit.format), crypto.randomUUID())
+      await vfs.write(copy, new TextEncoder().encode(serialize(doc, kit.format)))
+      extension.drafts?.remove(pending.draft.id)
+      recovery.value = null
+      await reload(path)
+      await extension.links?.open(copy)
+    } else if (action === 'saved') {
+      extension.drafts?.remove(pending.draft.id)
+      recovery.value = null
+      await reload(path)
+    } else {
+      const doc = deserialize(schema, pending.draft.content, kit.format)
+      baseContent = pending.saved
+      draftId = pending.draft.id
+      recovery.value = null
+      mode.value = 'editable'
+      const tr = view.value.state.tr
+        .replaceWith(0, view.value.state.doc.content.size, doc.content)
+        .setDocAttribute('arxEnvelope', doc.attrs.arxEnvelope)
+      view.value.dispatch(closeHistory(tr))
+      backupDraft()
+      await autosave.flush()
+    }
+  } catch (error) {
+    recoveryError.value = error instanceof Error ? error.message : String(error)
+  } finally {
+    recoveryBusy.value = false
   }
 }
 
@@ -312,6 +432,7 @@ async function save() {
 }
 
 async function beforeClose(): Promise<boolean> {
+  if (recovery.value) return false
   try {
     await assets.wait()
     // flush() may join an older in-flight write. Keep the view until all edits made since it began
@@ -332,11 +453,14 @@ watch(
     if (!canSave.value) return
     // A rename may have copied the file while an autosave still targeted its old path.
     edits.value++
+    backupDraft()
     autosave.schedule()
   },
 )
 
 onUnmounted(() => {
+  clearInterval(externalTimer)
+  window.removeEventListener('focus', checkExternal)
   assets.dispose()
   window.removeEventListener('beforeunload', warnUnsaved)
   autosave.cancel()
@@ -352,6 +476,8 @@ onUnmounted(() => {
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
     <DocumentVersions v-if="versionsOpen && extension.history && historyId" :store="extension.history" :document-id="historyId" :kit="kit" :mode="mode" :restore="restoreVersion" @close="versionsOpen = false" />
+    <DocumentRecovery v-if="recovery" :kit="kit" :saved="recovery.saved" :draft="recovery.draft.content" :conflict="recovery.conflict" :busy="recoveryBusy" :error="recoveryError" @choose="resolveRecovery" />
+    <div v-if="draftError" class="editor-error" role="alert"><span>Draft backup unavailable: {{ draftError }}</span><Button variant="secondary" @click="backupDraft()">Retry draft backup</Button></div>
     <div v-if="loadError" class="editor-error">
       <span>{{ (loadError instanceof Error ? loadError.message : String(loadError)) || "Couldn't load this file." }} Saving is disabled.</span>
       <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>

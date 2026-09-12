@@ -4,6 +4,7 @@ import { ExplorerExtension, type TreeNode } from '@arxhub/plugin-explorer/ui'
 import { HotkeysExtension } from '@arxhub/plugin-hotkeys/ui'
 import { NOTES_TYPE_ID, NotesExtension, type NoteViewer } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SearchExtension } from '@arxhub/plugin-search/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
@@ -11,6 +12,7 @@ import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
 import { nextTick } from 'vue'
 import { createAssetStore } from './assets'
+import { createDraftStore } from './document-drafts'
 import { createHistoryStore } from './document-history'
 import { createDocumentLinkStore } from './document-link-store'
 import { ArxEditorExtension } from './editor-extension'
@@ -59,6 +61,8 @@ export class ArxEditorPlugin extends Plugin {
     super.configure(ctx)
     ctx.extensions.get(ArxEditorExtension).assets ??= createAssetStore(ctx.services.get(VaultVfs))
     const editor = ctx.extensions.get(ArxEditorExtension)
+    const keyring = ctx.extensions.has(KeyringExtension) ? ctx.extensions.get(KeyringExtension).keyring : null
+    if (keyring) editor.drafts ??= createDraftStore(keyring.encryptionKey, keyring.authPublicKey)
     editor.history ??= createHistoryStore(ctx.services.get(PluginVfs).storage)
     editor.links ??= createDocumentLinkStore(
       ctx.services.get(VaultVfs),

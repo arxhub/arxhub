@@ -1332,6 +1332,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../../packages/errors
@@ -1350,6 +1353,9 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
+      '@arxhub/plugin-protection':
+        specifier: workspace:*
+        version: link:../protection
       '@arxhub/plugin-search':
         specifier: workspace:*
         version: link:../search

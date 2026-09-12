@@ -6,6 +6,7 @@ import type { Plugin } from 'prosemirror-state'
 import type { Component } from 'vue'
 import type { ArxAssetStore } from './assets'
 import { identityNodes } from './block-identity'
+import type { ArxDraftStore } from './document-drafts'
 import type { ArxHistoryStore } from './document-history'
 import type { ArxDocumentLinks } from './document-links'
 import type { ArxFormatConfig, ArxJsonNode } from './document-migrations'
@@ -48,6 +49,7 @@ export class ArxEditorExtension extends Extension {
   assets: ArxAssetStore | null = null
   links: ArxDocumentLinks | null = null
   history: ArxHistoryStore | null = null
+  drafts: ArxDraftStore | null = null
   private readonly contributions = new Container<ArxEditorContribution>('Editor contribution')
   private built: ArxEditorKit | null = null
 
