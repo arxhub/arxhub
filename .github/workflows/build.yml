@@ -163,6 +163,38 @@ jobs:
           name: arxhub-macos-${{ matrix.target }}
           path: instances/app/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
 
+  windows-nsis:
+    name: Build Windows installer (x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - run: pnpm install --frozen-lockfile
+      - name: Set prerelease version
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          BASE_VERSION="$GITHUB_REF_NAME"
+          if [ "$GITHUB_REF_TYPE" != "tag" ]; then BASE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('instances/app/package.json', 'utf8')).version.split('-')[0]"); fi
+          export BUILD_VERSION="${BASE_VERSION}-${COMMIT_SHA:0:7}"
+          node -e "const fs=require('fs'); const p='instances/app/package.json'; const x=JSON.parse(fs.readFileSync(p)); x.version=process.env.BUILD_VERSION; fs.writeFileSync(p, JSON.stringify(x, null, 2)+'\\n')"
+      - run: pnpm --filter app exec tauri build --target x86_64-pc-windows-msvc --bundles nsis
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arxhub-windows-x86_64
+          path: instances/app/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          if-no-files-found: error
+
   android-apk:
     name: Build Android APK
     runs-on: ubuntu-latest
@@ -230,7 +262,7 @@ jobs:
   release:
     name: Publish GitHub release
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [client-check, app-build, server-build, server-image, linux-flatpak, macos-dmg, android-apk]
+    needs: [client-check, app-build, server-build, server-image, linux-flatpak, macos-dmg, windows-nsis, android-apk]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -263,6 +295,7 @@ jobs:
             case "$file" in
               *.dmg) suffix="${file##*/}"; suffix="${suffix##*_}"; target="release-assets/renamed/ArxHub_${RELEASE_VERSION}-${short}_${suffix}"; mv "$file" "$target" ;;
               *.flatpak) mv "$file" "release-assets/renamed/ArxHub_${RELEASE_VERSION}-${short}.flatpak" ;;
+              *.exe) mv "$file" "release-assets/renamed/ArxHub_${RELEASE_VERSION}-${short}_x64-setup.exe" ;;
               *.apk) mv "$file" "release-assets/renamed/ArxHub_${RELEASE_VERSION}-${short}.apk" ;;
             esac
           done
