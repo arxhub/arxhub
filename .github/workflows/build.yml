@@ -137,3 +137,31 @@ jobs:
         with:
           name: arxhub-macos-${{ matrix.target }}
           path: instances/app/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+
+  android-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.2.12479018'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter app exec tauri android build --apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arxhub-android-apk
+          path: instances/app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk

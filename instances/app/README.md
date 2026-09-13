@@ -13,6 +13,9 @@ The Linux Flatpak manifest is [org.arxhub.ArxHub.yml](../../flatpak/org.arxhub.A
 needs a Linux build environment because it packages the native Tauri binary; use the GitHub Actions
 workflow or a Linux host for that artifact.
 
+GitHub Actions also builds an unsigned Android APK. It is intended for personal installation and
+testing; Android may require enabling installation from the source used to download the artifact.
+
 This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
 
 ## Recommended IDE Setup
