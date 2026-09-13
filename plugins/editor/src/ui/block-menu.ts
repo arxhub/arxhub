@@ -1,9 +1,12 @@
 import { type ActionItem, actionMenu } from '@arxhub/uikit/core'
+import { isInTable } from 'prosemirror-tables'
 import type { EditorView } from 'prosemirror-view'
 import { changeBlock } from '../block-actions'
 import { selectBlocks, selectedBlocks } from '../block-selection'
 import { BLOCK_TRANSFORMS, transformBlocks } from '../block-transforms'
 import { arrangeColumns } from '../columns'
+import { buildKeymap } from '../editor-keymap'
+import { TABLE_ACTIONS } from '../table-actions'
 
 export function openBlockMenu(view: EditorView, x: number, y: number): void {
   const items = [
@@ -14,6 +17,21 @@ export function openBlockMenu(view: EditorView, x: number, y: number): void {
   ] as const
   actionMenu.open(
     [
+      ...[
+        { id: 'indent', label: 'Indent list item', icon: 'lu:list-indent-increase', run: buildKeymap(view.state.schema).Tab },
+        { id: 'outdent', label: 'Outdent list item', icon: 'lu:list-indent-decrease', run: buildKeymap(view.state.schema)['Shift-Tab'] },
+        ...(isInTable(view.state) ? TABLE_ACTIONS : []),
+      ].map((action) => ({
+        id: action.id,
+        label: action.label,
+        icon: action.icon,
+        disabled: !action.run(view.state),
+        onSelect: () => {
+          if (view.isDestroyed) return
+          action.run(view.state, view.dispatch)
+          view.focus()
+        },
+      })),
       ...items.map(
         (item): ActionItem => ({
           ...item,

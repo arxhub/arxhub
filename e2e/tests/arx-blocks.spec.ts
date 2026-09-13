@@ -7,11 +7,8 @@ async function blockAction(page: Page, name: string) {
 }
 
 async function undo(page: Page) {
-  const more = page.getByRole('button', { name: 'More formatting', exact: true })
-  if (await more.isVisible()) {
-    await more.click()
-    await page.getByRole('menuitem', { name: 'Undo', exact: true }).click()
-  } else await page.getByRole('button', { name: 'Undo', exact: true }).click()
+  await page.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Undo', exact: true }).click()
 }
 
 async function dragBlock(page: Page, target: Locator) {
@@ -69,6 +66,7 @@ test('block groups transform, duplicate and drag with one-step undo in both fram
   await undo(app)
   await expect(editor.locator(':scope > :first-child')).toHaveAttribute('data-type', 'task_list')
   await expect(editor.locator(':scope > p').last()).toHaveText('Third')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('"type": "task_list"')
 })

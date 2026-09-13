@@ -42,8 +42,9 @@ import DocumentBacklinks from './DocumentBacklinks.vue'
 import DocumentFind from './DocumentFind.vue'
 import DocumentOutline from './DocumentOutline.vue'
 import DocumentRecovery from './DocumentRecovery.vue'
+import DocumentTools from './DocumentTools.vue'
 import DocumentVersions from './DocumentVersions.vue'
-import EditorToolbar from './EditorToolbar.vue'
+import SelectionFormatting from './SelectionFormatting.vue'
 import SlashMenu from './SlashMenu.vue'
 import 'prosemirror-view/style/prosemirror.css'
 
@@ -476,7 +477,6 @@ onUnmounted(() => {
 
 <template>
   <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <EditorToolbar v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :commands="kit.commands" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
     <DocumentFind v-if="findOpen && view && canSave" :view="view" :revision="revision" :mode="mode" @close="closeFind" />
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
@@ -491,10 +491,12 @@ onUnmounted(() => {
       <span>{{ assets.error.value }}</span><Button variant="secondary" @click="assets.retry">Retry upload</Button><Button variant="ghost" @click="assets.dismiss">Dismiss</Button>
     </div>
     <div v-show="!loadError" ref="editorEl" class="editor-content" @scroll="dismissSlash" />
-    <BlockHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" />
+    <BlockHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :commands="kit.commands" />
+    <SelectionFormatting v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :links="extension.links" :path="path" />
     <SlashMenu v-if="view && slashMenu && !loadError" :view="view" :menu="slashMenu" :menu-id="slashMenuId" :commands="kit.commands" />
-    <div class="editor-status" role="status" aria-live="polite">
-      <span>{{ saveStatus }}</span>
+    <div class="editor-status">
+      <DocumentTools v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
+      <span role="status" aria-live="polite">{{ saveStatus }}</span>
       <span v-if="assets.pending.value" role="status">Uploading attachment…</span>
       <Button v-if="saveError" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button>
       <span v-if="mode === 'readonly'">Read only · Select and copy text</span>
@@ -516,7 +518,7 @@ onUnmounted(() => {
 }
 .editor-status {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
   flex-wrap: wrap;
   gap: 4px 16px;
   padding: 4px 12px;

@@ -29,14 +29,15 @@ test('images upload, resize, retain captions and download after reopening', asyn
   await editor.getByRole('textbox', { name: 'Attachment caption', exact: true }).fill('A saved image')
   await editor.getByRole('textbox', { name: 'Image alternative text', exact: true }).fill('A sample pixel')
   await editor.getByRole('button', { name: 'Apply caption', exact: true }).click()
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('A saved image')
   expect(await vault.read(path)).toContain('"width": 50')
   expect(await vault.read(path)).not.toContain('blob:')
   await open(app, path)
   await expect.poll(() => editor.getByRole('img', { name: 'A sample pixel' }).evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBe(1)
   await expect(editor).toContainText('A saved image')
-  await app.getByRole('button', { name: /^Editor mode:/ }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
   await expect(editor.getByRole('button', { name: 'Edit caption', exact: true })).toHaveCount(0)
   const downloaded = app.waitForEvent('download')
@@ -128,7 +129,8 @@ test('cut and paste retains block identities and assets while copying creates di
     }, clipboard)
   await paste()
   await expect(editor).toContainText('clipboard.txt')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect
     .poll(async () => JSON.parse(await vault.read(path)).doc.content.map((node: { attrs: { arxId: string } }) => node.attrs.arxId))
     .toEqual(['intro', 'file', 'end'])
@@ -137,7 +139,8 @@ test('cut and paste retains block identities and assets while copying creates di
   await app.keyboard.press('Enter')
   await paste()
   await expect(editor.getByText('clipboard.txt', { exact: true })).toHaveCount(2)
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect
     .poll(async () => {
       const nodes = JSON.parse(await vault.read(path)).doc.content as { type: string; attrs: { arxId: string } }[]

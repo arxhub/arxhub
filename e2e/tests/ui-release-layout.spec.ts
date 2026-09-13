@@ -34,12 +34,18 @@ test('compact editors keep formatting and save reachable', async ({ app, vault }
     await openNavigation(app)
     await app.getByRole('treeitem', { name: path, exact: true }).click()
     await expect(app.locator(ext === 'arx' ? '.ProseMirror:visible' : '.cm-content:visible')).toBeVisible()
-    await unobstructed(app.getByRole('button', { name: 'Save', exact: true }))
+    if (ext === 'arx') {
+      await unobstructed(app.getByRole('button', { name: 'Document tools', exact: true }))
+      await expect(app.getByRole('toolbar', { name: 'Formatting' })).toHaveCount(0)
+      await app.locator('.ProseMirror:visible p').first().click()
+      await app.keyboard.press('Home')
+      await app.keyboard.press('Shift+End')
+    } else await unobstructed(app.getByRole('button', { name: 'Save', exact: true }))
     if (mobile) {
       await unobstructed(app.getByRole('button', { name: 'More formatting', exact: true }))
       await capture(app, `${ext}-compact`)
       await app.getByRole('button', { name: 'More formatting', exact: true }).click()
-      await expect(app.getByRole('menuitem', { name: 'Heading 2', exact: true })).toBeVisible()
+      await expect(app.getByRole('menuitem', { name: ext === 'arx' ? 'Italic' : 'Heading 2', exact: true })).toBeVisible()
       await capture(app, `${ext}-formatting`)
       await app.keyboard.press('Escape')
     } else {

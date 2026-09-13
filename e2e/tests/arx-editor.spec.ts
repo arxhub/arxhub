@@ -13,9 +13,9 @@ async function openArx(app: Page, path: string) {
 }
 
 async function mode(app: Page, label: string) {
-  await app.getByRole('button', { name: /^Editor mode:/ }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
   await app.getByRole('menuitem', { name: label, exact: true }).click()
-  await expect(app.getByRole('menu', { name: /^Editor mode:/ })).toBeHidden()
+  await expect(app.getByRole('menu', { name: 'Document tools' })).toBeHidden()
 }
 
 test('arx modes preserve text while saving control values', async ({ app, vault }) => {
@@ -45,7 +45,8 @@ test('arx modes preserve text while saving control values', async ({ app, vault 
   await expect(checkbox).toBeChecked()
   await editor.getByRole('button', { name: 'Priority', exact: true }).click()
   await app.getByRole('menuitem', { name: 'High', exact: true }).click()
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('"value": "High"')
   expect(await vault.read(path)).toContain('"checked": true')
   expect(await vault.read(path)).toContain('Original text unsaved')
@@ -84,7 +85,8 @@ test('slash builds tasks and a configurable dropdown with keyboard and pointer',
   await mode(app, 'Interactive')
   await editor.getByRole('button', { name: 'Stage', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Review', exact: true }).click()
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('"value": "Review"')
   const saved = await vault.read(path)
   expect(saved).toContain('First task')
@@ -94,8 +96,18 @@ test('slash builds tasks and a configurable dropdown with keyboard and pointer',
 })
 
 async function formatting(app: Page, label: string) {
+  if (label === 'Undo') {
+    await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+    await app.getByRole('menuitem', { name: 'Undo', exact: true }).click()
+    return
+  }
+  if (label === 'Current block' || label === 'Indent list item') {
+    await app.getByRole('button', { name: 'Block actions', exact: true }).click()
+    if (label !== 'Current block') await app.getByRole('menuitem', { name: label, exact: true }).click()
+    return
+  }
   const more = app.getByRole('button', { name: 'More formatting', exact: true })
-  if (await more.isVisible()) {
+  if (await isMobileFrame(app)) {
     await more.click()
     await app.getByRole('menuitem', { name: label, exact: true }).click()
   } else {
@@ -125,7 +137,8 @@ test('touch insertion and block actions preserve neighboring content and undo', 
   await expect(editor.locator('p').filter({ hasText: /^Second$/ })).toHaveCount(2)
   await formatting(app, 'Undo')
   await expect(editor.locator('p').filter({ hasText: /^Second$/ })).toHaveCount(1)
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect(app.locator('.editor-status')).toContainText('Saved')
   await expect.poll(() => vault.read(path)).toContain('"type": "select"')
 })
@@ -140,7 +153,8 @@ test('unknown plugin blocks survive edits to surrounding content', async ({ app,
   await app.locator('.ProseMirror > p').click()
   await app.keyboard.press('End')
   await app.keyboard.insertText(' edited')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('Neighbor edited')
   expect(JSON.parse(await vault.read(path)).doc.content[0]).toEqual({
     type: 'missing_plugin_block',
@@ -169,7 +183,8 @@ test('block handle and link editing work without losing the text selection', asy
   await app.getByRole('button', { name: 'Block actions', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Move block up', exact: true }).click()
   await expect(editor.locator('p').first()).toHaveText('Second')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('https://example.com')
 })
 
@@ -213,7 +228,8 @@ test('nested tasks keep their structure and checked values through copy and past
   await expect(editor.getByRole('checkbox')).toHaveCount(4)
   await expect(editor.getByRole('checkbox', { name: 'Parent task', exact: true })).toHaveCount(2)
   await expect(editor.locator('ul[data-type="task_list"] ul[data-type="task_list"]')).toHaveCount(2)
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(async () => (await vault.read(path)).match(/"checked": true/g)?.length).toBe(2)
 })
 
@@ -241,6 +257,8 @@ test('mobile insertion and formatting stay above the on-screen keyboard', async 
   await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThanOrEqual(48)
   await app.getByRole('option', { name: 'Task list', exact: true }).click()
   await app.keyboard.insertText('A task above the keyboard')
+  await app.keyboard.press('Home')
+  await app.keyboard.press('Shift+End')
   await app.getByRole('button', { name: 'More formatting', exact: true }).click()
   const sheet = app.getByRole('dialog', { name: 'Formatting', exact: true })
   await expect(sheet).toBeVisible()
@@ -250,6 +268,7 @@ test('mobile insertion and formatting stay above the on-screen keyboard', async 
   await test.info().attach('keyboard-formatting', { path: screenshot, contentType: 'image/png' })
   await app.keyboard.press('Escape')
   await expect(editor).toContainText('A task above the keyboard')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('A task above the keyboard')
 })

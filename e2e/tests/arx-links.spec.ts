@@ -1,4 +1,4 @@
-import { expect, openNavigation, test } from './fixtures'
+import { expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 const document = (...texts: string[]) =>
   JSON.stringify({ version: 1, doc: { type: 'doc', content: texts.map((text) => ({ type: 'paragraph', content: [{ type: 'text', text }] })) } })
@@ -15,7 +15,7 @@ test('internal block links persist, open through Notes and appear as backlinks',
   await app.keyboard.press('Home')
   await app.keyboard.press('Shift+End')
   const more = app.getByRole('button', { name: 'More formatting', exact: true })
-  if (await more.isVisible()) {
+  if (await isMobileFrame(app)) {
     await more.click()
     await app.getByRole('menuitem', { name: 'Link', exact: true }).click()
   } else await app.getByRole('button', { name: 'Link', exact: true }).click()
@@ -26,9 +26,10 @@ test('internal block links persist, open through Notes and appear as backlinks',
   await dialog.getByRole('button', { name: 'Chosen destination', exact: true }).click()
   await expect(dialog.getByRole('textbox', { name: 'Link address' })).toHaveValue(/#text=Chosen/)
   await dialog.getByRole('button', { name: 'Apply link', exact: true }).click()
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(source)).toContain('#text=Chosen')
-  await app.getByRole('button', { name: /^Editor mode:/ }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
   await expect(editor).toBeFocused()
   await editor.getByRole('link', { name: 'Visit destination' }).click()
@@ -54,7 +55,7 @@ test('internal block links persist, open through Notes and appear as backlinks',
   await app.reload()
   await openNavigation(app)
   await app.getByRole('treeitem', { name: source, exact: true }).click()
-  await app.getByRole('button', { name: /^Editor mode:/ }).click()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
   await editor.getByRole('link', { name: 'Visit destination' }).click()
   await expect(editor).toContainText('Renamed and edited destination')

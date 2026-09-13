@@ -71,7 +71,10 @@ for (const extension of ['md', 'arx']) {
     await editor.click()
     await app.keyboard.press('ControlOrMeta+End')
     await app.keyboard.insertText(' first')
-    await app.getByRole('button', { name: 'Save', exact: true }).click()
+    if (extension === 'arx') {
+      await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+      await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+    } else await app.getByRole('button', { name: 'Save', exact: true }).click()
     await expect.poll(() => writing).toBe(true)
     await editor.click()
     await app.keyboard.press('ControlOrMeta+End')

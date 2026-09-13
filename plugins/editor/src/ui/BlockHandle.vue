@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { IconButton } from '@arxhub/uikit/core'
+import { actionMenu, IconButton } from '@arxhub/uikit/core'
 import type { Node } from 'prosemirror-model'
 import type { EditorView } from 'prosemirror-view'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { moveBlocksTo } from '../block-actions'
+import { insertBlock, moveBlocksTo } from '../block-actions'
 import { BlockSelection, selectedBlocks } from '../block-selection'
+import type { BlockCommand } from '../slash-commands'
 import { openBlockMenu } from './block-menu'
 
-const props = defineProps<{ view: EditorView; scroller: HTMLElement; revision: number }>()
+const props = defineProps<{ view: EditorView; scroller: HTMLElement; revision: number; commands: readonly BlockCommand[] }>()
 const layoutRevision = ref(0)
 const dragging = ref(false)
 const dragStyle = ref<{ top: string; left: string }>()
@@ -46,12 +47,30 @@ const position = computed(() => {
   const block = node.getBoundingClientRect()
   const scroll = props.scroller.getBoundingClientRect()
   const parent = panel.getBoundingClientRect()
-  if (block.top < scroll.top || block.top + 32 > scroll.bottom) return null
-  return { top: `${block.top - parent.top}px`, left: `${block.left - parent.left - 36}px` }
+  if (block.bottom <= scroll.top || block.top >= scroll.bottom) return null
+  const top = Math.max(scroll.top, Math.min(block.top, scroll.bottom - 64))
+  return { top: `${top - parent.top}px`, left: `${block.left - parent.left - 36}px` }
 })
 function open(element: HTMLElement) {
   const rect = element.getBoundingClientRect()
   openBlockMenu(props.view, rect.left, rect.bottom)
+}
+
+function insert(element: HTMLElement) {
+  const rect = element.getBoundingClientRect()
+  actionMenu.open(
+    props.commands.map((command) => ({
+      id: command.id,
+      label: command.label,
+      icon: command.icon,
+      onSelect: () => {
+        if (props.view.isDestroyed) return
+        insertBlock(command)(props.view.state, props.view.dispatch)
+        props.view.focus()
+      },
+    })),
+    { title: 'Insert block', x: rect.left, y: rect.bottom },
+  )
 }
 
 function start(event: PointerEvent) {
@@ -123,7 +142,8 @@ function move(event: PointerEvent) {
     const range = selectedBlocks(props.view.state)
     if (!range) return
     dragging.value = true
-    if (!(props.view.state.selection instanceof BlockSelection)) props.view.dispatch(props.view.state.tr.setSelection(BlockSelection.create(props.view.state.doc, range.from, range.to)))
+    if (!(props.view.state.selection instanceof BlockSelection))
+      props.view.dispatch(props.view.state.tr.setSelection(BlockSelection.create(props.view.state.doc, range.from, range.to)))
     animation = requestAnimationFrame(scroll)
   }
   if (dragging.value) locate()
@@ -156,10 +176,14 @@ function cancel() {
     @pointerdown.prevent="start" @pointermove="move" @pointerup="finish" @pointercancel="cancel" @lostpointercapture="cancel">
     <IconButton icon="lu:grip-vertical" tooltip="Block actions" @click="$event.detail === 0 && open($event.currentTarget as HTMLElement)" />
   </div>
+  <div v-if="position && !dragging" class="block-insert" :style="position" @mousedown.prevent>
+    <IconButton icon="lu:plus" tooltip="Insert block" @click="insert($event.currentTarget as HTMLElement)" />
+  </div>
   <div v-if="dropLine" class="block-drop-line" :style="dropLine" aria-hidden="true" />
 </template>
 
 <style scoped>
 .block-handle { position: absolute; touch-action: none; cursor: grab; }
+.block-insert { position: absolute; margin-top: 32px; }
 .block-drop-line { position: absolute; height: 2px; background: var(--accent-8); pointer-events: none; }
 </style>

@@ -42,7 +42,7 @@ test('document search replaces marked text, undoes and navigates headings in pro
   await app.keyboard.press('ControlOrMeta+z')
   await expect(editor.locator('p')).toHaveText('Cat cat')
   for (const mode of ['Read only', 'Interactive']) {
-    await app.getByRole('button', { name: /^Editor mode:/ }).click()
+    await app.getByRole('button', { name: 'Document tools', exact: true }).click()
     await app.getByRole('menuitem', { name: mode, exact: true }).click()
     await expect(editor).toBeFocused()
     await app.keyboard.press('ControlOrMeta+f')
