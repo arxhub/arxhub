@@ -92,8 +92,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf flatpak flatpak-builder
-          flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --noninteractive flathub org.gnome.Platform//46 org.gnome.Sdk//46
+          flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak --user install --noninteractive flathub org.gnome.Platform//46 org.gnome.Sdk//46
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter app exec tauri build --bundles appimage
       - name: Prepare Flatpak payload
