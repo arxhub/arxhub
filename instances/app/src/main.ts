@@ -31,6 +31,7 @@ import type { VirtualFileSystem } from '@arxhub/vfs'
 import { isTauri } from '@tauri-apps/api/core'
 import { createApp, h, markRaw } from 'vue'
 import WelcomePanel from './panels/WelcomePanel.vue'
+import VaultSettingsPage from './settings/VaultSettingsPage.vue'
 
 // Read before anything else: a plugin the owner switched off (or a maintenance boot) must not get as
 // far as being constructed. The policy is device-local storage on purpose — see BootPolicy.
@@ -112,6 +113,12 @@ arxhub.extensions.get(SettingsExtension).register({
   title: 'About',
   order: 900,
   component: markRaw({ render: () => h(AboutSettingsPage, { version: __APP_VERSION__ }) }),
+})
+arxhub.extensions.get(SettingsExtension).register({
+  id: 'vault',
+  title: 'Vault',
+  order: 20,
+  component: markRaw(VaultSettingsPage),
 })
 
 const shell = arxhub.extensions.get(ShellExtension)

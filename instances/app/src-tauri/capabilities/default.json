@@ -6,6 +6,7 @@
   "permissions": [
     "core:default",
     "opener:default",
+    "opener:allow-open-path",
     "os:default",
     "fs:default",
     "fs:allow-read-dir",
