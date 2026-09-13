@@ -9,7 +9,6 @@ finish-args:
   - --socket=x11
   - --socket=wayland
   - --device=dri
-  - --filesystem=xdg-documents
   - --filesystem=~/.arxhub
 modules:
   - name: arxhub
