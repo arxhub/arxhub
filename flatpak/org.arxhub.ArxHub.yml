@@ -1,0 +1,22 @@
+app-id: org.arxhub.ArxHub
+runtime: org.gnome.Platform
+runtime-version: '46'
+sdk: org.gnome.Sdk
+command: arxhub
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=x11
+  - --socket=wayland
+  - --device=dri
+  - --filesystem=xdg-documents
+modules:
+  - name: arxhub
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 arxhub /app/bin/arxhub
+      - install -Dm644 org.arxhub.ArxHub.desktop /app/share/applications/org.arxhub.ArxHub.desktop
+      - install -Dm644 org.arxhub.ArxHub.png /app/share/icons/hicolor/512x512/apps/org.arxhub.ArxHub.png
+    sources:
+      - type: dir
+        path: payload

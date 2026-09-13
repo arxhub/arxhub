@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=ArxHub
+Comment=Modular personal knowledge base
+Exec=arxhub
+Icon=org.arxhub.ArxHub
+Terminal=false
+Type=Application
+Categories=Office;Utility;
