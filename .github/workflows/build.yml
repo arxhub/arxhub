@@ -74,3 +74,66 @@ jobs:
           tags: arxhub-server:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  linux-flatpak:
+    name: Build Linux Flatpak
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Tauri and Flatpak dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf flatpak flatpak-builder
+          flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --noninteractive flathub org.gnome.Platform//46 org.gnome.Sdk//46
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter app exec tauri build --bundles appimage
+      - name: Prepare Flatpak payload
+        run: |
+          mkdir -p flatpak/payload
+          cp instances/app/src-tauri/target/release/arxhub flatpak/payload/arxhub
+          cp instances/app/src-tauri/icons/icon.png flatpak/payload/org.arxhub.ArxHub.png
+          cp flatpak/org.arxhub.ArxHub.desktop flatpak/payload/org.arxhub.ArxHub.desktop
+      - run: flatpak-builder --force-clean --repo=flatpak/repo flatpak/build flatpak/org.arxhub.ArxHub.yml
+      - run: flatpak build-bundle flatpak/repo ArxHub.flatpak org.arxhub.ArxHub
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arxhub-linux-flatpak
+          path: ArxHub.flatpak
+
+  macos-dmg:
+    name: Build macOS DMG
+    strategy:
+      matrix:
+        include:
+          - runner: macos-13
+            target: x86_64-apple-darwin
+          - runner: macos-14
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter app exec tauri build --target ${{ matrix.target }} --bundles dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arxhub-macos-${{ matrix.target }}
+          path: instances/app/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
