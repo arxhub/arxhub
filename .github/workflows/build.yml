@@ -230,13 +230,19 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
         run: |
           short="${COMMIT_SHA:0:7}"
-          for file in release-assets/*; do
+          find release-assets -type f -print0 | while IFS= read -r -d '' file; do
+            mkdir -p release-assets/renamed
             case "$file" in
-              *.dmg) suffix="${file##*/}"; suffix="${suffix##*_}"; target="release-assets/ArxHub_${RELEASE_VERSION}-${short}_${suffix}"; [ "$file" = "$target" ] || mv "$file" "$target" ;;
-              *.flatpak) target="release-assets/ArxHub_${RELEASE_VERSION}-${short}.flatpak"; [ "$file" = "$target" ] || mv "$file" "$target" ;;
-              *.apk) target="release-assets/ArxHub_${RELEASE_VERSION}-${short}.apk"; [ "$file" = "$target" ] || mv "$file" "$target" ;;
+              *.dmg) suffix="${file##*/}"; suffix="${suffix##*_}"; target="release-assets/renamed/ArxHub_${RELEASE_VERSION}-${short}_${suffix}"; mv "$file" "$target" ;;
+              *.flatpak) mv "$file" "release-assets/renamed/ArxHub_${RELEASE_VERSION}-${short}.flatpak" ;;
+              *.apk) mv "$file" "release-assets/renamed/ArxHub_${RELEASE_VERSION}-${short}.apk" ;;
             esac
           done
+          find release-assets -mindepth 1 -maxdepth 1 -type d ! -name renamed -exec rm -rf {} +
+          rm -rf release-assets/old
+          shopt -s dotglob
+          mv release-assets/renamed/* release-assets/
+          rmdir release-assets/renamed
       - uses: softprops/action-gh-release@v2
         with:
           name: ArxHub ${{ github.ref_name }}
