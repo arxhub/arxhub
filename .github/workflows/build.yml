@@ -3,6 +3,7 @@ name: Build
 on:
   push:
     branches: [main]
+    tags: ['*']
   pull_request:
   workflow_dispatch:
 
@@ -193,3 +194,22 @@ jobs:
         with:
           name: arxhub-android-apk
           path: instances/app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+
+  release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [client-check, app-build, server-build, server-image, linux-flatpak, macos-dmg, android-apk]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: arxhub-*
+          path: release-assets
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: ArxHub ${{ github.ref_name }}
+          generate_release_notes: true
+          files: release-assets/**
