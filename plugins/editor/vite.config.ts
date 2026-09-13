@@ -7,6 +7,8 @@ export default defineConfig((env) =>
     // Exact subpaths keep extension constructors and UI singletons owned by their peer packages.
     external: [
       '@arxhub/core',
+      '@arxhub/plugin-sync/ui',
+      '@arxhub/sync',
       '@arxhub/crypto',
       '@arxhub/plugin-protection/ui',
       '@arxhub/plugin-publish/ui',

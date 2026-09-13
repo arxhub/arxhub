@@ -28,6 +28,10 @@ export class Repo {
     this.chunker = new Chunker()
   }
 
+  exclusive<T>(work: () => Promise<T>): Promise<T> {
+    return this.lock.acquire('operation', work)
+  }
+
   add(path: string): Promise<void> {
     return this.lock.acquire('changes', async () => {
       const paths = await this.changes.readJSON<string[]>([])
@@ -86,7 +90,11 @@ export class Repo {
     return null
   }
 
-  async snapshot(): Promise<Snapshot> {
+  snapshot(): Promise<Snapshot> {
+    return this.lock.acquire('changes', () => this.snapshotChanges())
+  }
+
+  private async snapshotChanges(): Promise<Snapshot> {
     const head = await this.getHeadSnapshot()
     const changes = await this.status(head)
     if (changes.length === 0) {
@@ -121,7 +129,9 @@ export class Repo {
 
       const fileHash = (await file.info.get('hash')) ?? ''
 
+      const previous = head.files[pathname] ?? Object.values(head.files).find((entry) => entry.hash === fileHash)
       files[pathname] = {
+        ...(previous?.identity ? { identity: previous.identity } : {}),
         hash: fileHash,
         pathname: pathname,
         chunks,
@@ -142,6 +152,29 @@ export class Repo {
 
     await this.changes.writeJSON([])
     return snapshot
+  }
+
+  async rebase(local: Snapshot, remote: Snapshot, base: Snapshot | null): Promise<void> {
+    if (base?.hash === remote.hash) return
+    const pending: Snapshot[] = []
+    for await (const snapshot of this.ancestry(local.hash)) {
+      if (snapshot.hash === base?.hash || snapshot.parent === null) break
+      pending.push(snapshot)
+    }
+    let head = remote
+    for (const snapshot of pending.reverse()) {
+      const parent = await this.getSnapshotFile(snapshot.parent!).readJSON<Snapshot>()
+      const files = { ...head.files }
+      for (const path of new Set([...Object.keys(parent.files), ...Object.keys(snapshot.files)])) {
+        if (JSON.stringify(parent.files[path]) === JSON.stringify(snapshot.files[path])) continue
+        if (snapshot.files[path]) files[path] = snapshot.files[path]
+        else delete files[path]
+      }
+      const replayed: Snapshot = { ...snapshot, parent: head.hash, files, hash: snapshotHash(head.hash, files) }
+      await this.getSnapshotFile(replayed.hash).writeJSON(replayed)
+      head = replayed
+    }
+    await this.getHeadFile().writeText(head.hash)
   }
 
   // Walks a snapshot's parent chain, yielding each successfully-read snapshot oldest-link-last.

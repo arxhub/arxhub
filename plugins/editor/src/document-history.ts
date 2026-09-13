@@ -1,4 +1,5 @@
 import { validation } from '@arxhub/errors'
+import type { FileHistory } from '@arxhub/sync'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import type { Node } from 'prosemirror-model'
 import { isRecord } from './document-migrations'
@@ -13,6 +14,7 @@ export interface ArxVersionContent {
   path: string
 }
 export interface ArxHistoryStore {
+  save?(documentId: string, before: string, after: string, path: string, write: () => Promise<void>): Promise<void>
   limit?: number
   list(documentId: string): Promise<ArxSavedVersion[]>
   read(documentId: string, version: ArxSavedVersion): Promise<ArxVersionContent>
@@ -44,84 +46,87 @@ export function withDocumentId(doc: Node, id: string): Node {
   )
 }
 
-export function createHistoryStore(
-  storage: Pick<VirtualFileSystem, 'exists' | 'list' | 'read' | 'write' | 'delete'>,
-  limit = 100,
+export function createSnapshotHistory(
+  resolve: () => Pick<FileHistory, 'list' | 'read' | 'record' | 'save'> | null,
+  legacy: Pick<VirtualFileSystem, 'exists' | 'list' | 'read' | 'delete'>,
 ): ArxHistoryStore {
-  if (!Number.isInteger(limit) || limit < 2) throw validation('Version retention must keep at least two versions')
-  const pending = new Map<string, Promise<void>>()
-  const directory = (id: string) => {
+  const migrations = new Map<string, Promise<void>>()
+  const history = () => {
+    const value = resolve()
+    if (!value) throw validation('File history is unavailable')
+    return value
+  }
+  async function migrate(id: string): Promise<void> {
     if (!ID.test(id)) throw validation('Invalid document identity')
-    return `documents/${id}`
-  }
-  const pathOf = (id: string, version: ArxSavedVersion) => {
-    if (!VERSION.test(version.id)) throw validation('Invalid saved version')
-    return `${directory(id)}/${version.id}.json`
-  }
-  const store: ArxHistoryStore = {
-    limit,
-    async list(id) {
-      const dir = directory(id)
-      if (!(await storage.exists(dir))) return []
-      const entries = await storage.list(dir)
-      const result: ArxSavedVersion[] = []
+    const existing = migrations.get(id)
+    if (existing) return existing
+    const task = (async () => {
+      const dir = `documents/${id}`
+      if (!(await legacy.exists(dir))) return
+      const entries = (await legacy.list(dir))
+        .filter((entry) => entry.kind === 'file' && entry.pathname.endsWith('.json'))
+        .sort((a, b) => a.pathname.localeCompare(b.pathname))
+      const versions = []
       for (const entry of entries) {
-        const name = entry.pathname.slice(dir.length + 1)
-        if (entry.kind !== 'file' || !name.endsWith('.json')) continue
-        const versionId = name.slice(0, -5)
-        const match = VERSION.exec(versionId)
-        if (match && Number.isSafeInteger(Number(match[1])) && Number(match[1]) <= 8.64e15)
-          result.push({ id: versionId, savedAt: Number(match[1]), hash: match[2] })
+        const match = VERSION.exec(entry.pathname.slice(dir.length + 1, -5))
+        const raw: unknown = JSON.parse(decoder.decode(await legacy.read(entry.pathname)))
+        if (
+          !match ||
+          !isRecord(raw) ||
+          raw.version !== 1 ||
+          raw.documentId !== id ||
+          typeof raw.content !== 'string' ||
+          typeof raw.path !== 'string' ||
+          (await digest(raw.content)) !== match[2] ||
+          !Number.isSafeInteger(Number(match[1])) ||
+          Number(match[1]) > 8.64e15
+        )
+          throw validation('A legacy saved version is damaged. Original history has been retained.')
+        versions.push({ file: entry.pathname, content: raw.content, path: raw.path, savedAt: Number(match[1]) })
       }
-      return result.sort((a, b) => b.savedAt - a.savedAt || b.id.localeCompare(a.id))
+      for (const version of versions) {
+        await history().record({
+          identity: id,
+          path: `vault/${version.path}`,
+          content: encoder.encode(version.content),
+          savedAt: version.savedAt,
+          source: `ArxEditor/${version.file}`,
+        })
+      }
+      for (const version of versions) await legacy.delete(version.file)
+    })()
+    migrations.set(id, task)
+    try {
+      await task
+    } catch (error) {
+      migrations.delete(id)
+      throw error
+    }
+  }
+  return {
+    async save(id, before, after, path, write) {
+      await migrate(id)
+      await history().save(
+        { identity: id, path: `vault/${path}`, content: encoder.encode(before) },
+        { identity: id, path: `vault/${path}`, content: encoder.encode(after) },
+        write,
+      )
+    },
+    async list(id) {
+      await migrate(id)
+      return history().list({ identity: id })
     },
     async read(id, version) {
-      const raw: unknown = JSON.parse(decoder.decode(await storage.read(pathOf(id, version))))
-      if (
-        !isRecord(raw) ||
-        raw.version !== 1 ||
-        raw.documentId !== id ||
-        typeof raw.content !== 'string' ||
-        typeof raw.path !== 'string' ||
-        (await digest(raw.content)) !== version.hash
-      )
-        throw validation('This saved version is damaged or incomplete.')
-      return { content: raw.content, path: raw.path }
+      await migrate(id)
+      const entry = (await history().list({ identity: id })).find((item) => item.id === version.id && item.hash === version.hash)
+      if (!entry) throw validation('This saved version is unavailable')
+      return { content: decoder.decode(await history().read({ identity: id }, entry)), path: entry.path.slice('vault/'.length) }
     },
     async record(id, content, path) {
-      directory(id)
-      const work = (pending.get(id) ?? Promise.resolve())
-        .catch(() => {})
-        .then(async () => {
-          const versions = await store.list(id)
-          const hash = await digest(content)
-          const latest = versions[0]
-          if (latest?.hash === hash) {
-            let samePath = false
-            try {
-              samePath = (await store.read(id, latest)).path === path
-            } catch {
-              // A damaged backup must not prevent a fresh, verified copy of the current document.
-            }
-            if (samePath) {
-              for (const old of versions.slice(limit)) await storage.delete(pathOf(id, old))
-              return
-            }
-          }
-          const savedAt = Math.max(Date.now(), (latest?.savedAt ?? 0) + 1)
-          const version = { id: `${String(savedAt).padStart(16, '0')}-${hash}`, savedAt, hash }
-          await storage.write(pathOf(id, version), encoder.encode(JSON.stringify({ version: 1, documentId: id, path, content })))
-          for (const old of versions.slice(limit - 1)) await storage.delete(pathOf(id, old))
-        })
-      pending.set(id, work)
-      try {
-        await work
-      } finally {
-        if (pending.get(id) === work) pending.delete(id)
-      }
+      await migrate(id)
+      await history().record({ identity: id, content: encoder.encode(content), path: `vault/${path}` })
     },
   }
-  return store
 }
 
 export function versionText(doc: Node): string {

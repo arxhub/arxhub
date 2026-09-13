@@ -1,83 +1,81 @@
 import { validation } from '@arxhub/errors'
-import { describe, expect, it } from 'vitest'
-import { createHistoryStore, documentId, withDocumentId } from '../document-history'
+import type { FileCheckpoint } from '@arxhub/sync'
+import { describe, expect, it, vi } from 'vitest'
+import { createSnapshotHistory, documentId, withDocumentId } from '../document-history'
 import { deserialize, serialize } from '../editor-format'
 import { schema } from '../editor-schema'
 
 const id = '12345678-1234-1234-1234-123456789abc'
-function memory() {
-  const files = new Map<string, Uint8Array>()
-  let fail = false
+const encoder = new TextEncoder()
+async function legacyFile(content: string, savedAt: number) {
+  const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(content)))]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
   return {
-    files,
-    fail: () => {
-      fail = true
-    },
-    store: createHistoryStore(
-      {
-        exists: async (path) => [...files.keys()].some((name) => name.startsWith(`${path}/`)),
-        list: async (path) =>
-          [...files.keys()].filter((name) => name.startsWith(`${path}/`)).map((pathname) => ({ kind: 'file' as const, pathname })),
-        read: async (path) => {
-          const bytes = files.get(path)
-          if (!bytes) throw validation('Missing version')
-          return bytes
-        },
-        write: async (path, bytes) => {
-          if (fail) {
-            fail = false
-            throw validation('Storage offline')
-          }
-          files.set(path, bytes)
-        },
-        delete: async (path) => {
-          files.delete(path)
-        },
-      },
-      3,
-    ),
+    path: `documents/${id}/${String(savedAt).padStart(16, '0')}-${hash}.json`,
+    bytes: encoder.encode(JSON.stringify({ version: 1, documentId: id, path: 'note.arx', content })),
   }
 }
+function fixture(files: Map<string, Uint8Array>) {
+  const checkpoints: FileCheckpoint[] = []
+  const record = vi.fn(async (checkpoint: FileCheckpoint) => {
+    checkpoints.push(checkpoint)
+  })
+  const snapshots = { list: async () => [], read: async () => new Uint8Array(), record, save: vi.fn() }
+  const legacy = {
+    exists: async () => files.size > 0,
+    list: async () => [...files.keys()].map((pathname) => ({ kind: 'file' as const, pathname })),
+    read: async (path: string) => files.get(path)!,
+    delete: async (path: string) => {
+      files.delete(path)
+    },
+  }
+  return { store: createSnapshotHistory(() => snapshots, legacy), record, checkpoints }
+}
 
-describe('saved document versions', () => {
-  it('serializes concurrent saves, deduplicates identical content and retains a bounded history', async () => {
-    const { store } = memory()
-    await Promise.all([store.record(id, 'first', 'note.arx'), store.record(id, 'second', 'note.arx'), store.record(id, 'second', 'note.arx')])
-    expect(await store.list(id)).toHaveLength(2)
-    await store.record(id, 'third', 'note.arx')
-    await store.record(id, 'fourth', 'note.arx')
-    const versions = await store.list(id)
-    expect(versions).toHaveLength(3)
-    expect((await store.read(id, versions[0])).content).toBe('fourth')
-    expect((await store.read(id, versions[2])).content).toBe('second')
+describe('snapshot history adapter', () => {
+  it('imports verified legacy versions oldest first before deleting the original files', async () => {
+    const first = await legacyFile('first', 1000)
+    const second = await legacyFile('second', 2000)
+    const files = new Map([
+      [second.path, second.bytes],
+      [first.path, first.bytes],
+    ])
+    const { store, checkpoints } = fixture(files)
+    await store.list(id)
+    expect(checkpoints.map((item) => new TextDecoder().decode(item.content))).toEqual(['first', 'second'])
+    expect(checkpoints.map((item) => item.savedAt)).toEqual([1000, 2000])
+    expect(checkpoints[0]).toMatchObject({ path: 'vault/note.arx', identity: id, source: `ArxEditor/${first.path}` })
+    expect(files.size).toBe(0)
+    await store.record(id, 'current', 'renamed.arx')
+    expect(checkpoints.at(-1)).toMatchObject({ path: 'vault/renamed.arx', identity: id })
+    expect(checkpoints).toHaveLength(3)
   })
 
-  it('preserves older versions on a failed write and detects corrupted content', async () => {
-    const { store, files, fail } = memory()
-    await store.record(id, 'first', 'note.arx')
-    fail()
-    await expect(store.record(id, 'second', 'note.arx')).rejects.toThrow('offline')
-    const versions = await store.list(id)
-    expect(versions).toHaveLength(1)
-    expect((await store.read(id, versions[0])).content).toBe('first')
-    const path = [...files.keys()][0]
-    files.set(path, new TextEncoder().encode(JSON.stringify({ version: 1, documentId: id, path: 'note.arx', content: 'tampered' })))
-    await expect(store.read(id, versions[0])).rejects.toThrow('damaged')
-    await store.record(id, 'first', 'note.arx')
-    const recovered = await store.list(id)
-    expect(recovered).toHaveLength(2)
-    expect((await store.read(id, recovered[0])).content).toBe('first')
+  it('retains every original when import fails and retries with the same source identity', async () => {
+    const first = await legacyFile('first', 1000)
+    const files = new Map([[first.path, first.bytes]])
+    const { store, record } = fixture(files)
+    record.mockRejectedValueOnce(validation('Storage offline'))
+    await expect(store.list(id)).rejects.toThrow('offline')
+    expect(files.size).toBe(1)
+    await store.list(id)
+    expect(record.mock.calls[0][0].source).toBe(record.mock.calls[1][0].source)
+    expect(files.size).toBe(0)
+  })
+
+  it('refuses corrupted history before importing or deleting anything', async () => {
+    const first = await legacyFile('first', 1000)
+    const files = new Map([[first.path, encoder.encode(JSON.stringify({ version: 1, documentId: id, path: 'note.arx', content: 'tampered' }))]])
+    const { store, record } = fixture(files)
+    await expect(store.list(id)).rejects.toThrow('damaged')
+    expect(record).not.toHaveBeenCalled()
+    expect(files.size).toBe(1)
     await expect(store.list('../../escape')).rejects.toThrow('identity')
   })
 
-  it('keeps the document identity through serialization and records a renamed path without dropping history', async () => {
+  it('keeps the document identity through serialization', () => {
     const doc = withDocumentId(schema.node('doc', null, schema.node('paragraph')), id)
     expect(documentId(deserialize(schema, serialize(doc)))).toBe(id)
-    const { store } = memory()
-    await store.record(id, serialize(doc), 'old.arx')
-    await store.record(id, serialize(doc), 'renamed.arx')
-    const versions = await store.list(id)
-    expect(versions).toHaveLength(2)
-    expect((await store.read(id, versions[0])).path).toBe('renamed.arx')
   })
 })

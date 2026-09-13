@@ -4,6 +4,8 @@ export type SnapshotFileChunk = {
 }
 
 export type SnapshotFile = {
+  identity?: string
+  historySource?: string
   // Hash of whole file, ignoring all metadata: pathname, timestamp, etc
   hash: string
   pathname: string

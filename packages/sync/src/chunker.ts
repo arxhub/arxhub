@@ -28,7 +28,7 @@ export class Chunker {
     })
   }
 
-  async *split(file: VirtualFile): AsyncGenerator<Uint8Array> {
+  async *split(file: Pick<VirtualFile, 'readable'>): AsyncGenerator<Uint8Array> {
     await this.initialize()
 
     let stream: ReadableStream<Uint8Array> | null = null

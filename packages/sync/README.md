@@ -22,6 +22,21 @@ devices and remote storage, even when you're offline.
 - **Fast & Efficient**: Only changed chunks are uploaded (Rabin content-defined chunking). *(implemented)*
 - **Conflict Resolution**: 3-way merge over snapshot history when the same file is edited on multiple devices. *(implemented)*
 
+## File history (implemented)
+
+`FileHistory` uses the same `Repo` snapshots and content-addressed chunks as synchronization. It can
+record local checkpoints without a server, list versions by path or stable file identity, and read
+verified content. `save(before, after, write)` serializes checkpoints and the file write with local
+merge; network fetch/push do not hold this lock. Snapshot history has no per-editor retention limit.
+
+Sync replays each local checkpoint onto remote ancestry before recording the merged tree, preserving
+intermediate offline versions. Historical chunks are fetched through the encrypted remote on demand;
+a missing offline chunk is an explicit error, and both chunk and whole-file hashes are checked.
+
+The plugin exposes this through `SyncExtension.history`, initializes the local repo independently of
+server configuration, and keeps it under `state/sync/repo`. Unsynced history lives only on this device:
+include this directory in local backups. ArxEditor migrates its legacy JSON versions into this repo.
+
 ## Getting Started
 
 ### Installation

@@ -1,5 +1,5 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import type { SyncEngine } from '@arxhub/sync'
+import type { FileHistory, SyncEngine } from '@arxhub/sync'
 import { ref } from 'vue'
 
 export type SyncStatus = 'idle' | 'syncing' | 'error'
@@ -14,6 +14,7 @@ export class SyncExtension extends Extension {
   // meant to fire once per round, not re-announce an older conflict the user already saw.
   readonly lastConflicts = ref<string[]>([])
   engine: SyncEngine | null = null
+  history: FileHistory | null = null
 
   constructor(args: ExtensionArgs) {
     super(args)
@@ -25,6 +26,8 @@ export class SyncExtension extends Extension {
     this.lastError.value = null
     this.lastConflicts.value = []
     try {
+      await this.engine.add('vault')
+      await this.engine.add('storage')
       const result = await this.engine.sync()
       this.lastSynced.value = new Date()
       this.lastConflicts.value = result.conflicts

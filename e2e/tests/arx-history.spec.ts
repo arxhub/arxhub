@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { Page } from '@playwright/test'
 import { expect, openNavigation, test } from './fixtures'
 
@@ -115,4 +116,29 @@ test('one block can be restored while a different edited block stays current', a
   await expect(editor.locator('p')).toHaveText(['First original', 'Second changed'])
   await app.reload()
   await expect(editor.locator('p')).toHaveText(['First original', 'Second changed'])
+})
+
+test('legacy saved versions move into snapshot history and remain available after reopening', async ({ app, vault }) => {
+  const id = test.info().project.name === 'mobile' ? '12345678-1234-4234-8234-123456789abc' : '12345678-1234-4234-8234-123456789def'
+  const document = (text: string) =>
+    JSON.stringify({ version: 1, documentId: id, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] } })
+  const path = await vault.write(`${test.info().project.name}-legacy-history.arx`, document('Current document'))
+  const old = document('Legacy saved text')
+  const hash = createHash('sha256').update(old).digest('hex')
+  const legacy = `storage/ArxEditor/documents/${id}/0001700000000000-${hash}.json`
+  await vault.writeData(legacy, JSON.stringify({ version: 1, documentId: id, path, content: old }))
+  await app.reload()
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click()
+  await expect(app.locator('.ProseMirror:visible')).toContainText('Current document')
+  const dialog = await versions(app)
+  await expect(dialog.getByLabel('Version preview')).toContainText('Legacy saved text')
+  await expect.poll(() => vault.readData(legacy).catch(() => null)).toBeNull()
+  const head = (await vault.readData('state/sync/repo/head')).trim()
+  expect(JSON.parse(await vault.readData(`state/sync/repo/snapshots/${head}`)).files[`vault/${path}`].identity).toBe(id)
+  await app.reload()
+  const reopened = await versions(app)
+  await expect(reopened.getByLabel('Version preview')).toContainText('Legacy saved text')
+  await reopened.getByRole('button', { name: 'Restore this version', exact: true }).click()
+  await expect.poll(() => vault.read(path)).toContain('Legacy saved text')
 })

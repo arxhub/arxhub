@@ -297,13 +297,19 @@ async function doSave() {
       throw validation('The file changed outside this editor. Choose which version to keep.')
     }
     const id = documentId(view.value.state.doc)
-    if (id && extension.history) await extension.history.record(id, saved, path)
-    if (!canSave.value || props.path !== path) throw validation('The document moved or became unavailable while saving. Retry Save.')
-    if (new TextDecoder().decode(await vfs.read(path)) !== saved)
-      throw validation('The file changed during saving. Retry Save to compare versions.')
-    await vfs.write(path, new TextEncoder().encode(content))
-    baseContent = content
-    if (id && extension.history) await extension.history.record(id, content, path)
+    const write = async () => {
+      if (!canSave.value || props.path !== path) throw validation('The document moved or became unavailable while saving. Retry Save.')
+      if (new TextDecoder().decode(await vfs.read(path)) !== saved)
+        throw validation('The file changed during saving. Retry Save to compare versions.')
+      await vfs.write(path, new TextEncoder().encode(content))
+      baseContent = content
+    }
+    if (id && extension.history?.save) await extension.history.save(id, saved, content, path, write)
+    else {
+      if (id && extension.history) await extension.history.record(id, saved, path)
+      await write()
+      if (id && extension.history) await extension.history.record(id, content, path)
+    }
     identityPending.value = false
     savedEdits.value = version
     if (edits.value === version) {

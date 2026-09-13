@@ -1374,9 +1374,15 @@ importers:
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell
+      '@arxhub/plugin-sync':
+        specifier: workspace:*
+        version: link:../sync
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../../packages/stdlib
+      '@arxhub/sync':
+        specifier: workspace:*
+        version: link:../../packages/sync
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
@@ -2085,6 +2091,9 @@ importers:
       '@arxhub/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../protection

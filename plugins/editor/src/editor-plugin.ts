@@ -8,6 +8,7 @@ import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { PublishExtension } from '@arxhub/plugin-publish/ui'
 import { SearchExtension } from '@arxhub/plugin-search/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { SyncExtension } from '@arxhub/plugin-sync/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
@@ -15,7 +16,7 @@ import { nextTick } from 'vue'
 import { createAssetStore } from './assets'
 import { searchDataSources } from './data-sources'
 import { createDraftStore } from './document-drafts'
-import { createHistoryStore } from './document-history'
+import { createSnapshotHistory } from './document-history'
 import { createDocumentLinkStore } from './document-link-store'
 import { ArxEditorExtension } from './editor-extension'
 import { deserialize, serialize } from './editor-format'
@@ -73,7 +74,10 @@ export class ArxEditorPlugin extends Plugin {
     }
     const keyring = ctx.extensions.has(KeyringExtension) ? ctx.extensions.get(KeyringExtension).keyring : null
     if (keyring) editor.drafts ??= createDraftStore(keyring.encryptionKey, keyring.authPublicKey)
-    editor.history ??= createHistoryStore(ctx.services.get(PluginVfs).storage)
+    if (ctx.extensions.has(SyncExtension)) {
+      const sync = ctx.extensions.get(SyncExtension)
+      editor.history ??= createSnapshotHistory(() => sync.history, ctx.services.get(PluginVfs).storage)
+    }
     editor.links ??= createDocumentLinkStore(
       ctx.services.get(VaultVfs),
       () => editor.kit.schema,

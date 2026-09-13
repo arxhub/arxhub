@@ -106,18 +106,19 @@ export class SyncEngine {
       )
     }
 
-    const localSnapshot = await this.local.snapshot()
-    // A remote that has never been pushed to stands at the empty snapshot (prepare() guarantees
-    // it exists locally), so merge/base-finding need no special null case.
-    const remoteSnapshot = await this.local.getSnapshotFile(syncedHead ?? EMPTY_SNAPSHOT_HASH).readJSON<Snapshot>()
-    const baseSnapshot = await this.local.findBaseSnapshot(localSnapshot.hash, remoteSnapshot.hash)
+    const { latest, result } = await this.local.exclusive(async () => {
+      const localSnapshot = await this.local.snapshot()
+      // A remote that has never been pushed to stands at the empty snapshot (prepare() guarantees
+      // it exists locally), so merge/base-finding need no special null case.
+      const remoteSnapshot = await this.local.getSnapshotFile(syncedHead ?? EMPTY_SNAPSHOT_HASH).readJSON<Snapshot>()
+      const baseSnapshot = await this.local.findBaseSnapshot(localSnapshot.hash, remoteSnapshot.hash)
 
-    const result = await this.local.merge(baseSnapshot?.files ?? {}, localSnapshot.files, remoteSnapshot.files)
+      const result = await this.local.merge(baseSnapshot?.files ?? {}, localSnapshot.files, remoteSnapshot.files)
 
-    // Rebase: point the local head at the remote head before snapshotting the merged tree, so the
-    // new snapshot's parent chain contains syncedHead and remote history stays linear.
-    await this.local.getHeadFile().writeText(remoteSnapshot.hash)
-    const latest = await this.local.snapshot()
+      // Replay every local checkpoint so publishing the merged tree does not orphan offline history.
+      await this.local.rebase(localSnapshot, remoteSnapshot, baseSnapshot)
+      return { latest: await this.local.snapshot(), result }
+    })
 
     await this.push(syncedHead, latest)
 
@@ -165,6 +166,12 @@ export class SyncEngine {
 
     const headSnapshot = await this.local.getSnapshotFile(head).readJSON<Snapshot>()
     await this.fetchChunks(headSnapshot)
+  }
+
+  async fetchFile(snapshot: Snapshot, path: string): Promise<void> {
+    const file = snapshot.files[path]
+    if (!file) throw illegalState(`File ${path} is not present in this snapshot`)
+    await this.fetchChunks({ ...snapshot, files: { [path]: file } })
   }
 
   private async fetchChunks(snapshot: Snapshot): Promise<void> {

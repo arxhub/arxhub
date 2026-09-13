@@ -1,10 +1,11 @@
 import { PluginConfig } from '@arxhub/config'
 import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
+import { illegalState } from '@arxhub/errors'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { EncryptedSyncRemote, HttpSyncRemote, Repo, SYNC_NAMESPACE, SyncEngine } from '@arxhub/sync'
+import { EncryptedSyncRemote, FileHistory, HttpSyncRemote, Repo, SYNC_NAMESPACE, SyncEngine } from '@arxhub/sync'
 import { PluginVfs, RootVfs } from '@arxhub/vfs'
 import { Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
@@ -31,6 +32,10 @@ export const SyncConfigSchema = Type.Object({
 })
 
 export class SyncPlugin extends Plugin {
+  private repo!: Repo
+  private preparation: Promise<void> | null = null
+  private bringUp: Promise<void> | null = null
+  private stopping = false
   private syncTimer: ReturnType<typeof setInterval> | null = null
   private onVisible: (() => void) | null = null
 
@@ -52,6 +57,16 @@ export class SyncPlugin extends Plugin {
 
     const shell = ctx.extensions.get(ShellExtension)
     const sync = ctx.extensions.get(SyncExtension)
+    this.repo = new Repo(ctx.services.get(RootVfs), ctx.services.get(PluginVfs).state)
+    sync.history = new FileHistory(
+      this.repo,
+      () => this.prepare(ctx),
+      async (snapshot, path) => {
+        await this.bringUp
+        if (!sync.engine) throw illegalState('Connect to the sync server to download this version.')
+        await sync.engine.fetchFile(snapshot, path)
+      },
+    )
     // Two registrations, because the one component was two things: where sync stands, and what you can
     // tell it to do. The grammar has no word for a widget that is both, and the bar lays the two out on
     // opposite sides.
@@ -67,15 +82,34 @@ export class SyncPlugin extends Plugin {
     shell.status.register({ id: 'arxhub.sync.actions', kind: 'action', component: markRaw(SyncActions) })
   }
 
-  override async start(ctx: PluginContext): Promise<void> {
-    await super.start(ctx)
+  private prepare(ctx: PluginContext): Promise<void> {
+    this.preparation ??= (async () => {
+      await this.discardStateOfPreviousIdentity(ctx.services.get(PluginVfs), ctx.extensions.get(KeyringExtension))
+      await this.repo.prepare()
+    })()
+    return this.preparation
+  }
 
-    const pluginVfs = ctx.services.get(PluginVfs)
+  override start(ctx: PluginContext): Promise<void> {
+    this.stopping = false
+    this.bringUp = this.startSync(ctx)
+    void this.bringUp.catch((error) => {
+      const sync = ctx.extensions.get(SyncExtension)
+      sync.status.value = 'error'
+      sync.lastError.value = error instanceof Error ? error.message : String(error)
+      this.logger.error('Could not initialize sync history', error)
+    })
+    return super.start(ctx)
+  }
+
+  private async startSync(ctx: PluginContext): Promise<void> {
+    await this.prepare(ctx)
+    if (this.stopping) return
     // tryRead, not read: the product works offline (FR-147), so an unreachable settings store leaves
     // sync idle instead of aborting the whole boot.
     const cfg = await ctx.services.get(PluginConfig).tryRead(SyncConfigSchema)
 
-    if (cfg == null || !cfg.serverUrl) return
+    if (this.stopping || cfg == null || !cfg.serverUrl) return
 
     // Sync requires the user's identity: the keyring both encrypts content and authenticates to the
     // (protected) remote. Without it there is no safe way to sync, so we stay idle and surface why.
@@ -84,8 +118,6 @@ export class SyncPlugin extends Plugin {
       this.logger.warn('Sync is configured but no identity is set — add a recovery phrase in Security settings')
       return
     }
-
-    await this.discardStateOfPreviousIdentity(pluginVfs, ctx.extensions.get(KeyringExtension))
 
     // Sign remote requests with the same identity so a protected sync server accepts them.
     const signer = new MutableRequestSigner()
@@ -104,7 +136,7 @@ export class SyncPlugin extends Plugin {
     // store in state/ so sync never chunks its own internals (state/ is never synced and is never
     // add()-ed for snapshotting). state/temp exclusion is structural, not a permission check.
     syncExt.engine = new SyncEngine({
-      local: new Repo(ctx.services.get(RootVfs), pluginVfs.state),
+      local: this.repo,
       remote,
     })
 
@@ -143,11 +175,14 @@ export class SyncPlugin extends Plugin {
     } catch (error) {
       // Leaving the old store in place would make the next sync fail as if the remote had been
       // tampered with, so say so loudly rather than starting into a confusing failure.
-      this.logger.error('Could not discard the previous owner’s sync state — sync will likely fail until state/sync/repo is removed', error)
+      this.logger.error('Could not discard the previous owner’s sync state', error)
+      throw error
     }
   }
 
   override async stop(ctx: PluginContext): Promise<void> {
+    this.stopping = true
+    await this.bringUp?.catch(() => {})
     if (this.syncTimer != null) {
       clearInterval(this.syncTimer)
       this.syncTimer = null
