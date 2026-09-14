@@ -12,7 +12,15 @@ export interface CheckoutEntry {
   checkedAt: number
 }
 
-export type CheckoutIndex = Record<string, CheckoutEntry>
+// What is on disk (entries) and what deliberately is not (pending): a path the manifest lists whose
+// content this device chose not to hold — 'in the cloud'. Kept apart from entries because the two
+// answer different questions: an entry says 'trust this stat', a pending mark says 'do not read the
+// absence of this file as its deletion'.
+export interface CheckoutIndex {
+  entries: Record<string, CheckoutEntry>
+  // pathname → the content hash the manifest had when the path was left unmaterialised.
+  pending: Record<string, string>
+}
 
 const RACY_MS = 2000
 
@@ -34,7 +42,10 @@ export class Checkout {
   }
 
   private async load(): Promise<CheckoutIndex> {
-    if (this.index == null) this.index = await this.indexFile.readJSON<CheckoutIndex>({})
+    if (this.index == null) {
+      const raw = await this.indexFile.readJSON<Partial<CheckoutIndex>>({})
+      this.index = { entries: raw.entries ?? {}, pending: raw.pending ?? {} }
+    }
     return this.index
   }
 
@@ -49,13 +60,13 @@ export class Checkout {
       if (hasErrorCode(error, 'FileNotFound')) return null
       throw error
     }
-    const known = index[pathname]
+    const known = index.entries[pathname]
     if (known != null && known.size === head.size && known.mtime === head.modifiedAt && known.mtime + RACY_MS < known.checkedAt) {
       return known.hash
     }
 
     const hash = await this.digest(pathname)
-    index[pathname] = { size: head.size, mtime: head.modifiedAt, hash, checkedAt: Date.now() }
+    index.entries[pathname] = { size: head.size, mtime: head.modifiedAt, hash, checkedAt: Date.now() }
     this.dirty = true
     return hash
   }
@@ -65,16 +76,47 @@ export class Checkout {
   async record(pathname: string, hash: string): Promise<void> {
     const index = await this.load()
     const { size, modifiedAt } = await this.tree.head(pathname)
-    index[pathname] = { size, mtime: modifiedAt, hash, checkedAt: Date.now() }
+    index.entries[pathname] = { size, mtime: modifiedAt, hash, checkedAt: Date.now() }
     this.dirty = true
   }
 
   async forget(pathname: string): Promise<void> {
     const index = await this.load()
-    if (pathname in index) {
-      delete index[pathname]
+    if (pathname in index.entries) {
+      delete index.entries[pathname]
       this.dirty = true
     }
+  }
+
+  // Whether this device has ever established a hash for the file on disk — cheap, no stat, no read.
+  // What a fetch asks before spending bandwidth on a file the policy would not materialise: one that
+  // IS on disk has to be kept up to date whatever the policy says.
+  async knows(pathname: string): Promise<boolean> {
+    return pathname in (await this.load()).entries
+  }
+
+  async isPending(pathname: string): Promise<boolean> {
+    return pathname in (await this.load()).pending
+  }
+
+  async markPending(pathname: string, hash: string): Promise<void> {
+    const index = await this.load()
+    if (index.pending[pathname] === hash) return
+    index.pending[pathname] = hash
+    delete index.entries[pathname]
+    this.dirty = true
+  }
+
+  async clearPending(pathname: string): Promise<void> {
+    const index = await this.load()
+    if (pathname in index.pending) {
+      delete index.pending[pathname]
+      this.dirty = true
+    }
+  }
+
+  async pendingPaths(): Promise<string[]> {
+    return Object.keys((await this.load()).pending)
   }
 
   async flush(): Promise<void> {

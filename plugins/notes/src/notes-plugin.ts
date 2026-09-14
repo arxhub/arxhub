@@ -44,6 +44,7 @@ export class NotesPlugin extends Plugin {
     // same key for the same path, which is what the de-duplication rests on.
     const open = async (ref: ObjectRef): Promise<OpenedObject> => {
       const path = String(ref.id)
+      await notes.prepare(path)
       const viewer = notes.viewerFor(path)
       const anchor = blockAnchorOf(ref.at)
 

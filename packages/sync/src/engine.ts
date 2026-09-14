@@ -171,13 +171,28 @@ export class SyncEngine {
   async fetchFile(snapshot: Snapshot, path: string): Promise<void> {
     const file = snapshot.files[path]
     if (!file) throw illegalState(`File ${path} is not present in this snapshot`)
-    await this.fetchChunks({ ...snapshot, files: { [path]: file } })
+    await this.fetchChunks({ ...snapshot, files: { [path]: file } }, { everything: true })
   }
 
-  private async fetchChunks(snapshot: Snapshot): Promise<void> {
+  // Bring a file this device left in the cloud onto disk: its chunks from the remote, then the write.
+  // What opening a pending file runs first. Under the sync lock, so it never interleaves with a round.
+  async materialize(path: string): Promise<void> {
+    await this.lock.acquire('sync', async () => {
+      if (!(await this.local.isPending(path))) return
+      const head = await this.local.getHeadSnapshot()
+      await this.fetchFile(head, path)
+      await this.local.materialize(path)
+    })
+  }
+
+  // `everything` fetches regardless of the materialise policy — what fetchFile wants, since it is
+  // called exactly to bring a declined file in. A head fetch asks the repo per file instead, so a
+  // device that keeps films in the cloud does not download them to then not write them.
+  private async fetchChunks(snapshot: Snapshot, options: { everything?: boolean } = {}): Promise<void> {
     const missing: string[] = []
     const seen = new Set<string>()
     for (const pathname in snapshot.files) {
+      if (options.everything !== true && !(await this.local.wantsContent(snapshot.files[pathname]))) continue
       for (const chunk of snapshot.files[pathname].chunks) {
         if (seen.has(chunk.hash)) continue
         seen.add(chunk.hash)

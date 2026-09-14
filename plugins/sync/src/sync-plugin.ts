@@ -3,6 +3,7 @@ import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub
 import { MutableRequestSigner } from '@arxhub/crypto'
 import { illegalState } from '@arxhub/errors'
 import { join } from '@arxhub/path'
+import { NotesExtension } from '@arxhub/plugin-notes/ui'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
@@ -69,6 +70,15 @@ export class SyncPlugin extends Plugin {
       const paths = change.from == null ? [change.pathname] : [change.from, change.pathname]
       for (const path of paths)
         void this.repo.add(join('vault', path)).catch((error) => this.logger.error('Could not journal a vault change', error))
+    })
+    // A file left in the cloud comes down before whatever opens it mounts; a file that is on disk costs
+    // one index lookup here and nothing else. The policy that leaves files in the cloud is not yet
+    // surfaced (23-storage-model F-06: a pending file is not in the tree until the explorer learns of
+    // it), so today this hook is exercised only by tests and by a store another version left pending.
+    const notes = ctx.extensions.get(NotesExtension)
+    notes.registerPreparer(async (path) => {
+      const full = join('vault', path)
+      if (await this.repo.isPending(full)) await sync.materialize(full)
     })
     sync.history = new FileHistory(
       this.repo,

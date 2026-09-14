@@ -36,6 +36,9 @@ export interface NoteViewer {
 }
 
 type Creator = () => Promise<string | null>
+// Runs before an object opens, with its path. What sync uses to bring a file this device left in the
+// cloud onto disk first — the viewer that mounts next reads from disk and knows nothing about clouds.
+type Preparer = (path: string) => Promise<void>
 
 export interface NotesExtensionArgs extends ExtensionArgs {
   vfs: VirtualFileSystem
@@ -59,6 +62,7 @@ export class NotesExtension extends Extension {
   // What creates a note when somebody knows the place better. The explorer does: it has a selected
   // folder and a tree that has to show the result.
   private creator: Creator | null = null
+  private readonly preparers = new Set<Preparer>()
   private readonly openViews = new Set<{ path: () => string; reveal: (anchor: BlockAnchor) => boolean; beforeClose?: () => Promise<boolean> }>()
 
   registerOpenView(path: () => string, reveal: (anchor: BlockAnchor) => boolean, beforeClose?: () => Promise<boolean>): () => void {
@@ -112,6 +116,19 @@ export class NotesExtension extends Extension {
 
   setCreator(creator: Creator): void {
     this.creator = creator
+  }
+
+  registerPreparer(preparer: Preparer): () => void {
+    this.preparers.add(preparer)
+    return () => {
+      this.preparers.delete(preparer)
+    }
+  }
+
+  // Every preparer, in registration order; a failure aborts the open, and the opener reports it —
+  // a viewer over a file that is not there would report something less useful.
+  async prepare(path: string): Promise<void> {
+    for (const preparer of this.preparers) await preparer(path)
   }
 
   // Create a note and return its path. Opening is the caller's business: opening belongs to the

@@ -1,4 +1,4 @@
-import { hasErrorCode } from '@arxhub/errors'
+import { hasErrorCode, illegalState } from '@arxhub/errors'
 import { join } from '@arxhub/path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
@@ -20,6 +20,11 @@ function sameEntry(a: SnapshotFile | undefined, b: SnapshotFile | undefined): bo
   return a.hash === b.hash && a.identity === b.identity
 }
 
+// Whether THIS device holds a file's content, given its manifest entry. The default holds everything —
+// the offline-first promise as it stands; a device that declines a file keeps the path in its manifest
+// as 'pending' and fetches the content when the file is opened.
+export type MaterializePolicy = (file: SnapshotFile) => boolean
+
 export class Repo {
   // The working tree being versioned (user content). Read for status/snapshot, written on merge.
   private readonly tree: VirtualFileSystem
@@ -31,6 +36,7 @@ export class Repo {
   private readonly chunker: Chunker
   // This device's view of the tree — see Checkout. Flushed at the end of every operation that touched it.
   private readonly checkout: Checkout
+  private materializePolicy: MaterializePolicy = () => true
 
   constructor(tree: VirtualFileSystem, store: VirtualFileSystem = tree) {
     this.tree = tree
@@ -43,6 +49,41 @@ export class Repo {
 
   exclusive<T>(work: () => Promise<T>): Promise<T> {
     return this.lock.acquire('operation', work)
+  }
+
+  setMaterializePolicy(policy: MaterializePolicy): void {
+    this.materializePolicy = policy
+  }
+
+  // Does a fetch owe this file its chunks: yes when the policy wants it, and yes when it is already on
+  // disk — a file this device holds is kept current whatever the policy says about its size.
+  async wantsContent(file: SnapshotFile): Promise<boolean> {
+    return this.materializePolicy(file) || this.checkout.knows(file.pathname)
+  }
+
+  isPending(pathname: string): Promise<boolean> {
+    return this.checkout.isPending(pathname)
+  }
+
+  pendingPaths(): Promise<string[]> {
+    return this.checkout.pendingPaths()
+  }
+
+  // Put a pending file's content on disk. The chunks have to be in the local store already — the engine
+  // fetches them first (SyncEngine.materialize); this is the half that does not need the network.
+  materialize(pathname: string): Promise<void> {
+    return this.exclusive(async () => {
+      if (!(await this.checkout.isPending(pathname))) return
+      const head = await this.getHeadSnapshot()
+      const file = head.files[pathname]
+      if (file == null) {
+        await this.checkout.clearPending(pathname)
+        return
+      }
+      if (!(await this.hasChunks(file))) throw illegalState(`The content of ${pathname} has not been fetched`)
+      await this.writeFile(file)
+      await this.checkout.flush()
+    })
   }
 
   // The journal is a SET of paths to look at, not a log of what happened: a note saved forty times
@@ -93,9 +134,18 @@ export class Repo {
     const local = snapshot.files[pathname]
 
     if (hash == null) {
-      if (local != null) await this.checkout.forget(pathname)
-      return local != null ? { pathname, type: 'deleted' } : null
+      if (local == null) {
+        await this.checkout.clearPending(pathname)
+        return null
+      }
+      // Not on disk by this device's choice, not by the user's: the manifest keeps the file, and
+      // reading its absence as a deletion would push that deletion to every other device.
+      if (await this.checkout.isPending(pathname)) return null
+      await this.checkout.forget(pathname)
+      return { pathname, type: 'deleted' }
     }
+    // Something put a file at a pending path — it is a file now, and judged as one.
+    await this.checkout.clearPending(pathname)
     if (local == null) return { pathname, type: 'created' }
     return hash !== local.hash ? { pathname, type: 'modified' } : null
   }
@@ -307,13 +357,14 @@ export class Repo {
       // Only local exists
       if (local && !remote) {
         if (!base) {
-          await this.writeFile(localFile)
+          await this.take(localFile)
         } else if (localFile.hash === baseFile.hash) {
           // Remote no longer lists this path and local hasn't touched it since — safe to drop. Forced:
           // this path may already be gone from the tree (e.g. the local side deleted it independently
           // of what this stale snapshot entry still claims), and that must converge, not crash the sync.
           await this.tree.delete(pathname, { force: true })
           await this.checkout.forget(pathname)
+          await this.checkout.clearPending(pathname)
         }
         // else: local modified, remote deleted -> silently keep local (no conflict; the tree already
         // holds the modified content, so there is nothing to write).
@@ -323,10 +374,11 @@ export class Repo {
       // Only remote exists
       if (!local && remote) {
         if (!base) {
-          await this.writeFile(remoteFile)
+          await this.take(remoteFile)
         } else if (remoteFile.hash === baseFile.hash) {
           await this.tree.delete(pathname, { force: true })
           await this.checkout.forget(pathname)
+          await this.checkout.clearPending(pathname)
         } else {
           // Remote modified, local deleted (or renamed away) it — the edit wins, exactly like the
           // symmetric branch above, so it has to be materialized here: unlike "local modified, remote
@@ -335,14 +387,14 @@ export class Repo {
           // FR-152 requires it survive, and a rename-vs-edit race is the sharpest case: the edit
           // resurfaces under its old name instead of landing inside the rename, which is a duplicate
           // for the user to reconcile rather than the data loss it was.
-          await this.writeFile(remoteFile)
+          await this.take(remoteFile)
         }
         continue
       }
 
       // Prevent conflict
       if (base && local && remote && baseFile.hash === localFile.hash) {
-        await this.writeFile(remoteFile)
+        await this.take(remoteFile)
         continue
       }
 
@@ -357,11 +409,29 @@ export class Repo {
     return { conflicts }
   }
 
+  // Put the remote's version of a file on this device — as content when the chunks are here, as a
+  // pending mark when they are not. Deciding by the chunks actually present rather than by the policy
+  // keeps a policy change, a stale index or an interrupted fetch from ending in a truncated write: a
+  // file the policy wanted has its chunks by the time merge runs (fetch fails loudly otherwise), and a
+  // file it did not is exactly what pending is for.
+  private async take(file: SnapshotFile): Promise<void> {
+    if (await this.hasChunks(file)) await this.writeFile(file)
+    else await this.checkout.markPending(file.pathname, file.hash)
+  }
+
+  private async hasChunks(file: SnapshotFile): Promise<boolean> {
+    for (const chunk of file.chunks) {
+      if (!(await this.getChunkFile(chunk.hash).exists())) return false
+    }
+    return true
+  }
+
   private async writeFile(file: SnapshotFile): Promise<void> {
     const stream = this.chunker.merge(file.chunks.map((it) => this.getChunkFile(it.hash)))
     const writable = await this.tree.file(file.pathname).writable()
     await stream.pipeTo(writable)
     await this.checkout.record(file.pathname, file.hash)
+    await this.checkout.clearPending(file.pathname)
     await this.add(file.pathname)
   }
 

@@ -1,4 +1,5 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
+import { illegalState } from '@arxhub/errors'
 import type { FileHistory, SyncEngine } from '@arxhub/sync'
 import { ref } from 'vue'
 
@@ -15,6 +16,12 @@ export class SyncExtension extends Extension {
   readonly lastConflicts = ref<string[]>([])
   engine: SyncEngine | null = null
   history: FileHistory | null = null
+
+  // Bring a file this device left in the cloud onto disk. `path` in the repo's coordinates (vault/…).
+  async materialize(path: string): Promise<void> {
+    if (!this.engine) throw illegalState('Connect to the sync server to download this file.')
+    await this.engine.materialize(path)
+  }
 
   constructor(args: ExtensionArgs) {
     super(args)

@@ -10,6 +10,7 @@ export default defineConfig((env) =>
       '@arxhub/errors',
       '@arxhub/crypto',
       '@arxhub/path',
+      '@arxhub/plugin-notes',
       '@arxhub/plugin-protection',
       '@arxhub/plugin-settings',
       '@arxhub/plugin-shell',

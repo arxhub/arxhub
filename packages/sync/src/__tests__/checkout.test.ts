@@ -67,8 +67,8 @@ describe('Checkout', () => {
     await checkout.hashOf('a.txt')
     await checkout.flush()
 
-    const stored = await vfs.file('/index').readJSON<Record<string, { hash: string; size: number }>>()
-    expect(stored['a.txt']).toMatchObject({ hash: sha256(enc('alpha')), size: 5 })
+    const stored = await vfs.file('/index').readJSON<{ entries: Record<string, { hash: string; size: number }> }>()
+    expect(stored.entries['a.txt']).toMatchObject({ hash: sha256(enc('alpha')), size: 5 })
   })
 })
 

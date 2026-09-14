@@ -2146,6 +2146,9 @@ importers:
       '@arxhub/path':
         specifier: workspace:*
         version: link:../../packages/path
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../notes
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../protection

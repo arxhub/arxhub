@@ -33,6 +33,7 @@
     "@arxhub/crypto": "workspace:*",
     "@arxhub/errors": "workspace:*",
     "@arxhub/path": "workspace:*",
+    "@arxhub/plugin-notes": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
