@@ -5,6 +5,7 @@ import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
 import type { VirtualFile, VirtualFileSystem, VirtualWalker } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
+import { Checkout } from './checkout'
 import { Chunker } from './chunker'
 import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
 import { snapshotHash } from './snapshot-hash'
@@ -28,6 +29,8 @@ export class Repo {
   private readonly lock: AsyncLock
   private readonly changes: VirtualFile
   private readonly chunker: Chunker
+  // This device's view of the tree — see Checkout. Flushed at the end of every operation that touched it.
+  private readonly checkout: Checkout
 
   constructor(tree: VirtualFileSystem, store: VirtualFileSystem = tree) {
     this.tree = tree
@@ -35,6 +38,7 @@ export class Repo {
     this.lock = new AsyncLock()
     this.changes = this.getChangesFile()
     this.chunker = new Chunker()
+    this.checkout = new Checkout(tree, this.getIndexFile())
   }
 
   exclusive<T>(work: () => Promise<T>): Promise<T> {
@@ -55,12 +59,11 @@ export class Repo {
     const processed = new Set<string>()
 
     for (const pathname in snapshot.files) {
-      const file = this.tree.file(pathname)
-      const status = await this.fileStatus(file, snapshot)
+      const status = await this.fileStatus(pathname, snapshot)
       if (status != null) {
         result.push(status)
       }
-      processed.add(file.pathname)
+      processed.add(pathname)
     }
 
     const paths = await this.changes.readJSON([])
@@ -69,7 +72,8 @@ export class Repo {
       if (processed.has(path)) continue
 
       for await (const file of this.tree.walk(path)) {
-        const status = await this.fileStatus(file, snapshot)
+        if (processed.has(file.pathname)) continue
+        const status = await this.fileStatus(file.pathname, snapshot)
         if (status != null) {
           result.push(status)
         }
@@ -77,26 +81,20 @@ export class Repo {
       }
     }
 
+    await this.checkout.flush()
     return result
   }
 
-  private async fileStatus(file: VirtualFile, snapshot: Snapshot): Promise<FileStatus | null> {
-    if (await file.exists()) {
-      const hash = await file.info.get('hash')
-      const local = snapshot.files[file.pathname]
+  private async fileStatus(pathname: string, snapshot: Snapshot): Promise<FileStatus | null> {
+    const hash = await this.checkout.hashOf(pathname)
+    const local = snapshot.files[pathname]
 
-      if (local == null) {
-        return { pathname: file.pathname, type: 'created' }
-      } else if (hash !== local.hash) {
-        return { pathname: file.pathname, type: 'modified' }
-      } else {
-        return null
-      }
-    } else if (snapshot.files[file.pathname] != null) {
-      return { pathname: file.pathname, type: 'deleted' }
+    if (hash == null) {
+      if (local != null) await this.checkout.forget(pathname)
+      return local != null ? { pathname, type: 'deleted' } : null
     }
-
-    return null
+    if (local == null) return { pathname, type: 'created' }
+    return hash !== local.hash ? { pathname, type: 'modified' } : null
   }
 
   snapshot(): Promise<Snapshot> {
@@ -139,7 +137,8 @@ export class Repo {
         size += chunk.byteLength
       }
 
-      const fileHash = (await file.info.get('hash')) ?? ''
+      // status() just established this hash, so the checkout answers from its index without a read.
+      const fileHash = (await this.checkout.hashOf(pathname)) ?? ''
 
       // The same path is the same file. A NEW path holding content whose old path is gone in this very
       // round is that file renamed, and keeps its ids. A new path holding content that still exists
@@ -157,6 +156,7 @@ export class Repo {
     }
 
     await this.completeLegacyEntries(files)
+    await this.checkout.flush()
 
     const snapshot = {
       // The address commits to files AND parent (see snapshotHash) — matches prepare()'s
@@ -310,6 +310,7 @@ export class Repo {
           // this path may already be gone from the tree (e.g. the local side deleted it independently
           // of what this stale snapshot entry still claims), and that must converge, not crash the sync.
           await this.tree.delete(pathname, { force: true })
+          await this.checkout.forget(pathname)
         }
         // else: local modified, remote deleted -> silently keep local (no conflict; the tree already
         // holds the modified content, so there is nothing to write).
@@ -322,6 +323,7 @@ export class Repo {
           await this.writeFile(remoteFile)
         } else if (remoteFile.hash === baseFile.hash) {
           await this.tree.delete(pathname, { force: true })
+          await this.checkout.forget(pathname)
         } else {
           // Remote modified, local deleted (or renamed away) it — the edit wins, exactly like the
           // symmetric branch above, so it has to be materialized here: unlike "local modified, remote
@@ -348,6 +350,7 @@ export class Repo {
 
       // else: same content -> no-op
     }
+    await this.checkout.flush()
     return { conflicts }
   }
 
@@ -355,6 +358,7 @@ export class Repo {
     const stream = this.chunker.merge(file.chunks.map((it) => this.getChunkFile(it.hash)))
     const writable = await this.tree.file(file.pathname).writable()
     await stream.pipeTo(writable)
+    await this.checkout.record(file.pathname, file.hash)
     await this.add(file.pathname)
   }
 
@@ -370,8 +374,9 @@ export class Repo {
     const nameAt = (suffix: string) => (ext ? `${stem}${suffix}.${ext}` : `${stem}${suffix}`)
 
     let pathname = join(path, nameAt(''))
-    for (let n = 2; await this.tree.file(pathname).exists(); n++) {
-      const existingHash = await this.tree.file(pathname).info.get('hash')
+    for (let n = 2; ; n++) {
+      const existingHash = await this.checkout.hashOf(pathname)
+      if (existingHash == null) break
       if (existingHash === remote.hash) return pathname
       pathname = join(path, nameAt(`-${n}`))
     }
@@ -380,6 +385,7 @@ export class Repo {
     const writable = await file.writable()
     const readable = this.chunker.merge(remote.chunks.map((it) => this.getChunkFile(it.hash)))
     await readable.pipeTo(writable)
+    await this.checkout.record(file.pathname, remote.hash)
     await this.add(file.pathname)
     return file.pathname
   }
@@ -416,6 +422,11 @@ export class Repo {
 
   getChangesFile(): VirtualFile {
     return this.store.file(`/repo/changes`)
+  }
+
+  // The checkout index — device-local, like everything else under /repo that is not an object.
+  getIndexFile(): VirtualFile {
+    return this.store.file(`/repo/index`)
   }
 
   getHeadFile(): VirtualFile {
