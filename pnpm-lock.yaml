@@ -1221,9 +1221,6 @@ importers:
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
-      '@arxhub/vfs':
-        specifier: workspace:*
-        version: link:../vfs
       '@tauri-apps/api':
         specifier: catalog:tauri
         version: 2.11.0
@@ -1234,12 +1231,18 @@ importers:
         specifier: catalog:shared
         version: 1.4.1
     devDependencies:
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../vfs
       '@types/async-lock':
         specifier: catalog:toolchain
         version: 1.4.2

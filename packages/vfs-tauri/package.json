@@ -28,8 +28,10 @@
     "async-lock": "catalog:shared"
   },
   "devDependencies": {
+    "@arxhub/errors": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
     "@types/async-lock": "catalog:toolchain",
     "@types/node": "catalog:toolchain"
   },

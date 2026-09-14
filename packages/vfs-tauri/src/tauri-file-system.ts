@@ -1,7 +1,15 @@
 import type { Logger } from '@arxhub/core'
 import { normalizePath } from '@arxhub/path'
-import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type VirtualEntry } from '@arxhub/vfs'
-import { BaseDirectory, mkdir, exists as pathExists, readDir, readFile, remove, stat, writeFile } from '@tauri-apps/plugin-fs'
+import {
+  type DeleteOptions,
+  type FileHead,
+  fileNotFound,
+  GenericVirtualFileSystem,
+  type RangeCapable,
+  resolveRange,
+  type VirtualEntry,
+} from '@arxhub/vfs'
+import { BaseDirectory, mkdir, open, exists as pathExists, readDir, readFile, remove, SeekMode, stat, writeFile } from '@tauri-apps/plugin-fs'
 
 // The directory a path sits in, or '' at the root. Not `posix.dirname` — that answers '.' for a bare
 // name, which `mkdir` would then create as a literal directory called '.'.
@@ -10,7 +18,7 @@ function parentOf(pathname: string): string {
   return cut <= 0 ? '' : pathname.slice(0, cut)
 }
 
-export class TauriFileSystem extends GenericVirtualFileSystem {
+export class TauriFileSystem extends GenericVirtualFileSystem implements RangeCapable {
   private readonly baseDir: BaseDirectory
   private readonly basePath: string
   private readonly logger: Logger
@@ -54,6 +62,36 @@ export class TauriFileSystem extends GenericVirtualFileSystem {
     } catch (e) {
       this.logger.warn(`read(${pathname}) failed:`, e)
       throw fileNotFound(pathname)
+    }
+  }
+
+  // Seeks rather than reading whole (RangeCapable) — a media viewer over `read()` alone was holding the
+  // entire file in memory for a slice of it. `stat` gives the size the range grammar is resolved against;
+  // a size that turns out stale (the file shrank between the two calls) is not an error, just fewer bytes.
+  async readRange(pathname: string, offset: number, length?: number): Promise<Uint8Array> {
+    let info: { size: number }
+    try {
+      info = await stat(this.fullPath(pathname), { baseDir: this.baseDir })
+    } catch (e) {
+      this.logger.warn(`readRange(${pathname}) failed:`, e)
+      throw fileNotFound(pathname)
+    }
+    const { start, end } = resolveRange(info.size, offset, length)
+    if (start === end) return new Uint8Array(0)
+
+    const result = new Uint8Array(end - start)
+    const handle = await open(this.fullPath(pathname), { read: true, baseDir: this.baseDir })
+    try {
+      await handle.seek(start, SeekMode.Start)
+      let filled = 0
+      while (filled < result.length) {
+        const read = await handle.read(result.subarray(filled))
+        if (!read) break // EOF — the file was shorter than `stat` reported; return what we actually got.
+        filled += read
+      }
+      return result.subarray(0, filled)
+    } finally {
+      await handle.close()
     }
   }
 
