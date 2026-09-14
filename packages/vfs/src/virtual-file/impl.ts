@@ -2,6 +2,7 @@ import { createHasher, hash } from '@arxhub/crypto'
 import { infoFileAccess } from '../errors'
 import type { BaseInfoFields, InfoNamespace } from '../info-namespace'
 import { InfoNamespaceImpl } from '../info-namespace/impl'
+import { readRange } from '../ops/read-range'
 import type { DeleteOptions, VirtualFileSystem } from '../virtual-file-system'
 import type { VirtualFile } from './interface'
 
@@ -24,6 +25,10 @@ export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields>
 
   readable(): Promise<ReadableStream<Uint8Array>> {
     return this.vfs.readable(this.pathname)
+  }
+
+  readRange(offset: number, length?: number): Promise<Uint8Array> {
+    return readRange(this.vfs, this.pathname, offset, length)
   }
 
   async readText(): Promise<string> {

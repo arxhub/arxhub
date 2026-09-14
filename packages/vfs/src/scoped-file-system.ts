@@ -2,6 +2,7 @@ import { normalizePath, posix } from '@arxhub/path'
 import { scopeAccessDenied } from './errors'
 import { GenericVirtualFileSystem } from './generic-virtual-file-system'
 import { appendEntry } from './ops/append'
+import { readRange } from './ops/read-range'
 import type { VirtualEntry } from './virtual-entry'
 import type { DeleteOptions, FileHead, VirtualFileSystem } from './virtual-file-system'
 
@@ -50,6 +51,12 @@ export class ScopedFileSystem extends GenericVirtualFileSystem {
 
   override async readable(pathname: string): Promise<ReadableStream<Uint8Array>> {
     return this.inner.readable(this.resolve(pathname))
+  }
+
+  // Like `append`: translate, then re-dispatch through the op so native-vs-cut is decided at the real
+  // backend, and a scoped view (the vault) is itself range-capable.
+  async readRange(pathname: string, offset: number, length?: number): Promise<Uint8Array> {
+    return readRange(this.inner, this.resolve(pathname), offset, length)
   }
 
   override async write(pathname: string, content: Uint8Array): Promise<void> {

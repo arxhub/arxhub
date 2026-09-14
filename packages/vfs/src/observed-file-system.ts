@@ -1,6 +1,7 @@
 import { isRenameCapable, type RenameCapable } from './capabilities/rename'
 import { GenericVirtualFileSystem } from './generic-virtual-file-system'
 import { appendEntry } from './ops/append'
+import { readRange } from './ops/read-range'
 import { renameEntry } from './ops/rename'
 import { ScopedFileSystem } from './scoped-file-system'
 import { INFO_FILE_SUFFIX, type VfsChange, type VfsWatcher } from './vfs-watcher'
@@ -56,6 +57,10 @@ export class ObservedFileSystem extends GenericVirtualFileSystem implements Rena
 
   override async readable(pathname: string): Promise<ReadableStream<Uint8Array>> {
     return this.inner.readable(pathname)
+  }
+
+  async readRange(pathname: string, offset: number, length?: number): Promise<Uint8Array> {
+    return readRange(this.inner, pathname, offset, length)
   }
 
   // Reported only after the inner call resolves: a write that failed changed nothing, and a watcher
