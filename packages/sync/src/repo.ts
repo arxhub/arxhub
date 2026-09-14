@@ -45,9 +45,12 @@ export class Repo {
     return this.lock.acquire('operation', work)
   }
 
+  // The journal is a SET of paths to look at, not a log of what happened: a note saved forty times
+  // between two rounds is one entry, and status() would only have skipped the duplicates anyway.
   add(path: string): Promise<void> {
     return this.lock.acquire('changes', async () => {
       const paths = await this.changes.readJSON<string[]>([])
+      if (paths.includes(path)) return
       paths.push(path)
       await this.changes.writeJSON(paths)
     })

@@ -2097,6 +2097,9 @@ importers:
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@arxhub/path':
+        specifier: workspace:*
+        version: link:../../packages/path
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../protection

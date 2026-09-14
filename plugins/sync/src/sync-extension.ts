@@ -20,13 +20,19 @@ export class SyncExtension extends Extension {
     super(args)
   }
 
-  async sync(): Promise<void> {
+  // A round looks at what the journal names — every vault write the watcher saw since the last one —
+  // plus the whole of storage/, which nothing observes (config saves go through an unwrapped view and
+  // the tree is a handful of files). `full` adds the whole vault: the first round of a session and a
+  // manual "Sync now", because an edit made while the app was not running reached no watcher, and a
+  // stat-walk is what finds it. It costs one head() per file and no reads, which is why it is not
+  // every round: on a phone, thirty seconds is not long enough to justify statting the whole vault.
+  async sync(options: { full?: boolean } = {}): Promise<void> {
     if (!this.engine || this.status.value === 'syncing') return
     this.status.value = 'syncing'
     this.lastError.value = null
     this.lastConflicts.value = []
     try {
-      await this.engine.add('vault')
+      if (options.full === true) await this.engine.add('vault')
       await this.engine.add('storage')
       const result = await this.engine.sync()
       this.lastSynced.value = new Date()

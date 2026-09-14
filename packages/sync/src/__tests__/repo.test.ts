@@ -143,4 +143,12 @@ describe('Repo.snapshot', () => {
     expect(head.parent).toBe(remote.hash)
     expect(head.files['data/x.txt'].hash).toBe(remoteEdit.hash)
   })
+
+  test('the journal is a set: adding a path twice records it once', async () => {
+    await repo.add('/data')
+    await repo.add('/data')
+    await repo.add('/other')
+
+    expect(await repo.getChangesFile().readJSON()).toEqual(['/data', '/other'])
+  })
 })

@@ -2,11 +2,12 @@ import { PluginConfig } from '@arxhub/config'
 import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
 import { illegalState } from '@arxhub/errors'
+import { join } from '@arxhub/path'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { EncryptedSyncRemote, FileHistory, HttpSyncRemote, Repo, SYNC_NAMESPACE, SyncEngine } from '@arxhub/sync'
-import { PluginVfs, RootVfs } from '@arxhub/vfs'
+import { PluginVfs, RootVfs, VaultWatcher } from '@arxhub/vfs'
 import { Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
 import { manifest } from './manifest'
@@ -38,6 +39,7 @@ export class SyncPlugin extends Plugin {
   private stopping = false
   private syncTimer: ReturnType<typeof setInterval> | null = null
   private onVisible: (() => void) | null = null
+  private unwatch: (() => void) | null = null
 
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -58,6 +60,16 @@ export class SyncPlugin extends Plugin {
     const shell = ctx.extensions.get(ShellExtension)
     const sync = ctx.extensions.get(SyncExtension)
     this.repo = new Repo(ctx.services.get(RootVfs), ctx.services.get(PluginVfs).state)
+
+    // Every vault write reaches the journal as it happens, in the repo's coordinates (the watcher speaks
+    // vault-relative paths; the repo trees the root). A rename names both ends: the old path has to be
+    // seen as gone, the new one as arrived. Listener errors are the watcher's to report, never the
+    // writer's to see — and the journal write is fire-and-forget for the same reason.
+    this.unwatch = ctx.services.get(VaultWatcher).subscribe((change) => {
+      const paths = change.from == null ? [change.pathname] : [change.from, change.pathname]
+      for (const path of paths)
+        void this.repo.add(join('vault', path)).catch((error) => this.logger.error('Could not journal a vault change', error))
+    })
     sync.history = new FileHistory(
       this.repo,
       () => this.prepare(ctx),
@@ -140,9 +152,10 @@ export class SyncPlugin extends Plugin {
       remote,
     })
 
-    // Sync once at startup (pull remote edits made while offline), then poll so local saves
-    // propagate without the manual footer button. sync() self-guards against overlap.
-    void syncExt.sync()
+    // Sync once at startup — full, because edits made while the app was not running reached no
+    // watcher — then poll the journal so local saves propagate without the manual footer button.
+    // sync() self-guards against overlap.
+    void syncExt.sync({ full: true })
     if (cfg.autoSyncSeconds > 0) {
       this.syncTimer = setInterval(() => void syncExt.sync(), cfg.autoSyncSeconds * 1000)
     }
@@ -183,6 +196,8 @@ export class SyncPlugin extends Plugin {
   override async stop(ctx: PluginContext): Promise<void> {
     this.stopping = true
     await this.bringUp?.catch(() => {})
+    this.unwatch?.()
+    this.unwatch = null
     if (this.syncTimer != null) {
       clearInterval(this.syncTimer)
       this.syncTimer = null

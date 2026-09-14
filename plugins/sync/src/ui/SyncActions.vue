@@ -27,7 +27,7 @@ function openSettings(): void {
       aria-label="Sync now"
       title="Sync now"
       :disabled="syncing || !sync.engine"
-      @click="sync.sync()"
+      @click="sync.sync({ full: true })"
     >
       <Icon name="lu:refresh-cw" :size="14" :class="{ spin: syncing }" />
       Sync
