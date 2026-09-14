@@ -1,6 +1,7 @@
 import type { Logger } from '@arxhub/core'
 import { normalizePath } from '@arxhub/path'
 import {
+  type ContentUrlCapable,
   type DeleteOptions,
   type FileHead,
   fileNotFound,
@@ -9,6 +10,8 @@ import {
   resolveRange,
   type VirtualEntry,
 } from '@arxhub/vfs'
+import { convertFileSrc } from '@tauri-apps/api/core'
+import { appDataDir, homeDir, join as joinPath } from '@tauri-apps/api/path'
 import { BaseDirectory, mkdir, open, exists as pathExists, readDir, readFile, remove, SeekMode, stat, writeFile } from '@tauri-apps/plugin-fs'
 
 // The directory a path sits in, or '' at the root. Not `posix.dirname` — that answers '.' for a bare
@@ -18,7 +21,7 @@ function parentOf(pathname: string): string {
   return cut <= 0 ? '' : pathname.slice(0, cut)
 }
 
-export class TauriFileSystem extends GenericVirtualFileSystem implements RangeCapable {
+export class TauriFileSystem extends GenericVirtualFileSystem implements RangeCapable, ContentUrlCapable {
   private readonly baseDir: BaseDirectory
   private readonly basePath: string
   private readonly logger: Logger
@@ -93,6 +96,16 @@ export class TauriFileSystem extends GenericVirtualFileSystem implements RangeCa
     } finally {
       await handle.close()
     }
+  }
+
+  // A URL the webview loads straight from disk through the asset protocol, which answers `Range` on the
+  // Rust side — so a `<video>` seeks without a byte of it passing through JS. The protocol's scope
+  // (tauri.conf.json → app.security.assetProtocol) has to cover the store's directory; the two base
+  // directories below are the two the app instance mounts a store under.
+  async contentUrl(pathname: string): Promise<string | null> {
+    const root = this.baseDir === BaseDirectory.AppData ? await appDataDir() : this.baseDir === BaseDirectory.Home ? await homeDir() : null
+    if (root == null) return null
+    return convertFileSrc(await joinPath(root, this.fullPath(pathname)))
   }
 
   async readable(pathname: string): Promise<ReadableStream<Uint8Array>> {

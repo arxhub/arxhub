@@ -20,14 +20,27 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' ipc: http://ipc.localhost http: https: ws: wss:"
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob:; media-src 'self' asset: http://asset.localhost blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' ipc: http://ipc.localhost http: https: ws: wss:",
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$HOME/.arxhub/**",
+          "$APPDATA/**"
+        ]
+      }
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "rpm", "app", "dmg", "nsis"],
+    "targets": [
+      "deb",
+      "rpm",
+      "app",
+      "dmg",
+      "nsis"
+    ],
     "publisher": "rougsig",
-    "copyright": "Copyright \u00a9 rougsig",
+    "copyright": "Copyright © rougsig",
     "category": "Productivity",
     "license": "AGPL-3.0-or-later",
     "shortDescription": "Modular personal knowledge base",

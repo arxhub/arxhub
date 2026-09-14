@@ -2,6 +2,7 @@ import { normalizePath, posix } from '@arxhub/path'
 import { scopeAccessDenied } from './errors'
 import { GenericVirtualFileSystem } from './generic-virtual-file-system'
 import { appendEntry } from './ops/append'
+import { contentUrlOf } from './ops/content-url'
 import { readRange } from './ops/read-range'
 import type { VirtualEntry } from './virtual-entry'
 import type { DeleteOptions, FileHead, VirtualFileSystem } from './virtual-file-system'
@@ -57,6 +58,10 @@ export class ScopedFileSystem extends GenericVirtualFileSystem {
   // backend, and a scoped view (the vault) is itself range-capable.
   async readRange(pathname: string, offset: number, length?: number): Promise<Uint8Array> {
     return readRange(this.inner, this.resolve(pathname), offset, length)
+  }
+
+  async contentUrl(pathname: string): Promise<string | null> {
+    return contentUrlOf(this.inner, this.resolve(pathname))
   }
 
   override async write(pathname: string, content: Uint8Array): Promise<void> {

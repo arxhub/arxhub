@@ -1,6 +1,7 @@
 import { isRenameCapable, type RenameCapable } from './capabilities/rename'
 import { GenericVirtualFileSystem } from './generic-virtual-file-system'
 import { appendEntry } from './ops/append'
+import { contentUrlOf } from './ops/content-url'
 import { readRange } from './ops/read-range'
 import { renameEntry } from './ops/rename'
 import { ScopedFileSystem } from './scoped-file-system'
@@ -59,6 +60,10 @@ export class ObservedFileSystem extends GenericVirtualFileSystem implements Rena
 
   async readRange(pathname: string, offset: number, length?: number): Promise<Uint8Array> {
     return readRange(this.inner, pathname, offset, length)
+  }
+
+  async contentUrl(pathname: string): Promise<string | null> {
+    return contentUrlOf(this.inner, pathname)
   }
 
   // Reported only after the inner call resolves: a write that failed changed nothing, and a watcher
