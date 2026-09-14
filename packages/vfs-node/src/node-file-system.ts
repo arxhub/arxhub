@@ -10,12 +10,14 @@ import {
   type FileHead,
   fileNotFound,
   GenericVirtualFileSystem,
+  type RangeCapable,
   type RenameCapable,
+  resolveRange,
   scopeAccessDenied,
   type VirtualEntry,
 } from '@arxhub/vfs'
 
-export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCapable {
+export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCapable, RangeCapable {
   private readonly rootDir: string
   private readonly logger: Logger
 
@@ -149,6 +151,38 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
       this.logger.warn(`head(${pathname}) failed:`, e)
       throw fileNotFound(pathname)
     }
+  }
+
+  // Native range read (RangeCapable): a positional read over an open handle, never the whole file.
+  // fs.read can return short of what was asked even mid-file (not just at EOF), so it loops rather
+  // than trusting one call to fill the buffer.
+  async readRange(pathname: string, offset: number, length?: number): Promise<Uint8Array> {
+    const filePath = this.toOsPath(pathname)
+    let size: number
+    try {
+      size = (await fs.stat(filePath)).size
+    } catch (e) {
+      this.logger.warn(`readRange(${pathname}) failed:`, e)
+      throw fileNotFound(pathname)
+    }
+    const { start, end } = resolveRange(size, offset, length)
+    const count = end - start
+    const result = new Uint8Array(count)
+    if (count === 0) return result
+    const handle = await fs.open(filePath, 'r')
+    let read = 0
+    try {
+      while (read < count) {
+        const { bytesRead } = await handle.read(result, read, count - read, start + read)
+        if (bytesRead === 0) break
+        read += bytesRead
+      }
+    } finally {
+      await handle.close()
+    }
+    // Shorter than stat promised means the file shrank under us; the bytes that exist are the answer,
+    // not zero padding up to a size that is no longer true.
+    return read < count ? result.subarray(0, read) : result
   }
 
   async rename(src: string, dest: string): Promise<void> {

@@ -106,3 +106,6 @@ dist
 # Playwright
 test-results
 playwright-report
+
+# Harness worktrees for delegated agents
+.claude/worktrees/
