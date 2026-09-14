@@ -10,6 +10,15 @@ import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
 import { snapshotHash } from './snapshot-hash'
 import type { FileStatus, MergeResult, Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 
+// What a checkpoint changed about a file is its content and its document identity — never the
+// sizes or the file id, which a manifest written before they existed simply lacks. Comparing the
+// entries as JSON made the first manifest with sizes report every file changed against its parent,
+// and rebase then replayed the whole tree over the remote head, including files edited there.
+function sameEntry(a: SnapshotFile | undefined, b: SnapshotFile | undefined): boolean {
+  if (a === undefined || b === undefined) return a === b
+  return a.hash === b.hash && a.identity === b.identity
+}
+
 export class Repo {
   // The working tree being versioned (user content). Read for status/snapshot, written on merge.
   private readonly tree: VirtualFileSystem
@@ -102,6 +111,7 @@ export class Repo {
     }
 
     const files: Record<string, SnapshotFile> = { ...head.files }
+    const deleted = new Set(changes.filter((change) => change.type === 'deleted').map((change) => change.pathname))
 
     for (const change of changes) {
       const { pathname, type } = change
@@ -115,6 +125,7 @@ export class Repo {
 
       const file = this.tree.file(pathname)
       const chunks: SnapshotFileChunk[] = []
+      let size = 0
 
       for await (const chunk of this.chunker.split(file)) {
         const hash = sha256(chunk)
@@ -124,19 +135,28 @@ export class Repo {
           await chunkFile.write(chunk)
         }
 
-        chunks.push({ hash })
+        chunks.push({ hash, size: chunk.byteLength })
+        size += chunk.byteLength
       }
 
       const fileHash = (await file.info.get('hash')) ?? ''
 
-      const previous = head.files[pathname] ?? Object.values(head.files).find((entry) => entry.hash === fileHash)
+      // The same path is the same file. A NEW path holding content whose old path is gone in this very
+      // round is that file renamed, and keeps its ids. A new path holding content that still exists
+      // elsewhere is a COPY, and a copy is a new file: giving it the original's ids would make two
+      // files one — which is what this used to do, by matching on hash alone.
+      const previous = head.files[pathname] ?? Object.values(head.files).find((entry) => entry.hash === fileHash && deleted.has(entry.pathname))
       files[pathname] = {
+        fileId: previous?.fileId ?? crypto.randomUUID(),
         ...(previous?.identity ? { identity: previous.identity } : {}),
         hash: fileHash,
+        size,
         pathname: pathname,
         chunks,
       }
     }
+
+    await this.completeLegacyEntries(files)
 
     const snapshot = {
       // The address commits to files AND parent (see snapshotHash) — matches prepare()'s
@@ -154,6 +174,39 @@ export class Repo {
     return snapshot
   }
 
+  // Entries carried over from a manifest written before sizes and file ids existed are completed here,
+  // while a new manifest is being written anyway: a size from the local chunk store when the chunk is
+  // there (it may not be — history content is not mirrored), a fresh file id always. Two devices may
+  // complete the same entry with different ids in the same round; the merge keeps whichever entry the
+  // remote head has (entries are compared by content, never by id), so they converge on one — and
+  // nothing refers to a file id until they have.
+  private async completeLegacyEntries(files: Record<string, SnapshotFile>): Promise<void> {
+    for (const [pathname, entry] of Object.entries(files)) {
+      const chunks = entry.chunks.some((chunk) => chunk.size === undefined) ? await this.sizedChunks(entry.chunks) : entry.chunks
+      const sized = chunks.every((chunk) => chunk.size !== undefined)
+      if (entry.fileId !== undefined && chunks === entry.chunks && (entry.size !== undefined || !sized)) continue
+      files[pathname] = {
+        ...entry,
+        fileId: entry.fileId ?? crypto.randomUUID(),
+        chunks,
+        ...(sized ? { size: chunks.reduce((total, chunk) => total + (chunk.size ?? 0), 0) } : {}),
+      }
+    }
+  }
+
+  private async sizedChunks(chunks: SnapshotFileChunk[]): Promise<SnapshotFileChunk[]> {
+    const out: SnapshotFileChunk[] = []
+    for (const chunk of chunks) {
+      if (chunk.size !== undefined) {
+        out.push(chunk)
+        continue
+      }
+      const file = this.getChunkFile(chunk.hash)
+      out.push((await file.exists()) ? { ...chunk, size: (await file.vfs.head(file.pathname)).size } : chunk)
+    }
+    return out
+  }
+
   async rebase(local: Snapshot, remote: Snapshot, base: Snapshot | null): Promise<void> {
     if (base?.hash === remote.hash) return
     const pending: Snapshot[] = []
@@ -166,7 +219,7 @@ export class Repo {
       const parent = await this.getSnapshotFile(snapshot.parent!).readJSON<Snapshot>()
       const files = { ...head.files }
       for (const path of new Set([...Object.keys(parent.files), ...Object.keys(snapshot.files)])) {
-        if (JSON.stringify(parent.files[path]) === JSON.stringify(snapshot.files[path])) continue
+        if (sameEntry(parent.files[path], snapshot.files[path])) continue
         if (snapshot.files[path]) files[path] = snapshot.files[path]
         else delete files[path]
       }

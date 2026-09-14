@@ -3,7 +3,7 @@ import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { Chunker } from './chunker'
 import type { Repo } from './repo'
 import { snapshotHash } from './snapshot-hash'
-import type { Snapshot, SnapshotFile } from './types'
+import type { Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 
 export type FileHistoryQuery = { identity: string } | { path: string }
 export interface FileVersion {
@@ -141,7 +141,7 @@ export class FileHistory {
     const hash = sha256(checkpoint.content)
     const previous = head.files[checkpoint.path]
     if (!checkpoint.source && previous?.hash === hash && previous.identity === checkpoint.identity) return
-    const chunks: { hash: string }[] = []
+    const chunks: SnapshotFileChunk[] = []
     for await (const bytes of this.chunker.split({
       readable: async () =>
         new ReadableStream({
@@ -154,10 +154,11 @@ export class FileHistory {
       const chunkHash = sha256(bytes)
       const file = this.repo.getChunkFile(chunkHash)
       if (!(await file.exists()) || sha256(await file.read()) !== chunkHash) await file.write(bytes)
-      chunks.push({ hash: chunkHash })
+      chunks.push({ hash: chunkHash, size: bytes.byteLength })
     }
     if (imported) {
-      if (JSON.stringify(imported.chunks) !== JSON.stringify(chunks))
+      // By hash only: an entry imported before sizes were recorded has none, and is still the same content.
+      if (imported.chunks.map((chunk) => chunk.hash).join() !== chunks.map((chunk) => chunk.hash).join())
         throw illegalState('Imported history chunks differ; originals have been retained')
       return
     }
@@ -168,8 +169,10 @@ export class FileHistory {
       }
     }
     files[checkpoint.path] = {
+      fileId: previous?.fileId ?? crypto.randomUUID(),
       pathname: checkpoint.path,
       hash,
+      size: checkpoint.content.byteLength,
       chunks,
       ...(checkpoint.identity ? { identity: checkpoint.identity } : {}),
       ...(checkpoint.source ? { historySource: checkpoint.source } : {}),

@@ -114,11 +114,14 @@ describe('SyncEngine', () => {
         timestamp: expect.any(Number),
         files: {
           'local.txt': {
+            fileId: expect.any(String),
             hash: 'a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48',
+            size: 13,
             pathname: 'local.txt',
             chunks: [
               {
                 hash: 'a2553c361dbf7567dc499161607eb2c60c51fc2a4756c4ec3fef8b0b63386e48',
+                size: 13,
               },
             ],
           },
