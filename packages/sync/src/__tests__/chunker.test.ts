@@ -1,4 +1,5 @@
 import { ConsoleLogger } from '@arxhub/core'
+import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 import { beforeAll, describe, expect, test } from 'vitest'
@@ -34,6 +35,6 @@ describe('chunker', async () => {
     const merged = chunker.merge(chunks)
     await merged.pipeTo(writable)
 
-    expect(await original.info.get('hash')).toEqual(await file.info.get('hash'))
+    expect(sha256(await file.read())).toEqual(sha256(await original.read()))
   })
 })

@@ -129,16 +129,15 @@ describe('ObservedFileSystem — what it reports', () => {
     expect(changes).toEqual([{ kind: 'written', pathname: 'destination/a.md' }])
   })
 
-  test('never reports a metadata sidecar, though the write machinery writes one per save', async () => {
-    const { fs, backend, changes } = observe()
+  test('a write through file() is reported once, as the content path', async () => {
+    const { fs, changes } = observe()
 
     await fs.file('notes/a.md').write(enc('hello'))
 
-    expect(backend.files.has('notes/a.md.arxmeta')).toBe(true)
     expect(changes).toEqual([{ kind: 'written', pathname: 'notes/a.md' }])
   })
 
-  test('a delete through file() reports the content path and not its sidecar', async () => {
+  test('a delete through file() reports the content path', async () => {
     const { fs, changes } = observe()
     await fs.file('notes/a.md').write(enc('hello'))
     changes.length = 0

@@ -4,7 +4,7 @@ import { appendEntry } from './ops/append'
 import { readRange } from './ops/read-range'
 import { renameEntry } from './ops/rename'
 import { ScopedFileSystem } from './scoped-file-system'
-import { INFO_FILE_SUFFIX, type VfsChange, type VfsWatcher } from './vfs-watcher'
+import type { VfsChange, VfsWatcher } from './vfs-watcher'
 import type { VirtualEntry } from './virtual-entry'
 import type { DeleteOptions, FileHead, VirtualFileSystem } from './virtual-file-system'
 
@@ -31,8 +31,6 @@ export class ObservedFileSystem extends GenericVirtualFileSystem implements Rena
   }
 
   protected notify(change: VfsChange): void {
-    if (change.pathname.endsWith(INFO_FILE_SUFFIX)) return
-    if (change.from?.endsWith(INFO_FILE_SUFFIX) === true) return
     this.watcher.notify(change)
   }
 
@@ -111,7 +109,7 @@ export class ObservedFileSystem extends GenericVirtualFileSystem implements Rena
     return this.inner.head(pathname)
   }
 
-  // Locks coordinate at the real backend, matching ScopedFileSystem and EncryptingFileSystem: two views
+  // Locks coordinate at the real backend, matching ScopedFileSystem: two views
   // over the same store must contend for the same path.
   override async lock<T>(pathname: string, fn: () => Promise<T>): Promise<T> {
     return this.inner.lock(pathname, fn)

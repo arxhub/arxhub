@@ -35,13 +35,11 @@ afterEach(async () => {
 })
 
 describe('vault freshness', () => {
-  test('saving a note reindexes it, and its metadata sidecar asks for nothing', async () => {
+  test('saving a note reindexes it, once', async () => {
     await vault.file('notes/example.md').writeText('# Example\n\nrhinoceros\n')
 
     await vi.waitFor(() => expect(indexer.indexed).toEqual(['notes/example.md']))
     expect(indexer.removed).toEqual([])
-    // The write did leave a sidecar — the point is that it went unreported.
-    expect(await fs.readdir(join(rootDir, 'vault/notes'))).toContain('example.md.arxmeta')
   })
 
   test('a save through a write stream reindexes on close', async () => {

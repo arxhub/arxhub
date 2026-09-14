@@ -42,12 +42,12 @@ export class TauriFileSystem extends GenericVirtualFileSystem implements RangeCa
       const options = { baseDir: this.baseDir }
       if (!(await pathExists(path, options))) return result
       const info = await stat(path, options)
-      if (info.isFile) return norm && !norm.endsWith('.arxmeta') ? [this.file(norm)] : []
+      if (info.isFile) return norm ? [this.file(norm)] : []
       const entries = await readDir(path, options)
       for (const entry of entries) {
         const relPath = norm ? `${norm}/${entry.name}` : entry.name
         if (entry.isDirectory) result.push(this.dir(relPath))
-        else if (!entry.name.endsWith('.arxmeta')) result.push(this.file(relPath))
+        else result.push(this.file(relPath))
       }
     } catch (e) {
       this.logger.warn({ error: String(e) }, `list(${prefix}) failed`)

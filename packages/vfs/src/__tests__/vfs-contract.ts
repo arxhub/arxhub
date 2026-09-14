@@ -1,4 +1,3 @@
-import { hash } from '@arxhub/crypto'
 import { hasErrorCode } from '@arxhub/errors'
 import { describe, expect, test } from 'vitest'
 import { appendEntry } from '../ops/append'
@@ -50,20 +49,18 @@ export function describeFileSystemContract(label: string, create: () => Contract
       expect(dec(await fs.read('notes/stream.md'))).toBe('one two')
     })
 
-    test('list reports files and dirs and hides metadata sidecars', async () => {
+    test('list reports files and dirs', async () => {
       const { fs, backend } = create()
       backend.seed('notes/a.md')
-      backend.seed('notes/a.md.arxmeta', '{}')
       backend.seed('notes/sub/b.md')
 
       const entries = await fs.list('notes')
       expect(entries.map((entry) => `${entry.kind}:${entry.pathname}`).sort()).toEqual(['dir:notes/sub', 'file:notes/a.md'])
     })
 
-    test('walk yields every file under the prefix and no sidecar', async () => {
+    test('walk yields every file under the prefix', async () => {
       const { fs, backend } = create()
       backend.seed('notes/a.md')
-      backend.seed('notes/a.md.arxmeta', '{}')
       backend.seed('notes/sub/b.md')
 
       const seen: string[] = []
@@ -83,22 +80,13 @@ export function describeFileSystemContract(label: string, create: () => Contract
       expect(await fs.file('missing.json').readJSON({ title: 'Default' })).toEqual({ title: 'Default' })
     })
 
-    test('file().write records the content hash in the sidecar', async () => {
+    test('file().delete removes the content', async () => {
       const { fs } = create()
       await fs.file('notes/a.md').write(enc('hello'))
-
-      expect(await fs.file('notes/a.md').info.get('hash')).toBe(await hash(enc('hello'), 'sha256'))
-    })
-
-    test('file().delete removes the content and its sidecar', async () => {
-      const { fs, backend } = create()
-      await fs.file('notes/a.md').write(enc('hello'))
-      expect(backend.files.has('notes/a.md.arxmeta')).toBe(true)
 
       await fs.file('notes/a.md').delete()
 
       expect(await fs.exists('notes/a.md')).toBe(false)
-      expect(backend.files.has('notes/a.md.arxmeta')).toBe(false)
     })
 
     test('deleting a missing path passes only with force', async () => {

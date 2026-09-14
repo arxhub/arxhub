@@ -17,9 +17,8 @@ export const vaultNotCleared = (remaining: readonly string[], cause?: unknown) =
     cause,
   )
 
-// True only when the vault is known to hold nothing. `list` hides `.arxmeta` sidecars, so a directory
-// holding only sidecars still counts as content — the conservative direction, and the right one: an
-// emptiness answer is what decides whether the user is asked before an irreversible change.
+// True only when the vault is known to hold nothing — the conservative direction: an emptiness answer
+// is what decides whether the user is asked before an irreversible change.
 export async function isVaultEmpty(vault: VirtualFileSystem): Promise<boolean> {
   return (await vault.list('/')).length === 0
 }

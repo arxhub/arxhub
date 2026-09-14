@@ -2,16 +2,14 @@ import { normalizePath } from '@arxhub/path'
 import type { RenameCapable } from '../capabilities/rename'
 import { fileNotFound } from '../errors'
 import { GenericVirtualFileSystem } from '../generic-virtual-file-system'
-import { INFO_FILE_SUFFIX } from '../vfs-watcher'
 import type { VirtualEntry } from '../virtual-entry'
 import type { DeleteOptions, FileHead } from '../virtual-file-system'
 
 export const enc = (s: string) => new TextEncoder().encode(s)
 export const dec = (b: Uint8Array) => new TextDecoder().decode(b)
 
-// A flat in-memory backend that behaves like the real ones on the points a decorator can get wrong:
-// `.arxmeta` sidecars are hidden from list/walk, a missing read rejects with FileNotFound, and a delete
-// of something absent only passes with `force`.
+// A flat in-memory backend that behaves like the real ones on the points a decorator can get wrong: a
+// missing read rejects with FileNotFound, and a delete of something absent only passes with `force`.
 export class MemoryFileSystem extends GenericVirtualFileSystem {
   readonly files = new Map<string, Uint8Array>()
   // Set to a path to make its next write reject, so a failed write can be observed.
@@ -25,14 +23,13 @@ export class MemoryFileSystem extends GenericVirtualFileSystem {
     const base = normalizePath(prefix)
     // A file path lists as itself, like NodeFileSystem's stat fallback — renameEntry's copy walks the
     // source, and for a single file that walk has to find it.
-    if (base !== '' && this.files.has(base)) return base.endsWith(INFO_FILE_SUFFIX) ? [] : [{ kind: 'file', pathname: base }]
+    if (base !== '' && this.files.has(base)) return [{ kind: 'file', pathname: base }]
 
     const dirPrefix = base === '' ? '' : `${base}/`
     const dirs = new Set<string>()
     const out: VirtualEntry[] = []
     for (const key of this.files.keys()) {
       if (base !== '' && !key.startsWith(dirPrefix)) continue
-      if (key.endsWith(INFO_FILE_SUFFIX)) continue
       const rest = key.slice(dirPrefix.length)
       const slash = rest.indexOf('/')
       if (slash === -1) out.push({ kind: 'file', pathname: key })

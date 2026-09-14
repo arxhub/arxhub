@@ -48,42 +48,21 @@ describe('VirtualFileImpl', () => {
     expect(await file.exists()).toBe(true)
   })
 
-  test('delete() removes content and .arxmeta sidecar', async () => {
-    const file = vfs.file('sidecar.txt')
+  test('delete() removes the content', async () => {
+    const file = vfs.file('plain.txt')
     await file.writeText('data')
-    expect(await vfs.exists('sidecar.txt')).toBe(true)
-    expect(await vfs.exists('sidecar.txt.arxmeta')).toBe(true)
+    expect(await vfs.exists('plain.txt')).toBe(true)
     await file.delete()
-    expect(await vfs.exists('sidecar.txt')).toBe(false)
-    expect(await vfs.exists('sidecar.txt.arxmeta')).toBe(false)
+    expect(await vfs.exists('plain.txt')).toBe(false)
   })
 
-  test('write() stores sha256 hash in .arxmeta', async () => {
-    const file = vfs.file('hashed.txt')
-    await file.writeText('Lorem ipsum')
-    const h = await file.info.get('hash')
-    expect(typeof h).toBe('string')
-    expect(h).toHaveLength(64)
-  })
-
-  test('writable() stream → hash populated on close', async () => {
+  test('writable() stream lands whole on close', async () => {
     const file = vfs.file('stream.txt')
     const writable = await file.writable()
     const writer = writable.getWriter()
     await writer.write(new TextEncoder().encode('hello'))
     await writer.write(new TextEncoder().encode(' world'))
     await writer.close()
-    const h = await file.info.get('hash')
-    expect(typeof h).toBe('string')
-    expect(h).toHaveLength(64)
     expect(await file.readText()).toEqual('hello world')
-  })
-
-  test('write() hash matches manual sha256', async () => {
-    const { hash } = await import('@arxhub/crypto')
-    const file = vfs.file('hash-match.txt')
-    const content = new TextEncoder().encode('verify me')
-    await file.write(content)
-    expect(await file.info.get('hash')).toEqual(await hash(content, 'sha256'))
   })
 })

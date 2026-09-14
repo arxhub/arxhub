@@ -67,7 +67,6 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
       },
       async remove(relative) {
         rmSync(join(vaultRoot(), relative), { force: true })
-        rmSync(join(vaultRoot(), `${relative}.arxmeta`), { force: true })
       },
     }
     await use(vault)

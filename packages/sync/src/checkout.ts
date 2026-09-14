@@ -1,6 +1,6 @@
 import { createHasher } from '@arxhub/crypto'
 import { hasErrorCode } from '@arxhub/errors'
-import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
+import type { FileHead, VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
 
 export interface CheckoutEntry {
   size: number
@@ -42,19 +42,20 @@ export class Checkout {
   // stat when it still matches and is not racy; reads the file otherwise, and remembers what it found.
   async hashOf(pathname: string): Promise<string | null> {
     const index = await this.load()
-    let size: number
-    let mtime: number
+    let head: FileHead
     try {
-      ;({ size, modifiedAt: mtime } = await this.tree.head(pathname))
+      head = await this.tree.head(pathname)
     } catch (error) {
       if (hasErrorCode(error, 'FileNotFound')) return null
       throw error
     }
     const known = index[pathname]
-    if (known != null && known.size === size && known.mtime === mtime && known.mtime + RACY_MS < known.checkedAt) return known.hash
+    if (known != null && known.size === head.size && known.mtime === head.modifiedAt && known.mtime + RACY_MS < known.checkedAt) {
+      return known.hash
+    }
 
     const hash = await this.digest(pathname)
-    index[pathname] = { size, mtime, hash, checkedAt: Date.now() }
+    index[pathname] = { size: head.size, mtime: head.modifiedAt, hash, checkedAt: Date.now() }
     this.dirty = true
     return hash
   }

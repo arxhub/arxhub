@@ -19,10 +19,9 @@ describe('VirtualWalker (walk)', () => {
     return items
   }
 
-  test('lists all files under prefix, excludes .arxmeta files', async () => {
+  test('lists all files under prefix', async () => {
     await vfs.write('a.txt', new Uint8Array([1]))
     await vfs.write('b.txt', new Uint8Array([2]))
-    await vfs.write('a.txt.arxmeta', new Uint8Array([3]))
 
     const result = await collect('/')
     expect(result.sort()).toEqual(['a.txt', 'b.txt'])
@@ -115,12 +114,12 @@ describe('list (flat)', () => {
     expect(dir?.kind).toBe('dir')
   })
 
-  test('excludes .arxmeta files', async () => {
+  test('lists a file by its own name, whatever the suffix', async () => {
     await vfs.write('a.txt', new Uint8Array([1]))
-    await vfs.write('a.txt.arxmeta', new Uint8Array([2]))
+    await vfs.write('a.txt.bak', new Uint8Array([2]))
 
     const entries = await vfs.list('/')
-    expect(entries.map((e) => e.pathname)).toEqual(['a.txt'])
+    expect(entries.map((e) => e.pathname).sort()).toEqual(['a.txt', 'a.txt.bak'])
   })
 
   test('empty directory returns empty array', async () => {

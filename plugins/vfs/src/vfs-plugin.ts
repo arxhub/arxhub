@@ -1,8 +1,9 @@
-import { Plugin, type PluginArgs, type PluginHost } from '@arxhub/core'
+import { Plugin, type PluginArgs, type PluginContext, type PluginHost } from '@arxhub/core'
 import {
   bindPluginVfs,
   ObservedFileSystem,
   RootVfs,
+  removeInfoSidecars,
   ScopedFileSystem,
   VaultVfs,
   VaultWatcher,
@@ -40,5 +41,16 @@ export class VfsPlugin extends Plugin {
     // RootVfs and the per-plugin buckets stay unwrapped: only content is indexed, and a repo store or a
     // cache file has no subscriber waiting for it.
     host.configureScope(bindPluginVfs)
+  }
+
+  // Detached, like every bring-up that could hold the first paint: the sweep walks the whole root once
+  // per store (marker-guarded), which over HTTP is a request per directory.
+  override start(ctx: PluginContext): Promise<void> {
+    void removeInfoSidecars(this.fs)
+      .then((removed) => {
+        if (removed > 0) this.logger.info(`Removed ${removed} legacy .arxmeta sidecars`)
+      })
+      .catch((error) => this.logger.error('Could not sweep legacy .arxmeta sidecars', error))
+    return super.start(ctx)
   }
 }

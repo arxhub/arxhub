@@ -12,8 +12,8 @@ import { VirtualWalkerImpl } from './virtual-walker'
 export abstract class GenericVirtualFileSystem implements VirtualFileSystem {
   private readonly _lock = new AsyncLock()
 
-  file<T extends Record<string, unknown>>(pathname: string): VirtualFile<T> {
-    return new VirtualFileImpl<T>(this, pathname)
+  file(pathname: string): VirtualFile {
+    return new VirtualFileImpl(this, pathname)
   }
 
   dir(pathname: string): VirtualDir {

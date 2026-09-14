@@ -1,22 +1,19 @@
-import { createHasher, hash } from '@arxhub/crypto'
-import { infoFileAccess } from '../errors'
-import type { BaseInfoFields, InfoNamespace } from '../info-namespace'
-import { InfoNamespaceImpl } from '../info-namespace/impl'
 import { readRange } from '../ops/read-range'
 import type { DeleteOptions, VirtualFileSystem } from '../virtual-file-system'
 import type { VirtualFile } from './interface'
 
-export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields> implements VirtualFile<T> {
+// A stateless handle: nothing here outlives the call. What a file's content hashes to is not the
+// handle's business either — it used to be, kept in a `.arxmeta` sidecar written beside every save,
+// and that made the hash a fact about OUR writes rather than about the file (sync never noticed an
+// edit made by anything else). The manifest and the checkout index own that answer now.
+export class VirtualFileImpl implements VirtualFile {
   readonly kind = 'file' as const
   readonly pathname: string
   readonly vfs: VirtualFileSystem
-  readonly info: InfoNamespace<T>
 
   constructor(vfs: VirtualFileSystem, pathname: string) {
-    if (pathname.endsWith('.arxmeta')) throw infoFileAccess(pathname)
     this.pathname = pathname
     this.vfs = vfs
-    this.info = new InfoNamespaceImpl<T>(this)
   }
 
   read(): Promise<Uint8Array> {
@@ -41,17 +38,40 @@ export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields>
   }
 
   async write(content: Uint8Array): Promise<void> {
-    await this.vfs.lock(this.pathname, async () => {
-      await this.vfs.write(this.pathname, content)
-      await this.info.set('hash' as never, (await hash(content, 'sha256')) as never, { flush: true })
-    })
+    await this.vfs.lock(this.pathname, () => this.vfs.write(this.pathname, content))
   }
 
+  // The lock is held until the stream closes or aborts, so two writers streaming into one path cannot
+  // interleave — the same guarantee write() gives in one call.
   async writable(): Promise<WritableStream<Uint8Array>> {
     const release = await this.vfs.acquireLock(this.pathname)
-    const inner = await this.vfs.writable(this.pathname)
-    const setHash = (h: string) => this.info.set('hash' as never, h as never, { flush: true })
-    return wrapWritableWithHash(inner, release, setHash)
+    let inner: WritableStream<Uint8Array>
+    try {
+      inner = await this.vfs.writable(this.pathname)
+    } catch (error) {
+      release()
+      throw error
+    }
+    const writer = inner.getWriter()
+    return new WritableStream<Uint8Array>({
+      write(chunk) {
+        return writer.write(chunk)
+      },
+      async close() {
+        try {
+          await writer.close()
+        } finally {
+          release()
+        }
+      },
+      async abort(reason) {
+        try {
+          await writer.abort(reason)
+        } finally {
+          release()
+        }
+      },
+    })
   }
 
   async writeText(content: string): Promise<void> {
@@ -63,41 +83,10 @@ export class VirtualFileImpl<T extends Record<string, unknown> = BaseInfoFields>
   }
 
   async delete(options?: DeleteOptions): Promise<void> {
-    await this.vfs.lock(this.pathname, async () => {
-      await this.vfs.delete(this.pathname, options)
-      await this.vfs.delete(`${this.pathname}.arxmeta`, { force: true })
-    })
+    await this.vfs.lock(this.pathname, () => this.vfs.delete(this.pathname, options))
   }
 
   exists(): Promise<boolean> {
     return this.vfs.exists(this.pathname)
   }
-}
-
-function wrapWritableWithHash(
-  inner: WritableStream<Uint8Array>,
-  release: () => void,
-  onHash: (h: string) => Promise<void>,
-): WritableStream<Uint8Array> {
-  const hasher = createHasher('sha256')
-  const writer = inner.getWriter()
-  return new WritableStream({
-    write(chunk) {
-      hasher.update(chunk)
-      return writer.write(chunk)
-    },
-    async close() {
-      await writer.close()
-      const hex = await hasher.digest('hex')
-      try {
-        await onHash(hex)
-      } finally {
-        release()
-      }
-    },
-    async abort(reason) {
-      await writer.abort(reason)
-      release()
-    },
-  })
 }

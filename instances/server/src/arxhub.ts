@@ -6,7 +6,7 @@ import GatewayServerPlugin from '@arxhub/plugin-gateway/server'
 import { ProtectionServerPlugin } from '@arxhub/plugin-protection/server'
 import { PUBLIC_READ_PATH, PublishServerPlugin } from '@arxhub/plugin-publish/server'
 import { SyncServerPlugin } from '@arxhub/sync/server'
-import { ScopedFileSystem } from '@arxhub/vfs'
+import { removeInfoSidecars, ScopedFileSystem } from '@arxhub/vfs'
 import { VfsHttpServerPlugin } from '@arxhub/vfs-http/server'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 
@@ -43,6 +43,11 @@ export async function createArxHub(): Promise<ArxHub> {
   // The data root lives outside the artifact so updating the server never touches the vault.
   const dataDir = process.env.ARXHUB_DATA_DIR?.trim() || join(homedir(), '.arxhub')
   const vfs = new NodeFileSystem(dataDir, arxhub.logger)
+
+  // Every object the sync store ever received arrived through a write that left a sidecar beside it;
+  // the headless server has no first paint to hold, so the one-time sweep runs before anything lists.
+  const sidecars = await removeInfoSidecars(vfs)
+  if (sidecars > 0) arxhub.logger.info(`Removed ${sidecars} legacy .arxmeta sidecars`)
 
   // Persist the TOFU pin across restarts. Without this, every restart comes up with no pin and
   // re-enters trust-on-first-use, so whoever reaches the server first could pin their own key. Load

@@ -52,7 +52,7 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
       this.logger.warn(`list(${prefix}) readdir failed:`, e)
       try {
         const stat = await fs.stat(absDir)
-        if (stat.isFile() && norm && !norm.endsWith('.arxmeta')) result.push(this.file(norm))
+        if (stat.isFile() && norm) result.push(this.file(norm))
       } catch (e2) {
         this.logger.warn(`list(${prefix}) stat fallback failed:`, e2)
       }
@@ -63,7 +63,7 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
       // slicing the OS path, whose separator is '\' on Windows and would leak into the VFS namespace.
       const relPath = norm === '' ? entry.name : `${norm}/${entry.name}`
       if (entry.isDirectory()) result.push(this.dir(relPath))
-      else if (!entry.name.endsWith('.arxmeta')) result.push(this.file(relPath))
+      else result.push(this.file(relPath))
     }
     return result
   }

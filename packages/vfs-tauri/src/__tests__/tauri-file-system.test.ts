@@ -95,7 +95,7 @@ describe('TauriFileSystem', () => {
     const found = []
     for await (const file of fs.walk('notes/page.arx')) found.push([file.pathname, await file.readText()])
     expect(found).toEqual([['notes/page.arx', 'Original contents']])
-    expect(await fs.list('notes/page.arx.arxmeta')).toEqual([])
+    expect(await fs.list('notes/missing.arx')).toEqual([])
   })
 
   it('moves a single file through the generic copy-delete rename without losing its content', async () => {
@@ -161,16 +161,13 @@ describe('TauriFileSystem', () => {
     expect(dirs.has('deep/inside')).toBe(true)
     expect(files.get('deep/inside/stream.txt')).toEqual(new Uint8Array([5]))
   })
-  it('hides the .arxmeta sidecar from a listing, and keeps directories', async () => {
+  it('lists files and keeps directories', async () => {
     const fs = makeFs()
     await fs.write('notes/a.md', new Uint8Array([1]))
-    await fs.write('notes/a.md.arxmeta', new Uint8Array([2]))
     await fs.write('notes/deep/b.md', new Uint8Array([3]))
 
     const listed = (await fs.list('notes')).map((it) => it.pathname).sort()
 
-    // The sidecar is the write machinery's own bookkeeping — showing it would put a second row under
-    // every note in the tree.
     expect(listed).toEqual(['notes/a.md', 'notes/deep'])
   })
 

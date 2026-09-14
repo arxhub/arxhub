@@ -1,4 +1,3 @@
-import type { BaseInfoFields } from './info-namespace'
 import type { VirtualDir } from './virtual-dir'
 import type { VirtualEntry } from './virtual-entry'
 import type { VirtualFile } from './virtual-file'
@@ -16,7 +15,7 @@ export interface FileHead {
 }
 
 export interface VirtualFileSystem {
-  file<T extends Record<string, unknown> = BaseInfoFields>(pathname: string): VirtualFile<T>
+  file(pathname: string): VirtualFile
   dir(pathname: string): VirtualDir
 
   list(prefix: string): Promise<VirtualEntry[]>

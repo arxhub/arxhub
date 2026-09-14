@@ -1,10 +1,5 @@
 import { createEventBus, type TypedEventBus, type Unsubscribe } from '@arxhub/events'
 
-// Suffix of the metadata sidecar a content write leaves next to the file (see InfoNamespaceImpl.flush).
-// A sidecar is written by the write machinery itself, one per content write, and is not a file anyone
-// asked to store — so it never reaches a watcher.
-export const INFO_FILE_SUFFIX = '.arxmeta'
-
 export type VfsChangeKind = 'written' | 'deleted' | 'renamed'
 
 export interface VfsChange {

@@ -1,4 +1,5 @@
 import type { Logger } from '@arxhub/core'
+import { createHasher } from '@arxhub/crypto'
 import { illegalState } from '@arxhub/errors'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { stableStringify } from '@arxhub/stdlib/record/stable-stringify'
@@ -105,16 +106,19 @@ export class Publisher {
     const consume = async (file: VirtualFile) => {
       if (files[file.pathname]) return
       if (this.beforeRead && !(await this.beforeRead(file.pathname))) throw illegalState('Save or recover open documents before publishing')
-      const fileChunks: { hash: string }[] = []
+      const fileChunks: { hash: string; size: number }[] = []
       const source: Uint8Array[] = []
       const arx = file.pathname.toLowerCase().endsWith('.arx')
+      // The file's own hash is taken in the same pass as its chunks — one read, whatever the size.
+      const hasher = createHasher('sha256')
       for await (const chunk of this.chunker.split(file)) {
         const hash = sha256(chunk)
+        hasher.update(chunk)
         if (!chunks.has(hash)) chunks.set(hash, chunk)
-        fileChunks.push({ hash })
+        fileChunks.push({ hash, size: chunk.byteLength })
         if (arx) source.push(chunk)
       }
-      const fileHash = (await file.info.get('hash')) ?? sha256(await file.read())
+      const fileHash = await hasher.digest('hex')
       files[file.pathname] = { hash: fileHash, pathname: file.pathname, chunks: fileChunks }
       if (arx) {
         const bytes = new Uint8Array(source.reduce((size, part) => size + part.length, 0))
