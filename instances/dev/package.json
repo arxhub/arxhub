@@ -2,7 +2,7 @@
   "name": "@arxhub/dev",
   "private": true,
   "version": "0.1.0",
-  "description": "ArxHub dev stand \u2014 Vite SPA + Elysia API server in a single command",
+  "description": "ArxHub dev stand — Vite SPA + Elysia API server in a single command",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
@@ -22,10 +22,12 @@
     "@arxhub/plugin-maintenance": "workspace:*",
     "@arxhub/plugin-notes": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
+    "@arxhub/plugin-preview": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-publish": "workspace:*",
     "@arxhub/plugin-search": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/plugin-sheets": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/plugin-sync": "workspace:*",
     "@arxhub/plugin-theme": "workspace:*",
@@ -41,8 +43,7 @@
     "@arxhub/vfs-http": "workspace:*",
     "@arxhub/vfs-node": "workspace:*",
     "lucide-vue-next": "catalog:client",
-    "vue": "catalog:client",
-    "@arxhub/plugin-sheets": "workspace:*"
+    "vue": "catalog:client"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

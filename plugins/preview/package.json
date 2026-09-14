@@ -1,0 +1,47 @@
+{
+  "name": "@arxhub/plugin-preview",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Viewers for images, audio and video in the vault",
+  "keywords": [
+    "arxhub"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./ui": "./src/ui.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/path": "workspace:*",
+    "@arxhub/plugin-notes": "workspace:*",
+    "@arxhub/plugin-panels": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      }
+    }
+  }
+}

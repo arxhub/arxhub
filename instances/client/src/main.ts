@@ -17,6 +17,7 @@ import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
 import { BootPolicy, MaintenancePlugin, startWithCrashScreen } from '@arxhub/plugin-maintenance/ui'
 import { NOTES_TYPE_ID, NotesPlugin } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension, PanelsPlugin, restoreNavigationWorkspace, StorePanelHost } from '@arxhub/plugin-panels/ui'
+import { PreviewPlugin } from '@arxhub/plugin-preview/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { SearchPlugin } from '@arxhub/plugin-search/ui'
 import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
@@ -59,6 +60,7 @@ arxhub.plugins.register(PanelsPlugin)
 arxhub.plugins.register(NotesPlugin, () => ({ root: '' }))
 arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
 arxhub.plugins.register(CodeMirrorPlugin)
+arxhub.plugins.register(PreviewPlugin)
 arxhub.plugins.register(ArxEditorPlugin)
 arxhub.plugins.register(SheetsPlugin)
 arxhub.plugins.register(SettingsPlugin)

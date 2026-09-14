@@ -1,5 +1,5 @@
 import { basename, dirname } from '@arxhub/path'
-import { NOTES_TYPE_ID, NotesExtension } from '@arxhub/plugin-notes/ui'
+import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
 import { ShellExtension, useNavHost } from '@arxhub/plugin-shell/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
@@ -34,11 +34,10 @@ export function useFileActions() {
     })
   }
 
+  // Whatever it is, it opens: a file nothing claims lands on the type's own "nothing can open this"
+  // panel, which names the file and stays put. The toast that used to refuse here vanished in seconds
+  // and left the tree looking as if the click had done nothing.
   async function openPath(path: string): Promise<void> {
-    if (arxhub.extensions.get(NotesExtension).viewerFor(path) == null) {
-      toaster.create({ title: 'Nothing can open this file', description: path, type: 'error' })
-      return
-    }
     await shell.workspace.openObject(NOTES_TYPE_ID, { id: path })
     navHost?.navigated?.()
   }

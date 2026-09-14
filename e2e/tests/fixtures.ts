@@ -19,7 +19,7 @@ export const OTHER_MNEMONIC = 'abandon abandon abandon abandon abandon abandon a
 // HTTP API keeps setup free of request signing, and matches what markdown-first storage claims:
 // the file on disk is the note.
 export interface Vault {
-  write(relative: string, content: string): Promise<string>
+  write(relative: string, content: string | Uint8Array): Promise<string>
   read(relative: string): Promise<string>
   remove(relative: string): Promise<void>
   // Anything outside vault/ — plugin storage, local state. Relative to the data root.
@@ -194,10 +194,16 @@ async function terse(locator: Locator): Promise<string> {
 
 // The tree is read at boot, so a note written after the app came up needs a reload to appear.
 export async function openNote(page: Page, path: string): Promise<void> {
+  await openFile(page, path)
+  await expect(page.locator('.cm-content')).toBeVisible()
+}
+
+// Open an object from the tree without assuming what opens it — an image, a recording, a file nothing
+// claims. openNote is this plus the wait for an editor.
+export async function openFile(page: Page, path: string): Promise<void> {
   await page.reload()
   await openNavigation(page)
   await page.getByRole('treeitem', { name: path }).click()
-  await expect(page.locator('.cm-content')).toBeVisible()
 }
 
 // Which frame the bundle under test mounted. The stand probes the viewport and the pointer once at

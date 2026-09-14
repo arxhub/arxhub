@@ -318,6 +318,9 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
+      '@arxhub/plugin-preview':
+        specifier: workspace:*
+        version: link:../../plugins/preview
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../../plugins/protection
@@ -451,6 +454,9 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
+      '@arxhub/plugin-preview':
+        specifier: workspace:*
+        version: link:../../plugins/preview
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../../plugins/protection
@@ -560,6 +566,9 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../../plugins/panels
+      '@arxhub/plugin-preview':
+        specifier: workspace:*
+        version: link:../../plugins/preview
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../../plugins/protection
@@ -1749,6 +1758,43 @@ importers:
       type-fest:
         specifier: catalog:toolchain
         version: 5.6.0
+
+  plugins/preview:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/path':
+        specifier: workspace:*
+        version: link:../../packages/path
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../notes
+      '@arxhub/plugin-panels':
+        specifier: workspace:*
+        version: link:../panels
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
 
   plugins/protection:
     dependencies:
