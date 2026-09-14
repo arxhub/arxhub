@@ -1,7 +1,7 @@
 import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { hasErrorCode, validation } from '@arxhub/errors'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
-import type { VirtualFileSystem } from '@arxhub/vfs'
+import { readRange, type VirtualFileSystem } from '@arxhub/vfs'
 import Elysia, { t } from 'elysia'
 import { VFS_NAMESPACE } from './namespace'
 
@@ -91,6 +91,25 @@ export function vfsRoutes(vfs: VirtualFileSystem) {
           }
         },
         { query: t.Object({ path: t.Optional(t.String()) }) },
+      )
+      // A query route, not the HTTP `Range` header: the client here is our own typed, SIGNED client, and
+      // the grammar (a suffix range, clamping instead of a 416) belongs to the VFS, not to HTTP. A media
+      // element that needs a real `Range`-serving URL is a different door and this is not it.
+      .get(
+        '/read-range',
+        async ({ query, set, status }) => {
+          try {
+            const offset = Number(query.offset ?? 0)
+            const length = query.length ? Number(query.length) : undefined
+            set.headers['content-type'] = 'application/octet-stream'
+            return await readRange(vfs, safePath(query.path, { allowEmpty: false }), offset, length)
+          } catch (e) {
+            if (hasErrorCode(e, 'FileNotFound')) return status(404, 'Not Found')
+            if (hasErrorCode(e, 'ValidationError')) return status(400, 'Bad Request')
+            throw e
+          }
+        },
+        { query: t.Object({ path: t.Optional(t.String()), offset: t.Optional(t.String()), length: t.Optional(t.String()) }) },
       )
       .put(
         '/write',

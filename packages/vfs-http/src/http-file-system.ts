@@ -2,7 +2,7 @@ import type { Logger } from '@arxhub/core'
 import { type RequestSigner, signingMiddleware } from '@arxhub/crypto'
 import { createTypedHttp, isHttpError } from '@arxhub/http'
 import { normalizePath } from '@arxhub/path'
-import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type VirtualEntry } from '@arxhub/vfs'
+import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type RangeCapable, type VirtualEntry } from '@arxhub/vfs'
 import type { VfsApp } from './server'
 
 export interface HttpFileSystemOptions {
@@ -22,7 +22,7 @@ export interface HttpFileSystemOptions {
 //
 // Locking cannot span stateless HTTP requests from the browser, so `lock`/`acquireLock` run the
 // critical section locally and rely on the server's per-request write atomicity.
-export class HttpFileSystem extends GenericVirtualFileSystem {
+export class HttpFileSystem extends GenericVirtualFileSystem implements RangeCapable {
   private readonly http: ReturnType<typeof createTypedHttp<VfsApp>>
   private readonly logger: Logger
 
@@ -50,6 +50,17 @@ export class HttpFileSystem extends GenericVirtualFileSystem {
   override async read(pathname: string): Promise<Uint8Array> {
     try {
       return new Uint8Array(await this.http.get('/read', { query: { path: pathname } }))
+    } catch (e) {
+      if (isHttpError(e, 404)) throw fileNotFound(pathname)
+      throw e
+    }
+  }
+
+  async readRange(pathname: string, offset: number, length?: number): Promise<Uint8Array> {
+    const query: { path: string; offset: string; length?: string } = { path: pathname, offset: String(offset) }
+    if (length !== undefined) query.length = String(length)
+    try {
+      return new Uint8Array(await this.http.get('/read-range', { query }))
     } catch (e) {
       if (isHttpError(e, 404)) throw fileNotFound(pathname)
       throw e
