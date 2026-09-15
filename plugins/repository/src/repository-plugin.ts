@@ -12,14 +12,17 @@ import { RepositoryExtension } from './repository-extension'
 
 export const RepositoryConfigSchema = Type.Object({
   // Device-local (A-20): a phone with little storage keeps a small slice of the vault on disk while a
-  // desktop keeps everything, and the two must not agree by sync. A file already on disk stays
+  // desktop may keep everything, and the two must not agree by sync. A file already on disk stays
   // current regardless (Repo.wantsContent) — this only decides what a NEW remote file costs to bring
   // down, so it is legitimately meaningless without a remote and stays here anyway: the policy is the
   // repository's to enforce, whichever plugin (if any) ends up fetching content for it.
+  //
+  // 64 MB by default, not "everything" (A-45, owner 2026-09-15): a film or a raw export arriving from
+  // another device is not downloaded until this one opens it; a note, a photo, a PDF always is.
   materializeUpTo: Type.Number({
     title: 'Keep files up to (MB) on this device',
     description: '0 keeps everything on this device; larger files stay on the server until opened',
-    default: 0,
+    default: 64,
     minimum: 0,
     deviceLocal: true,
     unit: 'MB',
