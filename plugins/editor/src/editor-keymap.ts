@@ -1,6 +1,6 @@
 import { baseKeymap, chainCommands, setBlockType, toggleMark } from 'prosemirror-commands'
 import { redo, undo } from 'prosemirror-history'
-import type { Schema } from 'prosemirror-model'
+import type { NodeType, Schema } from 'prosemirror-model'
 import { liftListItem, sinkListItem, splitListItem } from 'prosemirror-schema-list'
 import { type Command, TextSelection } from 'prosemirror-state'
 import { goToNextCell } from 'prosemirror-tables'
@@ -29,6 +29,25 @@ function lineBoundary(dir: 1 | -1, extend: boolean): Command {
       return false
     }
   }
+}
+
+// prosemirror-schema-list applies the new item's attrs only when the caret is at the END of the item; a
+// split in the middle of the text copies the original attrs to both halves, so a finished task split in
+// two became two finished tasks. The half after the caret is the one being created, and it always starts
+// undone — the same answer an end-of-text split already gave.
+function splitTaskItem(itemType: NodeType): Command {
+  const split = splitListItem(itemType, { checked: false })
+  return (state, dispatch) =>
+    split(
+      state,
+      dispatch &&
+        ((tr) => {
+          const { $from } = tr.selection
+          const item = $from.depth >= 2 ? $from.node(-1) : null
+          if (item?.type === itemType && item.attrs.checked) tr.setNodeMarkup($from.before(-1), undefined, { ...item.attrs, checked: false })
+          dispatch(tr)
+        }),
+    )
 }
 
 export function buildKeymap(schema: Schema): Record<string, Command> {
@@ -61,7 +80,7 @@ export function buildKeymap(schema: Schema): Record<string, Command> {
   if (schema.nodes.task_item) {
     keys.Tab = chainCommands(sinkListItem(schema.nodes.task_item), keys.Tab)
     keys['Shift-Tab'] = chainCommands(liftListItem(schema.nodes.task_item), keys['Shift-Tab'])
-    keys.Enter = chainCommands(splitListItem(schema.nodes.task_item, { checked: false }), liftListItem(schema.nodes.task_item), keys.Enter)
+    keys.Enter = chainCommands(splitTaskItem(schema.nodes.task_item), liftListItem(schema.nodes.task_item), keys.Enter)
   }
 
   if (schema.nodes.table) {

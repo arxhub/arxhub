@@ -58,6 +58,26 @@ describe('editor keymap by mode', () => {
     expect(result.state.doc).toBe(edited)
   })
 
+  it('Enter in the middle of a finished task leaves the new half unfinished', () => {
+    const finished = schema.nodes.doc.create(null, [
+      schema.nodes.task_list.create(null, schema.nodes.task_item.create({ checked: true }, paragraph('Done'))),
+    ])
+    // task_list(0) task_item(1) paragraph(2) "Do|ne"
+    let state = EditorState.create({ doc: finished, selection: TextSelection.create(finished, 5), plugins: [modePlugin('editable')] })
+    const result = press(state, 'Enter')
+    expect(result.handled).toBe(true)
+    state = result.state
+    expect(() => state.doc.check()).not.toThrow()
+    const list = state.doc.firstChild
+    expect(list?.childCount).toBe(2)
+    expect(list?.child(0).textContent).toBe('Do')
+    expect(list?.child(0).attrs.checked).toBe(true)
+    expect(list?.child(1).textContent).toBe('ne')
+    expect(list?.child(1).attrs.checked).toBe(false)
+    expect(state.selection.$from.parent).toBe(list?.child(1).firstChild)
+    expect(state.selection.$from.parentOffset).toBe(0)
+  })
+
   it('readonly takes no chord at all', () => {
     let state = editor('editable')
     state = state.apply(state.tr.setNodeMarkup(1, undefined, { checked: true }))
