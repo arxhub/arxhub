@@ -57,7 +57,7 @@ export default defineConfig({
       use: { ...devices['Pixel 7'] },
       // The active theme is one shared setting, and the settings specs stage and apply plugin config
       // files. Neither has anything to do with the frame; both would race the desktop project.
-      testIgnore: ['**/themes.spec.ts', '**/settings-save.spec.ts'],
+      testIgnore: ['**/themes.spec.ts', '**/settings-save.spec.ts', '**/publish-settings.spec.ts'],
     },
   ],
 

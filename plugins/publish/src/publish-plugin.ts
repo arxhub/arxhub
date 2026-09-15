@@ -9,7 +9,7 @@ import { HttpSyncRemote } from '@arxhub/sync'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs } from '@arxhub/vfs'
-import { Type } from '@sinclair/typebox'
+import { type Static, Type } from '@sinclair/typebox'
 import { manifest } from './manifest'
 import { PUBLISH_NAMESPACE } from './namespace'
 import { PublishExtension } from './publish-extension'
@@ -18,12 +18,23 @@ import { Publisher } from './publisher'
 export const PublishConfigSchema = Type.Object(
   {
     // The server ORIGIN (e.g. https://hub.example.com) — the /publish route prefix is appended here.
-    serverUrl: Type.String({ title: 'Server URL', description: 'ArxHub server origin, e.g. https://hub.example.com', default: '' }),
+    // Optional, not for want of a default: an empty address is the normal "publishing is off" state
+    // (applyConfig below reads it that way), so clearing the field must not be blocked by the form
+    // treating a required-and-empty field as invalid the moment the section opens (same trap
+    // `index.exclude` in `plugins/search` found first).
+    serverUrl: Type.Optional(
+      Type.String({ title: 'Server URL', description: 'ArxHub server origin, e.g. https://hub.example.com', default: '' }),
+    ),
   },
-  { description: 'Share selected notes and folders through public links. Restart ArxHub after changing the server.' },
+  { description: 'Share selected notes and folders through public links.' },
 )
 
 export class PublishPlugin extends Plugin {
+  // Guards a rebuild against a config write that lands while a previous one is still loading the
+  // published-paths file — without it two overlapping applyConfig() calls could race to assign
+  // PublishExtension.publisher, and the loser's (possibly stale) result would win.
+  private applying: Promise<void> = Promise.resolve()
+
   constructor(args: PluginArgs) {
     super(args, manifest)
   }
@@ -44,6 +55,10 @@ export class PublishPlugin extends Plugin {
     const config = ctx.services.get(PluginConfig)
     const settings = ctx.extensions.get(SettingsExtension)
     settings.register({ id: 'publish', title: 'Publishing', schema: PublishConfigSchema, order: 11, config })
+
+    // The server address applies without a restart: every write of THIS section rebuilds the remote
+    // (or tears it down when serverUrl is cleared) the same way start() builds it the first time.
+    config.watch(PublishConfigSchema, (cfg) => this.queueApplyConfig(ctx, cfg))
 
     const publish = ctx.extensions.get(PublishExtension)
     publish.readFile = (path) => ctx.services.get(VaultVfs).read(path)
@@ -115,13 +130,38 @@ export class PublishPlugin extends Plugin {
     // tryRead, not read: an unreachable settings store leaves publishing idle rather than aborting
     // the boot (FR-147).
     const cfg = await ctx.services.get(PluginConfig).tryRead(PublishConfigSchema)
-    if (cfg == null || !cfg.serverUrl) return
+    await this.applyConfig(ctx, cfg)
+  }
+
+  // Serialises rebuilds behind `applying` so a config write that lands mid-load joins the queue
+  // instead of racing the load already in flight — see the field's own comment.
+  private queueApplyConfig(ctx: PluginContext, cfg: Static<typeof PublishConfigSchema>): void {
+    this.applying = this.applying.then(
+      () => this.applyConfig(ctx, cfg),
+      () => this.applyConfig(ctx, cfg),
+    )
+    this.applying.catch((error) => this.logger.error('Could not apply the new Publish configuration', error))
+  }
+
+  // Builds (or tears down) the remote exactly the way the plugin's own start() used to inline — the
+  // one place that decision is made, called from start() on boot and from the config watcher below on
+  // every later save, so "restart ArxHub after changing the server" is no longer true.
+  private async applyConfig(ctx: PluginContext, cfg: Static<typeof PublishConfigSchema> | null): Promise<void> {
+    const publish = ctx.extensions.get(PublishExtension)
+
+    if (cfg == null || !cfg.serverUrl) {
+      publish.publisher = null
+      publish.serverUrl = ''
+      return
+    }
 
     // Publishing WRITES require the owner's identity (the /publish routes sit behind the auth
     // guard); only the anonymous READ side is keyless.
     const keyring = ctx.extensions.get(KeyringExtension).keyring
     if (keyring == null) {
       this.logger.warn('Publishing is configured but no identity is set — add a recovery phrase in Security settings')
+      publish.publisher = null
+      publish.serverUrl = ''
       return
     }
 
@@ -143,21 +183,21 @@ export class PublishPlugin extends Plugin {
     try {
       await publisher.load()
     } catch (error) {
-      // A file must not take the boot down (FR-147) — the two reads above already say so with tryRead,
+      // A file must not take the boot down (FR-147) — the caller already reads with tryRead on boot,
       // and this one was the exception that made a whole session land on the crash screen. The set of
       // published paths is shared state: another device (or, in the e2e stand, another worker) can be
-      // rewriting it at the moment this boot reads it, and half a JSON document is a SyntaxError.
+      // rewriting it at the moment this reads it, and half a JSON document is a SyntaxError.
       //
-      // Publishing then stays OFF for the session rather than starting from an empty set. That file is
-      // the record of what is public; a publisher that could not read it would rewrite it from nothing
-      // on the next publish and quietly unpublish everything the owner had shared.
+      // Publishing is left exactly as it was — the previous remote if one was running, off otherwise —
+      // rather than started from an empty set. That file is the record of what is public; a publisher
+      // that could not read it would rewrite it from nothing on the next publish and quietly unpublish
+      // everything the owner had shared.
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
         'Could not read the set of published paths — publishing is unavailable this session',
       )
       return
     }
-    const publish = ctx.extensions.get(PublishExtension)
     publish.serverUrl = cfg.serverUrl
     publish.publisher = publisher
   }
