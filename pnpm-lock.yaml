@@ -2151,6 +2151,9 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
+      '@arxhub/plugin-repository':
+        specifier: workspace:*
+        version: link:../repository
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell

@@ -37,6 +37,7 @@
     "@arxhub/plugin-hotkeys": "workspace:*",
     "@arxhub/plugin-notes": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
+    "@arxhub/plugin-repository": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/stdlib": "workspace:*",
     "@arxhub/uikit": "workspace:*",

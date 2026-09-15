@@ -12,6 +12,7 @@ export default defineConfig((env) =>
       '@arxhub/plugin-hotkeys/ui',
       '@arxhub/plugin-notes/ui',
       '@arxhub/plugin-panels/ui',
+      '@arxhub/plugin-repository/ui',
       '@arxhub/plugin-shell/ui',
       '@arxhub/stdlib/scheduling/debounced-task',
       '@arxhub/uikit/core',
