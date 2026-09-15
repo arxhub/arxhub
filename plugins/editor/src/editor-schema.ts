@@ -7,6 +7,7 @@ import { assetNodes } from './asset-schema'
 import { columnNodes } from './columns'
 import { isRecord } from './document-migrations'
 import { safeLink } from './link-commands'
+import { isSelectOptionList, legacySelectOptions, selectedLabel } from './select-options'
 
 const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
   .update('doc', { content: 'block+', attrs: { arxEnvelope: { default: null } } })
@@ -125,10 +126,12 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
       atom: true,
       attrs: {
         label: { default: 'Status', validate: 'string' },
+        // `{ id, label }[]`, and `value` names an id — so a renamed option stays chosen. Files written as
+        // a list of labels are migrated on read (`select-options.ts`).
         options: {
-          default: ['Not started', 'In progress', 'Done'],
+          default: legacySelectOptions(['Not started', 'In progress', 'Done']),
           validate: (value: unknown) => {
-            if (!Array.isArray(value) || !value.every((option) => typeof option === 'string')) throw validation('Invalid dropdown options')
+            if (!isSelectOptionList(value)) throw validation('Invalid dropdown options')
           },
         },
         value: { default: null, validate: 'string|null' },
@@ -139,7 +142,7 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
           getAttrs: (dom: HTMLElement) => {
             try {
               const options: unknown = JSON.parse(dom.dataset.options ?? '[]')
-              if (!Array.isArray(options) || !options.every((option) => typeof option === 'string')) return false
+              if (!isSelectOptionList(options)) return false
               return { label: dom.dataset.label ?? 'Status', options, value: dom.dataset.value ?? null }
             } catch {
               return false
@@ -156,7 +159,7 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
             'data-options': JSON.stringify(node.attrs.options),
             'data-value': node.attrs.value,
           },
-          `${node.attrs.label}: ${node.attrs.value ?? '—'}`,
+          `${node.attrs.label}: ${selectedLabel(node.attrs.options, node.attrs.value) ?? '—'}`,
         ] as const,
     },
     callout: {

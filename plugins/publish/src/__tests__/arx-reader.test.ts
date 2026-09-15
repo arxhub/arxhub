@@ -47,6 +47,25 @@ describe('public .arx rendering', () => {
     expect(html).toContain('<blockquote><p>quote</p></blockquote>')
   })
 
+  test('a dropdown shows the label of its chosen option, whichever shape the file stores', () => {
+    const select = (options: unknown, value: unknown) => ({ type: 'select', attrs: { label: 'Priority', options, value } })
+    const raw = document([
+      select(['Low', 'High'], 'High'),
+      select([{ id: 'k1', label: 'Done <b>' }], 'k1'),
+      select([{ id: 'k1', label: 'Done' }], 'gone'),
+      select(['Low'], null),
+    ])
+    const { html } = arxReader(raw, 'notes/example.arx')
+    expect(html).toContain('<span>High</span>')
+    expect(html).toContain('<span>Done &lt;b&gt;</span>')
+    expect(html.match(/<span>Not selected<\/span>/g)).toHaveLength(2)
+    expect(html).not.toContain('k1')
+    const markdown = arxMarkdown(raw, 'notes/example.arx')
+    expect(markdown).toContain('High')
+    expect(markdown).toContain('Done')
+    expect(markdown).not.toContain('k1')
+  })
+
   test('escapes markup and attributes, rejects executable URLs, and never injects unknown nodes', () => {
     const { html } = arxReader(
       document([

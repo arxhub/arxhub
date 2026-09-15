@@ -2,6 +2,7 @@ import { type Node, Schema } from 'prosemirror-model'
 import { identityNodes } from './block-identity'
 import { deserialize, serialize } from './editor-format'
 import { schema as baseSchema } from './editor-schema'
+import { BASE_FORMAT } from './select-options'
 import { comparable } from './version-diff'
 
 // The schema this merge runs against: the base editor schema (the same one `md-to-arx.ts` builds
@@ -52,9 +53,9 @@ function conflictNode(kind: 'edit-edit' | 'edit-delete', local: Node | null, rem
 }
 
 export function mergeArx(base: string | null, local: string, remote: string): { merged: string; conflicts: number } {
-  const localDoc = deserialize(mergeSchema, local)
-  const remoteDoc = deserialize(mergeSchema, remote)
-  const baseDoc = base != null ? deserialize(mergeSchema, base) : null
+  const localDoc = deserialize(mergeSchema, local, BASE_FORMAT)
+  const remoteDoc = deserialize(mergeSchema, remote, BASE_FORMAT)
+  const baseDoc = base != null ? deserialize(mergeSchema, base, BASE_FORMAT) : null
 
   const localBlocks = topBlocks(localDoc)
   const remoteBlocks = topBlocks(remoteDoc)
@@ -144,7 +145,7 @@ export function mergeArx(base: string | null, local: string, remote: string): { 
   // anywhere) would otherwise build a doc `.check()` refuses the moment it is saved or re-opened.
   const content = order.length ? order.map((id) => resolved.get(id)!) : [mergeSchema.nodes.paragraph.create()]
   const mergedDoc = mergeSchema.topNodeType.create(attrs, content)
-  return { merged: serialize(mergedDoc), conflicts }
+  return { merged: serialize(mergedDoc, BASE_FORMAT), conflicts }
 }
 
 function comparableEq(a: Node, b: Node): boolean {

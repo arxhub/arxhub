@@ -8,7 +8,14 @@ import { schema } from '../editor-schema'
 const paragraph = (text: string) => schema.nodes.paragraph.create(null, schema.text(text))
 const doc = schema.nodes.doc.create(null, [
   schema.nodes.task_list.create(null, schema.nodes.task_item.create({ checked: false }, paragraph('Keep this task'))),
-  schema.nodes.select.create({ label: 'Priority', options: ['Low', 'High'], value: 'Low' }),
+  schema.nodes.select.create({
+    label: 'Priority',
+    options: [
+      { id: 'lo', label: 'Low' },
+      { id: 'hi', label: 'High' },
+    ],
+    value: 'lo',
+  }),
 ])
 const selectPos = doc.child(0).nodeSize
 const keys = buildKeymap(schema)
@@ -29,12 +36,12 @@ describe('editor keymap by mode', () => {
   it('interactive undoes and redoes a control value, and keeps every other chord out', () => {
     let state = editor('interactive')
     state = state.apply(state.tr.setNodeMarkup(1, undefined, { checked: true }))
-    state = state.apply(state.tr.setNodeMarkup(selectPos, undefined, { ...doc.child(1).attrs, value: 'High' }))
-    expect(state.doc.child(1).attrs.value).toBe('High')
+    state = state.apply(state.tr.setNodeMarkup(selectPos, undefined, { ...doc.child(1).attrs, value: 'hi' }))
+    expect(state.doc.child(1).attrs.value).toBe('hi')
 
     let result = press(state, 'Mod-z')
     expect(result.handled).toBe(true)
-    expect(result.state.doc.child(1).attrs.value).toBe('Low')
+    expect(result.state.doc.child(1).attrs.value).toBe('lo')
     expect(result.state.doc.child(0).child(0).attrs.checked).toBe(true)
     result = press(result.state, 'Mod-z')
     expect(result.state.doc.eq(doc)).toBe(true)
@@ -42,7 +49,7 @@ describe('editor keymap by mode', () => {
     result = press(result.state, 'Mod-Shift-z')
     expect(result.state.doc.child(0).child(0).attrs.checked).toBe(true)
     result = press(result.state, 'Mod-y')
-    expect(result.state.doc.child(1).attrs.value).toBe('High')
+    expect(result.state.doc.child(1).attrs.value).toBe('hi')
 
     const bold = press(result.state.apply(result.state.tr.setSelection(TextSelection.create(result.state.doc, 3, 7))), 'Mod-b')
     expect(bold.handled).toBe(false)

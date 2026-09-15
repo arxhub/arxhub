@@ -2,21 +2,15 @@
 import { Button, Checkbox, Dropdown, Icon, Input, MenuItem } from '@arxhub/uikit/core'
 import { computed, ref, watch } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
-import { selectOptions } from '../editor-mode'
+import { reconfigureSelect, selectedLabel, selectOptions } from '../editor-mode'
 
 const props = defineProps<ArxEditorControlProps>()
 const configuring = ref(false)
 const label = ref('')
 const options = ref('')
 const choices = computed(() => selectOptions(props.node))
-const parsedOptions = computed(() => [
-  ...new Set(
-    options.value
-      .split('\n')
-      .map((value) => value.trim())
-      .filter(Boolean),
-  ),
-])
+const chosen = computed(() => selectedLabel(props.node))
+const lines = computed(() => options.value.split('\n').filter((line) => line.trim()))
 
 watch(
   () => props.mode,
@@ -27,17 +21,13 @@ watch(
 
 function configure() {
   label.value = props.node.attrs.label
-  options.value = choices.value.join('\n')
+  options.value = choices.value.map((option) => option.label).join('\n')
   configuring.value = true
 }
 
 function apply() {
-  if (props.mode !== 'editable' || !label.value.trim() || !parsedOptions.value.length) return
-  props.change({
-    label: label.value.trim(),
-    options: parsedOptions.value,
-    value: parsedOptions.value.includes(props.node.attrs.value) ? props.node.attrs.value : null,
-  })
+  if (props.mode !== 'editable' || !label.value.trim() || !lines.value.length) return
+  props.change({ label: label.value.trim(), ...reconfigureSelect(props.node, lines.value) })
   configuring.value = false
 }
 </script>
@@ -56,13 +46,13 @@ function apply() {
       <Dropdown>
         <template #trigger>
           <Button variant="secondary" :disabled="mode === 'readonly'" :aria-label="node.attrs.label">
-            {{ node.attrs.value ?? 'Choose…' }}
+            {{ chosen ?? 'Choose…' }}
             <Icon name="lu:chevron-down" />
           </Button>
         </template>
         <MenuItem value="clear" @select="change({ value: null })">Clear selection</MenuItem>
-        <MenuItem v-for="(option, index) in choices" :key="option" :value="String(index)" @select="change({ value: option })">
-          {{ option }}
+        <MenuItem v-for="option in choices" :key="option.id" :value="option.id" @select="change({ value: option.id })">
+          {{ option.label }}
         </MenuItem>
       </Dropdown>
       <Button v-if="mode === 'editable' && !configuring" variant="ghost" @click="configure">Configure</Button>
@@ -71,7 +61,7 @@ function apply() {
       <label>Label<Input v-model="label" aria-label="Dropdown label" /></label>
       <label>Options, one per line<textarea v-model="options" aria-label="Dropdown options" rows="4" /></label>
       <div class="select-value">
-        <Button variant="secondary" type="submit" :disabled="!label.trim() || !parsedOptions.length">Apply</Button>
+        <Button variant="secondary" type="submit" :disabled="!label.trim() || !lines.length">Apply</Button>
         <Button variant="ghost" @click="configuring = false">Cancel</Button>
       </div>
     </form>

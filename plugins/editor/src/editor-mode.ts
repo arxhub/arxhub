@@ -1,6 +1,7 @@
 import { Mark, type Node } from 'prosemirror-model'
 import { type EditorState, Plugin, PluginKey } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
+import { isSelectOptionList, selectedLabel as labelOf, newSelectOptionId, type SelectOption } from './select-options'
 
 export type EditorMode = 'readonly' | 'editable' | 'interactive'
 
@@ -10,7 +11,7 @@ export type ControlPolicy = Readonly<Record<string, (value: unknown, before: Nod
 
 export const DEFAULT_CONTROL_POLICIES: Readonly<Record<string, ControlPolicy>> = {
   task_item: { checked: (value) => typeof value === 'boolean' },
-  select: { value: (value, before) => value === null || (typeof value === 'string' && selectOptions(before).includes(value)) },
+  select: { value: (value, before) => value === null || selectOptions(before).some((option) => option.id === value) },
 }
 
 export function editorMode(state: EditorState): EditorMode {
@@ -34,9 +35,38 @@ export function onlyControlValuesChanged(before: Node, after: Node, policies = D
   return true
 }
 
-export function selectOptions(node: Node): string[] {
-  const options: unknown = node.attrs.options
-  return Array.isArray(options) ? options.filter((option): option is string => typeof option === 'string') : []
+export function selectOptions(node: Node): SelectOption[] {
+  return isSelectOptionList(node.attrs.options) ? node.attrs.options : []
+}
+
+export function selectedLabel(node: Node): string | null {
+  return labelOf(selectOptions(node), node.attrs.value)
+}
+
+// What a reconfiguration keeps. The form edits labels one per line, so identity has to be recovered
+// from the text: a line that reads exactly like an option it had IS that option; the lines left over
+// pair up with the options left over, in order (a rename); a line beyond those is a new option, an
+// option beyond those is gone. The value survives exactly when the option it names does — never by
+// comparing labels, which is how renaming the chosen option used to clear it.
+export function reconfigureSelect(node: Node, labels: readonly string[]): { options: SelectOption[]; value: string | null } {
+  const previous = selectOptions(node)
+  const wanted = [...new Set(labels.map((label) => label.trim()).filter(Boolean))]
+  const unmatched = new Set(previous)
+  const matched = wanted.map((label) => {
+    const match = previous.find((option) => unmatched.has(option) && option.label === label)
+    if (match) unmatched.delete(match)
+    return match ?? null
+  })
+  const renamed = previous.filter((option) => unmatched.has(option))
+  const taken = new Set(previous.map((option) => option.id))
+  const options = matched.map((match, index) => {
+    if (match) return match
+    const id = renamed.shift()?.id ?? newSelectOptionId(taken)
+    taken.add(id)
+    return { id, label: wanted[index] }
+  })
+  const current: unknown = node.attrs.value
+  return { options, value: typeof current === 'string' && options.some((option) => option.id === current) ? current : null }
 }
 
 export function modePlugin(

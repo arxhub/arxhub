@@ -15,7 +15,9 @@ const p = (id: string, text = id) => schema.node('paragraph', { arxId: id }, tex
 const section = (id: string, ...blocks: ReturnType<typeof p>[]) => schema.node('section', { arxId: id }, blocks)
 const doc = (...blocks: ReturnType<typeof p>[]) => schema.node('doc', null, blocks)
 const arx = (...blocks: ReturnType<typeof p>[]) => serialize(doc(...blocks))
-const parse = (raw: string) => deserialize(schema, raw)
+// Content only: a merged file also carries the format's version stamps in its envelope
+// (`plugins`), which the blocks being compared say nothing about.
+const parse = (raw: string) => schema.node('doc', null, deserialize(schema, raw).content)
 
 function conflictSides(node: ReturnType<typeof p>) {
   const conflict = node
@@ -155,7 +157,7 @@ describe('mergeArx', () => {
     const local = serialize(withId(doc(p('a', 'A local'))))
     const remote = serialize(withId(doc(p('a', 'A'))))
     const { merged } = mergeArx(b, local, remote)
-    expect(documentId(parse(merged))).toBe('11111111-1111-1111-1111-111111111111')
+    expect(documentId(deserialize(schema, merged))).toBe('11111111-1111-1111-1111-111111111111')
   })
 
   it('is idempotent: merging a merged document with itself changes nothing and resolves nothing further', () => {

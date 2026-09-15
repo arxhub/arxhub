@@ -14,6 +14,7 @@ import type { ArxDocumentLinks } from './document-links'
 import type { ArxFormatConfig, ArxJsonNode } from './document-migrations'
 import { type ControlPolicy, DEFAULT_CONTROL_POLICIES } from './editor-mode'
 import { schema as baseSchema } from './editor-schema'
+import { BASE_FORMAT } from './select-options'
 import { type BlockCommand, buildBlockCommands } from './slash-commands'
 
 export interface ArxEditorComponent {
@@ -63,6 +64,8 @@ export class ArxEditorExtension extends Extension {
   register(contribution: ArxEditorContribution): void {
     if (this.built) throw illegalState('Register editor contributions during configure(), before the editor starts')
     if (!contribution.id || this.contributions.has(contribution.id)) throw illegalState(`Duplicate editor contribution: ${contribution.id}`)
+    if (BASE_FORMAT.versions.some((owner) => owner.id === contribution.id))
+      throw illegalState(`Reserved editor contribution id: ${contribution.id}`)
     this.contributions.set(contribution.id, contribution)
   }
 
@@ -148,13 +151,16 @@ export class ArxEditorExtension extends Extension {
       dataSources: Object.freeze(dataSources),
       publishText: Object.freeze(publishText),
       format: {
-        versions: contributions.map((owner) => ({
-          id: owner.id,
-          version: owner.version ?? 1,
-          nodes: [...Object.keys(owner.nodes ?? {}), ...(owner.legacyNodes ?? [])],
-          marks: [...Object.keys(owner.marks ?? {}), ...(owner.legacyMarks ?? [])],
-          migrations: owner.migrations ?? {},
-        })),
+        versions: [
+          ...BASE_FORMAT.versions,
+          ...contributions.map((owner) => ({
+            id: owner.id,
+            version: owner.version ?? 1,
+            nodes: [...Object.keys(owner.nodes ?? {}), ...(owner.legacyNodes ?? [])],
+            marks: [...Object.keys(owner.marks ?? {}), ...(owner.legacyMarks ?? [])],
+            migrations: owner.migrations ?? {},
+          })),
+        ],
       },
       schema,
       commands: Object.freeze(commands),

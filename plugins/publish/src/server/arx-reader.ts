@@ -14,6 +14,20 @@ function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
 }
 
+// Both shapes a published file may hold: a list of labels (written before options had ids, when the
+// label WAS the value) and `{ id, label }` records (the value names an id). A reader sees the label;
+// the id never renders.
+function selectedLabel(attrs: Record<string, unknown>): string | null {
+  const { options, value } = attrs
+  if (!Array.isArray(options) || typeof value !== 'string') return null
+  for (const option of options) {
+    if (option === value) return value
+    const { id, label } = record(option)
+    if (id === value && typeof label === 'string') return label
+  }
+  return null
+}
+
 function parseDocument(raw: string): ArxNode {
   const data = record(JSON.parse(raw))
   if (data.version !== 1 || record(data.doc).type !== 'doc') throw validation('Unsupported document format')
@@ -177,7 +191,7 @@ export function arxReader(raw: string, pathname: string, options: ArxReaderOptio
         break
       }
       case 'select':
-        html = `<span>${escapeHtml(String(attrs.value ?? 'Not selected'))}</span>`
+        html = `<span>${escapeHtml(selectedLabel(attrs) ?? 'Not selected')}</span>`
         break
       case 'data_view':
         html = `<aside class="notice">Dynamic data view (${escapeHtml(String(attrs.source ?? ''))}). Open this document in ArxHub to query its source.</aside>`
@@ -345,7 +359,7 @@ export function arxMarkdown(raw: string, pathname: string, options: ArxReaderOpt
         break
       }
       case 'select':
-        content = escapeMarkdown(String(node.attrs.value ?? 'Not selected'))
+        content = escapeMarkdown(selectedLabel(node.attrs) ?? 'Not selected')
         break
       case 'data_view':
         content = `Data view: ${escapeMarkdown(String(node.attrs.source ?? ''))} (requires ArxHub)`

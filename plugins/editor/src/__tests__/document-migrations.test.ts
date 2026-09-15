@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { ArxEditorExtension } from '../editor-extension'
 import { deserialize, serialize } from '../editor-format'
 import { schema } from '../editor-schema'
+import { SELECT_FORMAT_VERSION } from '../select-options'
 
 function kit() {
   const editor = new ArxEditorExtension({ logger: new ConsoleLogger() })
@@ -41,7 +42,7 @@ describe('plugin data migrations', () => {
     let state = EditorState.create({ doc })
     state = state.apply(state.tr.insertText(' edited', state.doc.content.size - 1))
     const saved = serialize(state.doc, editor.format)
-    expect(JSON.parse(saved).plugins).toEqual({ ratings: 3 })
+    expect(JSON.parse(saved).plugins).toEqual({ ratings: 3, [SELECT_FORMAT_VERSION.id]: 2 })
     const disabled = deserialize(schema, saved)
     expect(disabled.firstChild?.type.name).toBe('unknown_block')
     const restored = deserialize(editor.schema, serialize(disabled), editor.format)

@@ -87,8 +87,12 @@ test('slash builds tasks and a configurable dropdown with keyboard and pointer',
   await app.getByRole('menuitem', { name: 'Review', exact: true }).click()
   await app.getByRole('button', { name: 'Document tools', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
-  await expect.poll(() => vault.read(path)).toContain('"value": "Review"')
+  // A freshly configured option is stored by an id of its own, and the value names that id.
+  await expect.poll(() => vault.read(path)).toContain('"label": "Review"')
   const saved = await vault.read(path)
+  const select = JSON.parse(saved).doc.content.find((node: { type: string }) => node.type === 'select')
+  expect(select.attrs.options.map((option: { label: string }) => option.label)).toEqual(['Draft', 'Review', 'Published'])
+  expect(select.attrs.value).toBe(select.attrs.options[1].id)
   expect(saved).toContain('First task')
   expect(saved).toContain('Second task')
   expect(saved).not.toContain('/task')

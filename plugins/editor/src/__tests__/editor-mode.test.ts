@@ -7,7 +7,14 @@ import { schema } from '../editor-schema'
 const paragraph = (text: string) => schema.nodes.paragraph.create(null, schema.text(text))
 const doc = schema.nodes.doc.create(null, [
   schema.nodes.task_list.create(null, schema.nodes.task_item.create({ checked: false }, paragraph('Keep this task'))),
-  schema.nodes.select.create({ label: 'Priority', options: ['Low', 'High'], value: 'Low' }),
+  schema.nodes.select.create({
+    label: 'Priority',
+    options: [
+      { id: 'lo', label: 'Low' },
+      { id: 'hi', label: 'High' },
+    ],
+    value: 'lo',
+  }),
   paragraph('Keep this text'),
 ])
 const selectPos = doc.child(0).nodeSize
@@ -23,10 +30,10 @@ describe('document modes', () => {
   it('interactive accepts checkbox and dropdown values, preserving the rest of the document', () => {
     const state = EditorState.create({ doc, plugins: [modePlugin('interactive')] })
     const next = state.apply(
-      state.tr.setNodeMarkup(1, undefined, { checked: true }).setNodeMarkup(selectPos, undefined, { ...doc.child(1).attrs, value: 'High' }),
+      state.tr.setNodeMarkup(1, undefined, { checked: true }).setNodeMarkup(selectPos, undefined, { ...doc.child(1).attrs, value: 'hi' }),
     )
     expect(next.doc.child(0).child(0).attrs.checked).toBe(true)
-    expect(next.doc.child(1).attrs.value).toBe('High')
+    expect(next.doc.child(1).attrs.value).toBe('hi')
     expect(next.doc.textContent).toBe(doc.textContent)
     expect(next.doc.child(2)).toBe(doc.child(2))
   })
@@ -40,7 +47,9 @@ describe('document modes', () => {
       state.tr.insert(doc.content.size, paragraph('extra')),
       state.tr.setNodeMarkup(1, undefined, { checked: 'yes' }),
       state.tr.setNodeMarkup(selectPos, undefined, { ...doc.child(1).attrs, value: 'Unknown' }),
-      state.tr.setNodeMarkup(selectPos, undefined, { ...doc.child(1).attrs, options: ['Other'] }),
+      // A label is not a value: the option is named by its id, or a rename would silently clear it.
+      state.tr.setNodeMarkup(selectPos, undefined, { ...doc.child(1).attrs, value: 'High' }),
+      state.tr.setNodeMarkup(selectPos, undefined, { ...doc.child(1).attrs, options: [{ id: 'other', label: 'Other' }] }),
       state.tr.setNodeMarkup(selectPos, undefined, { ...doc.child(1).attrs, label: 'Different' }),
       state.tr.setNodeMarkup(1, undefined, { checked: true }).insertText('sneaky', 3),
     ]
