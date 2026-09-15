@@ -36,6 +36,7 @@
     "@arxhub/plugin-notes": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/plugin-sync": "workspace:*",
     "@arxhub/uikit": "workspace:*",
     "@arxhub/vfs": "workspace:*"
   },

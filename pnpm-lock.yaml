@@ -1489,6 +1489,9 @@ importers:
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell
+      '@arxhub/plugin-sync':
+        specifier: workspace:*
+        version: link:../sync
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit

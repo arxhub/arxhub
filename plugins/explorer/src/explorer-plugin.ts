@@ -1,5 +1,6 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { NotesExtension } from '@arxhub/plugin-notes/ui'
+import { SyncExtension } from '@arxhub/plugin-sync/ui'
 import { VaultVfs } from '@arxhub/vfs'
 import { markRaw } from 'vue'
 import { ExplorerExtension } from './explorer-extension'
@@ -32,6 +33,9 @@ export class ExplorerPlugin extends Plugin {
 
     const explorer = ctx.extensions.get(ExplorerExtension)
     const notes = ctx.extensions.get(NotesExtension)
+    // A pending path is a phantom node under its directory (23-storage-model F-06) — read straight off
+    // sync's own extension, never sync's internals.
+    explorer.setPendingSource(ctx.extensions.get(SyncExtension))
 
     // The tree is the navigation of the "Notes" type, not a place of its own — and now that both
     // frames read the type registry, that is the ONLY way it reaches the screen. The mini-app

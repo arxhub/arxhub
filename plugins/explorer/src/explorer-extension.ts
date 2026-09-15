@@ -2,12 +2,72 @@ import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { basename, dirname, extname, join } from '@arxhub/path'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { type VirtualEntry, type VirtualFileSystem, renameEntry as vfsRenameEntry } from '@arxhub/vfs'
-import { ref } from 'vue'
+import { ref, type ShallowRef } from 'vue'
 
 export interface TreeNode {
   entry: VirtualEntry
   children: TreeNode[] | null
   expanded: boolean
+  // Set when this node stands for something this device has not fetched — a file left in the cloud
+  // (F-06), or a directory that holds nothing else (every one of its descendants is pending too, so
+  // there is no real listing behind it). Absent, never false, for an ordinary disk node.
+  pending?: boolean
+}
+
+// What the extension needs from sync to draw a pending file where it would sit on disk. Kept as this
+// narrow shape rather than a `SyncExtension` import — explorer never imports another plugin's
+// internals, and the plugin is the one thing that knows how to read sync's own extension.
+export interface PendingSource {
+  readonly pending: ShallowRef<ReadonlySet<string>>
+}
+
+const NO_PENDING: ReadonlySet<string> = new Set()
+
+// A pending path is relevant under `dirPath` when it starts with `dirPath/` — the root is the empty
+// prefix, so everything is relevant there.
+function pendingPrefixOf(dirPath: string): string {
+  const norm = dirPath.replace(/^\/+/, '')
+  return norm === '' || norm === '.' ? '' : `${norm}/`
+}
+
+// Pure: given the real nodes a listing already produced for `dirPath` and the full pending set, adds a
+// phantom node for every pending path this directory does not already hold on disk — a file as a leaf,
+// a directory (computed once, eagerly — there is no real listing behind it to fetch lazily) for
+// anything with further nesting. A name `nodes` already has wins outright: the real entry is left
+// exactly as reconciled, never replaced or duplicated.
+export function mergePendingNodes(nodes: TreeNode[], dirPath: string, pendingPaths: ReadonlySet<string>): TreeNode[] {
+  const prefix = pendingPrefixOf(dirPath)
+  const relevant = [...pendingPaths].filter((path) => path.startsWith(prefix) && path.length > prefix.length)
+  if (relevant.length === 0) return nodes
+
+  const realNames = new Set(nodes.map((node) => basename(node.entry.pathname)))
+  const bySegment = new Map<string, Set<string>>()
+  for (const path of relevant) {
+    const rest = path.slice(prefix.length)
+    const slash = rest.indexOf('/')
+    const segment = slash === -1 ? rest : rest.slice(0, slash)
+    if (realNames.has(segment)) continue
+    const set = bySegment.get(segment) ?? new Set<string>()
+    set.add(path)
+    bySegment.set(segment, set)
+  }
+  if (bySegment.size === 0) return nodes
+
+  const phantoms: TreeNode[] = []
+  for (const [segment, paths] of bySegment) {
+    const childPath = `${prefix}${segment}`
+    if (paths.size === 1 && paths.has(childPath)) {
+      phantoms.push({ entry: { kind: 'file', pathname: childPath }, children: null, expanded: false, pending: true })
+    } else {
+      phantoms.push({
+        entry: { kind: 'dir', pathname: childPath },
+        children: mergePendingNodes([], childPath, paths),
+        expanded: false,
+        pending: true,
+      })
+    }
+  }
+  return [...nodes, ...phantoms]
 }
 
 // Other plugins contribute context-menu actions for tree nodes (extension-only inter-plugin
@@ -53,6 +113,7 @@ export class ExplorerExtension extends Extension {
   private creation: Promise<unknown> = Promise.resolve()
   private readonly nodeActionContributors: NodeActionContributor[] = []
   readonly fileTemplates = ref<FileTemplate[]>([])
+  private pendingSource: PendingSource | null = null
 
   registerFileTemplate(template: FileTemplate): void {
     if (this.fileTemplates.value.some((item) => item.extension === template.extension)) return
@@ -63,6 +124,16 @@ export class ExplorerExtension extends Extension {
     super(args)
     this.vfs = args.vfs
     this.root = args.root
+  }
+
+  // Wired by the plugin during configure(), against `SyncExtension.pending` — cross-plugin access
+  // goes through an extension, never a direct import.
+  setPendingSource(source: PendingSource): void {
+    this.pendingSource = source
+  }
+
+  private currentPending(): ReadonlySet<string> {
+    return this.pendingSource?.pending.value ?? NO_PENDING
   }
 
   registerNodeActions(contributor: NodeActionContributor): void {
@@ -94,22 +165,29 @@ export class ExplorerExtension extends Extension {
 
   async loadRoot(): Promise<void> {
     const entries = await this.vfs.list(this.root)
-    this.tree.value = reconcile(entries, this.tree.value)
+    this.tree.value = mergePendingNodes(reconcile(entries, this.tree.value), this.root, this.currentPending())
     await this.refreshExpanded(this.tree.value)
   }
 
   async expand(node: TreeNode): Promise<void> {
+    // A phantom directory has no real listing behind it — mergePendingNodes already computed its
+    // whole subtree when its parent was merged, so there is nothing left to fetch.
+    if (node.pending) {
+      node.expanded = true
+      return
+    }
     const entries = await this.vfs.list(node.entry.pathname)
-    node.children = reconcile(entries, node.children ?? [])
+    node.children = mergePendingNodes(reconcile(entries, node.children ?? []), node.entry.pathname, this.currentPending())
     node.expanded = true
     await this.refreshExpanded(node.children)
   }
 
   private async refreshExpanded(nodes: TreeNode[]): Promise<void> {
     for (const node of nodes) {
+      if (node.pending) continue
       if (node.entry.kind !== 'dir' || !node.expanded) continue
       const entries = await this.vfs.list(node.entry.pathname)
-      node.children = reconcile(entries, node.children ?? [])
+      node.children = mergePendingNodes(reconcile(entries, node.children ?? []), node.entry.pathname, this.currentPending())
       await this.refreshExpanded(node.children)
     }
   }

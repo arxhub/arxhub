@@ -24,6 +24,10 @@ const IMAGE = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'avif'])
 
 const typeIcon = computed((): string => {
   if (props.node.entry.kind === 'dir') return props.node.expanded ? 'lu:folder-open' : 'lu:folder'
+  // A file this device left in the cloud (23-storage-model F-06) reads as a file that happens to be
+  // elsewhere, not as a different kind of thing — the cloud glyph replaces the type glyph rather than
+  // sitting beside it.
+  if (props.node.pending) return 'lu:cloud'
   const ext = basename(props.node.entry.pathname).split('.').pop()?.toLowerCase() ?? ''
   if (PROSE.has(ext)) return 'lu:file-text'
   if (CODE.has(ext)) return 'lu:file-code'
@@ -120,6 +124,8 @@ function handleFocus() {
     :aria-level="depth + 1"
     :aria-selected="explorer.selectedPath.value === node.entry.pathname"
     :aria-expanded="node.entry.kind === 'dir' ? node.expanded : undefined"
+    :aria-description="node.pending ? 'On the server — opens on demand' : undefined"
+    :title="node.pending ? 'On the server — opens on demand' : undefined"
     :tabindex="focused ? 0 : -1"
     @click="handleClick"
     @contextmenu.prevent.stop="onContextMenu"
