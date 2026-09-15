@@ -1,7 +1,6 @@
 {
   "name": "@arxhub/client",
   "private": true,
-  "version": "0.1.0",
   "description": "ArxHub web client — static Vue SPA, connects to a server via HTTP",
   "license": "AGPL-3.0-or-later",
   "type": "module",

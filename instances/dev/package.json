@@ -1,7 +1,6 @@
 {
   "name": "@arxhub/dev",
   "private": true,
-  "version": "0.1.0",
   "description": "ArxHub dev stand — Vite SPA + Elysia API server in a single command",
   "license": "AGPL-3.0-or-later",
   "type": "module",

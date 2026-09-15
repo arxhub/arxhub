@@ -12,5 +12,5 @@ declare module '@arxhub/theme-preset'
 declare module '@arxhub/theme-slate'
 declare module '@arxhub/theme-catppuccin'
 
-// Injected at build time from the instance's package.json (toolchain-vite appVersionDefine).
+// Injected at build time from the root package.json — see `define` in this instance's vite.config.ts.
 declare const __APP_VERSION__: string

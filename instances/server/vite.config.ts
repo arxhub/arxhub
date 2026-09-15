@@ -1,8 +1,16 @@
+import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
+
+// The root package.json is the ONE version number (FR-211): every instance and the Tauri bundle read it
+// from there, and CI holds the Rust crate to it — so a bump is one edit and no instance can drift on its own. The healthcheck
+// answers with it (FR-210), so the server bundle needs the define the client bundles already had.
+const version = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version as string
+const define = { __APP_VERSION__: JSON.stringify(version) }
 
 export default defineConfig((env) => {
   if (env.command === 'build') {
     return {
+      define,
       // Dual-entry workspace packages (@arxhub/path, @arxhub/crypto) default to their browser entry
       // otherwise, and this build targets Node — path-browserify is CJS, so its named exports break
       // at runtime under ESM.
@@ -34,6 +42,7 @@ export default defineConfig((env) => {
 
   // Dev: Vite acts as watcher; Elysia serves the API on port 3000
   return {
+    define,
     appType: 'custom',
     plugins: [
       {
