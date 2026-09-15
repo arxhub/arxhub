@@ -153,6 +153,7 @@ export class ArxEditorPlugin extends Plugin {
         id: 'convert-to-arx',
         label: 'Convert to .arx',
         icon: 'lu:file-symlink',
+        opensObject: true,
         onSelect: () => {
           // Menu invokers don't await onSelect, so a failure that reached only the log would read as a
           // menu entry that does nothing — the same policy as the explorer's own runAction.
@@ -223,6 +224,7 @@ export class ArxEditorPlugin extends Plugin {
         id: 'properties',
         label: 'Properties…',
         icon: 'lu:tags',
+        opensObject: true,
         onSelect: () => {
           this.openPropertiesCard(path, explorer, shell, vault, repository).catch((error) => {
             this.logger.error(`[editor] failed to open properties for ${path}:`, error)

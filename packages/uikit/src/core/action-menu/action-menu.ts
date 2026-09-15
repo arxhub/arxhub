@@ -10,6 +10,11 @@ export interface ActionItem {
   variant?: 'default' | 'danger'
   disabled?: boolean
   onSelect: () => void
+  // Set when picking this item navigates to an object elsewhere (a document opens) rather than acting
+  // on the row it was picked from in place (rename, delete, publish). A consumer that hosts the menu
+  // over a dismissible surface — the mobile files panel over the row's own tree — reads this to decide
+  // whether picking the item should put that surface away, the same way a plain tap on the row does.
+  opensObject?: boolean
 }
 
 export interface ActionMenuState {

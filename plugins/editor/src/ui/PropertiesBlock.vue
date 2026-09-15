@@ -26,21 +26,26 @@ function setTags(tags: string[]) {
   props.change({ tags: next })
 }
 
+// Each handler passes `change()` only the ONE key it actually means to touch, never the whole object
+// `withField`/`addField`/… happen to return — `change()` merges onto the node's LIVE attrs (read fresh
+// from the view at call time), and a merge from a possibly-lagging local snapshot of `attrs.value` (this
+// component's own computed, refreshed only on Vue's next render) would silently reassert stale tags or
+// fields alongside the one field this call means to change.
 function onFavoriteToggle() {
   if (!canFavorite.value) return
-  props.change(toggleFavorite(attrs.value))
+  props.change({ favorite: !attrs.value.favorite })
 }
 
 function updateField(index: number, patch: Partial<{ key: string; value: string }>) {
-  props.change(withField(attrs.value, index, patch))
+  props.change({ fields: withField(attrs.value, index, patch).fields })
 }
 
 function addFieldRow() {
-  props.change(addField(attrs.value))
+  props.change({ fields: addField(attrs.value).fields })
 }
 
 function removeFieldRow(index: number) {
-  props.change(withoutField(attrs.value, index))
+  props.change({ fields: withoutField(attrs.value, index).fields })
 }
 </script>
 

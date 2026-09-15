@@ -85,6 +85,22 @@ export function useFileActions() {
     })
   }
 
+  // A contributed action that opens an object elsewhere (`opensObject: true`) puts the mobile files
+  // panel away the same way a plain tap on the row already does (`openFile`, below) — the picker over
+  // the row is not where the thing it opened is. Built-ins that act on the row IN PLACE (rename needs
+  // its inline input still on screen, delete and the New… actions have nothing elsewhere to reveal)
+  // are untouched.
+  function closeNavAfter(action: ActionItem): ActionItem {
+    if (!action.opensObject) return action
+    return {
+      ...action,
+      onSelect: () => {
+        action.onSelect()
+        navHost?.navigated?.()
+      },
+    }
+  }
+
   // Presentation-agnostic action descriptors — consumed by the desktop context menu now and a
   // mobile bottom-sheet later (uikit's ActionMenuHost decides how to render them).
   function getNodeActions(node: TreeNode): ActionItem[] {
@@ -92,7 +108,7 @@ export function useFileActions() {
     // the built-ins so destructive built-ins stay in their familiar place.
     if (node.entry.kind === 'file') {
       return [
-        { id: 'open', label: 'Open', icon: 'lu:file-plus', onSelect: () => openFile(node) },
+        { id: 'open', label: 'Open', icon: 'lu:file-plus', onSelect: () => openFile(node), opensObject: true },
         ...(offersExternalOpen(node, explorer.vfs)
           ? [
               {
@@ -105,7 +121,7 @@ export function useFileActions() {
           : []),
         { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
         { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
-        ...explorer.getContributedActions(node),
+        ...explorer.getContributedActions(node).map(closeNavAfter),
       ]
     }
     return [
@@ -113,7 +129,7 @@ export function useFileActions() {
       { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => runAction(newFolder(node), 'create the folder') },
       { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
       { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
-      ...explorer.getContributedActions(node),
+      ...explorer.getContributedActions(node).map(closeNavAfter),
     ]
   }
 
