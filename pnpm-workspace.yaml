@@ -52,6 +52,7 @@ catalogs:
     async-lock: ^1.4.1
     memoirist: ^0.3.0
     nanoid: ^5.1.5
+    node-diff3: ^3.2.1
     pino: ^9.6.0
     ts-dedent: ^2.2.0
     rabin-rs: ^2.1.0

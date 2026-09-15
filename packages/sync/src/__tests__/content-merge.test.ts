@@ -1,8 +1,10 @@
 import { ConsoleLogger } from '@arxhub/core'
+import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { SyncEngine } from '../engine'
+import { mergeText } from '../merge/text-merge'
 import { VfsSyncRemote } from '../remote/vfs-sync-remote'
 import type { ContentMerger } from '../repo'
 import { Repo } from '../repo'
@@ -148,6 +150,68 @@ describe('Repo.setContentMerger', () => {
     expect(await aVfs.file('doc.txt').readText()).toBe('remote modified')
     expect(merger).not.toHaveBeenCalled()
     expect(result.decisions).toEqual([{ pathname: 'doc.txt', kind: 'edit-over-delete' }])
+  })
+
+  // The shape plugins/repository registers for text: the line merge over a base, a decline without one.
+  const textMerger: ContentMerger = async (_pathname, base, local, remote) => {
+    if (base == null) return null
+    const { merged, conflicts } = mergeText(decoder.decode(base), decoder.decode(local), decoder.decode(remote))
+    return { merged: encoder.encode(merged), conflicts }
+  }
+
+  test('a markdown note edited on both devices merges line by line and lands on both, with nothing left to report', async () => {
+    aRepo.setContentMerger(textMerger)
+    bRepo.setContentMerger(textMerger)
+
+    await aVfs.file('note.md').writeText('# Title\n\nfirst\nsecond\nthird\n')
+    await a.add('note.md')
+    await a.sync()
+    await b.sync()
+
+    await aVfs.file('note.md').writeText('# Title\n\nfirst (a)\nsecond\nthird\n')
+    await a.add('note.md')
+    const remoteText = '# Title\n\nfirst\nsecond\nthird (b)\n'
+    await bVfs.file('note.md').writeText(remoteText)
+    await b.add('note.md')
+    await b.sync()
+
+    const result = await a.sync()
+    const merged = '# Title\n\nfirst (a)\nsecond\nthird (b)\n'
+    expect(result.conflicts).toEqual([])
+    expect(result.unresolved).toEqual([])
+    expect(await aVfs.file('note.md').readText()).toBe(merged)
+    // The copy a declined merge would have written is named after the remote content's own hash.
+    expect(await aVfs.exists(`conflict-${sha256(encoder.encode(remoteText)).slice(0, 8)}-note.md`)).toBe(false)
+
+    // A's round pushed the merged tree, so B takes it as a plain fast-forward — no second merge, no copy.
+    const second = await b.sync()
+    expect(second.conflicts).toEqual([])
+    expect(second.unresolved).toEqual([])
+    expect(await bVfs.file('note.md').readText()).toBe(merged)
+
+    // Both checkouts trust what they just wrote: nothing is reported as changed on either side.
+    expect(await aRepo.status(await aRepo.getHeadSnapshot())).toEqual([])
+    expect(await bRepo.status(await bRepo.getHeadSnapshot())).toEqual([])
+  })
+
+  test('a markdown note both devices changed on the same line keeps one file with a conflict region, reported as unresolved', async () => {
+    aRepo.setContentMerger(textMerger)
+
+    await aVfs.file('note.md').writeText('one\ntwo\nthree\n')
+    await a.add('note.md')
+    await a.sync()
+    await b.sync()
+
+    await aVfs.file('note.md').writeText('one\ntwo (a)\nthree\n')
+    await a.add('note.md')
+    await bVfs.file('note.md').writeText('one\ntwo (b)\nthree\n')
+    await b.add('note.md')
+    await b.sync()
+
+    const result = await a.sync()
+    expect(result.conflicts).toEqual([])
+    expect(result.unresolved).toEqual([{ pathname: 'note.md', count: 1 }])
+    expect(await aVfs.file('note.md').readText()).toBe('one\n<<<<<<< local\ntwo (a)\n=======\ntwo (b)\n>>>>>>> remote\nthree\n')
   })
 
   test('local edit over a remote delete is also reported as a decision', async () => {

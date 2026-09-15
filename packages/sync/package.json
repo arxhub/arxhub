@@ -30,6 +30,7 @@
     "async-lock": "catalog:shared",
     "dayjs": "catalog:shared",
     "elysia": "catalog:server",
+    "node-diff3": "catalog:shared",
     "rabin-rs": "catalog:shared"
   },
   "devDependencies": {

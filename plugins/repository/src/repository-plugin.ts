@@ -6,9 +6,10 @@ import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { Repo } from '@arxhub/sync'
 import { PluginVfs, RootVfs, VaultWatcher } from '@arxhub/vfs'
-import { Type } from '@sinclair/typebox'
+import { type Static, Type } from '@sinclair/typebox'
 import { manifest } from './manifest'
 import { RepositoryExtension } from './repository-extension'
+import { DEFAULT_TEXT_EXTENSIONS, textMerger, toTextExtensions } from './text-merger'
 
 export const RepositoryConfigSchema = Type.Object({
   // Device-local (A-20): a phone with little storage keeps a small slice of the vault on disk while a
@@ -27,6 +28,18 @@ export const RepositoryConfigSchema = Type.Object({
     deviceLocal: true,
     unit: 'MB',
   }),
+  // Synced, not device-local: which files are text is a fact about the vault, and two devices merging the
+  // same note by two different rules would produce two different files. Optional for the reason
+  // `index.exclude` in plugins/search is — an empty list is a legitimate value ("merge nothing as text"),
+  // and a required field that is empty blocks the global save from the moment the section opens.
+  'merge.textExtensions': Type.Optional(
+    Type.Array(Type.String(), {
+      title: 'Merge as text',
+      description:
+        'Files with these extensions are merged line by line when both devices edited them; what still disagrees is marked in the file. Anything else becomes a conflict copy beside the original.',
+      default: [...DEFAULT_TEXT_EXTENSIONS],
+    }),
+  ),
 })
 
 export class RepositoryPlugin extends Plugin {
@@ -34,6 +47,11 @@ export class RepositoryPlugin extends Plugin {
   private bringUp: Promise<void> | null = null
   private stopping = false
   private unwatch: (() => void) | null = null
+  private unwatchConfig: (() => void) | null = null
+  private unregisterTextMerger: (() => void) | null = null
+  // Read by the text merger on every match, so a settings save changes what the NEXT round merges without
+  // touching the registration. The default stands until the config has actually been read.
+  private textExtensions: ReadonlySet<string> = toTextExtensions(undefined)
 
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -60,6 +78,11 @@ export class RepositoryPlugin extends Plugin {
     settings.register({ id: 'repository', title: 'Storage', schema: RepositoryConfigSchema, order: 9, config })
 
     const repository = ctx.extensions.get(RepositoryExtension)
+
+    // The one merger this plugin contributes itself: a format-agnostic line merge for whatever the owner
+    // says is text. Formats with structure of their own (.arx, .arxs) register theirs from their own plugin.
+    this.unregisterTextMerger = repository.registerContentMerger(textMerger(() => this.textExtensions))
+    this.unwatchConfig = config.watch(RepositoryConfigSchema, (cfg) => this.applyMergeConfig(cfg))
 
     // Every vault write reaches the journal as it happens, in the repo's coordinates (the watcher
     // speaks vault-relative paths; the repo trees the root). A rename names both ends: the old path
@@ -93,6 +116,7 @@ export class RepositoryPlugin extends Plugin {
     // the default policy (keep everything) instead of aborting the whole boot.
     const cfg = await ctx.services.get(PluginConfig).tryRead(RepositoryConfigSchema)
     if (this.stopping || cfg == null) return
+    this.applyMergeConfig(cfg)
 
     // A file without a size is a manifest entry written before sizes existed (completeLegacyEntries
     // fills it in the next time this device writes a snapshot) — kept, never left in the cloud on a
@@ -100,11 +124,19 @@ export class RepositoryPlugin extends Plugin {
     this.repo.setMaterializePolicy((file) => cfg.materializeUpTo === 0 || file.size == null || file.size <= cfg.materializeUpTo * 1024 * 1024)
   }
 
+  private applyMergeConfig(cfg: Static<typeof RepositoryConfigSchema>): void {
+    this.textExtensions = toTextExtensions(cfg['merge.textExtensions'])
+  }
+
   override async stop(ctx: PluginContext): Promise<void> {
     this.stopping = true
     await this.bringUp?.catch(() => {})
     this.unwatch?.()
     this.unwatch = null
+    this.unwatchConfig?.()
+    this.unwatchConfig = null
+    this.unregisterTextMerger?.()
+    this.unregisterTextMerger = null
     await super.stop(ctx)
   }
 }
