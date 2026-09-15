@@ -7,14 +7,29 @@ import {
   type FileHead,
   fileNotFound,
   GenericVirtualFileSystem,
+  type NativeWatchCapable,
   type OpenExternallyCapable,
   type RangeCapable,
   resolveRange,
+  type VfsChangeListener,
   type VirtualEntry,
 } from '@arxhub/vfs'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { appDataDir, homeDir, join as joinPath } from '@tauri-apps/api/path'
-import { BaseDirectory, mkdir, open, exists as pathExists, readDir, readFile, remove, SeekMode, stat, writeFile } from '@tauri-apps/plugin-fs'
+import {
+  BaseDirectory,
+  mkdir,
+  open,
+  exists as pathExists,
+  readDir,
+  readFile,
+  remove,
+  SeekMode,
+  stat,
+  type WatchEvent,
+  watch,
+  writeFile,
+} from '@tauri-apps/plugin-fs'
 import { openPath } from '@tauri-apps/plugin-opener'
 
 // The directory a path sits in, or '' at the root. Not `posix.dirname` — that answers '.' for a bare
@@ -24,7 +39,10 @@ function parentOf(pathname: string): string {
   return cut <= 0 ? '' : pathname.slice(0, cut)
 }
 
-export class TauriFileSystem extends GenericVirtualFileSystem implements RangeCapable, ContentUrlCapable, OpenExternallyCapable {
+export class TauriFileSystem
+  extends GenericVirtualFileSystem
+  implements RangeCapable, ContentUrlCapable, OpenExternallyCapable, NativeWatchCapable
+{
   private readonly baseDir: BaseDirectory
   private readonly basePath: string
   private readonly logger: Logger
@@ -210,6 +228,78 @@ export class TauriFileSystem extends GenericVirtualFileSystem implements RangeCa
     } catch (e) {
       this.logger.warn(`head(${pathname}) failed:`, e)
       throw fileNotFound(pathname)
+    }
+  }
+
+  // Native watch (NativeWatchCapable): the debounced `watch`, not `watchImmediate` — a save is many
+  // events on the Rust side too, and its own 300ms coalesces them before this ever sees one. The events
+  // it reports carry absolute filesystem paths (the inverse of `fullPath`, not paths relative to what
+  // was asked for), which is why this needs `absolutePath` — the same resolution `contentUrl` and
+  // `openExternally` already do — to turn them back into paths relative to `prefix`.
+  async watchTree(prefix: string, listener: VfsChangeListener): Promise<() => void> {
+    const absDir = await this.absolutePath(prefix)
+    if (absDir == null) throw illegalState('This store has no path the system can watch')
+
+    return watch(this.fullPath(prefix), (event) => void this.handleWatchEvent(absDir, event, listener), {
+      baseDir: this.baseDir,
+      recursive: true,
+      delayMs: 300,
+    })
+  }
+
+  // An absolute event path is reported relative to `absDir` — the same directory `prefix` resolves to —
+  // by cutting the common prefix and normalizing the separator; Tauri's paths are OS-native ('\' on
+  // Windows) like every other absolute path this class works with.
+  private relativeToWatchedDir(absDir: string, absPath: string): string {
+    const rel = absPath.startsWith(absDir) ? absPath.slice(absDir.length) : absPath
+    return rel
+      .replace(/^[\\/]+/, '')
+      .split(/[\\/]/)
+      .join('/')
+  }
+
+  private notify(absDir: string, absPath: string, kind: 'written' | 'deleted', listener: VfsChangeListener): void {
+    listener({ kind, pathname: this.relativeToWatchedDir(absDir, absPath) })
+  }
+
+  // A lone end of a rename (mode 'to' or 'from', reported without its counterpart) can't be told apart
+  // from here — the same resolution NodeFileSystem falls back to for its own ambiguous case.
+  private async statAndNotify(absDir: string, absPath: string, listener: VfsChangeListener): Promise<void> {
+    try {
+      const info = await stat(absPath)
+      if (info.isDirectory) return
+      this.notify(absDir, absPath, 'written', listener)
+    } catch {
+      this.notify(absDir, absPath, 'deleted', listener)
+    }
+  }
+
+  private async handleWatchEvent(absDir: string, event: WatchEvent, listener: VfsChangeListener): Promise<void> {
+    const kind = event.type
+    const isRename = typeof kind === 'object' && 'modify' in kind && kind.modify.kind === 'rename'
+
+    // Both ends given in one event (mode 'both') — reported as delete + write, like every other backend:
+    // the journal treats a rename as delete + write anyway (`ObservedFileSystem.rename`), so there is
+    // nothing to gain from pairing them here either.
+    if (isRename && event.paths.length >= 2) {
+      this.notify(absDir, event.paths[0], 'deleted', listener)
+      this.notify(absDir, event.paths[1], 'written', listener)
+      return
+    }
+
+    for (const absPath of event.paths) {
+      if (typeof kind === 'object' && 'create' in kind) {
+        if (kind.create.kind !== 'folder') this.notify(absDir, absPath, 'written', listener)
+      } else if (typeof kind === 'object' && 'remove' in kind) {
+        if (kind.remove.kind !== 'folder') this.notify(absDir, absPath, 'deleted', listener)
+      } else if (typeof kind === 'object' && 'access' in kind) {
+        // Not a content change.
+      } else if (typeof kind === 'object' && 'modify' in kind && kind.modify.kind !== 'rename') {
+        this.notify(absDir, absPath, 'written', listener)
+      } else {
+        // 'any' | 'other' | a lone rename end.
+        await this.statAndNotify(absDir, absPath, listener)
+      }
     }
   }
 }
