@@ -1,5 +1,25 @@
 <script setup lang="ts">
-defineProps<{ path: string }>()
+import { Button, Icon } from '@arxhub/uikit/core'
+import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { canOpenExternally, openExternally } from '@arxhub/vfs'
+import { computed } from 'vue'
+import { NotesExtension } from '../notes-extension'
+
+const props = defineProps<{ path: string }>()
+
+const arxhub = useArxHub()
+const notes = arxhub.extensions.get(NotesExtension)
+const canOpen = computed(() => canOpenExternally(notes.vfs))
+
+async function openInSystemApp(): Promise<void> {
+  try {
+    await openExternally(notes.vfs, props.path)
+  } catch (error) {
+    arxhub.logger.error(`[notes] failed to open ${props.path} in the system app:`, error)
+    const description = error instanceof Error ? error.message : String(error ?? '')
+    toaster.create({ type: 'error', title: 'Could not open the file in the system app', description })
+  }
+}
 </script>
 
 <template>
@@ -9,6 +29,12 @@ defineProps<{ path: string }>()
     <p class="headline">Nothing can open this file</p>
     <p class="path">{{ path }}</p>
     <p class="hint">No installed viewer claims this extension.</p>
+    <!-- Hidden rather than disabled where the backend cannot honour it (a browser) — nothing dead is
+         ever drawn (see packages/vfs/src/capabilities/open-externally.ts). -->
+    <Button v-if="canOpen" variant="secondary" @click="openInSystemApp">
+      <Icon name="lu:external-link" :size="14" />
+      Open in system app
+    </Button>
   </div>
 </template>
 

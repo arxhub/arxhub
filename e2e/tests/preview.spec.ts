@@ -47,6 +47,10 @@ test.describe('opening a file that is not a note', () => {
     // The panel, not a toast: it names what is missing and stays on screen.
     await expect(app.getByText('Nothing can open this file')).toBeVisible()
     await expect(app.getByText('No installed viewer claims this extension.')).toBeVisible()
+
+    // The dev stand runs in a browser (HTTP backend) — it cannot hand a file to a system application,
+    // so the action must not be drawn at all here. The Tauri path is not reachable from e2e.
+    await expect(app.getByRole('button', { name: 'Open in system app' })).toHaveCount(0)
   })
 
   test('a PDF opens as pages, rendered by pdf.js', async ({ app, vault }) => {

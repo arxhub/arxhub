@@ -3,7 +3,16 @@ import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
 import { ShellExtension, useNavHost } from '@arxhub/plugin-shell/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { canOpenExternally, openExternally, type VirtualFileSystem } from '@arxhub/vfs'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
+
+// Pure so the rule is unit-testable without the Vue plumbing the composable needs: a file (not a
+// directory), not pending (a file left in the cloud has nothing on disk to hand over), and the vault's
+// own backend actually declares the capability — a browser backend must never offer an action it
+// cannot honour.
+export function offersExternalOpen(node: TreeNode, vfs: VirtualFileSystem): boolean {
+  return node.entry.kind === 'file' && !node.pending && canOpenExternally(vfs)
+}
 
 // The toast's second line. A VFS error carries the useful part in its message ('Unauthorized' for a
 // server that refused this device, 'Not Found' for a path that vanished under us); anything without one
@@ -84,6 +93,16 @@ export function useFileActions() {
     if (node.entry.kind === 'file') {
       return [
         { id: 'open', label: 'Open', icon: 'lu:file-plus', onSelect: () => openFile(node) },
+        ...(offersExternalOpen(node, explorer.vfs)
+          ? [
+              {
+                id: 'open-externally',
+                label: 'Open in system app',
+                icon: 'lu:external-link',
+                onSelect: () => runAction(openExternally(explorer.vfs, node.entry.pathname), 'open the file in the system app'),
+              } satisfies ActionItem,
+            ]
+          : []),
         { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
         { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
         ...explorer.getContributedActions(node),

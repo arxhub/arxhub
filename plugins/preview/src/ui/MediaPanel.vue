@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { basename } from '@arxhub/path'
-import { Strip } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
-import { VaultVfs } from '@arxhub/vfs'
+import { IconButton, Strip } from '@arxhub/uikit/core'
+import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { canOpenExternally, openExternally, VaultVfs } from '@arxhub/vfs'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { formatBytes, mediaOf, resolveMediaSource } from '../media'
 
@@ -10,6 +10,17 @@ const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
+const canOpen = computed(() => canOpenExternally(vfs))
+
+async function openInSystemApp(): Promise<void> {
+  try {
+    await openExternally(vfs, props.path)
+  } catch (error) {
+    arxhub.logger.error(`[preview] failed to open ${props.path} in the system app:`, error)
+    const description = error instanceof Error ? error.message : String(error ?? '')
+    toaster.create({ type: 'error', title: 'Could not open the file in the system app', description })
+  }
+}
 
 const media = computed(() => mediaOf(props.path))
 const name = computed(() => basename(props.path))
@@ -83,8 +94,11 @@ onUnmounted(() => {
 
 <template>
   <div class="media-panel">
-    <Strip :title="name">
+    <Strip :title="name" :flush-actions="canOpen">
       <span v-if="meta" class="media-meta">{{ meta }}</span>
+      <template v-if="canOpen" #actions>
+        <IconButton size="lg" icon="lu:external-link" tooltip="Open in system app" @click="openInSystemApp" />
+      </template>
     </Strip>
     <div class="media-stage">
       <p v-if="loading" class="media-state">Loading…</p>
