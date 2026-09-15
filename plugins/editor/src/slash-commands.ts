@@ -101,11 +101,13 @@ export function matchingCommands(query: string, commands: readonly BlockCommand[
   return commands.filter((command) => `${command.label} ${command.keywords}`.toLowerCase().includes(needle))
 }
 
+// A space is part of a name ("heading 2"), a second slash is a path (`path/to`) — the first keeps the
+// menu open, the second closes it.
 function queryAtCursor(state: EditorState): Omit<SlashMenuState, 'index'> | null {
   const { $from, empty } = state.selection
   if (!empty || editorMode(state) !== 'editable' || $from.parent.type !== state.schema.nodes.paragraph) return null
   const text = $from.parent.textBetween(0, $from.parentOffset, undefined, '\ufffc')
-  const match = /^\/([^\s/]*)$/.exec(text)
+  const match = /^\/([^/]*)$/.exec(text)
   return match ? { from: $from.start(), to: $from.pos, query: match[1] } : null
 }
 
@@ -140,6 +142,10 @@ export function slashCommands(menuId = 'arx-slash-menu', commands: readonly Bloc
         const next = queryAtCursor(state)
         if (!next) return null
         const count = matchingCommands(next.query, commands).length
+        // A query with a space in it that names nothing is a sentence that happens to start with `/`;
+        // holding the menu open over it would hold the writer hostage. Without the space, "No matching
+        // blocks" stays useful — a typo one Backspace away.
+        if (!count && /\s/.test(next.query)) return null
         const index = typeof action === 'number' ? action : previous?.query === next.query ? previous.index : 0
         return { ...next, index: count ? (index + count) % count : 0 }
       },

@@ -34,6 +34,7 @@ import { buildInputRules } from '../editor-input-rules'
 import { buildKeymap } from '../editor-keymap'
 import { type EditorMode, editorModeKey, modePlugin } from '../editor-mode'
 import { PROSEMIRROR_LAYER } from '../hotkeys'
+import { insertHint } from '../insert-hint'
 import { slashCommands, slashKey } from '../slash-commands'
 import { restoreVersionBlock } from '../version-diff'
 import ArxComponentHost from './ArxComponentHost.vue'
@@ -133,6 +134,7 @@ function buildPlugins() {
       'conflict',
     ]),
     slashCommands(slashMenuId, kit.commands),
+    insertHint(),
     history(),
     blockIdentityPlugin(),
     blockMarqueePlugin(),
@@ -661,8 +663,9 @@ onUnmounted(() => {
 .editor-content :deep(.task-content > ul[data-type="task_list"]) { padding-left: 1.25em; }
 .editor-content :deep(.task-content) { flex: 1; min-width: 0; }
 .editor-content :deep(li[data-checked="true"] > .task-content > p) { color: var(--gray-9); text-decoration: line-through; }
-.editor-content :deep(.ProseMirror[data-mode="editable"] > p:only-child:has(> br:only-child))::before {
-  content: 'Type / to insert a block';
+/* The paragraph that carries the hint is chosen by `insert-hint.ts`, not by this selector. */
+.editor-content :deep(p[data-placeholder])::before {
+  content: attr(data-placeholder);
   color: var(--gray-10);
   pointer-events: none;
   float: left;

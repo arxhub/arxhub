@@ -6,7 +6,7 @@ import { emptyDoc } from '../editor-format'
 import { buildKeymap } from '../editor-keymap'
 import { editorModeKey, modePlugin } from '../editor-mode'
 import { schema } from '../editor-schema'
-import { BLOCK_COMMANDS, canRunSlashCommand, runSlashCommand, slashCommands, slashKey } from '../slash-commands'
+import { BLOCK_COMMANDS, canRunSlashCommand, matchingCommands, runSlashCommand, slashCommands, slashKey } from '../slash-commands'
 
 function editor() {
   return EditorState.create({ doc: emptyDoc(schema), plugins: [modePlugin('editable'), slashCommands(), history()] })
@@ -124,6 +124,28 @@ describe('slash insertion', () => {
     expect(slashKey.getState(state)).toBeNull()
     state = EditorState.create({ schema, doc: schema.node('doc', null, schema.nodes.code_block.create()), plugins: [slashCommands()] })
     state = state.apply(state.tr.insertText('/'))
+    expect(slashKey.getState(state)).toBeNull()
+  })
+
+  it('keeps the menu open across a space that still names a block, and lets go of a sentence', () => {
+    let state = editor()
+    state = state.apply(state.tr.insertText('/heading 2'))
+    expect(slashKey.getState(state)?.query).toBe('heading 2')
+    expect(matchingCommands('heading 2').map((command) => command.id)).toEqual(['heading-2'])
+    state = editor()
+    state = state.apply(state.tr.insertText('/heading '))
+    expect(matchingCommands(slashKey.getState(state)?.query ?? '').map((command) => command.id)).toEqual([
+      'heading-1',
+      'heading-2',
+      'heading-3',
+    ])
+    state = editor()
+    state = state.apply(state.tr.insertText('/hello world'))
+    expect(slashKey.getState(state)).toBeNull()
+    state = state.apply(state.tr.insertText('!'))
+    expect(slashKey.getState(state)).toBeNull()
+    state = editor()
+    state = state.apply(state.tr.insertText('/heading/2'))
     expect(slashKey.getState(state)).toBeNull()
   })
 
