@@ -17,12 +17,12 @@ export const RepositoryConfigSchema = Type.Object({
   // down, so it is legitimately meaningless without a remote and stays here anyway: the policy is the
   // repository's to enforce, whichever plugin (if any) ends up fetching content for it.
   //
-  // 64 MB by default, not "everything" (A-45, owner 2026-09-15): a film or a raw export arriving from
+  // 20 MB by default, not "everything" (A-45, owner 2026-09-15): a film or a raw export arriving from
   // another device is not downloaded until this one opens it; a note, a photo, a PDF always is.
   materializeUpTo: Type.Number({
     title: 'Keep files up to (MB) on this device',
     description: '0 keeps everything on this device; larger files stay on the server until opened',
-    default: 64,
+    default: 20,
     minimum: 0,
     deviceLocal: true,
     unit: 'MB',
