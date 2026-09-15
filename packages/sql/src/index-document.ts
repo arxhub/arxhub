@@ -51,8 +51,18 @@ export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument): Promi
 
   for (const chunk of chunks(doc.blocks, INSERT_CHUNK)) {
     await tx.query(
-      `INSERT INTO block (id, doc_path, ordinal, type, level, checked, content) VALUES ${placeholders(chunk.length, 7)}`,
-      chunk.flatMap((block) => [block.id, doc.path, block.ordinal, block.type, block.level, block.checked, block.content]),
+      `INSERT INTO block (id, doc_path, ordinal, type, level, checked, arx_id, occurrence, content) VALUES ${placeholders(chunk.length, 9)}`,
+      chunk.flatMap((block) => [
+        block.id,
+        doc.path,
+        block.ordinal,
+        block.type,
+        block.level,
+        block.checked,
+        block.arxId,
+        block.occurrence,
+        block.content,
+      ]),
     )
   }
 

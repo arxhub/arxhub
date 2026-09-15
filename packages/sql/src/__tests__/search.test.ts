@@ -261,6 +261,32 @@ describe('searchDocuments', () => {
     }
   })
 
+  it('carries the .arx block identity through to the result, so a hit can reopen the exact block', async () => {
+    const tree = {
+      version: 1,
+      doc: {
+        type: 'doc',
+        content: [
+          { type: 'paragraph', attrs: { arxId: 'aaa' }, content: [{ type: 'text', text: 'бирюза первая' }] },
+          { type: 'paragraph', attrs: { arxId: 'bbb' }, content: [{ type: 'text', text: 'бирюза вторая' }] },
+        ],
+      },
+    }
+    await write('notes/tree.arx', [JSON.stringify(tree)])
+
+    const [document] = (await search('бирюза ')).documents
+    expect(document.snippets.map((snippet) => snippet.arxId)).toEqual(['aaa', 'bbb'])
+    expect(document.snippets.every((snippet) => snippet.occurrence === 0)).toBe(true)
+  })
+
+  it('numbers a repeated markdown line, which has no block identity to fall back on', async () => {
+    await write('notes/dup.md', ['бирюза раз.', '', 'другое.', '', 'бирюза раз.'])
+
+    const [document] = (await search('бирюза ')).documents
+    expect(document.snippets.map((snippet) => snippet.arxId)).toEqual([null, null])
+    expect(document.snippets.map((snippet) => snippet.occurrence)).toEqual([0, 1])
+  })
+
   it('gives the opening block, unmarked, to a document that matched only by its title', async () => {
     await write('notes/a.md', ['---', 'title: Барабанщик', '---', '', 'Тело без совпадения.', '', 'Второй абзац.'])
 

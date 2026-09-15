@@ -9,6 +9,9 @@ export interface SourceBlock {
   // Done state of a task; null for every other block type, and always null out of this reader — only
   // `.arx` produces a task. See ParsedBlock.checked.
   checked: boolean | null
+  // The block's own stable id; always null out of this reader — only `.arx` carries one (A-29). See
+  // ParsedBlock.arxId.
+  arxId: string | null
   raw: string
   content: string
 }
@@ -58,14 +61,14 @@ export function parseMarkdownBlocks(body: string): SourceBlock[] {
       i += 1
       const code = fenced.join('\n')
       // Code keeps every character: in code the markers are the content.
-      blocks.push({ type: 'code', level: null, checked: null, raw: code, content: code })
+      blocks.push({ type: 'code', level: null, checked: null, arxId: null, raw: code, content: code })
       continue
     }
 
     const heading = HEADING.exec(line)
     if (heading != null) {
       const raw = heading[2].replace(/[ \t]+#+[ \t]*$/, '')
-      blocks.push({ type: 'heading', level: heading[1].length, checked: null, raw, content: stripInlineMarkup(raw) })
+      blocks.push({ type: 'heading', level: heading[1].length, checked: null, arxId: null, raw, content: stripInlineMarkup(raw) })
       i += 1
       continue
     }
@@ -86,7 +89,7 @@ export function parseMarkdownBlocks(body: string): SourceBlock[] {
         i += 1
       }
       const raw = joinSoftLines(quoted)
-      blocks.push({ type: 'quote', level: null, checked: null, raw, content: stripInlineMarkup(raw) })
+      blocks.push({ type: 'quote', level: null, checked: null, arxId: null, raw, content: stripInlineMarkup(raw) })
       continue
     }
 
@@ -99,7 +102,7 @@ export function parseMarkdownBlocks(body: string): SourceBlock[] {
         i += 1
       }
       const raw = joinSoftLines(parts)
-      blocks.push({ type: 'list-item', level: null, checked: null, raw, content: stripInlineMarkup(raw) })
+      blocks.push({ type: 'list-item', level: null, checked: null, arxId: null, raw, content: stripInlineMarkup(raw) })
       continue
     }
 
@@ -110,7 +113,7 @@ export function parseMarkdownBlocks(body: string): SourceBlock[] {
       i += 1
     }
     const raw = joinSoftLines(paragraph)
-    blocks.push({ type: 'paragraph', level: null, checked: null, raw, content: stripInlineMarkup(raw) })
+    blocks.push({ type: 'paragraph', level: null, checked: null, arxId: null, raw, content: stripInlineMarkup(raw) })
   }
 
   return blocks

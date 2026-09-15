@@ -181,6 +181,12 @@ describe('parseDocument — markdown', () => {
       ['list-item', null, null, 'вложенный'],
     ])
   })
+
+  it('carries no block identity, and numbers a repeated line by how many came before it', () => {
+    const doc = parseDocument('notes/repeat.md', bytes(['Повтор.', '', 'Другое.', '', 'Повтор.']))
+    expect(doc.blocks.map((block) => block.arxId)).toEqual([null, null, null])
+    expect(doc.blocks.map((block) => block.occurrence)).toEqual([0, 0, 1])
+  })
 })
 
 describe('parseDocument — title fallbacks', () => {
@@ -408,5 +414,23 @@ describe('parseDocument — arx', () => {
       ['quote', null, 'первый абзац второй абзац'],
       ['list-item', 1, 'первый абзац пункта второй абзац пункта'],
     ])
+  })
+
+  // The stable identity plugins/editor/src/block-identity.ts stamps on every block node — read here
+  // structurally, so a search hit can reopen the exact block rather than the first one that reads the
+  // same (two identical paragraphs still carry two different ids).
+  it('reads the block-identity id off each node, distinct even for identical text', () => {
+    const doc = arxDoc(
+      'notes/identical.arx',
+      { type: 'paragraph', attrs: { arxId: 'aaa' }, content: [{ type: 'text', text: 'Повтор' }] },
+      { type: 'paragraph', attrs: { arxId: 'bbb' }, content: [{ type: 'text', text: 'Повтор' }] },
+    )
+    expect(doc.blocks.map((block) => block.arxId)).toEqual(['aaa', 'bbb'])
+    expect(doc.blocks.map((block) => block.occurrence)).toEqual([0, 1])
+  })
+
+  it('has no id for a node the identity pass never reached', () => {
+    const doc = arxDoc('notes/no-id.arx', para('без идентификатора'))
+    expect(doc.blocks[0].arxId).toBeNull()
   })
 })

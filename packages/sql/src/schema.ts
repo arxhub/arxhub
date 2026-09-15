@@ -1,8 +1,10 @@
 // Bump whenever anything below changes shape, and whenever the parser starts producing rows the old
-// walk did not (nested `.arx` list items, at version 3). An index written by another version is
-// discarded, not migrated (FR-217): every row is recoverable by walking the content store, so
-// rebuilding is cheaper than carrying a data migration for a derived index.
-export const SQL_SCHEMA_VERSION = 3
+// walk did not (nested `.arx` list items, at version 3; `block.arx_id`/`block.occurrence`, at version
+// 4 — a search hit needs to reopen the exact block it matched, not merely the first one that reads the
+// same). An index written by another version is discarded, not migrated (FR-217): every row is
+// recoverable by walking the content store, so rebuilding is cheaper than carrying a data migration for
+// a derived index.
+export const SQL_SCHEMA_VERSION = 4
 
 export const SCHEMA_VERSION_KEY = 'schema_version'
 
@@ -61,6 +63,13 @@ export const CONTENT_SCHEMA_DDL: readonly string[] = [
     level int,
     -- Done state of a task; null for every other type, so "unfinished" and "not a task" stay apart.
     checked boolean,
+    -- The .arx block's own stable id (plugins/editor/src/block-identity.ts), survives reordering and
+    -- editing; null for markdown and text, which carry no such identity (A-29).
+    arx_id text,
+    -- How many earlier blocks of this document already had this exact content, 0 for the first. The
+    -- fallback anchor for a format with no block identity: a search hit re-opens the Nth occurrence of
+    -- a repeated line instead of always the first.
+    occurrence int NOT NULL DEFAULT 0,
     content text NOT NULL,
     tsv tsvector GENERATED ALWAYS AS (to_tsvector('${FTS_CONFIG}', content)) STORED
   )`,
@@ -142,6 +151,8 @@ export const SCHEMA_TABLES: readonly SqlSchemaTable[] = [
       { name: 'type', description: 'heading | paragraph | list-item | task | code | quote.' },
       { name: 'level', description: 'Heading depth for a heading, nesting depth for a list item or a task; null otherwise.' },
       { name: 'checked', description: 'Done state of a task; null for every other type, so "unfinished" and "not a task" stay apart.' },
+      { name: 'arx_id', description: "The `.arx` block's own stable id; null for markdown and text, which carry no block identity." },
+      { name: 'occurrence', description: 'How many earlier blocks of this document already had this exact content; 0 for the first.' },
       { name: 'content', description: 'Flat text of the block — what a snippet shows.' },
       { name: 'tsv', description: `Generated from content under the '${FTS_CONFIG}' configuration.` },
     ],

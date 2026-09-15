@@ -36,14 +36,23 @@ export function parseDocument(pathname: string, bytes: Uint8Array, stat?: Partia
   const text = stripBom(decoder.decode(bytes))
   const source = readSource(kind, text)
 
-  const blocks: ParsedBlock[] = source.blocks.map((block, ordinal) => ({
-    id: blockId(path, ordinal),
-    ordinal,
-    type: block.type,
-    level: block.level,
-    checked: block.checked,
-    content: block.content,
-  }))
+  // How many earlier blocks already had this exact content — computed here, in parse order, once per
+  // document: a query would need a self-join per row, and the answer never changes after the parse.
+  const seenContent = new Map<string, number>()
+  const blocks: ParsedBlock[] = source.blocks.map((block, ordinal) => {
+    const occurrence = seenContent.get(block.content) ?? 0
+    seenContent.set(block.content, occurrence + 1)
+    return {
+      id: blockId(path, ordinal),
+      ordinal,
+      type: block.type,
+      level: block.level,
+      checked: block.checked,
+      arxId: block.arxId,
+      occurrence,
+      content: block.content,
+    }
+  })
 
   const tags = collectTags(source, blocks)
   const refs = collectRefs(source, blocks)
@@ -132,7 +141,8 @@ function readSource(kind: DocumentKind, text: string): DocumentSource {
 }
 
 function textSource(text: string): DocumentSource {
-  const blocks: SourceBlock[] = text.trim() === '' ? [] : [{ type: 'paragraph', level: null, checked: null, raw: text, content: text }]
+  const blocks: SourceBlock[] =
+    text.trim() === '' ? [] : [{ type: 'paragraph', level: null, checked: null, arxId: null, raw: text, content: text }]
   return { kind: 'text', blocks, frontmatter: null, frontmatterTitle: null, frontmatterTags: [], markLinks: [] }
 }
 

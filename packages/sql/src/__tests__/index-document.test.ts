@@ -63,6 +63,41 @@ describe('indexDocument', () => {
     expect(document).toEqual({ title: 'Пример', kind: 'markdown', frontmatter: { title: 'Пример', tags: ['alpha'] } })
   })
 
+  it('writes the .arx block identity and the occurrence of a repeated line', async () => {
+    const tree = {
+      version: 1,
+      doc: {
+        type: 'doc',
+        content: [
+          { type: 'paragraph', attrs: { arxId: 'aaa' }, content: [{ type: 'text', text: 'Повтор' }] },
+          { type: 'paragraph', attrs: { arxId: 'bbb' }, content: [{ type: 'text', text: 'Повтор' }] },
+        ],
+      },
+    }
+    await indexDocument(index, parseDocument('notes/tree.arx', encoder.encode(JSON.stringify(tree)), { size: 10, mtime: 1, ctime: 1 }))
+
+    expect(
+      await rows<{ arx_id: string | null; occurrence: number }>('SELECT arx_id, occurrence FROM block WHERE doc_path = $1 ORDER BY ordinal', [
+        'notes/tree.arx',
+      ]),
+    ).toEqual([
+      { arx_id: 'aaa', occurrence: 0 },
+      { arx_id: 'bbb', occurrence: 1 },
+    ])
+
+    // Markdown carries no such identity — only the occurrence is available.
+    await write('notes/dup.md', ['Повтор', '', 'Другое', '', 'Повтор'])
+    expect(
+      await rows<{ arx_id: string | null; occurrence: number }>('SELECT arx_id, occurrence FROM block WHERE doc_path = $1 ORDER BY ordinal', [
+        'notes/dup.md',
+      ]),
+    ).toEqual([
+      { arx_id: null, occurrence: 0 },
+      { arx_id: null, occurrence: 0 },
+      { arx_id: null, occurrence: 1 },
+    ])
+  })
+
   it('resolves a link to a document that exists and keeps a link to one that does not', async () => {
     await write('notes/target.md', ['# Цель'])
     await write('notes/source.md', ['Смотри [[target]] и [[ничего такого]].'])

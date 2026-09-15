@@ -98,6 +98,7 @@ function appendNode(node: ArxNode, result: ArxParse, depth: number): void {
       type: blockType,
       level: blockLevel(node, blockType, depth),
       checked: blockType === 'task' ? isChecked(node) : null,
+      arxId: blockArxId(node),
       raw: text,
       content: text,
     })
@@ -139,6 +140,16 @@ function isChecked(node: ArxNode): boolean {
   const attrs = node.attrs
   if (attrs == null || typeof attrs !== 'object' || !('checked' in attrs)) return false
   return (attrs as { checked: unknown }).checked === true
+}
+
+// The block's own identity, stamped on every non-inline node by plugins/editor/src/block-identity.ts.
+// A tree from before that plugin existed, or a node the identity pass never reached, simply has none —
+// the block still indexes, by content alone.
+function blockArxId(node: ArxNode): string | null {
+  const attrs = node.attrs
+  if (attrs == null || typeof attrs !== 'object' || !('arxId' in attrs)) return null
+  const id = (attrs as { arxId: unknown }).arxId
+  return typeof id === 'string' && id !== '' ? id : null
 }
 
 function headingLevel(node: ArxNode): number {

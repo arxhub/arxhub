@@ -33,6 +33,11 @@ export interface ParsedBlock {
   // Whether a task is done. Null for every other block type, the way `level` is: a plain list item has
   // no state to be in, and a `false` there would answer "not done" to a question nobody asked.
   checked: boolean | null
+  // The `.arx` block's own stable id (block-identity.ts); null for markdown and text.
+  arxId: string | null
+  // How many earlier blocks of this document already had this exact content, 0 for the first — the
+  // fallback anchor for a format with no block identity (markdown).
+  occurrence: number
   content: string
 }
 
