@@ -1,5 +1,6 @@
 export * from './append'
 export * from './content-url'
+export * from './native-watch'
 export * from './open-externally'
 export * from './range'
 export * from './rename'

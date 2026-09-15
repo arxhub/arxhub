@@ -6,6 +6,8 @@ import { appendEntry } from './ops/append'
 import { contentUrlOf } from './ops/content-url'
 import { canOpenExternally, openExternally } from './ops/open-externally'
 import { readRange } from './ops/read-range'
+import { watchTree } from './ops/watch-tree'
+import type { VfsChange, VfsChangeListener } from './vfs-watcher'
 import type { VirtualEntry } from './virtual-entry'
 import type { DeleteOptions, FileHead, VirtualFileSystem } from './virtual-file-system'
 
@@ -80,6 +82,22 @@ export class ScopedFileSystem extends GenericVirtualFileSystem {
   // a scoped vault view over a browser backend answer "no" synchronously, before any await.
   canOpenExternally(): boolean {
     return canOpenExternally(this.inner)
+  }
+
+  // Same shape as `contentUrl`/`openExternally`: translate the prefix inward and re-dispatch through the
+  // op so the backend that can actually watch is the one asked — a scoped view over a capable backend is
+  // itself capable. Every reported path is translated back OUT (`strip`), so a subscriber never learns
+  // this view's root-relative coordinates. There is no fallback to "not capable" here, unlike
+  // `contentUrl`: a view that turns out to wrap an incapable backend throws, the same refusal
+  // `openExternally` gives a caller who skipped `canOpenExternally`.
+  async watchTree(prefix: string, listener: VfsChangeListener): Promise<() => void> {
+    const unwatch = await watchTree(this.inner, this.resolve(prefix), (change) => listener(this.stripChange(change)))
+    if (unwatch == null) throw illegalState('This store has no way to watch for external changes')
+    return unwatch
+  }
+
+  private stripChange(change: VfsChange): VfsChange {
+    return { kind: change.kind, pathname: this.strip(change.pathname), ...(change.from == null ? {} : { from: this.strip(change.from) }) }
   }
 
   override async write(pathname: string, content: Uint8Array): Promise<void> {

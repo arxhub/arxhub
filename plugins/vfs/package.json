@@ -16,12 +16,17 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {},
   "devDependencies": {
+    "@arxhub/di": "workspace:*",
+    "@arxhub/events": "workspace:*",
+    "@arxhub/logger": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs-node": "workspace:*",
     "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {

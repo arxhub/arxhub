@@ -6,8 +6,9 @@ import { contentUrlOf } from './ops/content-url'
 import { canOpenExternally, openExternally } from './ops/open-externally'
 import { readRange } from './ops/read-range'
 import { renameEntry } from './ops/rename'
+import { watchTree } from './ops/watch-tree'
 import { ScopedFileSystem } from './scoped-file-system'
-import type { VfsChange, VfsWatcher } from './vfs-watcher'
+import type { VfsChange, VfsChangeListener, VfsWatcher } from './vfs-watcher'
 import type { VirtualEntry } from './virtual-entry'
 import type { DeleteOptions, FileHead, VirtualFileSystem } from './virtual-file-system'
 
@@ -78,6 +79,14 @@ export class ObservedFileSystem extends GenericVirtualFileSystem implements Rena
 
   canOpenExternally(): boolean {
     return canOpenExternally(this.inner)
+  }
+
+  // Forwards, unlike ScopedFileSystem's: this decorator does not rescope paths, so a change the inner
+  // backend reports is already in the coordinates a subscriber here expects.
+  async watchTree(prefix: string, listener: VfsChangeListener): Promise<() => void> {
+    const unwatch = await watchTree(this.inner, prefix, listener)
+    if (unwatch == null) throw illegalState('This store has no way to watch for external changes')
+    return unwatch
   }
 
   // Reported only after the inner call resolves: a write that failed changed nothing, and a watcher

@@ -1,4 +1,4 @@
-import { createReadStream, createWriteStream, type Dirent } from 'node:fs'
+import { createReadStream, createWriteStream, type Dirent, type FSWatcher, watch as watchFs } from 'node:fs'
 import fs from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { Readable, Writable } from 'node:stream'
@@ -10,14 +10,16 @@ import {
   type FileHead,
   fileNotFound,
   GenericVirtualFileSystem,
+  type NativeWatchCapable,
   type RangeCapable,
   type RenameCapable,
   resolveRange,
   scopeAccessDenied,
+  type VfsChangeListener,
   type VirtualEntry,
 } from '@arxhub/vfs'
 
-export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCapable, RangeCapable {
+export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCapable, RangeCapable, NativeWatchCapable {
   private readonly rootDir: string
   private readonly logger: Logger
 
@@ -190,5 +192,52 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
     const absDest = this.toOsPath(dest)
     await fs.mkdir(dirname(absDest), { recursive: true })
     await fs.rename(absSrc, absDest)
+  }
+
+  // Native watch (NativeWatchCapable): `recursive: true` is answered by the OS on macOS (FSEvents) and
+  // Windows (ReadDirectoryChangesW) directly, and by Node itself on Linux (inotify, walked and rewatched
+  // per subdirectory) since Node 20 — everywhere this product ships, in other words. The one platform
+  // that still refuses the option outright (an older Linux) throws synchronously from `fs.watch` rather
+  // than silently ignoring it, which is the only case this falls back for: a non-recursive watch of the
+  // root still catches every write and delete at the top level, and anything deeper is caught at the
+  // next full stat-walk instead of as it happens.
+  async watchTree(prefix: string, listener: VfsChangeListener): Promise<() => void> {
+    const absDir = this.toOsPath(prefix)
+    await fs.mkdir(absDir, { recursive: true })
+
+    const onEvent = (_event: string, filename: string | Buffer | null) => {
+      if (filename == null) return
+      const relPath = filename.toString().split(sep).join('/')
+      void this.reportNativeChange(absDir, relPath, listener)
+    }
+
+    let watcher: FSWatcher
+    try {
+      watcher = watchFs(absDir, { recursive: true }, onEvent)
+    } catch (error) {
+      this.logger.warn(`watchTree(${prefix}) recursive watch failed, falling back to a non-recursive watch of the root`, error)
+      watcher = watchFs(absDir, { recursive: false }, onEvent)
+    }
+    return () => watcher.close()
+  }
+
+  // A `rename` event fires for both a file's arrival and its departure — the only way to tell them apart
+  // is to look. A `change` event only ever fires on something that still exists, but costs nothing extra
+  // to route through the same stat. Never tries to pair a rename's two events into one — the journal
+  // this feeds treats a rename as delete + write anyway (`ObservedFileSystem.rename`), so there is
+  // nothing to gain from it here, and pairing across two independent OS events would be guesswork.
+  private async reportNativeChange(absDir: string, relativePath: string, listener: VfsChangeListener): Promise<void> {
+    const absPath = resolve(absDir, relativePath.split('/').join(sep))
+    try {
+      const stats = await fs.stat(absPath)
+      if (stats.isDirectory()) return
+      listener({ kind: 'written', pathname: relativePath })
+    } catch (error) {
+      if (isNodeError(error, 'ENOENT')) {
+        listener({ kind: 'deleted', pathname: relativePath })
+        return
+      }
+      this.logger.warn(`watchTree stat(${relativePath}) failed:`, error)
+    }
   }
 }
