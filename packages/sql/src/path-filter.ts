@@ -1,20 +1,25 @@
 import { posix } from '@arxhub/path'
 import { documentPath } from './document'
 
-// The sidecar the VFS keeps a file's own metadata in. It belongs to the file next to it and is not a
-// document of its own (FR-219).
+// The sidecar the VFS used to keep a file's hash in. It is gone (A-45) and a one-time sweep removes the
+// old ones, but a store that has not been swept yet still holds them, and none of them is a document.
 export const METADATA_FILE_SUFFIX = '.arxmeta'
 
 // What an empty folder is made of: the explorer writes it so a folder with no files still exists. Not a
 // document — it has no content and the owner never wrote it.
 export const FOLDER_MARKER_FILE = '.keep'
 
+// Finder's per-folder metadata, dropped into any folder macOS ever showed. Binary, not the owner's, and
+// it reached the index as a parse failure with a Postgres encoding error on every scan.
+export const FINDER_METADATA_FILE = '.DS_Store'
+
 // Whether a file of the content store becomes a document of the index.
 export function isIndexablePath(pathname: string, exclude: readonly string[] = []): boolean {
   const path = documentPath(pathname)
   if (path === '') return false
   if (path.endsWith(METADATA_FILE_SUFFIX)) return false
-  if (posix.basename(path) === FOLDER_MARKER_FILE) return false
+  const name = posix.basename(path)
+  if (name === FOLDER_MARKER_FILE || name === FINDER_METADATA_FILE) return false
   return !exclude.some((pattern) => matchesGlob(path, pattern))
 }
 

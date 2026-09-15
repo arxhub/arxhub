@@ -12,6 +12,8 @@ describe('isIndexablePath', () => {
     expect(isIndexablePath('notes/example.md.arxmeta')).toBe(false)
     expect(isIndexablePath('notes/.keep')).toBe(false)
     expect(isIndexablePath('.keep')).toBe(false)
+    expect(isIndexablePath('.DS_Store')).toBe(false)
+    expect(isIndexablePath('samples/.DS_Store')).toBe(false)
   })
 
   it('leaves out nothing for an empty exclude list, and the matches for a filled one', () => {
