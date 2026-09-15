@@ -30,7 +30,7 @@ function label(item: TypeRowItem): string {
            number. -->
       <span v-if="item.count > 0" class="count" aria-hidden="true">{{ item.count > 99 ? '99+' : item.count }}</span>
     </div>
-    <NavItem icon="lu:command" title="Open or switch to" @click="$emit('sheet')" />
+    <NavItem icon="lu:layout-grid" title="Open or switch to" @click="$emit('sheet')" />
   </nav>
 </template>
 

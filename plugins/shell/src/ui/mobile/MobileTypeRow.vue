@@ -50,9 +50,10 @@ function tap(item: TypeRowItem): void {
          width does not depend on how many types are open. It is the way to everything that is not on
          the screen right now: what is open elsewhere, every type with no place in the row, and the
          status block this frame has no permanent bar for.
-         The palette glyph rather than a magnifier: the magnifier belongs to the Search type, which is
-         one of the things reached through here, and one glyph answering two things is worse than an
-         unfamiliar one. -->
+         A grid rather than a magnifier: the magnifier belongs to the Search type, which is one of the
+         things reached through here, and one glyph answering two things is worse than an unfamiliar
+         one. Not the ⌘ sign either — it is a Mac key, and on a phone (or Linux, or Windows) it names
+         a keyboard the person does not have. -->
     <button
       type="button"
       class="key opener"
@@ -62,7 +63,7 @@ function tap(item: TypeRowItem): void {
       :aria-pressed="props.sheetOpen"
       @click="emit('sheet')"
     >
-      <span class="glyph"><Icon name="lu:command" :size="16" /></span>
+      <span class="glyph"><Icon name="lu:layout-grid" :size="16" /></span>
     </button>
   </nav>
 </template>
