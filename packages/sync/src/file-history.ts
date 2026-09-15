@@ -49,6 +49,11 @@ export class FileHistory {
     }
   }
 
+  // Every checkpoint THIS device recorded is reachable by walking from head, because `record()` never
+  // returns until its snapshot is linked in — it retries against whatever head actually is rather than
+  // settling for a write that landed but did not stick (see recordCheckpoint). So walking the chain
+  // linearly from the current head, as `versions()` does, is enough; there is no second chain to also
+  // check.
   async list(query: FileHistoryQuery): Promise<FileVersion[]> {
     await this.ready()
     return this.repo.exclusive(() => this.versions(query))
@@ -183,8 +188,19 @@ export class FileHistory {
     // checkpoint then wrote its new snapshot but never linked it in, silently dropping it from history
     // (a `Saved versions` list one entry short, or a version nobody can read back). There is no
     // compare-and-swap this store offers, so the fix is optimistic concurrency: read head again right
-    // before the write, and start over against whatever it now is if it moved. That turns a multi-step
-    // race into a single read-then-write one, which is what makes it rare enough in practice.
+    // before the write, and start over against whatever it now is if it moved.
+    //
+    // That recheck alone still loses checkpoints: it only catches a head that had ALREADY moved by the
+    // time this loop asked, not a second writer's own write landing in the gap between that ask and this
+    // one's `writeText()` actually taking effect (a real filesystem write, not a single atomic step —
+    // two rechecks can both see the same unmoved head and both proceed to write, and whichever lands
+    // second wins silently). So the write is followed by a read of what is actually there: if it is not
+    // OUR snapshot, we lost the race exactly like a stale recheck would have caught, and retry the same
+    // way — rebuild against whatever head now is rather than trust that a `writeText()` call which
+    // returned actually stuck. `packages/sync/src/__tests__/file-history-race.test.ts` is what a version
+    // going missing under two concurrent devices looks like without this: `list()` on either side comes
+    // back short exactly the checkpoints that lost this way, because a snapshot that was written but
+    // never linked in is not on any chain `versions()` walks (see `list()`'s contract above).
     for (;;) {
       const head = await this.repo.getHeadSnapshot()
       const previous = head.files[checkpoint.path]
@@ -217,6 +233,11 @@ export class FileHistory {
         .catch(() => null)
       if (current !== head.hash) continue
       await this.repo.getHeadFile().writeText(snapshot.hash)
+      const landed = await this.repo
+        .getHeadFile()
+        .readText()
+        .catch(() => null)
+      if (landed !== snapshot.hash) continue
       return
     }
   }
