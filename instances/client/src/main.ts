@@ -36,6 +36,8 @@ import WelcomePanel from './panels/WelcomePanel.vue'
 // far as being constructed. The policy is device-local storage on purpose — see BootPolicy.
 const policy = new BootPolicy()
 const arxhub = new ArxHub({ disabled: policy.disabled, maintenance: policy.maintenance })
+// FR-210: a problem report names the build it happened on, so the session log carries it from its first line.
+arxhub.logger.info(`ArxHub ${__APP_VERSION__}`)
 // Resolve the device identity from client-local storage (never the server VFS) and install it into the
 // signer BEFORE start(): the /vfs backend is protected, so every request must already be signed.
 // Blocks on the unlock prompt when the device is locked, or on first-run lock setup when it never has

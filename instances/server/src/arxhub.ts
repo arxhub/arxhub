@@ -42,6 +42,8 @@ export async function createArxHub({ version }: { version: string }): Promise<Ar
     disabled: readDisabledPlugins(),
     maintenance: process.env.ARXHUB_MAINTENANCE === '1',
   })
+  // FR-210: a problem report names the build it happened on, so the session log carries it from its first line.
+  arxhub.logger.info(`ArxHub server ${version}`)
   // The data root lives outside the artifact so updating the server never touches the vault.
   const dataDir = process.env.ARXHUB_DATA_DIR?.trim() || (await defaultDataDir())
   const vfs = new NodeFileSystem(dataDir, arxhub.logger)

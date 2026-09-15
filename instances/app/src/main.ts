@@ -39,6 +39,8 @@ import VaultSettingsPage from './settings/VaultSettingsPage.vue'
 // far as being constructed. The policy is device-local storage on purpose — see BootPolicy.
 const policy = new BootPolicy()
 const arxhub = new ArxHub({ disabled: policy.disabled, maintenance: policy.maintenance })
+// FR-210: a problem report names the build it happened on, so the session log carries it from its first line.
+arxhub.logger.info(`ArxHub ${__APP_VERSION__}`)
 // Resolve the device identity from client-local storage and install it into the signer before start().
 // In browser mode this signs every /vfs request; under Tauri the native fs needs no signing, but the
 // same identity still drives sync encryption/auth.
