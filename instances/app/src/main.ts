@@ -51,15 +51,19 @@ signer.install(keyring)
 
 async function createVfs(): Promise<VirtualFileSystem> {
   if (isTauri()) {
-    const { TauriFileSystem, BaseDirectory } = await import('@arxhub/vfs-tauri')
+    const { TauriFileSystem, BaseDirectory, relocateLegacyStore } = await import('@arxhub/vfs-tauri')
     const { platform } = await import('@tauri-apps/plugin-os')
     // Mobile platforms have no home directory in the desktop sense — the vault belongs to the app's
     // own data directory there. The tree layout underneath is identical, or the two devices would
     // sync into different shapes.
     const mobile = platform() === 'android' || platform() === 'ios'
-    return mobile
-      ? new TauriFileSystem('', BaseDirectory.AppData, arxhub.logger)
-      : new TauriFileSystem('ArxHub', BaseDirectory.Home, arxhub.logger)
+    if (mobile) return new TauriFileSystem('', BaseDirectory.AppData, arxhub.logger)
+    // 0.1.6 stored the vault in `~/.arxhub`; a failed move must not keep the app from booting — it
+    // comes up on a fresh store and the log says why the old one was left where it was.
+    await relocateLegacyStore('.arxhub', 'ArxHub', BaseDirectory.Home, arxhub.logger).catch((error) =>
+      arxhub.logger.error('Could not move the store from ~/.arxhub to ~/ArxHub', error),
+    )
+    return new TauriFileSystem('ArxHub', BaseDirectory.Home, arxhub.logger)
   }
   const { HttpFileSystem, VFS_NAMESPACE } = await import('@arxhub/vfs-http')
   return new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer }, arxhub.logger)

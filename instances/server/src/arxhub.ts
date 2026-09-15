@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs'
+import { rename } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { ArxHub } from '@arxhub/core'
@@ -41,7 +43,7 @@ export async function createArxHub(): Promise<ArxHub> {
     maintenance: process.env.ARXHUB_MAINTENANCE === '1',
   })
   // The data root lives outside the artifact so updating the server never touches the vault.
-  const dataDir = process.env.ARXHUB_DATA_DIR?.trim() || join(homedir(), 'ArxHub')
+  const dataDir = process.env.ARXHUB_DATA_DIR?.trim() || (await defaultDataDir())
   const vfs = new NodeFileSystem(dataDir, arxhub.logger)
 
   // Every object the sync store ever received arrived through a write that left a sidecar beside it;
@@ -87,4 +89,13 @@ export async function createArxHub(): Promise<ArxHub> {
 
   await arxhub.start()
   return arxhub
+}
+
+// 0.1.6 defaulted to `~/.arxhub`; the container always sets ARXHUB_DATA_DIR, so this only ever moves a
+// store on a machine that ran the server bare. A second boot finds nothing at the old name.
+async function defaultDataDir(): Promise<string> {
+  const legacy = join(homedir(), '.arxhub')
+  const current = join(homedir(), 'ArxHub')
+  if (existsSync(legacy) && !existsSync(current)) await rename(legacy, current)
+  return current
 }

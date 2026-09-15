@@ -30,9 +30,13 @@
     "fs:allow-exists",
     "fs:allow-watch",
     "fs:allow-unwatch",
+    "fs:allow-rename",
     {
       "identifier": "fs:scope",
       "allow": [
+        {
+          "path": "$HOME/.arxhub"
+        },
         {
           "path": "$HOME/ArxHub"
         },
