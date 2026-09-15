@@ -19,29 +19,30 @@ async function setServerUrl(app: Page, value: string): Promise<void> {
   }).toPass({ timeout: 10_000 })
 }
 
-// Reads a config file that may not exist yet — the suite shares one data dir, so a section's file
-// is present or absent depending on what ran before.
+// Reads a config file that may not exist yet — the tests in this file share one data dir (one project,
+// one stand), so a section's file is present or absent depending on what ran before.
 async function readConfig(vault: { readData(path: string): Promise<string> }, path: string): Promise<string> {
   return vault.readData(path).catch(() => '')
 }
 
 test.describe('applying settings', () => {
-  // These tests read and write the same config files in the suite's shared data dir, so running them
-  // in parallel would have each one observing the other's writes.
+  // These tests read and write the same config files in one project's data dir, so running them in
+  // parallel would have each one observing the other's writes — each project now has its own stand and
+  // its own data dir (playwright.config.ts), so this guards a project against itself, not against the
+  // other one. Runs on both desktop and mobile again for the same reason: staging is frame-agnostic
+  // (the same registry, bar and commit on both), and the one genuine frame difference (mobile files the
+  // pending-changes chip into the search sheet's status block instead of a status bar) is asserted
+  // below per-project where it applies, and separately in search-sheet.spec.ts's own territory.
   test.describe.configure({ mode: 'serial' })
 
-  // Desktop only, declared in playwright.config.ts as the mobile project's testIgnore. Staging is
-  // frame-agnostic — the same registry, bar and commit on both — but the two projects share one vault,
-  // so running this on both has them overwriting each other's config file. The one genuine frame
-  // difference (mobile files the pending-changes chip into the search sheet's status block instead of a
-  // status bar) is asserted in search-sheet.spec.ts's own territory.
   test.beforeEach(async ({ app }) => {
     await app.waitForLoadState('domcontentloaded')
   })
 
   test('collects edits from several sections and writes them all on one apply', async ({ app, vault }, testInfo) => {
-    // Per project, because both frames run this against one vault: a value the other project has
-    // already saved is no longer an edit, and the section would stage nothing.
+    // Suffixed by project even though each now has its own vault, so a value from an earlier run of
+    // this same project's stand (a retry, a prior suite run against a reused data dir) is still a fresh
+    // edit rather than a no-op stage.
     const frame = testInfo.project.name
 
     await openSettingsSection(app, 'Sync')
@@ -69,7 +70,7 @@ test.describe('applying settings', () => {
     await expect(app.getByRole('button', { name: 'Save & apply' })).toBeHidden()
 
     // Then one file off disk, to prove the commit really wrote rather than just clearing state.
-    // Only Sync: publish.spec.ts writes storage/publish/config.toml in the same shared data dir, so
+    // Only Sync: publish.spec.ts writes storage/publish/config.toml in this project's data dir too, so
     // asserting that file here would race it.
     expect(await readConfig(vault, 'storage/sync/config.toml')).toContain(`hub-${frame}.example.com`)
   })

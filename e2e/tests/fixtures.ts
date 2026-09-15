@@ -27,14 +27,18 @@ export interface Vault {
   writeData(relative: string, content: string): Promise<void>
 }
 
-function dataRoot(): string {
-  const dir = process.env.ARXHUB_E2E_DATA_DIR
-  if (!dir) throw new Error('ARXHUB_E2E_DATA_DIR is unset — playwright.config.ts should have exported it')
+// Each project drives its own stand and its own data dir (playwright.config.ts), keyed by project name
+// because a worker process serves exactly one project — never a single shared `ARXHUB_E2E_DATA_DIR`,
+// which is what let the two projects' repo stores race each other.
+function dataRoot(testInfo: TestInfo): string {
+  const envKey = `ARXHUB_E2E_DATA_DIR_${testInfo.project.name.toUpperCase()}`
+  const dir = process.env[envKey]
+  if (!dir) throw new Error(`${envKey} is unset — playwright.config.ts should have exported it`)
   return dir
 }
 
-function vaultRoot(): string {
-  return join(dataRoot(), 'vault')
+function vaultRoot(testInfo: TestInfo): string {
+  return join(dataRoot(testInfo), 'vault')
 }
 
 export const test = base.extend<{ app: Page; vault: Vault }>({
@@ -49,24 +53,24 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
     const vault: Vault = {
       async write(relative, content) {
         const path = `${prefix}--${relative}`
-        const full = join(vaultRoot(), path)
+        const full = join(vaultRoot(testInfo), path)
         mkdirSync(dirname(full), { recursive: true })
         writeFileSync(full, content)
         return path
       },
       async read(relative) {
-        return readFileSync(join(vaultRoot(), relative), 'utf8')
+        return readFileSync(join(vaultRoot(testInfo), relative), 'utf8')
       },
       async readData(relative) {
-        return readFileSync(join(dataRoot(), relative), 'utf8')
+        return readFileSync(join(dataRoot(testInfo), relative), 'utf8')
       },
       async writeData(relative, content) {
-        const full = join(dataRoot(), relative)
+        const full = join(dataRoot(testInfo), relative)
         mkdirSync(dirname(full), { recursive: true })
         writeFileSync(full, content)
       },
       async remove(relative) {
-        rmSync(join(vaultRoot(), relative), { force: true })
+        rmSync(join(vaultRoot(testInfo), relative), { force: true })
       },
     }
     await use(vault)

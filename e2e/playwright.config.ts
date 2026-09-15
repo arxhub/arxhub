@@ -9,34 +9,60 @@ import { defineConfig, devices } from '@playwright/test'
 const WEB_PORT = Number(process.env.ARXHUB_E2E_WEB_PORT ?? 3100)
 const API_PORT = Number(process.env.ARXHUB_E2E_API_PORT ?? 3101)
 
-// A throwaway vault per run. The stand persists the TOFU pin of the first key that reaches it, so
-// pointing it at the real ~/ArxHub would unpair the developer's actual devices.
-// Each worker re-loads this config, so creating the directory unconditionally would give every
-// worker its own — and the vault fixture would write where the stand is not looking. The runner
-// creates it once and workers inherit the path through the environment.
-const dataDir = process.env.ARXHUB_E2E_DATA_DIR ?? mkdtempSync(join(tmpdir(), 'arxhub-e2e-'))
-process.env.ARXHUB_E2E_DATA_DIR = dataDir
+// Two stands, not one. They used to share a single dev server and a single vault, which meant every
+// worker of both Playwright projects wrote through one repo store with no compare-and-swap on the
+// history head — orphaned checkpoints and timeouts above two workers, and the residual flakiness
+// below that (see forge-wiki/planning/worklog/2026-09-15.md, the evening entries). A project is the
+// right unit of isolation, not a worker: the two frames are already separate runs of the whole suite,
+// so each gets its own port pair and its own throwaway data dir, and workers within a project are free
+// to share it exactly as before (one worker per project still applies the same repo-store rule the
+// comment below the workers setting used to state for the single stand).
+//
+// Ports: mobile is the desktop pair plus 10 (3110/3111 by default) — one scheme, extend it the same
+// way if a third project is ever added.
+interface Stand {
+  webPort: number
+  apiPort: number
+  dataDir: string
+}
+
+function makeStand(project: 'desktop' | 'mobile', offset: number): Stand {
+  const webPort = WEB_PORT + offset
+  const apiPort = API_PORT + offset
+  // Each worker re-loads this config, so creating the directory unconditionally would give every
+  // worker its own — and the vault fixture would write where the stand is not looking. The runner
+  // creates it once per project and workers inherit the path through the environment (below), keyed
+  // by project name since a worker process only ever serves one project.
+  const envKey = `ARXHUB_E2E_DATA_DIR_${project.toUpperCase()}`
+  const dataDir = process.env[envKey] ?? mkdtempSync(join(tmpdir(), `arxhub-e2e-${project}-`))
+  process.env[envKey] = dataDir
+  return { webPort, apiPort, dataDir }
+}
+
+const desktopStand = makeStand('desktop', 0)
+const mobileStand = makeStand('mobile', 10)
 
 export default defineConfig({
   testDir: './tests',
-  // Boots the app once per frame before any test, so the dev server's dependency pre-bundling settles
-  // while nothing is on screen to lose. See global-setup.ts — a re-optimization mid-run reloads every
-  // connected page at once, and a test asserting at that moment reports the app as never having come up.
+  // Boots the app once per project's own stand before any test, so each dev server's dependency
+  // pre-bundling settles while nothing is on screen to lose. See global-setup.ts — a re-optimization
+  // mid-run reloads every connected page at once, and a test asserting at that moment reports the app
+  // as never having come up.
   globalSetup: './global-setup.ts',
   fullyParallel: true,
-  // Every worker drives the SAME stand and the same vault (one data dir per run, see globalSetup), so
-  // parallelism here is contention on one repo store, not throughput: the history specs write the
-  // repo head through a store with no compare-and-swap, and from four workers up they orphan each
-  // other's checkpoints and time out; at two the whole suite is clean, measured twice. Not a per-spec
-  // setting — the sharing is the suite's, and so is the cap. Speed comes back when each worker gets
-  // its own store, not from raising this.
-  workers: 2,
+  // The two PROJECTS no longer share a repo store, so they no longer contend with each other — but
+  // Playwright's worker pool is shared across projects (nothing pins a fixed number of workers to
+  // each), and within ONE project the tests still write through that project's own single repo store
+  // with no compare-and-swap on the history head. So the original limit still applies, just scoped
+  // down to a project instead of the whole run: each project caps itself at 2 (below), which is what
+  // measured clean before this change and still does. The total here is what lets both projects' 2
+  // run at the same time — raise it only alongside the per-project caps, and only by measuring.
+  workers: 4,
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? 'list' : [['list'], ['html', { open: 'never' }]],
 
   use: {
-    baseURL: `http://localhost:${WEB_PORT}`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -46,35 +72,40 @@ export default defineConfig({
   // other — never the project name, because which frame mounted is the app's decision and re-deriving
   // it here would be a second copy of that rule.
   //
-  // testIgnore is for the other reason a spec runs once: not the frame, but the stand. The two projects
-  // share one vault, so a spec that writes a config file the whole app reads cannot run twice over it.
-  // Naming those files here rather than skipping inside them also stops the run from booting a page per
-  // test only to throw it away.
+  // Each project sets its own baseURL because webServer is an array below — Playwright does not infer
+  // one from a port in that shape (see the webServer doc comment on TestConfigWebServer).
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    {
-      name: 'mobile',
-      use: { ...devices['Pixel 7'] },
-      // The active theme is one shared setting, and the settings specs stage and apply plugin config
-      // files. Neither has anything to do with the frame; both would race the desktop project.
-      testIgnore: ['**/themes.spec.ts', '**/settings-save.spec.ts', '**/publish-settings.spec.ts'],
-    },
+    // workers: 2 per project — see the top-level workers comment. This is the per-project repo-store
+    // limit the whole run used to need; splitting the stand did not remove it, only made it local to
+    // one project's store instead of shared by both.
+    { name: 'desktop', workers: 2, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${desktopStand.webPort}` } },
+    { name: 'mobile', workers: 2, use: { ...devices['Pixel 7'], baseURL: `http://localhost:${mobileStand.webPort}` } },
   ],
 
-  webServer: {
-    // --force: the optimizer cache is shared with whatever the developer has been running, and a run
-    // that starts from a partial one discovers the rest mid-suite (see global-setup.ts). A run of its
-    // own gets a scan of its own, the same reasoning as the throwaway data dir and the private ports.
-    command: `pnpm --filter @arxhub/dev exec vite --port ${WEB_PORT} --strictPort --force`,
-    url: `http://localhost:${WEB_PORT}`,
-    cwd: '..',
-    reuseExistingServer: false,
-    timeout: 120_000,
-    stdout: 'pipe',
-    stderr: 'pipe',
-    // ARXHUB_FROZEN_STAND: no file watching, no HMR. The source does not change during a run, and a
-    // stand that reloads every page when it does is the difference between a suite and an editing
-    // session — see instances/dev/vite.config.ts.
-    env: { ARXHUB_DATA_DIR: dataDir, ARXHUB_PORT: String(API_PORT), ARXHUB_FROZEN_STAND: '1' },
-  },
+  webServer: [
+    {
+      command: `pnpm --filter @arxhub/dev exec vite --port ${desktopStand.webPort} --strictPort --force`,
+      url: `http://localhost:${desktopStand.webPort}`,
+      cwd: '..',
+      reuseExistingServer: false,
+      timeout: 120_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      // ARXHUB_FROZEN_STAND: no file watching, no HMR. The source does not change during a run, and a
+      // stand that reloads every page when it does is the difference between a suite and an editing
+      // session — see instances/dev/vite.config.ts. --force above gives each stand its own dependency
+      // scan, the same reasoning as its own throwaway data dir and its own ports.
+      env: { ARXHUB_DATA_DIR: desktopStand.dataDir, ARXHUB_PORT: String(desktopStand.apiPort), ARXHUB_FROZEN_STAND: '1' },
+    },
+    {
+      command: `pnpm --filter @arxhub/dev exec vite --port ${mobileStand.webPort} --strictPort --force`,
+      url: `http://localhost:${mobileStand.webPort}`,
+      cwd: '..',
+      reuseExistingServer: false,
+      timeout: 120_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: { ARXHUB_DATA_DIR: mobileStand.dataDir, ARXHUB_PORT: String(mobileStand.apiPort), ARXHUB_FROZEN_STAND: '1' },
+    },
+  ],
 })

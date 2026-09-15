@@ -24,9 +24,9 @@ test.describe('keeping the tree in order', () => {
     //
     // Polled on the parsed seed, not on the file existing: the write goes over HTTP and the file is on disk
     // before its bytes are, so a read that only waited for the name came back empty and the parse died with
-    // "Unexpected end of JSON input". Nothing deletes it afterwards either — the name is the app's own, so
-    // both projects create the same untitled.arx in the one vault, and a cleanup here removes the file the
-    // other project is still reading. Each run gets its own temp vault, so there is nothing to tidy up for.
+    // "Unexpected end of JSON input". Nothing deletes it afterwards either — the name is the app's own, and
+    // each project gets its own temp vault, so there is nothing else that could be reading the same
+    // untitled.arx for a cleanup here to race.
     await expect.poll(() => vault.read('untitled.arx').then(parseOrNull, () => null)).toMatchObject({ version: 1, doc: { type: 'doc' } })
   })
 

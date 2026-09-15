@@ -6,10 +6,11 @@ const bg = () => getComputedStyle(document.documentElement).getPropertyValue('--
 const danger = () => getComputedStyle(document.documentElement).getPropertyValue('--danger-2').trim()
 const scheme = () => getComputedStyle(document.documentElement).colorScheme
 
-// The active theme is one setting in one shared config, so these cannot run beside each other — nor
-// beside the same file on the other project. Theme selection has nothing to do with the frame, so this
-// file runs on the desktop project alone (playwright.config.ts, the mobile project's testIgnore) and
-// serially within it, instead of being made frame-aware.
+// The active theme is one setting in one config file, so these tests within a single project cannot
+// run beside each other — `fullyParallel` would otherwise hand different tests of this file to
+// different workers of the same project even though the file is one describe block. Each project now
+// has its own stand and its own config file (playwright.config.ts), so this file runs on both desktop
+// and mobile again; serial only guards a project against itself.
 test.describe.configure({ mode: 'serial' })
 
 test.describe('themes', () => {

@@ -235,9 +235,9 @@ test.describe('finding a note by a word in its text', () => {
   // VaultWatcher → IndexQueue → Indexer — so an app that quietly stopped observing the vault left every
   // other test in this file green. There is no reload between the save and the search below, deliberately.
   test('a note saved in the editor is found without a reload, and gone once deleted', async ({ app, vault }) => {
-    // The two projects share one vault, and this test DELETES what it seeded: a path both would write and
-    // one would remove is a race, so the frame's own name goes into the file names. The word may be shared
-    // — every assertion below names a path, so the other frame's copy is never an answer to this one.
+    // Each project has its own vault now, but this test still DELETES what it seeded, and the suite runs
+    // fully parallel within a project — the frame's own name still keeps this run's paths apart from
+    // whatever else this project's workers are writing at the same moment.
     const frame = test.info().project.name
     // A second note that carries the word from the start. It is what tells a list that lost the deleted
     // note apart from a search that stopped answering at all.

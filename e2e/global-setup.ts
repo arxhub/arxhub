@@ -1,6 +1,14 @@
 import { chromium, devices, type FullConfig } from '@playwright/test'
 import { IDENTITY_KEY, SEEDED_MNEMONIC } from './tests/fixtures'
 
+// Keyed by project name (playwright.config.ts), not re-derived from the project's `use`: `use` there
+// is the full merged test-options object (baseURL, trace, screenshot, …), most of which
+// `newContext()` does not accept — only the device shape does.
+const DEVICE_BY_PROJECT: Record<string, (typeof devices)[string]> = {
+  desktop: devices['Desktop Chrome'],
+  mobile: devices['Pixel 7'],
+}
+
 // Boots the app once in each frame before a single test runs.
 //
 // The stand is a Vite dev server, and Vite pre-bundles a dependency the first time something asks for
@@ -19,14 +27,16 @@ import { IDENTITY_KEY, SEEDED_MNEMONIC } from './tests/fixtures'
 // server that has already settled. This is a property of the stand, not of the app: the same reload
 // hits a developer the first time they open a note, and there it is what a dev server is for.
 export default async function warmUpTheStand(config: FullConfig): Promise<void> {
-  const baseURL = config.projects.map((it) => it.use.baseURL).find((it) => it != null)
-  if (baseURL == null) throw new Error('No baseURL in the config — the warm-up has no stand to reach')
-
   const browser = await chromium.launch()
   try {
-    // Both frames, because each imports its own shell and pulls its own half of the graph: warming one
-    // would leave the other's first import for whichever test gets there first.
-    for (const device of [devices['Desktop Chrome'], devices['Pixel 7']]) {
+    // Every project, because each is now its own stand: warming one project's server would leave the
+    // other's dependency graph for whichever test gets there first.
+    for (const project of config.projects) {
+      const baseURL = project.use.baseURL
+      if (baseURL == null) throw new Error(`No baseURL for project "${project.name}" — the warm-up has no stand to reach`)
+      const device = DEVICE_BY_PROJECT[project.name]
+      if (device == null) throw new Error(`No device mapping for project "${project.name}" — add one above`)
+
       const context = await browser.newContext(device)
       const page = await context.newPage()
       // The same identity the suite speaks with. Not optional: the stand pins the first key it sees
