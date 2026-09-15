@@ -6,6 +6,7 @@ import type { Logger } from '@arxhub/core'
 import { isNodeError } from '@arxhub/errors'
 import { normalizePath } from '@arxhub/path'
 import {
+  type CompareAndSwapCapable,
   type DeleteOptions,
   type FileHead,
   fileNotFound,
@@ -14,12 +15,22 @@ import {
   type RangeCapable,
   type RenameCapable,
   resolveRange,
+  sameBytes,
   scopeAccessDenied,
   type VfsChangeListener,
   type VirtualEntry,
 } from '@arxhub/vfs'
+import AsyncLock from 'async-lock'
 
-export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCapable, RangeCapable, NativeWatchCapable {
+// ONE lock for the whole process, keyed by the resolved absolute path — deliberately not the
+// per-instance lock GenericVirtualFileSystem carries. Two NodeFileSystem instances over one directory
+// (the server's root VFS and a ScopedFileSystem over it resolve to one instance, but a test harness or a
+// second component opening the same directory does not) share nothing but the disk, and an instance
+// lock would let both pass the compare. Two OS processes over one directory are out of scope: this
+// product runs one server per store, and a file lock across processes is a different mechanism.
+const swapLocks = new AsyncLock()
+
+export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCapable, RangeCapable, NativeWatchCapable, CompareAndSwapCapable {
   private readonly rootDir: string
   private readonly logger: Logger
 
@@ -192,6 +203,27 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
     const absDest = this.toOsPath(dest)
     await fs.mkdir(dirname(absDest), { recursive: true })
     await fs.rename(absSrc, absDest)
+  }
+
+  // Native compare-and-swap (CompareAndSwapCapable): read-compare-write under the PROCESS-wide lock
+  // above, so every instance in this process that resolves to the same file takes turns. Reads with
+  // fs.readFile directly rather than this.read(): that one logs a warning and turns every failure into
+  // FileNotFound, while "absent" is an expected answer here and any other error must surface.
+  async compareAndSwap(pathname: string, expected: Uint8Array | null, next: Uint8Array): Promise<boolean> {
+    const filePath = this.toOsPath(pathname)
+    return swapLocks.acquire(filePath, async () => {
+      let current: Uint8Array | null
+      try {
+        current = await fs.readFile(filePath)
+      } catch (e) {
+        if (!isNodeError(e, 'ENOENT')) throw e
+        current = null
+      }
+      if (!sameBytes(current, expected)) return false
+      await fs.mkdir(dirname(filePath), { recursive: true })
+      await fs.writeFile(filePath, next)
+      return true
+    })
   }
 
   // Native watch (NativeWatchCapable): `recursive: true` is answered by the OS on macOS (FSEvents) and
