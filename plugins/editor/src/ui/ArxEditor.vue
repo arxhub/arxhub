@@ -438,6 +438,11 @@ async function save() {
   if (mode.value === 'readonly' && savedEdits.value === edits.value) return
   try {
     await autosave.flush()
+    // flush() can join a run that was already in flight — it captured the doc as it stood when
+    // that run started, which an edit made since (a keystroke, a paste) is not part of. The same
+    // staleness beforeClose() loops around below: keep flushing until an edit made up to this call
+    // has actually reached storage, rather than reporting success for a save that missed it.
+    while (view.value && canSave.value && savedEdits.value !== edits.value) await autosave.flush()
   } catch {
     // doSave has already reported the error; event handlers must not leak a rejected promise.
   }
