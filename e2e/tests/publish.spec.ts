@@ -1,4 +1,4 @@
-import { confirmPublish, expect, openNavigation, test } from './fixtures'
+import { confirmPublish, expect, openNavigation, publishTest as test } from './fixtures'
 
 // UJ-13 end to end: the owner marks a note published, and a reader with no identity opens it.
 // The dev stand is both the app and the publish server, so the origin under test is its own.

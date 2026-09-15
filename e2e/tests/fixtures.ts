@@ -102,6 +102,42 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
   },
 })
 
+// The publishing tests of ONE project share one public store, one set of published roots and one config
+// file on the stand. A republish from one page rebuilds the manifest for everyone, a roll back serves an
+// older one, and a settings test clears the very address the others seeded — so two of them in flight at
+// once each watch the other's note vanish. This hands the store to one test at a time, per project (each
+// project has its own data dir, so the two frames never wait on each other). A mkdir is atomic on every
+// filesystem, which is what makes it the lock; the dir is throwaway per run, so a stale one cannot outlive it.
+export const publishTest = test.extend<{ publishStore: undefined }>({
+  publishStore: [
+    // biome-ignore lint/correctness/noEmptyPattern: Playwright's fixture signature requires the deps arg
+    async ({}, use, testInfo) => {
+      const lock = join(dataRoot(testInfo), 'publish.e2e-lock')
+      const started = Date.now()
+      const deadline = started + 180_000
+      for (;;) {
+        try {
+          mkdirSync(lock)
+          break
+        } catch (error) {
+          const code = (error as NodeJS.ErrnoException).code
+          if (code !== 'EEXIST' || Date.now() > deadline) throw error
+          await new Promise((resolve) => setTimeout(resolve, 250))
+        }
+      }
+      // The wait is the queue's, not this test's: three files take the store in turn, and the last in line
+      // would otherwise spend its whole budget in this fixture and time out before its first step.
+      testInfo.setTimeout(testInfo.timeout + (Date.now() - started))
+      try {
+        await use(undefined)
+      } finally {
+        rmSync(lock, { recursive: true, force: true })
+      }
+    },
+    { auto: true },
+  ],
+})
+
 // ---------------------------------------------------------------------------------------------
 // Is the app there, and if not, why not
 // ---------------------------------------------------------------------------------------------

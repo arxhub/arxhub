@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, openNavigation, openSettingsSection, openType, test } from './fixtures'
+import { expect, openNavigation, openSettingsSection, openType, publishTest as test } from './fixtures'
 
 // Same retry shape as settings-save.spec.ts's setServerUrl: a settings page rebinds its field when its
 // file read lands, so a fast fill can race it.
@@ -18,11 +18,13 @@ async function setServerUrl(app: Page, value: string): Promise<void> {
 // tree's context menu is the affordance that proves it (registerNodeActions only offers Publish/
 // Republish/Copy link/Unpublish while PublishExtension.enabled, i.e. while a publisher exists).
 //
-// Desktop only and excluded from the mobile project in playwright.config.ts, for the same reason as
-// settings-save.spec.ts: this writes storage/publish/config.toml in the suite's one shared data dir,
-// and publish.spec.ts writes the same file — running both projects over it would race.
+// Runs under publishTest: this writes storage/publish/config.toml in the project's data dir, and the other
+// publishing specs seed the same file — so the three take the project's publish store in turn.
 test('saving a server URL turns on Publish; clearing it turns it off — both without a reload', async ({ app, vault, baseURL }, testInfo) => {
   const path = await vault.write(`${testInfo.project.name}-live-publish.arx`, JSON.stringify({ version: 1, doc: { type: 'doc', content: [] } }))
+  // Off to begin with, on purpose: the other publishing specs seed an address into this same file and
+  // leave it there, and this test's first claim is what the tree offers while there is none.
+  await vault.writeData('storage/publish/config.toml', 'serverUrl = ""\n')
   await app.reload()
 
   await openNavigation(app)
