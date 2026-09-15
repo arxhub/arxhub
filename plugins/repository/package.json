@@ -1,0 +1,52 @@
+{
+  "name": "@arxhub/plugin-repository",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "The local repository: manifest chain, chunk store, checkout index and file history — essential, sync-independent",
+  "keywords": [
+    "arxhub"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./ui": "./src/ui.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@arxhub/config": "workspace:*",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs-node": "workspace:*",
+    "@sinclair/typebox": "catalog:shared",
+    "@types/node": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/path": "workspace:*",
+    "@arxhub/plugin-notes": "workspace:*",
+    "@arxhub/plugin-protection": "workspace:*",
+    "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/sync": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      }
+    }
+  }
+}

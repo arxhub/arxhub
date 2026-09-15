@@ -330,6 +330,9 @@ importers:
       '@arxhub/plugin-publish':
         specifier: workspace:*
         version: link:../../plugins/publish
+      '@arxhub/plugin-repository':
+        specifier: workspace:*
+        version: link:../../plugins/repository
       '@arxhub/plugin-search':
         specifier: workspace:*
         version: link:../../plugins/search
@@ -463,6 +466,9 @@ importers:
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../../plugins/protection
+      '@arxhub/plugin-repository':
+        specifier: workspace:*
+        version: link:../../plugins/repository
       '@arxhub/plugin-search':
         specifier: workspace:*
         version: link:../../plugins/search
@@ -578,6 +584,9 @@ importers:
       '@arxhub/plugin-publish':
         specifier: workspace:*
         version: link:../../plugins/publish
+      '@arxhub/plugin-repository':
+        specifier: workspace:*
+        version: link:../../plugins/repository
       '@arxhub/plugin-search':
         specifier: workspace:*
         version: link:../../plugins/search
@@ -1386,15 +1395,15 @@ importers:
       '@arxhub/plugin-publish':
         specifier: workspace:*
         version: link:../publish
+      '@arxhub/plugin-repository':
+        specifier: workspace:*
+        version: link:../repository
       '@arxhub/plugin-search':
         specifier: workspace:*
         version: link:../search
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell
-      '@arxhub/plugin-sync':
-        specifier: workspace:*
-        version: link:../sync
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../../packages/stdlib
@@ -1489,12 +1498,12 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
+      '@arxhub/plugin-repository':
+        specifier: workspace:*
+        version: link:../repository
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell
-      '@arxhub/plugin-sync':
-        specifier: workspace:*
-        version: link:../sync
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
@@ -1948,6 +1957,58 @@ importers:
         specifier: catalog:toolchain
         version: 25.6.0
 
+  plugins/repository:
+    dependencies:
+      '@arxhub/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@arxhub/path':
+        specifier: workspace:*
+        version: link:../../packages/path
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../notes
+      '@arxhub/plugin-protection':
+        specifier: workspace:*
+        version: link:../protection
+      '@arxhub/plugin-settings':
+        specifier: workspace:*
+        version: link:../settings
+      '@arxhub/sync':
+        specifier: workspace:*
+        version: link:../../packages/sync
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@arxhub/vfs-node':
+        specifier: workspace:*
+        version: link:../../packages/vfs-node
+      '@sinclair/typebox':
+        specifier: catalog:shared
+        version: 0.34.48
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+
   plugins/search:
     dependencies:
       '@arxhub/config':
@@ -2155,33 +2216,24 @@ importers:
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../../packages/errors
-      '@arxhub/path':
-        specifier: workspace:*
-        version: link:../../packages/path
-      '@arxhub/plugin-notes':
-        specifier: workspace:*
-        version: link:../notes
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../protection
+      '@arxhub/plugin-repository':
+        specifier: workspace:*
+        version: link:../repository
       '@arxhub/plugin-settings':
         specifier: workspace:*
         version: link:../settings
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell
-      '@arxhub/plugin-vfs':
-        specifier: workspace:*
-        version: link:../vfs
       '@arxhub/sync':
         specifier: workspace:*
         version: link:../../packages/sync
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
-      '@arxhub/vfs':
-        specifier: workspace:*
-        version: link:../../packages/vfs
       vue:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)
