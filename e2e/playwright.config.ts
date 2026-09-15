@@ -25,10 +25,12 @@ export default defineConfig({
   globalSetup: './global-setup.ts',
   fullyParallel: true,
   // Every worker drives the SAME stand and the same vault (one data dir per run, see globalSetup), so
-  // parallelism here is contention on one repo store, not throughput: at a dozen workers the history
-  // specs race each other's head writes and time out; at four the run is as fast as the stand allows
-  // and clean. Not a per-spec setting — the sharing is the suite's, and so is the cap.
-  workers: 4,
+  // parallelism here is contention on one repo store, not throughput: the history specs write the
+  // repo head through a store with no compare-and-swap, and from four workers up they orphan each
+  // other's checkpoints and time out; at two the whole suite is clean, measured twice. Not a per-spec
+  // setting — the sharing is the suite's, and so is the cap. Speed comes back when each worker gets
+  // its own store, not from raising this.
+  workers: 2,
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? 'list' : [['list'], ['html', { open: 'never' }]],
