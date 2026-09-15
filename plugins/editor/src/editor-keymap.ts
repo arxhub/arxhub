@@ -47,6 +47,7 @@ export function buildKeymap(schema: Schema): Record<string, Command> {
     keys['Mod-Alt-3'] = setBlockType(schema.nodes.heading, { level: 3 })
   }
 
+  const historyChords = new Set(['Mod-z', 'Mod-Shift-z', 'Mod-y'])
   keys['Mod-z'] = undo
   keys['Mod-Shift-z'] = redo
   keys['Mod-y'] = redo
@@ -68,10 +69,18 @@ export function buildKeymap(schema: Schema): Record<string, Command> {
     keys['Shift-Tab'] = chainCommands(goToNextCell(-1), keys['Shift-Tab'])
   }
 
+  // History is the one thing interactive mode may still do: a ticked box or a picked value is a change
+  // of its own, and undoing it is the same kind of change. The mode's transaction filter decides what
+  // an undo may restore (`onlyControlValuesChanged`) — a step that would bring text back is refused
+  // there, not here — so the keymap only has to keep the chords out of readonly.
   return Object.fromEntries(
     Object.entries(keys).map(([chord, command]) => [
       chord,
-      ((state, dispatch, view) => editorMode(state) === 'editable' && command(state, dispatch, view)) satisfies Command,
+      ((state, dispatch, view) => {
+        const mode = editorMode(state)
+        const allowed = mode === 'editable' || (mode === 'interactive' && historyChords.has(chord))
+        return allowed && command(state, dispatch, view)
+      }) satisfies Command,
     ]),
   )
 }

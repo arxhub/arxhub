@@ -36,8 +36,10 @@ async function selectMode(value: EditorMode) {
   })
 }
 
+// Undo and redo are offered in interactive mode too: a value change is undoable there, and the mode's
+// own transaction filter refuses a step that would bring text back (see editor-keymap.ts).
 function cmd(command: Command) {
-  if (!props.view || !props.canSave || mode.value !== 'editable') return
+  if (!props.view || !props.canSave || mode.value === 'readonly') return
   command(props.view.state, props.view.dispatch)
   props.view.focus()
 }
@@ -48,7 +50,7 @@ function cmd(command: Command) {
     <template #trigger><IconButton icon="lu:ellipsis" tooltip="Document tools" :title="`Editor mode: ${modeLabel}`" /></template>
     <MenuItem v-for="item in modes" :key="item.value" :value="item.value" :disabled="busy" :title="item.description" :aria-current="mode === item.value ? 'true' : undefined" @select="selectMode(item.value)">{{ item.label }}</MenuItem>
     <MenuItem v-if="mode !== 'readonly'" value="save" :disabled="!canSave" @select="onSave?.()">Save</MenuItem>
-    <MenuItem v-for="action in HISTORY" v-show="mode === 'editable'" :key="action.label" :value="action.label" :disabled="!canSave || !view || !action.run(view.state)" @select="cmd(action.run)">{{ action.label }}</MenuItem>
+    <MenuItem v-for="action in HISTORY" v-show="mode !== 'readonly'" :key="action.label" :value="action.label" :disabled="!canSave || !view || !action.run(view.state)" @select="cmd(action.run)">{{ action.label }}</MenuItem>
     <MenuItem value="find" :disabled="!canSave" @select="emit('find')">Find in document</MenuItem>
     <MenuItem value="outline" :disabled="!canSave" @select="emit('outline')">Document outline</MenuItem>
     <MenuItem v-if="links" value="backlinks" :disabled="!canSave" @select="emit('backlinks')">Backlinks</MenuItem>
