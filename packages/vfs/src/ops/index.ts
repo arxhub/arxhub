@@ -1,4 +1,5 @@
 export * from './append'
 export * from './content-url'
+export * from './open-externally'
 export * from './read-range'
 export * from './rename'

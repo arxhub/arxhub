@@ -1,7 +1,9 @@
+import { illegalState } from '@arxhub/errors'
 import { isRenameCapable, type RenameCapable } from './capabilities/rename'
 import { GenericVirtualFileSystem } from './generic-virtual-file-system'
 import { appendEntry } from './ops/append'
 import { contentUrlOf } from './ops/content-url'
+import { canOpenExternally, openExternally } from './ops/open-externally'
 import { readRange } from './ops/read-range'
 import { renameEntry } from './ops/rename'
 import { ScopedFileSystem } from './scoped-file-system'
@@ -64,6 +66,18 @@ export class ObservedFileSystem extends GenericVirtualFileSystem implements Rena
 
   async contentUrl(pathname: string): Promise<string | null> {
     return contentUrlOf(this.inner, pathname)
+  }
+
+  // Same reasoning as ScopedFileSystem: re-dispatch through the op so the real backend is asked, and
+  // throw rather than silently succeed when it turns out not to be capable after all.
+  async openExternally(pathname: string): Promise<void> {
+    if (!(await openExternally(this.inner, pathname))) {
+      throw illegalState('This store has no way to open a file externally')
+    }
+  }
+
+  canOpenExternally(): boolean {
+    return canOpenExternally(this.inner)
   }
 
   // Reported only after the inner call resolves: a write that failed changed nothing, and a watcher

@@ -1224,6 +1224,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@arxhub/path':
         specifier: workspace:*
         version: link:../path
@@ -1236,13 +1239,13 @@ importers:
       '@tauri-apps/plugin-fs':
         specifier: catalog:tauri
         version: 2.5.0
+      '@tauri-apps/plugin-opener':
+        specifier: catalog:tauri
+        version: 2.5.3
       async-lock:
         specifier: catalog:shared
         version: 1.4.1
     devDependencies:
-      '@arxhub/errors':
-        specifier: workspace:*
-        version: link:../errors
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig

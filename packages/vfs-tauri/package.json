@@ -22,13 +22,14 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/errors": "workspace:*",
     "@arxhub/path": "workspace:*",
     "@tauri-apps/api": "catalog:tauri",
     "@tauri-apps/plugin-fs": "catalog:tauri",
+    "@tauri-apps/plugin-opener": "catalog:tauri",
     "async-lock": "catalog:shared"
   },
   "devDependencies": {
-    "@arxhub/errors": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
     "@arxhub/vfs": "workspace:*",

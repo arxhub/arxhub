@@ -1,8 +1,10 @@
+import { illegalState } from '@arxhub/errors'
 import { normalizePath, posix } from '@arxhub/path'
 import { scopeAccessDenied } from './errors'
 import { GenericVirtualFileSystem } from './generic-virtual-file-system'
 import { appendEntry } from './ops/append'
 import { contentUrlOf } from './ops/content-url'
+import { canOpenExternally, openExternally } from './ops/open-externally'
 import { readRange } from './ops/read-range'
 import type { VirtualEntry } from './virtual-entry'
 import type { DeleteOptions, FileHead, VirtualFileSystem } from './virtual-file-system'
@@ -62,6 +64,22 @@ export class ScopedFileSystem extends GenericVirtualFileSystem {
 
   async contentUrl(pathname: string): Promise<string | null> {
     return contentUrlOf(this.inner, this.resolve(pathname))
+  }
+
+  // Same shape as `contentUrl`: translate, then re-dispatch through the op so the backend that is
+  // actually the disk is the one asked. Unlike `contentUrl` there is no null to hand back — a caller that
+  // reaches this without checking `canOpenExternally` first (the intended order) gets a thrown refusal
+  // rather than a silent no-op that would let the outer op report success for nothing.
+  async openExternally(pathname: string): Promise<void> {
+    if (!(await openExternally(this.inner, this.resolve(pathname)))) {
+      throw illegalState('This store has no way to open a file externally')
+    }
+  }
+
+  // `canOpenExternally` has no path to resolve — it asks the inner backend directly, which is what lets
+  // a scoped vault view over a browser backend answer "no" synchronously, before any await.
+  canOpenExternally(): boolean {
+    return canOpenExternally(this.inner)
   }
 
   override async write(pathname: string, content: Uint8Array): Promise<void> {

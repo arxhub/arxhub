@@ -1,4 +1,5 @@
 import type { Logger } from '@arxhub/core'
+import { illegalState } from '@arxhub/errors'
 import { normalizePath } from '@arxhub/path'
 import {
   type ContentUrlCapable,
@@ -6,6 +7,7 @@ import {
   type FileHead,
   fileNotFound,
   GenericVirtualFileSystem,
+  type OpenExternallyCapable,
   type RangeCapable,
   resolveRange,
   type VirtualEntry,
@@ -13,6 +15,7 @@ import {
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { appDataDir, homeDir, join as joinPath } from '@tauri-apps/api/path'
 import { BaseDirectory, mkdir, open, exists as pathExists, readDir, readFile, remove, SeekMode, stat, writeFile } from '@tauri-apps/plugin-fs'
+import { openPath } from '@tauri-apps/plugin-opener'
 
 // The directory a path sits in, or '' at the root. Not `posix.dirname` — that answers '.' for a bare
 // name, which `mkdir` would then create as a literal directory called '.'.
@@ -21,7 +24,7 @@ function parentOf(pathname: string): string {
   return cut <= 0 ? '' : pathname.slice(0, cut)
 }
 
-export class TauriFileSystem extends GenericVirtualFileSystem implements RangeCapable, ContentUrlCapable {
+export class TauriFileSystem extends GenericVirtualFileSystem implements RangeCapable, ContentUrlCapable, OpenExternallyCapable {
   private readonly baseDir: BaseDirectory
   private readonly basePath: string
   private readonly logger: Logger
@@ -98,14 +101,37 @@ export class TauriFileSystem extends GenericVirtualFileSystem implements RangeCa
     }
   }
 
+  // The absolute path of `pathname` in this store, or null when it sits under a base directory the app
+  // never mounts a store under (there is nothing for `contentUrl` or `openExternally` to resolve to).
+  private async absolutePath(pathname: string): Promise<string | null> {
+    const root = this.baseDir === BaseDirectory.AppData ? await appDataDir() : this.baseDir === BaseDirectory.Home ? await homeDir() : null
+    if (root == null) return null
+    return joinPath(root, this.fullPath(pathname))
+  }
+
   // A URL the webview loads straight from disk through the asset protocol, which answers `Range` on the
   // Rust side — so a `<video>` seeks without a byte of it passing through JS. The protocol's scope
   // (tauri.conf.json → app.security.assetProtocol) has to cover the store's directory; the two base
-  // directories below are the two the app instance mounts a store under.
+  // directories `absolutePath` resolves are the two the app instance mounts a store under.
   async contentUrl(pathname: string): Promise<string | null> {
-    const root = this.baseDir === BaseDirectory.AppData ? await appDataDir() : this.baseDir === BaseDirectory.Home ? await homeDir() : null
-    if (root == null) return null
-    return convertFileSrc(await joinPath(root, this.fullPath(pathname)))
+    const absolute = await this.absolutePath(pathname)
+    return absolute == null ? null : convertFileSrc(absolute)
+  }
+
+  // Hands the file to whatever the OS has registered for it — the SketchUp-file case: a vault file that
+  // is edited by its own native application, not by us. `openPath` is Tauri's own opener plugin (already
+  // registered in the app's Rust side, capability `opener:allow-open-path`); it needs the real absolute
+  // path, exactly the one `contentUrl` resolves.
+  async openExternally(pathname: string): Promise<void> {
+    const absolute = await this.absolutePath(pathname)
+    if (absolute == null) throw illegalState('This store has no path the system can open')
+    await openPath(absolute)
+  }
+
+  // Known synchronously from the base directory alone — the same two stores `absolutePath` can resolve —
+  // so a UI can decide whether to show the action without waiting on a promise.
+  canOpenExternally(): boolean {
+    return this.baseDir === BaseDirectory.AppData || this.baseDir === BaseDirectory.Home
   }
 
   async readable(pathname: string): Promise<ReadableStream<Uint8Array>> {
