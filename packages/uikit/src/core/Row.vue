@@ -52,6 +52,10 @@ const indent = computed(() => ({ paddingLeft: `calc(8px + ${props.depth} * var(-
   gap: 8px;
   width: 100%;
   height: var(--size-2xs);
+  /* A row's height is its role, not a suggestion: inside a flex column that runs out of room (the
+     mobile settings nav once it had eight sections) the browser would otherwise shave a pixel or two
+     off every row instead of letting the column scroll — 46px where the token says 48. */
+  flex-shrink: 0;
   padding-right: 8px;
   border: none;
   border-radius: var(--radius-xs);
