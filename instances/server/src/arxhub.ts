@@ -41,7 +41,7 @@ export async function createArxHub(): Promise<ArxHub> {
     maintenance: process.env.ARXHUB_MAINTENANCE === '1',
   })
   // The data root lives outside the artifact so updating the server never touches the vault.
-  const dataDir = process.env.ARXHUB_DATA_DIR?.trim() || join(homedir(), '.arxhub')
+  const dataDir = process.env.ARXHUB_DATA_DIR?.trim() || join(homedir(), 'ArxHub')
   const vfs = new NodeFileSystem(dataDir, arxhub.logger)
 
   // Every object the sync store ever received arrived through a write that left a sidecar beside it;

@@ -28,8 +28,8 @@ import { TauriFileSystem } from '../tauri-file-system'
 
 describe('TauriFileSystem.contentUrl', () => {
   test('a store under the home directory resolves through the asset protocol', async () => {
-    const fs = new TauriFileSystem('.arxhub', BaseDirectory.Home, new ConsoleLogger())
-    expect(await contentUrlOf(fs, 'vault/clip.mp4')).toBe(`asset://localhost/${encodeURIComponent('/Users/me/.arxhub/vault/clip.mp4')}`)
+    const fs = new TauriFileSystem('ArxHub', BaseDirectory.Home, new ConsoleLogger())
+    expect(await contentUrlOf(fs, 'vault/clip.mp4')).toBe(`asset://localhost/${encodeURIComponent('/Users/me/ArxHub/vault/clip.mp4')}`)
   })
 
   test('a store under app data resolves too', async () => {

@@ -58,7 +58,7 @@ async function createVfs(): Promise<VirtualFileSystem> {
     const mobile = platform() === 'android' || platform() === 'ios'
     return mobile
       ? new TauriFileSystem('', BaseDirectory.AppData, arxhub.logger)
-      : new TauriFileSystem('.arxhub', BaseDirectory.Home, arxhub.logger)
+      : new TauriFileSystem('ArxHub', BaseDirectory.Home, arxhub.logger)
   }
   const { HttpFileSystem, VFS_NAMESPACE } = await import('@arxhub/vfs-http')
   return new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer }, arxhub.logger)

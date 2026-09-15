@@ -10,7 +10,7 @@ const WEB_PORT = Number(process.env.ARXHUB_E2E_WEB_PORT ?? 3100)
 const API_PORT = Number(process.env.ARXHUB_E2E_API_PORT ?? 3101)
 
 // A throwaway vault per run. The stand persists the TOFU pin of the first key that reaches it, so
-// pointing it at the real ~/.arxhub would unpair the developer's actual devices.
+// pointing it at the real ~/ArxHub would unpair the developer's actual devices.
 // Each worker re-loads this config, so creating the directory unconditionally would give every
 // worker its own — and the vault fixture would write where the stand is not looking. The runner
 // creates it once and workers inherit the path through the environment.

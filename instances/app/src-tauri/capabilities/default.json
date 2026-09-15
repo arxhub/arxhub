@@ -20,19 +20,19 @@
       "identifier": "fs:scope",
       "allow": [
         {
-          "path": "$HOME/.arxhub"
+          "path": "$HOME/ArxHub"
         },
         {
-          "path": "$HOME/.arxhub/*"
+          "path": "$HOME/ArxHub/*"
         },
         {
-          "path": "$HOME/.arxhub/**"
+          "path": "$HOME/ArxHub/**"
         },
         {
-          "path": "$HOME/.arxhub/.*"
+          "path": "$HOME/ArxHub/.*"
         },
         {
-          "path": "$HOME/.arxhub/**/.*"
+          "path": "$HOME/ArxHub/**/.*"
         },
         {
           "path": "$APPDATA"

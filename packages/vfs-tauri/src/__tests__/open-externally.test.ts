@@ -33,9 +33,9 @@ import { TauriFileSystem } from '../tauri-file-system'
 
 describe('TauriFileSystem.openExternally', () => {
   test('a store under the home directory opens the right absolute path', async () => {
-    const fs = new TauriFileSystem('.arxhub', BaseDirectory.Home, new ConsoleLogger())
+    const fs = new TauriFileSystem('ArxHub', BaseDirectory.Home, new ConsoleLogger())
     expect(await openExternally(fs, 'vault/model.skp')).toBe(true)
-    expect(openPath).toHaveBeenCalledWith('/Users/me/.arxhub/vault/model.skp')
+    expect(openPath).toHaveBeenCalledWith('/Users/me/ArxHub/vault/model.skp')
   })
 
   test('a store under app data opens too', async () => {
