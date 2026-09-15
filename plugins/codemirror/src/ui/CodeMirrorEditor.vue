@@ -12,6 +12,7 @@ import { EditorState, Prec } from '@codemirror/state'
 import { keymap } from '@codemirror/view'
 import { basicSetup, EditorView } from 'codemirror'
 import { computed, onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
+import { findOccurrence } from '../document-reveal'
 import { editorTheme } from '../editor-theme'
 import { CODEMIRROR_LAYER } from '../hotkeys'
 import { insertLink, toggleBold, toggleInlineCode, toggleItalic } from '../markdown-commands'
@@ -113,12 +114,13 @@ const {
   },
 })
 
+// Markdown carries no block identity (A-29) — `anchor.blockId` is an `.arx` thing and never set here —
+// so the only address a hit can give is the text itself and which occurrence of it this is.
 function reveal(anchor: BlockAnchor): boolean {
   const current = view.value
   if (current == null) return false
   const text = current.state.doc.toString()
-  let from = text.indexOf(anchor.text)
-  if (from < 0) from = text.toLowerCase().indexOf(anchor.text.toLowerCase())
+  const from = findOccurrence(text, anchor.text, anchor.skip ?? 0)
   if (from < 0) return false
   current.dispatch({ selection: { anchor: from, head: from + anchor.text.length }, scrollIntoView: true })
   requestAnimationFrame(() => current.focus())

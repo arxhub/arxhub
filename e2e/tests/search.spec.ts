@@ -360,4 +360,99 @@ test.describe('finding a note by a word in its text', () => {
     expect(narrowed).toBeGreaterThan(0)
     expect(narrowed).toBeLessThan(broad)
   })
+
+  // 2026-09-12 worklog: a search hit is a BLOCK, and the same sentence can sit in a note twice — opening
+  // the SECOND hit used to land on the first occurrence every time, because the opener carried only the
+  // matched text. An `.arx` block carries its own stable id (block-identity.ts), so the index gives the
+  // opener that id and the editor jumps to the exact block rather than guessing by text.
+  test('opening the second hit on a repeated .arx block lands on that block, not the first', async ({ app, vault }) => {
+    test.skip(await isMobileFrame(app), 'the block is asserted by its DOM identity; covered on desktop only')
+
+    const path = await vault.write(
+      'росомаха.arx',
+      JSON.stringify({
+        version: 1,
+        doc: {
+          type: 'doc',
+          content: [
+            { type: 'paragraph', attrs: { arxId: 'filler-a' }, content: [{ type: 'text', text: 'Первый филлер.' }] },
+            { type: 'paragraph', attrs: { arxId: 'росомаха-one' }, content: [{ type: 'text', text: 'росомаха бежит по снегу' }] },
+            { type: 'paragraph', attrs: { arxId: 'filler-b' }, content: [{ type: 'text', text: 'Средний филлер.' }] },
+            { type: 'paragraph', attrs: { arxId: 'росомаха-two' }, content: [{ type: 'text', text: 'росомаха бежит по снегу' }] },
+          ],
+        },
+      }),
+    )
+    await app.reload()
+
+    await openSearch(app)
+    await searchFor(app, 'росомаха', new RegExp(path))
+
+    const hits = results(app).getByRole('option').filter({ hasText: 'росомаха бежит по снегу' })
+    await expect(hits).toHaveCount(2)
+    await hits.nth(1).click()
+
+    const editor = app.locator('.ProseMirror:visible')
+    await expect(editor).toContainText('росомаха бежит по снегу')
+    // Both blocks read the same, so only the id tells them apart — this is the second one, `росомаха-two`.
+    await expect
+      .poll(() =>
+        editor.evaluate(() => {
+          const node = window.getSelection()?.anchorNode
+          const el = node instanceof Element ? node : node?.parentElement
+          return el?.closest('[data-arx-id]')?.getAttribute('data-arx-id') ?? null
+        }),
+      )
+      .toBe('росомаха-two')
+
+    // The first hit still lands on the first one — the pair is not simply always resolving to the last.
+    await openSearch(app)
+    await searchFor(app, 'росомаха', new RegExp(path))
+    await results(app).getByRole('option').filter({ hasText: 'росомаха бежит по снегу' }).first().click()
+    await expect
+      .poll(() =>
+        editor.evaluate(() => {
+          const node = window.getSelection()?.anchorNode
+          const el = node instanceof Element ? node : node?.parentElement
+          return el?.closest('[data-arx-id]')?.getAttribute('data-arx-id') ?? null
+        }),
+      )
+      .toBe('росомаха-one')
+  })
+
+  // Markdown carries no block identity (A-29): the same fix reads instead as "how many identical lines
+  // came before this one", computed at index time and read by the CodeMirror reveal as an occurrence.
+  test('opening the second hit on a repeated markdown line lands on that line, not the first', async ({ app, vault }) => {
+    test.skip(await isMobileFrame(app), 'the line is asserted by DOM order; covered on desktop only')
+
+    const path = await vault.write(
+      'выхухоль.md',
+      ['# Список', '', 'Первый филлер.', '', 'выхухоль встречается тут.', '', 'Средний филлер.', '', 'выхухоль встречается тут.'].join('\n'),
+    )
+    await app.reload()
+
+    await openSearch(app)
+    await searchFor(app, 'выхухоль', new RegExp(path))
+
+    const hits = results(app).getByRole('option').filter({ hasText: 'выхухоль встречается тут.' })
+    await expect(hits).toHaveCount(2)
+    await hits.nth(1).click()
+
+    const cm = app.locator('.cm-content:visible')
+    await expect(cm).toContainText('выхухоль встречается тут.')
+    // Both lines read the same, so this asks which of the two DOM lines carrying that text holds the
+    // caret — the second, since the second hit was the one clicked.
+    await expect
+      .poll(() =>
+        cm.evaluate((root) => {
+          const sel = root.ownerDocument.getSelection()
+          const node = sel?.anchorNode
+          const el = node instanceof Element ? node : node?.parentElement
+          const line = el?.closest('.cm-line') ?? null
+          const matches = [...root.querySelectorAll('.cm-line')].filter((candidate) => candidate.textContent === 'выхухоль встречается тут.')
+          return line != null && line === matches[1]
+        }),
+      )
+      .toBe(true)
+  })
 })

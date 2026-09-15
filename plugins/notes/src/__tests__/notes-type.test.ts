@@ -10,6 +10,30 @@ describe('the address of a place inside a note', () => {
     expect(blockAnchorOf({ text: 'invoice', skip: 2 })).toEqual({ text: 'invoice', skip: 2 })
   })
 
+  // A search hit on an `.arx` block carries the block's own stable id — the precise address, ahead of
+  // the text it merely fell back to.
+  test('keeps the block and document ids, alongside the text', () => {
+    expect(blockAnchorOf({ text: 'invoice', blockId: 'b1', documentId: 'd1', skip: 2 })).toEqual({
+      text: 'invoice',
+      skip: 2,
+      blockId: 'b1',
+      documentId: 'd1',
+    })
+  })
+
+  test('an empty text is still a valid anchor once a block id names the place', () => {
+    expect(blockAnchorOf({ text: '', blockId: 'b1' })).toEqual({ text: '', blockId: 'b1' })
+  })
+
+  test.each([
+    ['a blockId that is not a string', { text: 'invoice', blockId: 7 }, { text: 'invoice' }],
+    ['a blank blockId', { text: 'invoice', blockId: '' }, { text: 'invoice' }],
+    ['a documentId that is not a string', { text: 'invoice', documentId: 7 }, { text: 'invoice' }],
+    ['a blank documentId', { text: 'invoice', documentId: '' }, { text: 'invoice' }],
+  ])('%s is dropped, and the rest of the anchor still stands', (_name, value, expected) => {
+    expect(blockAnchorOf(value as never)).toEqual(expected)
+  })
+
   // What arrives is data, not an instruction: the address comes from the index or from a saved link,
   // and a malformed field must not cost the opening of the object.
   test.each([

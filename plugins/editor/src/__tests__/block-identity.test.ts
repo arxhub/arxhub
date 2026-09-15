@@ -37,15 +37,24 @@ describe('stable block identities', () => {
     expect(state.doc.firstChild?.attrs.arxId).toBe(original.attrs.arxId)
   })
 
-  it('resolves an edited block by identity and does not jump to matching text when that block is deleted', () => {
+  it('resolves an edited block by identity, ahead of its now-stale text', () => {
     let state = EditorState.create({ doc: doc(), plugins: [blockIdentityPlugin()] })
     const anchor = documentBlocks(state.doc)[0].anchor
     state = state.applyTransaction(state.tr.insertText('Updated', 1, 9)).state
     expect(revealBlock(state.doc, anchor)?.from).toBe(1)
     expect(state.doc.textContent).toBe('Updated')
     expect(documentTarget('source.arx', documentHref('target.arx', anchor))?.anchor).toEqual(anchor)
-    const different = doc()
-    expect(revealBlock(different, anchor)).toBeNull()
     expect(deserialize(schema, serialize(state.doc)).eq(state.doc)).toBe(true)
+  })
+
+  // The id names a block that used to exist and no longer does — the document was reloaded, or the
+  // block a search hit came from was deleted since the index last saw it. Rather than reporting no
+  // place at all, the anchor's own text is still worth a look: it survives exactly the edits that cost
+  // the id its block.
+  it('falls back to the anchor text once the named id is nowhere in the document', () => {
+    const anchor = documentBlocks(doc())[0].anchor
+    const reloaded = doc()
+    expect(revealBlock(reloaded, anchor)?.from).toBe(1)
+    expect(revealBlock(reloaded, { ...anchor, text: 'Nothing like it' })).toBeNull()
   })
 })

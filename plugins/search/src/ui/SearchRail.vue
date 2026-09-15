@@ -138,7 +138,13 @@ function enterList(): void {
 
 function openEntry(entry: ResultEntry): void {
   const text = entry.snippet == null ? undefined : snippetSegments(entry.snippet.text).find((part) => part.match)?.text
-  workspace.open(entry.path, text)
+  // The block the snippet came from, when the index has one to give: the `.arx` block's own id ahead of
+  // everything else, the occurrence of a repeated markdown line as the fallback.
+  workspace.open(entry.path, {
+    text,
+    blockId: entry.snippet?.arxId ?? undefined,
+    occurrence: entry.snippet?.occurrence,
+  })
 }
 
 function openSelected(): void {

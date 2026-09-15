@@ -40,4 +40,4 @@ export {
 export { parseConsoleQuery, SQL_CONSOLE_EXAMPLE, SQL_CONSOLE_QUERY_KEY, useConsoleQuery } from './ui/sql-console-state'
 export { type IndexStatusView, useIndexStatus } from './ui/use-index-status'
 export { type OpenConsole, useOpenConsole } from './ui/use-open-console'
-export { type OpenDocument, useOpenDocument } from './ui/use-open-document'
+export { type OpenAt, type OpenDocument, useOpenDocument } from './ui/use-open-document'

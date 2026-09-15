@@ -96,14 +96,16 @@ export function revealBlock(doc: Node, anchor: BlockAnchor): Selection | null {
   if (anchor.blockId) {
     let found: Selection | null = null
     doc.descendants((node, pos) => {
-      if (node.attrs.arxId === anchor.blockId)
+      if (found == null && node.attrs.arxId === anchor.blockId)
         found = node.isTextblock
           ? TextSelection.create(doc, pos + 1, pos + node.nodeSize - 1)
           : NodeSelection.isSelectable(node)
             ? NodeSelection.create(doc, pos)
             : Selection.near(doc.resolve(pos))
     })
-    return found
+    // The id is gone — the block it named was deleted since the anchor was made. Fall through to the
+    // text below rather than reporting no match at all: the words are very likely still somewhere.
+    if (found != null) return found
   }
   if (!anchor.text) return null
   const matches = findDocumentMatches(doc, anchor.text)

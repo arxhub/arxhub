@@ -1,6 +1,14 @@
+import { Schema } from 'prosemirror-model'
 import { describe, expect, it } from 'vitest'
+import { identityNodes } from '../block-identity'
 import { documentBlocks, documentHref, documentTarget, revealBlock } from '../document-links'
 import { schema } from '../editor-schema'
+
+// `editor-schema.ts`'s own schema carries no `arxId` attribute — that comes from `identityNodes`,
+// applied once over the composed schema in `editor-extension.ts`. A test that wants a block id has to
+// build a schema the same way, or the attribute is silently dropped and `node.attrs.arxId` reads
+// `undefined` for every node.
+const idSchema = new Schema({ nodes: identityNodes(schema.spec.nodes), marks: schema.spec.marks })
 
 describe('document destinations', () => {
   it('roundtrips names and anchors without confusing path separators or fragments', () => {
@@ -24,5 +32,20 @@ describe('document destinations', () => {
     const changed = schema.node('doc', null, [paragraph('Inserted'), paragraph('Repeated'), paragraph('Repeated')])
     expect(revealBlock(changed, blocks[1].anchor)?.from).toBe(21)
     expect(revealBlock(changed, { text: 'Missing' })).toBeNull()
+  })
+
+  it('jumps straight to a block by id, ahead of any text match', () => {
+    const doc = idSchema.node('doc', null, [
+      idSchema.node('paragraph', { arxId: 'a1' }, idSchema.text('First')),
+      idSchema.node('paragraph', { arxId: 'a2' }, idSchema.text('Second')),
+    ])
+    // Text alone would land on the first paragraph; the id names the second one precisely.
+    expect(revealBlock(doc, { text: 'irrelevant', blockId: 'a2' })?.from).toBe(8)
+  })
+
+  it('falls back to the text when the named block was deleted since the anchor was made', () => {
+    const paragraph = (text: string, id?: string) => idSchema.node('paragraph', id ? { arxId: id } : null, idSchema.text(text))
+    const doc = idSchema.node('doc', null, [paragraph('Gone', 'was-here'), paragraph('Target text')])
+    expect(revealBlock(doc, { text: 'Target text', blockId: 'no-longer-there' })?.from).toBe(7)
   })
 })
