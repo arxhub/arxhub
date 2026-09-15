@@ -3,23 +3,28 @@ import { illegalState } from '@arxhub/errors'
 import { basename } from '@arxhub/path'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
-import { type ShallowRef, shallowRef } from 'vue'
+import { ref, type ShallowRef, shallowRef } from 'vue'
 import { publicUrl } from './public-url'
 import type { PublicationRecord } from './publish-history'
 import type { Publisher } from './publisher'
+import { type ReportFailures, reportFailures } from './report'
 import { type ArxNode, arxAssetPaths, arxMarkdown, arxReader } from './server/arx-reader'
 import { contentTypeFor } from './server/content-type'
 
 // Local export uses the same reader without requiring a configured public server.
 export class PublishExtension extends Extension {
-  private current: Publisher | null = null
-  // The origin published content is readable from — the same server the publisher uploads to.
-  serverUrl = ''
+  // Refs behind plain-looking accessors: the Publications page reads `enabled` and `serverUrl` through a
+  // `computed`, and a config save rebuilds the publisher while that page is on screen.
+  private readonly current = shallowRef<Publisher | null>(null)
+  private readonly origin = ref('')
   // What the Publisher knows, as something a page can render: the published roots and the head commits,
   // newest first. Refreshed after every operation that goes through here, and whenever the publisher is
   // (re)built — the Publisher itself is plain state, and a `computed` over it would answer once.
   readonly roots: ShallowRef<string[]> = shallowRef([])
   readonly history: ShallowRef<PublicationRecord[]> = shallowRef([])
+  // How a click-started action reports its failure. The plugin swaps in its own so the log names it; this
+  // default keeps a page honest even before that happens.
+  run: ReportFailures = reportFailures(this.logger)
   readFile: ((path: string) => Promise<Uint8Array>) | null = null
   beforeRead: ((path: string) => Promise<boolean>) | null = null
   normalizeArx: ((raw: string) => string) | null = null
@@ -165,12 +170,21 @@ export class PublishExtension extends Extension {
     return publicUrl(path, this.serverUrl)
   }
 
+  // The origin published content is readable from — the same server the publisher uploads to.
+  get serverUrl(): string {
+    return this.origin.value
+  }
+
+  set serverUrl(value: string) {
+    this.origin.value = value
+  }
+
   get publisher(): Publisher | null {
-    return this.current
+    return this.current.value
   }
 
   set publisher(value: Publisher | null) {
-    this.current = value
+    this.current.value = value
     this.refresh()
   }
 
@@ -196,16 +210,17 @@ export class PublishExtension extends Extension {
 
   // Refreshed in a finally: a failed publish already put the roots back, and the page has to show that too.
   private async operate(action: (publisher: Publisher) => Promise<void>): Promise<void> {
-    if (this.current == null) throw illegalState('Publishing is not configured — set the server URL and identity in Settings')
+    const publisher = this.current.value
+    if (publisher == null) throw illegalState('Publishing is not configured — set the server URL and identity in Settings')
     try {
-      await action(this.current)
+      await action(publisher)
     } finally {
       this.refresh()
     }
   }
 
   private refresh(): void {
-    this.roots.value = this.current?.list() ?? []
-    this.history.value = this.current?.history() ?? []
+    this.roots.value = this.current.value?.list() ?? []
+    this.history.value = this.current.value?.history() ?? []
   }
 }

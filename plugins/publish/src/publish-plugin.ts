@@ -6,16 +6,21 @@ import { ExplorerExtension } from '@arxhub/plugin-explorer/ui'
 import { NotesExtension } from '@arxhub/plugin-notes/ui'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
+import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { HttpSyncRemote } from '@arxhub/sync'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs } from '@arxhub/vfs'
 import { type Static, Type } from '@sinclair/typebox'
+import { markRaw } from 'vue'
+import { PUBLISH_TYPE_ID } from './contributions'
 import { manifest } from './manifest'
 import { PUBLISH_NAMESPACE } from './namespace'
 import { PublishExtension } from './publish-extension'
 import { DEFAULT_HISTORY_LIMIT } from './publish-history'
 import { Publisher } from './publisher'
+import { reportFailures } from './report'
+import PublicationsPage from './ui/PublicationsPage.vue'
 
 export const PublishConfigSchema = Type.Object(
   {
@@ -61,17 +66,26 @@ export class PublishPlugin extends Plugin {
     ctx.extensions.register(PublishExtension, () => ({}))
   }
 
-  // Publishing registers NO tab type on `shell.types`, and that is a decision, not an omission (A-33): the
-  // mobile prototype declares a «Публикация» type and this plugin deliberately does not. A type is a place
-  // with objects of its own and a view for them, and publishing has neither — it is something done TO a note
-  // that already belongs to another type, so its whole surface is the tree actions below plus one settings
-  // section. A key in the type row that opens an empty panel is worse than no key at all.
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
 
     const config = ctx.services.get(PluginConfig)
     const settings = ctx.extensions.get(SettingsExtension)
     settings.register({ id: 'publish', title: 'Publishing', schema: PublishConfigSchema, order: 11, config })
+
+    // A-33 first said no type here: publishing is something done TO a note that belongs to another type,
+    // and a key opening an empty panel is worse than no key. The premise changed with the history (F-12): a
+    // set of publications IS a set of objects — the roots and the journal — with a view of its own. Unpinned,
+    // like Search and Logs, so it still holds no permanent key in the row; the sheet's "Open new" is the way
+    // in. Publishing itself stays in the tree (below) — this is where the owner sees what is public.
+    ctx.extensions.get(ShellExtension).types.register({
+      id: PUBLISH_TYPE_ID,
+      icon: 'lu:globe',
+      title: 'Publications',
+      order: 20,
+      pinned: false,
+      content: markRaw(PublicationsPage),
+    })
 
     // The server address applies without a restart: every write of THIS section rebuilds the remote
     // (or tears it down when serverUrl is cleared) the same way start() builds it the first time.
@@ -81,14 +95,10 @@ export class PublishPlugin extends Plugin {
     publish.readFile = (path) => ctx.services.get(VaultVfs).read(path)
     publish.beforeRead = (path) => ctx.extensions.get(NotesExtension).beforeClose(path)
     const explorer = ctx.extensions.get(ExplorerExtension)
-    // Menu invokers don't await onSelect, so failures are logged here instead of surfacing as
-    // unhandled rejections (same policy as the explorer's own actions).
-    const run = (action: Promise<void>, context: string): void => {
-      action.catch((error) => {
-        this.logger.error({ error: error instanceof Error ? error.message : String(error) }, `${context} failed`)
-        toaster.create({ title: `Could not ${context}`, description: String(error), type: 'error' })
-      })
-    }
+    // One reporter for the tree actions and the Publications page, so a failure reads the same wherever the
+    // click came from and lands in this plugin's log.
+    const run = reportFailures(this.logger)
+    publish.run = run
     explorer.registerNodeActions((node) => {
       const path = node.entry.pathname
       const exports = node.entry.kind === 'file' ? publish.documentActions(path) : []

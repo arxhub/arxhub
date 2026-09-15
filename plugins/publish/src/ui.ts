@@ -1,3 +1,4 @@
+export * from './contributions'
 export * from './publish-extension'
 export * from './publish-history'
 export * from './publish-manifest'
