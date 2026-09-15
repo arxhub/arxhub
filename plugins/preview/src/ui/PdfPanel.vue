@@ -10,7 +10,7 @@ import {
   type PDFDocumentProxy,
   RenderingCancelledException,
   type RenderTask,
-} from 'pdfjs-dist'
+} from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { formatBytes } from '../media'
 import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, MAX_ZOOM, MIN_ZOOM, stepZoom } from '../pdf'
@@ -18,7 +18,12 @@ import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, MAX_ZOOM,
 // pdf.js parses off the main thread. Vite recognises `new URL(specifier, import.meta.url)` and resolves
 // it to the built worker asset — a plain relative path here would resolve against this .vue file's own
 // URL instead of the worker's, which is the one thing pdf.js cannot fall back from.
-GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
+//
+// The `legacy` build, on both sides, not the default one: pdf.js 5.7 reaches for
+// `Map.prototype.getOrInsertComputed`, which WKWebView (Safari 18 — the desktop app on macOS, and every
+// iOS webview) does not have yet; Chromium does, which is why the e2e never saw it. The legacy build
+// carries the polyfills, and the worker runs in the same engine as the page.
+GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url).toString()
 
 const props = defineProps<{ path: string }>()
 
@@ -140,7 +145,9 @@ async function renderPage(index: number, canvas: HTMLCanvasElement) {
     if (activeRenders.get(index) === task) activeRenders.delete(index)
   } catch (cause) {
     if (current === ticket && !(cause instanceof RenderingCancelledException)) {
-      arxhub.logger.error(`[preview] could not render page ${index} of ${props.path}`, cause)
+      // The message is in the line itself: the webview relays only the first argument of a console error,
+      // and 'could not render' without the reason is a report nobody can act on.
+      arxhub.logger.error(`[preview] could not render page ${index} of ${props.path}: ${cause instanceof Error ? cause.message : String(cause)}`, cause)
     }
   }
 }
