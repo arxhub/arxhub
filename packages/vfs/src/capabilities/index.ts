@@ -1,4 +1,5 @@
 export * from './append'
+export * from './compare-and-swap'
 export * from './content-url'
 export * from './native-watch'
 export * from './open-externally'

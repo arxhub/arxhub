@@ -3,6 +3,7 @@ import { normalizePath, posix } from '@arxhub/path'
 import { scopeAccessDenied } from './errors'
 import { GenericVirtualFileSystem } from './generic-virtual-file-system'
 import { appendEntry } from './ops/append'
+import { compareAndSwap } from './ops/compare-and-swap'
 import { contentUrlOf } from './ops/content-url'
 import { canOpenExternally, openExternally } from './ops/open-externally'
 import { readRange } from './ops/read-range'
@@ -109,6 +110,14 @@ export class ScopedFileSystem extends GenericVirtualFileSystem {
   // a scoped view (a plugin's home) itself append-capable.
   async append(pathname: string, content: Uint8Array): Promise<void> {
     return appendEntry(this.inner, this.resolve(pathname), content)
+  }
+
+  // The repository store IS a scoped view over the root, so this is the one forward that decides
+  // whether the head's compare-and-swap reaches the backend's own (process-wide on Node, the server's
+  // over HTTP) or silently degrades to the per-instance fallback. Same shape as `append`: translate,
+  // then re-dispatch through the op.
+  async compareAndSwap(pathname: string, expected: Uint8Array | null, next: Uint8Array): Promise<boolean> {
+    return compareAndSwap(this.inner, this.resolve(pathname), expected, next)
   }
 
   override async writable(pathname: string): Promise<WritableStream<Uint8Array>> {

@@ -2,6 +2,7 @@ import { illegalState } from '@arxhub/errors'
 import { isRenameCapable, type RenameCapable } from './capabilities/rename'
 import { GenericVirtualFileSystem } from './generic-virtual-file-system'
 import { appendEntry } from './ops/append'
+import { compareAndSwap } from './ops/compare-and-swap'
 import { contentUrlOf } from './ops/content-url'
 import { canOpenExternally, openExternally } from './ops/open-externally'
 import { readRange } from './ops/read-range'
@@ -102,6 +103,14 @@ export class ObservedFileSystem extends GenericVirtualFileSystem implements Rena
   async append(pathname: string, content: Uint8Array): Promise<void> {
     await appendEntry(this.inner, pathname, content)
     this.notify({ kind: 'written', pathname })
+  }
+
+  // A refused swap changed nothing, so only a landed one is reported — the same rule `write` follows
+  // for a write that failed.
+  async compareAndSwap(pathname: string, expected: Uint8Array | null, next: Uint8Array): Promise<boolean> {
+    const swapped = await compareAndSwap(this.inner, pathname, expected, next)
+    if (swapped) this.notify({ kind: 'written', pathname })
+    return swapped
   }
 
   override async writable(pathname: string): Promise<WritableStream<Uint8Array>> {
