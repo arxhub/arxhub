@@ -5,10 +5,12 @@ import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { stableStringify } from '@arxhub/stdlib/record/stable-stringify'
 import { Chunker, type SnapshotFile, type SyncRemote } from '@arxhub/sync'
 import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
+import { appendHistory, historyLimit, type PublicationKind, type PublicationRecord, sanitizeHistory } from './publish-history'
 import type { PublishManifest } from './publish-manifest'
 import { arxAssetPaths, arxReader } from './server/arx-reader'
 
 const ROOTS_FILE = '/published.json'
+const HISTORY_FILE = '/history.json'
 const STAT_BATCH = 512
 const PUT_BATCH_BYTES = 16 * 1024 * 1024
 
@@ -27,6 +29,8 @@ export type PublisherOptions = {
   logger: Logger
   render?: (raw: string, path: string) => { html: string; status: number }
   beforeRead?: (path: string) => Promise<boolean>
+  // How many head commits history.json remembers (`history.limit` in the plugin's config).
+  historyLimit?: number
 }
 
 // Publishes vault content as an UNENCRYPTED, content-addressed public site: each file is Rabin-
@@ -35,13 +39,19 @@ export type PublisherOptions = {
 // reassembles a whole file from the manifest; .arx gets a read-only page and a source download.
 // Publishing DELIBERATELY takes the selected subtree out of E2E:
 // that is the feature. Chunking means republishing only uploads changed chunks.
+//
+// Every head commit is also written down in history.json, newest first, and any entry can be made the
+// head again: objects are never deleted from the public store, so an old manifest still resolves, and a
+// rollback is nothing more than the same compare-and-swap pointed backwards plus that entry's root set.
 export class Publisher {
   private readonly vault: VirtualFileSystem
   private readonly storage: VirtualFileSystem
   private readonly remote: SyncRemote
   private readonly logger: Logger
   private readonly chunker = new Chunker()
+  private readonly historyLimit: number
   private roots = new Set<string>()
+  private records: PublicationRecord[] = []
   private pending: Promise<void> = Promise.resolve()
   private readonly render: (raw: string, path: string) => { html: string; status: number }
   private readonly beforeRead?: (path: string) => Promise<boolean>
@@ -53,11 +63,13 @@ export class Publisher {
     this.logger = options.logger
     this.render = options.render ?? ((raw, path) => arxReader(raw, path))
     this.beforeRead = options.beforeRead
+    this.historyLimit = historyLimit(options.historyLimit)
   }
 
   async load(): Promise<void> {
     const roots = await this.storage.file(ROOTS_FILE).readJSON<string[]>([])
     this.roots = new Set(roots)
+    this.records = sanitizeHistory(await this.storage.file(HISTORY_FILE).readJSON<unknown>([]))
   }
 
   isPublished(path: string): boolean {
@@ -72,21 +84,53 @@ export class Publisher {
     return [...this.roots]
   }
 
+  // Newest first. The first entry is the head as far as this record knows.
+  history(): PublicationRecord[] {
+    return [...this.records]
+  }
+
   publish(path: string): Promise<void> {
-    return this.changeRoots((roots) => roots.add(path), `Published ${path}`)
+    return this.changeRoots((roots) => roots.add(path), 'publish', `Published ${path}`)
   }
 
   unpublish(path: string): Promise<void> {
-    return this.changeRoots((roots) => {
-      for (const root of roots) if (root === path || root.startsWith(`${path}/`)) roots.delete(root)
-    }, `Unpublished ${path}`)
+    return this.changeRoots(
+      (roots) => {
+        for (const root of roots) if (root === path || root.startsWith(`${path}/`)) roots.delete(root)
+      },
+      'unpublish',
+      `Unpublished ${path}`,
+    )
   }
 
-  private changeRoots(change: (roots: Set<string>) => void, message: string): Promise<void> {
+  // Make a remembered manifest the head again. No retry, unlike a publish: the head having moved means
+  // the history this device chose from is no longer the whole story, so the person looks again first.
+  rollback(hash: string): Promise<void> {
+    const operation = this.pending.then(async () => {
+      const entry = this.records.find((it) => it.hash === hash)
+      if (entry == null) throw illegalState(`Publication ${hash.slice(0, 8)} is not in the history`)
+      // The bookmark can outlive the object — a server wiped and re-paired, say — and a head pointing at
+      // nothing would 404 every reader at once.
+      if (!(await this.remote.hasObjects([hash])).has(hash)) throw illegalState(`The server no longer holds publication ${hash.slice(0, 8)}`)
+      const current = await this.remote.getHead()
+      if (!(await this.remote.setHead(current, hash))) {
+        throw illegalState('The publication changed on another device since this history was read — look at it again before rolling back')
+      }
+      const roots = new Set(entry.roots)
+      await this.storage.file(ROOTS_FILE).writeJSON([...roots])
+      this.roots = roots
+      await this.record({ hash, at: new Date().toISOString(), roots: [...roots], files: entry.files, kind: 'rollback' })
+      this.logger.info(`Rolled the publication back to ${hash.slice(0, 8)}`)
+    })
+    this.pending = operation.catch(() => {})
+    return operation
+  }
+
+  private changeRoots(change: (roots: Set<string>) => void, kind: PublicationKind, message: string): Promise<void> {
     const operation = this.pending.then(async () => {
       const roots = new Set(this.roots)
       change(roots)
-      await this.rebuild(roots)
+      await this.rebuild(roots, kind)
       this.roots = roots
       this.logger.info(message)
     })
@@ -94,10 +138,25 @@ export class Publisher {
     return operation
   }
 
+  // After the commit, never before: an entry for a head that did not move would offer a rollback to a
+  // state the server never had. A write that fails here is logged rather than thrown — the publication
+  // itself went through, and "Could not publish" would be a lie about it.
+  private async record(entry: PublicationRecord): Promise<void> {
+    this.records = appendHistory(this.records, entry, this.historyLimit)
+    try {
+      await this.storage.file(HISTORY_FILE).writeJSON(this.records)
+    } catch (error) {
+      this.logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'The publication went through, but its history entry could not be written',
+      )
+    }
+  }
+
   // Rebuild the whole manifest from the current root set and push the delta. Full-rebuild (not
   // incremental) keeps the manifest authoritative and simple; chunk dedup via hasObjects means an
   // unchanged file re-uploads nothing.
-  private async rebuild(roots: Set<string>): Promise<void> {
+  private async rebuild(roots: Set<string>, kind: PublicationKind): Promise<void> {
     const files: Record<string, SnapshotFile> = {}
     const chunks = new Map<string, Uint8Array>()
 
@@ -158,12 +217,15 @@ export class Publisher {
 
     await this.upload(chunks, manifestHash, manifestBytes)
     await this.storage.file(ROOTS_FILE).writeJSON([...roots])
+    let moved: boolean
     try {
-      await this.commit(manifestHash)
+      moved = await this.commit(manifestHash)
     } catch (error) {
       await this.storage.file(ROOTS_FILE).writeJSON([...this.roots])
       throw error
     }
+    if (moved)
+      await this.record({ hash: manifestHash, at: new Date().toISOString(), roots: [...roots], files: Object.keys(files).length, kind })
   }
 
   // Upload the manifest + every referenced chunk the server lacks, in bounded batches. The manifest
@@ -200,11 +262,12 @@ export class Publisher {
 
   // Point the store head at the new manifest. Publish is single-owner, but another device may have
   // republished concurrently, so use the store's compare-and-swap and retry once against a fresh head.
-  private async commit(manifestHash: string): Promise<void> {
+  // False when the head already was this manifest (an idempotent republish) — nothing to remember.
+  private async commit(manifestHash: string): Promise<boolean> {
     for (let attempt = 0; attempt < 2; attempt++) {
       const expected = await this.remote.getHead()
-      if (expected === manifestHash) return // already current (idempotent republish)
-      if (await this.remote.setHead(expected, manifestHash)) return
+      if (expected === manifestHash) return false
+      if (await this.remote.setHead(expected, manifestHash)) return true
     }
     throw illegalState('Publish head moved during upload — try publishing again')
   }

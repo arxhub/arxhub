@@ -1916,6 +1916,9 @@ importers:
       '@arxhub/plugin-settings':
         specifier: workspace:*
         version: link:../settings
+      '@arxhub/plugin-shell':
+        specifier: workspace:*
+        version: link:../shell
       '@arxhub/plugin-vfs':
         specifier: workspace:*
         version: link:../vfs
@@ -1943,6 +1946,9 @@ importers:
       elysia:
         specifier: catalog:server
         version: 1.4.28(@sinclair/typebox@0.34.48)(exact-mirror@0.2.7(@sinclair/typebox@0.34.48))(file-type@21.3.4)(openapi-types@12.1.3)(typescript@6.0.3)
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
     devDependencies:
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*

@@ -3,16 +3,23 @@ import { illegalState } from '@arxhub/errors'
 import { basename } from '@arxhub/path'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
+import { type ShallowRef, shallowRef } from 'vue'
 import { publicUrl } from './public-url'
+import type { PublicationRecord } from './publish-history'
 import type { Publisher } from './publisher'
 import { type ArxNode, arxAssetPaths, arxMarkdown, arxReader } from './server/arx-reader'
 import { contentTypeFor } from './server/content-type'
 
 // Local export uses the same reader without requiring a configured public server.
 export class PublishExtension extends Extension {
-  publisher: Publisher | null = null
+  private current: Publisher | null = null
   // The origin published content is readable from — the same server the publisher uploads to.
   serverUrl = ''
+  // What the Publisher knows, as something a page can render: the published roots and the head commits,
+  // newest first. Refreshed after every operation that goes through here, and whenever the publisher is
+  // (re)built — the Publisher itself is plain state, and a `computed` over it would answer once.
+  readonly roots: ShallowRef<string[]> = shallowRef([])
+  readonly history: ShallowRef<PublicationRecord[]> = shallowRef([])
   readFile: ((path: string) => Promise<Uint8Array>) | null = null
   beforeRead: ((path: string) => Promise<boolean>) | null = null
   normalizeArx: ((raw: string) => string) | null = null
@@ -158,6 +165,15 @@ export class PublishExtension extends Extension {
     return publicUrl(path, this.serverUrl)
   }
 
+  get publisher(): Publisher | null {
+    return this.current
+  }
+
+  set publisher(value: Publisher | null) {
+    this.current = value
+    this.refresh()
+  }
+
   get enabled(): boolean {
     return this.publisher != null
   }
@@ -167,12 +183,29 @@ export class PublishExtension extends Extension {
   }
 
   async publish(path: string): Promise<void> {
-    if (this.publisher == null) throw illegalState('Publishing is not configured — set the server URL and identity in Settings')
-    await this.publisher.publish(path)
+    await this.operate((publisher) => publisher.publish(path))
   }
 
   async unpublish(path: string): Promise<void> {
-    if (this.publisher == null) throw illegalState('Publishing is not configured — set the server URL and identity in Settings')
-    await this.publisher.unpublish(path)
+    await this.operate((publisher) => publisher.unpublish(path))
+  }
+
+  async rollback(hash: string): Promise<void> {
+    await this.operate((publisher) => publisher.rollback(hash))
+  }
+
+  // Refreshed in a finally: a failed publish already put the roots back, and the page has to show that too.
+  private async operate(action: (publisher: Publisher) => Promise<void>): Promise<void> {
+    if (this.current == null) throw illegalState('Publishing is not configured — set the server URL and identity in Settings')
+    try {
+      await action(this.current)
+    } finally {
+      this.refresh()
+    }
+  }
+
+  private refresh(): void {
+    this.roots.value = this.current?.list() ?? []
+    this.history.value = this.current?.history() ?? []
   }
 }

@@ -14,6 +14,7 @@ import { type Static, Type } from '@sinclair/typebox'
 import { manifest } from './manifest'
 import { PUBLISH_NAMESPACE } from './namespace'
 import { PublishExtension } from './publish-extension'
+import { DEFAULT_HISTORY_LIMIT } from './publish-history'
 import { Publisher } from './publisher'
 
 export const PublishConfigSchema = Type.Object(
@@ -26,6 +27,14 @@ export const PublishConfigSchema = Type.Object(
     serverUrl: Type.Optional(
       Type.String({ title: 'Server URL', description: 'ArxHub server origin, e.g. https://hub.example.com', default: '' }),
     ),
+    // Dotted, like the search plugin's keys: TOML writes it as one quoted key, which is what the generated
+    // form reads — a nested table would never reach it.
+    'history.limit': Type.Integer({
+      title: 'History length',
+      description: 'How many publications are remembered — each one can be rolled back to.',
+      default: DEFAULT_HISTORY_LIMIT,
+      minimum: 1,
+    }),
   },
   { description: 'Share selected notes and folders through public links.' },
 )
@@ -201,6 +210,7 @@ export class PublishPlugin extends Plugin {
       logger: this.logger,
       render: (raw, path) => ctx.extensions.get(PublishExtension).renderArx(raw, path),
       beforeRead: (path) => ctx.extensions.get(NotesExtension).beforeClose(path),
+      historyLimit: cfg['history.limit'],
     })
     try {
       await publisher.load()

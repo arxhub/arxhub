@@ -2,11 +2,12 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ConsoleLogger } from '@arxhub/core'
-import { VfsSyncRemote } from '@arxhub/sync'
+import { type SyncRemote, VfsSyncRemote } from '@arxhub/sync'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 import Elysia, { type AnyElysia } from 'elysia'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
+import type { PublicationRecord } from '../publish-history'
 import { Publisher } from '../publisher'
 import { publicReadRoutes } from '../server/public-read-routes'
 
@@ -198,6 +199,136 @@ describe('publish round-trip (chunks + manifest, unencrypted)', () => {
     const after = await countObjects(publicVfs)
 
     expect(after).toBe(before)
+  })
+})
+
+// Every head commit is remembered in storage/publish/history.json (synced, beside published.json), and
+// any remembered manifest can become the head again: objects are never deleted, so the old manifest
+// still resolves — a rollback is the CAS plus the root set of that entry.
+describe('publication history and rollback', () => {
+  let vaultVfs: VirtualFileSystem
+  let storageVfs: VirtualFileSystem
+  let publicVfs: VirtualFileSystem
+  let app: AnyElysia
+  let directory: string
+
+  beforeEach(async () => {
+    directory = await mkdtemp(join(tmpdir(), 'arxhub-publish-history-'))
+    vaultVfs = new NodeFileSystem(join(directory, 'vault'), new ConsoleLogger())
+    storageVfs = new NodeFileSystem(join(directory, 'storage'), new ConsoleLogger())
+    publicVfs = new NodeFileSystem(join(directory, 'public'), new ConsoleLogger())
+    app = new Elysia().use(publicReadRoutes(publicVfs)).compile()
+  })
+
+  afterEach(async () => {
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  const get = (path: string) => app.handle(new Request(`http://localhost${path}`))
+  const arx = (text: string) =>
+    JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] } })
+
+  async function makePublisher(options: { remote?: SyncRemote; historyLimit?: number } = {}): Promise<Publisher> {
+    const publisher = new Publisher({
+      vault: vaultVfs,
+      storage: storageVfs,
+      remote: options.remote ?? new VfsSyncRemote(publicVfs),
+      logger: new ConsoleLogger(),
+      historyLimit: options.historyLimit,
+    })
+    await publisher.load()
+    return publisher
+  }
+
+  test('publish, republish and roll back are three entries, and the reader serves the rolled-back bytes', async () => {
+    const publisher = await makePublisher()
+    await vaultVfs.file('page.arx').writeText(arx('First edition'))
+    await publisher.publish('page.arx')
+    expect(publisher.history()).toMatchObject([{ kind: 'publish', roots: ['page.arx'], files: 1 }])
+    const first = publisher.history()[0]
+    expect(first.hash).toMatch(/^[0-9a-f]{64}$/)
+    expect(Date.parse(first.at)).not.toBeNaN()
+
+    await vaultVfs.file('page.arx').writeText(arx('Second edition'))
+    await publisher.publish('page.arx')
+    expect(await (await get('/public/page.arx')).text()).toContain('Second edition')
+    expect(publisher.history().map((it) => it.kind)).toEqual(['publish', 'publish'])
+    expect(publisher.history()[0].hash).not.toBe(first.hash)
+
+    await publisher.rollback(first.hash)
+    expect(await (await get('/public/page.arx')).text()).toContain('First edition')
+    expect(publisher.history().map((it) => it.kind)).toEqual(['rollback', 'publish', 'publish'])
+    expect(publisher.history()[0]).toMatchObject({ hash: first.hash, roots: ['page.arx'], files: 1 })
+    expect(publisher.list()).toEqual(['page.arx'])
+    expect(await storageVfs.file('/history.json').readJSON<PublicationRecord[]>()).toHaveLength(3)
+
+    // Another device, or the next session: the record is on disk, not in this instance.
+    const later = await makePublisher()
+    expect(later.history().map((it) => it.kind)).toEqual(['rollback', 'publish', 'publish'])
+
+    await later.unpublish('page.arx')
+    expect(later.history()[0]).toMatchObject({ kind: 'unpublish', roots: [], files: 0 })
+    expect((await get('/public/page.arx')).status).toBe(404)
+  })
+
+  test('a republish that changes nothing moves no head and adds no entry', async () => {
+    const publisher = await makePublisher()
+    await vaultVfs.file('note.md').writeText('# Note')
+    await publisher.publish('note.md')
+    await publisher.publish('note.md')
+    expect(publisher.history()).toHaveLength(1)
+  })
+
+  test('the cap keeps the newest entries and drops the oldest', async () => {
+    const publisher = await makePublisher({ historyLimit: 2 })
+    for (const name of ['a.md', 'b.md', 'c.md']) {
+      await vaultVfs.file(name).writeText(`# ${name}`)
+      await publisher.publish(name)
+    }
+    expect(publisher.history().map((it) => it.roots)).toEqual([
+      ['a.md', 'b.md', 'c.md'],
+      ['a.md', 'b.md'],
+    ])
+    expect(await storageVfs.file('/history.json').readJSON<PublicationRecord[]>()).toHaveLength(2)
+  })
+
+  test('a lost head race refuses the rollback and leaves roots and history as they were', async () => {
+    const publisher = await makePublisher()
+    await vaultVfs.file('x.md').writeText('v1')
+    await publisher.publish('x.md')
+    await vaultVfs.file('x.md').writeText('v2')
+    await publisher.publish('x.md')
+    const [, v1] = publisher.history()
+
+    // The one thing a rollback must never do is overwrite a head it did not read.
+    const real = new VfsSyncRemote(publicVfs)
+    const losing: SyncRemote = {
+      getHead: () => real.getHead(),
+      setHead: async () => false,
+      hasObjects: (hashes) => real.hasObjects(hashes),
+      getObjects: (hashes) => real.getObjects(hashes),
+      putObjects: (objects) => real.putObjects(objects),
+    }
+    const contender = await makePublisher({ remote: losing })
+    await expect(contender.rollback(v1.hash)).rejects.toThrow(/changed on another device/)
+    expect(contender.list()).toEqual(['x.md'])
+    expect(contender.history()).toHaveLength(2)
+    expect(await storageVfs.file('/published.json').readJSON()).toEqual(['x.md'])
+    expect(await storageVfs.file('/history.json').readJSON<PublicationRecord[]>()).toHaveLength(2)
+    expect(await (await get('/public/x.md')).text()).toBe('v2')
+
+    // And a later operation on the same publisher still runs — a refused rollback is not a wedged queue.
+    await expect(contender.rollback('0'.repeat(64))).rejects.toThrow(/not in the history/)
+  })
+
+  test('a missing history file and a malformed entry both load as what they are', async () => {
+    expect((await makePublisher()).history()).toEqual([])
+
+    await storageVfs
+      .file('/history.json')
+      .writeJSON([{ hash: 'a'.repeat(64), at: '2026-09-15T10:00:00.000Z', roots: ['a.md'], files: 1, kind: 'publish' }, { hash: 42 }, 'junk'])
+    const publisher = await makePublisher()
+    expect(publisher.history()).toEqual([{ hash: 'a'.repeat(64), at: '2026-09-15T10:00:00.000Z', roots: ['a.md'], files: 1, kind: 'publish' }])
   })
 })
 
