@@ -25,6 +25,7 @@
     "@arxhub/plugin-preview": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-publish": "workspace:*",
+    "@arxhub/plugin-repository": "workspace:*",
     "@arxhub/plugin-search": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
     "@arxhub/plugin-sheets": "workspace:*",

@@ -63,7 +63,7 @@
     "@arxhub/crypto": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-publish": "workspace:*",
-    "@arxhub/plugin-sync": "workspace:*",
+    "@arxhub/plugin-repository": "workspace:*",
     "@arxhub/sync": "workspace:*"
   },
   "publishConfig": {

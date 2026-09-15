@@ -14,9 +14,9 @@ export interface TreeNode {
   pending?: boolean
 }
 
-// What the extension needs from sync to draw a pending file where it would sit on disk. Kept as this
-// narrow shape rather than a `SyncExtension` import — explorer never imports another plugin's
-// internals, and the plugin is the one thing that knows how to read sync's own extension.
+// What the extension needs from the repository to draw a pending file where it would sit on disk.
+// Kept as this narrow shape rather than a `RepositoryExtension` import — explorer never imports
+// another plugin's internals, and the plugin is the one thing that knows how to read it.
 export interface PendingSource {
   readonly pending: ShallowRef<ReadonlySet<string>>
 }
@@ -161,7 +161,7 @@ export class ExplorerExtension extends Extension {
     this.root = args.root
   }
 
-  // Wired by the plugin during configure(), against `SyncExtension.pending` — cross-plugin access
+  // Wired by the plugin during configure(), against `RepositoryExtension.pending` — cross-plugin access
   // goes through an extension, never a direct import. Returns the watch's stop handle: `Extension` has
   // no stop hook of its own, so the plugin is the one that can dispose it in its own `stop()`.
   setPendingSource(source: PendingSource): WatchStopHandle {

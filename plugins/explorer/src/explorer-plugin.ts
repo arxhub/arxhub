@@ -1,6 +1,6 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { NotesExtension } from '@arxhub/plugin-notes/ui'
-import { SyncExtension } from '@arxhub/plugin-sync/ui'
+import { RepositoryExtension } from '@arxhub/plugin-repository/ui'
 import { VaultVfs } from '@arxhub/vfs'
 import { markRaw, type WatchStopHandle } from 'vue'
 import { ExplorerExtension } from './explorer-extension'
@@ -37,9 +37,9 @@ export class ExplorerPlugin extends Plugin {
     const explorer = ctx.extensions.get(ExplorerExtension)
     const notes = ctx.extensions.get(NotesExtension)
     // A pending path is a phantom node under its directory (23-storage-model F-06) — read straight off
-    // sync's own extension, never sync's internals. Optional on purpose: sync is a plugin the owner can
-    // switch off, and a tree that refuses to boot without it would turn that switch into a crash screen.
-    if (ctx.extensions.has(SyncExtension)) this.stopPendingWatch = explorer.setPendingSource(ctx.extensions.get(SyncExtension))
+    // the repository's own extension, never its internals. Repository is essential (A-50) — no has()
+    // guard needed: version history and pending nodes stand on it whether or not sync is switched on.
+    this.stopPendingWatch = explorer.setPendingSource(ctx.extensions.get(RepositoryExtension))
 
     // The tree is the navigation of the "Notes" type, not a place of its own — and now that both
     // frames read the type registry, that is the ONLY way it reaches the screen. The mini-app

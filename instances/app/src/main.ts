@@ -20,6 +20,7 @@ import { PanelStoreExtension, PanelsPlugin, restoreNavigationWorkspace, StorePan
 import { PreviewPlugin } from '@arxhub/plugin-preview/ui'
 import { loadOrCreateKeyring, ProtectionPlugin } from '@arxhub/plugin-protection/ui'
 import { PublishPlugin } from '@arxhub/plugin-publish/ui'
+import { RepositoryPlugin } from '@arxhub/plugin-repository/ui'
 import { SearchPlugin } from '@arxhub/plugin-search/ui'
 import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
 import { SheetsPlugin } from '@arxhub/plugin-sheets/ui'
@@ -101,6 +102,10 @@ arxhub.plugins.register(ThemePlugin, () => ({ themes }))
 arxhub.plugins.register(KeyStorePlugin, () => ({ keystore }))
 arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
 arxhub.plugins.register(MaintenancePlugin, () => ({ policy }))
+// The local repository (manifest chain, chunk store, checkout index, file history) is essential —
+// version history and pending-file nodes must not go dark when sync (the optional remote exchange
+// layered over it) is switched off (A-50). Registered right before it for the same reason.
+arxhub.plugins.register(RepositoryPlugin)
 arxhub.plugins.register(SyncPlugin)
 arxhub.plugins.register(PublishPlugin)
 // A failed boot lands on the crash screen instead of a blank page: it names the plugin that broke and

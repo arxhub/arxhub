@@ -6,9 +6,9 @@ import { NOTES_TYPE_ID, NotesExtension, type NoteViewer } from '@arxhub/plugin-n
 import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { PublishExtension } from '@arxhub/plugin-publish/ui'
+import { RepositoryExtension } from '@arxhub/plugin-repository/ui'
 import { SearchExtension } from '@arxhub/plugin-search/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { SyncExtension } from '@arxhub/plugin-sync/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
@@ -74,10 +74,10 @@ export class ArxEditorPlugin extends Plugin {
     }
     const keyring = ctx.extensions.has(KeyringExtension) ? ctx.extensions.get(KeyringExtension).keyring : null
     if (keyring) editor.drafts ??= createDraftStore(keyring.encryptionKey, keyring.authPublicKey)
-    if (ctx.extensions.has(SyncExtension)) {
-      const sync = ctx.extensions.get(SyncExtension)
-      editor.history ??= createSnapshotHistory(() => sync.history, ctx.services.get(PluginVfs).storage)
-    }
+    // Repository is essential — no has() guard needed. Version history stands on it whether or not
+    // sync (the optional remote exchange) is switched on.
+    const repository = ctx.extensions.get(RepositoryExtension)
+    editor.history ??= createSnapshotHistory(() => repository.history, ctx.services.get(PluginVfs).storage)
     editor.links ??= createDocumentLinkStore(
       ctx.services.get(VaultVfs),
       () => editor.kit.schema,

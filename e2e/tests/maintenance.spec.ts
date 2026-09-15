@@ -70,6 +70,7 @@ test.describe('plugin switches', () => {
     await openSettingsSection(app, 'Plugins')
 
     await expect(app.getByRole('checkbox', { name: 'Enable Shell' })).toBeDisabled()
+    await expect(app.getByRole('checkbox', { name: 'Enable Repository' })).toBeDisabled()
     await expect(app.getByRole('checkbox', { name: 'Enable Explorer' })).toBeEnabled()
   })
 })
