@@ -24,6 +24,7 @@ import { deserialize, serialize } from './editor-format'
 import { declareProseMirrorChords } from './hotkeys'
 import { manifest } from './manifest'
 import { arxPathFor, isMarkdownPath, markdownToArx } from './md-to-arx'
+import { propertiesContribution } from './properties-block'
 import ArxEditor from './ui/ArxEditor.vue'
 
 const PANEL_ID = 'arxhub.editor'
@@ -65,6 +66,9 @@ export class ArxEditorPlugin extends Plugin {
     super.configure(ctx)
     ctx.extensions.get(ArxEditorExtension).assets ??= createAssetStore(ctx.services.get(VaultVfs))
     const editor = ctx.extensions.get(ArxEditorExtension)
+    // The editor's own first-party block, registered the same way a plugin's would be (see
+    // properties-block.ts) rather than baked into editor-schema.ts's base builder.
+    editor.register(propertiesContribution())
     if (ctx.extensions.has(SearchExtension))
       editor.register({ id: 'arxhub.search-data', dataSources: searchDataSources(ctx.extensions.get(SearchExtension)) })
     if (ctx.extensions.has(PublishExtension)) {
