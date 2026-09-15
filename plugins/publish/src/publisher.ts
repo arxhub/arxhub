@@ -67,9 +67,19 @@ export class Publisher {
   }
 
   async load(): Promise<void> {
-    const roots = await this.storage.file(ROOTS_FILE).readJSON<string[]>([])
-    this.roots = new Set(roots)
-    this.records = sanitizeHistory(await this.storage.file(HISTORY_FILE).readJSON<unknown>([]))
+    this.roots = await this.readRoots()
+    this.records = await this.readHistory()
+  }
+
+  // Both files are shared state — another device writes them through sync — so every operation starts from
+  // what is on disk now, not from what this instance loaded at boot: a republish from a set that went stale
+  // would silently unpublish whatever the other device had shared since.
+  private async readRoots(): Promise<Set<string>> {
+    return new Set(await this.storage.file(ROOTS_FILE).readJSON<string[]>([]))
+  }
+
+  private async readHistory(): Promise<PublicationRecord[]> {
+    return sanitizeHistory(await this.storage.file(HISTORY_FILE).readJSON<unknown>([]))
   }
 
   isPublished(path: string): boolean {
@@ -107,6 +117,7 @@ export class Publisher {
   // the history this device chose from is no longer the whole story, so the person looks again first.
   rollback(hash: string): Promise<void> {
     const operation = this.pending.then(async () => {
+      this.records = await this.readHistory()
       const entry = this.records.find((it) => it.hash === hash)
       if (entry == null) throw illegalState(`Publication ${hash.slice(0, 8)} is not in the history`)
       // The bookmark can outlive the object — a server wiped and re-paired, say — and a head pointing at
@@ -128,6 +139,8 @@ export class Publisher {
 
   private changeRoots(change: (roots: Set<string>) => void, kind: PublicationKind, message: string): Promise<void> {
     const operation = this.pending.then(async () => {
+      this.roots = await this.readRoots()
+      this.records = await this.readHistory()
       const roots = new Set(this.roots)
       change(roots)
       await this.rebuild(roots, kind)

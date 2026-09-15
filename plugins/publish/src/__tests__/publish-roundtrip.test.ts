@@ -321,6 +321,20 @@ describe('publication history and rollback', () => {
     await expect(contender.rollback('0'.repeat(64))).rejects.toThrow(/not in the history/)
   })
 
+  test('an operation starts from the roots and history another device wrote since this one loaded', async () => {
+    const first = await makePublisher()
+    const second = await makePublisher()
+    await vaultVfs.file('a.md').writeText('A')
+    await vaultVfs.file('b.md').writeText('B')
+    await first.publish('a.md')
+    // `second` loaded an empty set; a republish from that set would have taken a.md down with it.
+    await second.publish('b.md')
+    expect(second.list().sort()).toEqual(['a.md', 'b.md'])
+    expect((await get('/public/a.md')).status).toBe(200)
+    expect((await get('/public/b.md')).status).toBe(200)
+    expect(second.history().map((it) => it.kind)).toEqual(['publish', 'publish'])
+  })
+
   test('a missing history file and a malformed entry both load as what they are', async () => {
     expect((await makePublisher()).history()).toEqual([])
 
