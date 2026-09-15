@@ -1,14 +1,11 @@
 import { PluginConfig } from '@arxhub/config'
 import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
-import { illegalState } from '@arxhub/errors'
-import { join } from '@arxhub/path'
-import { NotesExtension } from '@arxhub/plugin-notes/ui'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
+import { RepositoryExtension } from '@arxhub/plugin-repository/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
-import { EncryptedSyncRemote, FileHistory, HttpSyncRemote, Repo, SYNC_NAMESPACE, SyncEngine } from '@arxhub/sync'
-import { PluginVfs, RootVfs, VaultWatcher } from '@arxhub/vfs'
+import { EncryptedSyncRemote, HttpSyncRemote, SYNC_NAMESPACE, SyncEngine } from '@arxhub/sync'
 import { Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
 import { manifest } from './manifest'
@@ -31,28 +28,13 @@ export const SyncConfigSchema = Type.Object({
     minimum: 0,
     deviceLocal: true,
   }),
-  // Device-local for the same reason autoSyncSeconds is: a phone with little storage keeps a small
-  // slice of the vault on disk while a desktop keeps everything, and the two must not agree by sync.
-  // A file already on disk stays current regardless (Repo.wantsContent) — this only decides what a
-  // NEW remote file costs to bring down.
-  materializeUpTo: Type.Number({
-    title: 'Keep files up to (MB) on this device',
-    description: '0 keeps everything on this device; larger files stay on the server until opened',
-    default: 0,
-    minimum: 0,
-    deviceLocal: true,
-    unit: 'MB',
-  }),
 })
 
 export class SyncPlugin extends Plugin {
-  private repo!: Repo
-  private preparation: Promise<void> | null = null
   private bringUp: Promise<void> | null = null
   private stopping = false
   private syncTimer: ReturnType<typeof setInterval> | null = null
   private onVisible: (() => void) | null = null
-  private unwatch: (() => void) | null = null
 
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -60,7 +42,7 @@ export class SyncPlugin extends Plugin {
 
   override create(ctx: PluginContext): void {
     super.create(ctx)
-    ctx.extensions.register(SyncExtension, () => ({}))
+    ctx.extensions.register(SyncExtension, () => ({ repository: ctx.extensions.get(RepositoryExtension) }))
   }
 
   override configure(ctx: PluginContext): void {
@@ -72,37 +54,7 @@ export class SyncPlugin extends Plugin {
 
     const shell = ctx.extensions.get(ShellExtension)
     const sync = ctx.extensions.get(SyncExtension)
-    this.repo = new Repo(ctx.services.get(RootVfs), ctx.services.get(PluginVfs).state)
-    // The extension stays free of a Repo import; it only knows how to ask for the pending set.
-    sync.setPendingSource(() => this.repo.pendingPaths())
 
-    // Every vault write reaches the journal as it happens, in the repo's coordinates (the watcher speaks
-    // vault-relative paths; the repo trees the root). A rename names both ends: the old path has to be
-    // seen as gone, the new one as arrived. Listener errors are the watcher's to report, never the
-    // writer's to see — and the journal write is fire-and-forget for the same reason.
-    this.unwatch = ctx.services.get(VaultWatcher).subscribe((change) => {
-      const paths = change.from == null ? [change.pathname] : [change.from, change.pathname]
-      for (const path of paths)
-        void this.repo.add(join('vault', path)).catch((error) => this.logger.error('Could not journal a vault change', error))
-    })
-    // A file left in the cloud comes down before whatever opens it mounts; a file that is on disk costs
-    // one index lookup here and nothing else.
-    // Optional like every cross-plugin dependency that is not essential: a boot without Notes still syncs.
-    if (ctx.extensions.has(NotesExtension)) {
-      ctx.extensions.get(NotesExtension).registerPreparer(async (path) => {
-        const full = join('vault', path)
-        if (await this.repo.isPending(full)) await sync.materialize(full)
-      })
-    }
-    sync.history = new FileHistory(
-      this.repo,
-      () => this.prepare(ctx),
-      async (snapshot, path) => {
-        await this.bringUp
-        if (!sync.engine) throw illegalState('Connect to the sync server to download this version.')
-        await sync.engine.fetchFile(snapshot, path)
-      },
-    )
     // Two registrations, because the one component was two things: where sync stands, and what you can
     // tell it to do. The grammar has no word for a widget that is both, and the bar lays the two out on
     // opposite sides.
@@ -118,14 +70,6 @@ export class SyncPlugin extends Plugin {
     shell.status.register({ id: 'arxhub.sync.actions', kind: 'action', component: markRaw(SyncActions) })
   }
 
-  private prepare(ctx: PluginContext): Promise<void> {
-    this.preparation ??= (async () => {
-      await this.discardStateOfPreviousIdentity(ctx.services.get(PluginVfs), ctx.extensions.get(KeyringExtension))
-      await this.repo.prepare()
-    })()
-    return this.preparation
-  }
-
   override start(ctx: PluginContext): Promise<void> {
     this.stopping = false
     this.bringUp = this.startSync(ctx)
@@ -133,24 +77,23 @@ export class SyncPlugin extends Plugin {
       const sync = ctx.extensions.get(SyncExtension)
       sync.status.value = 'error'
       sync.lastError.value = error instanceof Error ? error.message : String(error)
-      this.logger.error('Could not initialize sync history', error)
+      this.logger.error('Could not initialize sync', error)
     })
     return super.start(ctx)
   }
 
   private async startSync(ctx: PluginContext): Promise<void> {
-    await this.prepare(ctx)
+    const repository = ctx.extensions.get(RepositoryExtension)
+    // Sync is the remote half over the local repository — its own bring-up (the store migration, the
+    // previous-owner discard, the empty-snapshot seed) has to be done before anything here reads or
+    // writes through it.
+    await repository.ready()
     if (this.stopping) return
     // tryRead, not read: the product works offline (FR-147), so an unreachable settings store leaves
     // sync idle instead of aborting the whole boot.
     const cfg = await ctx.services.get(PluginConfig).tryRead(SyncConfigSchema)
 
     if (this.stopping || cfg == null || !cfg.serverUrl) return
-
-    // A file without a size is a manifest entry written before sizes existed (completeLegacyEntries
-    // fills it in the next time this device writes a snapshot) — kept, never left in the cloud on a
-    // guess about how big it might be.
-    this.repo.setMaterializePolicy((file) => cfg.materializeUpTo === 0 || file.size == null || file.size <= cfg.materializeUpTo * 1024 * 1024)
 
     // Sync requires the user's identity: the keyring both encrypts content and authenticates to the
     // (protected) remote. Without it there is no safe way to sync, so we stay idle and surface why.
@@ -176,9 +119,16 @@ export class SyncPlugin extends Plugin {
     // Chunk the whole local tree (vault/ + storage/ content) via the root VFS, but keep the repo
     // store in state/ so sync never chunks its own internals (state/ is never synced and is never
     // add()-ed for snapshotting). state/temp exclusion is structural, not a permission check.
-    syncExt.engine = new SyncEngine({
-      local: this.repo,
+    const engine = new SyncEngine({
+      local: repository.repo,
       remote,
+    })
+    syncExt.engine = engine
+    // The one registration point for the remote half — cleared in stop() below. Everything that reads
+    // a pending file (FileHistory, the Notes preparer) goes through this from now on.
+    repository.setRemote({
+      fetchFile: (snapshot, path) => engine.fetchFile(snapshot, path),
+      materialize: (path) => engine.materialize(path),
     })
 
     // Sync once at startup — full, because edits made while the app was not running reached no
@@ -198,35 +148,10 @@ export class SyncPlugin extends Plugin {
     document.addEventListener('visibilitychange', this.onVisible)
   }
 
-  // The repo store — snapshots, chunks and the rollback anchor — belongs to the identity that built
-  // it. After the user enters a different recovery phrase the old store is undecryptable and its
-  // last-synced anchor points at another owner's history, so rebasing onto it would fail in a way
-  // that reads like remote tampering. Dropping it re-enters trust-on-first-sync instead.
-  //
-  // Whether the identity changed is protection's answer, not sync's: the same record tells the
-  // Security page a reinstall apart from a stranger's phrase, and one owner of that question is
-  // enough. Sync used to keep the marker itself in state/sync/identity; protection adopts that file
-  // on first read, so an existing device is not mistaken for an unknown owner.
-  private async discardStateOfPreviousIdentity(vfs: PluginVfs, keyrings: KeyringExtension): Promise<void> {
-    const owner = await keyrings.owner()
-    if (owner == null || !owner.changed) return
-
-    this.logger.warn('Identity changed since the last run — discarding the previous owner’s sync state')
-    try {
-      await vfs.state.delete('/repo', { recursive: true, force: true })
-    } catch (error) {
-      // Leaving the old store in place would make the next sync fail as if the remote had been
-      // tampered with, so say so loudly rather than starting into a confusing failure.
-      this.logger.error('Could not discard the previous owner’s sync state', error)
-      throw error
-    }
-  }
-
   override async stop(ctx: PluginContext): Promise<void> {
     this.stopping = true
     await this.bringUp?.catch(() => {})
-    this.unwatch?.()
-    this.unwatch = null
+    ctx.extensions.get(RepositoryExtension).setRemote(null)
     if (this.syncTimer != null) {
       clearInterval(this.syncTimer)
       this.syncTimer = null
