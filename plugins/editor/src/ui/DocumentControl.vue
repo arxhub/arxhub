@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Button, Checkbox, Dropdown, Icon, Input, MenuItem } from '@arxhub/uikit/core'
-import type { Attrs, Node } from 'prosemirror-model'
 import { computed, ref, watch } from 'vue'
-import { type EditorMode, selectOptions } from '../editor-mode'
+import type { ArxEditorControlProps } from '../control-views'
+import { selectOptions } from '../editor-mode'
 
-const props = defineProps<{ node: Node; mode: EditorMode; change: (attrs: Attrs) => void }>()
+const props = defineProps<ArxEditorControlProps>()
 const configuring = ref(false)
 const label = ref('')
 const options = ref('')

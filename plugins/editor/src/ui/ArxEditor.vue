@@ -101,6 +101,19 @@ const saveStatus = computed(() => {
   if (saving.value) return 'Saving…'
   return edits.value === savedEdits.value ? 'Saved' : 'Unsaved changes'
 })
+// Conflicts left in the document by a three-way sync merge (arx-merge.ts) do not block autosave or
+// close — the document is perfectly valid with them in, that is the point of representing them in the
+// format rather than as a copy beside it — but they are worth a permanent, visible count regardless of
+// what else the status line says.
+const conflictCount = computed(() => {
+  void revision.value
+  if (!view.value) return 0
+  let count = 0
+  view.value.state.doc.descendants((node) => {
+    if (node.type.name === 'conflict') count++
+  })
+  return count
+})
 
 // Where the layer IS, while the chords it claims are declared once by the plugin (`hotkeys.ts`).
 // Every open `.arx` panel pushes this same layer, and only the one holding the caret is on the stack —
@@ -110,7 +123,15 @@ useHotkeyLayer(useHotkeysExtension(), { id: PROSEMIRROR_LAYER, kind: 'editor' },
 
 function buildPlugins() {
   return [
-    modePlugin(mode.value, kit.controls, [...Object.keys(kit.components), 'image_block', 'attachment', 'code_block', 'section', 'data_view']),
+    modePlugin(mode.value, kit.controls, [
+      ...Object.keys(kit.components),
+      'image_block',
+      'attachment',
+      'code_block',
+      'section',
+      'data_view',
+      'conflict',
+    ]),
     slashCommands(slashMenuId, kit.commands),
     history(),
     blockIdentityPlugin(),
@@ -508,6 +529,7 @@ onUnmounted(() => {
     <div class="editor-status">
       <DocumentTools v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
       <span role="status" aria-live="polite">{{ saveStatus }}</span>
+      <span v-if="conflictCount" role="status">{{ conflictCount }} conflict{{ conflictCount === 1 ? '' : 's' }}</span>
       <span v-if="assets.pending.value" role="status">Uploading attachment…</span>
       <Button v-if="saveError" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button>
       <span v-if="mode === 'readonly'">Read only · Select and copy text</span>

@@ -20,5 +20,5 @@ onErrorCaptured((error) => {
     <span>Its content is kept. You can continue working on the document.</span>
     <Button variant="secondary" @click="failed = false">Retry block</Button>
   </Card>
-  <component v-else :is="control.component ?? DocumentControl" :node="control.node" :mode="control.mode" :change="control.change" />
+  <component v-else :is="control.component ?? DocumentControl" :node="control.node" :mode="control.mode" :change="control.change" :replace="control.replace" />
 </template>
