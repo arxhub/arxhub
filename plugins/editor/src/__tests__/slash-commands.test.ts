@@ -40,7 +40,7 @@ describe('slash insertion', () => {
         schema.node(
           'task_list',
           null,
-          schema.node('task_item', { checked: true }, schema.node('paragraph', null, text ? schema.text(text) : null)),
+          schema.node('task_item', { checked: true }, schema.node('paragraph', null, text ? schema.text(text) : undefined)),
         ),
       ])
     const leaves: Record<string, string> = {

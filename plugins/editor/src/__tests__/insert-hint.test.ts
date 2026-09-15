@@ -34,12 +34,12 @@ describe('insert hint', () => {
     expect(hints('readonly', 12)).toEqual([])
   })
 
-  it('is a node decoration carrying the hint as an attribute the stylesheet can draw', () => {
+  it('carries the text it was given, spanning the whole paragraph rather than a point inside it', () => {
     const plugin = insertHint('Start here')
     const state = EditorState.create({ doc, selection: TextSelection.create(doc, 12), plugins: [modePlugin('editable'), plugin] })
     const set = plugin.props.decorations?.call(plugin, state) as DecorationSet
     const [decoration] = set.find()
-    expect(decoration.inline).toBe(false)
     expect(decoration.spec.placeholder).toBe('Start here')
+    expect([decoration.from, decoration.to]).toEqual([emptyParagraph.from, emptyParagraph.to])
   })
 })
