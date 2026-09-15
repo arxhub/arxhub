@@ -3,6 +3,7 @@ import { hasErrorCode, validation } from '@arxhub/errors'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
 import { readRange, type VirtualFileSystem } from '@arxhub/vfs'
 import Elysia, { t } from 'elysia'
+import { matchesToken, parseExpectedToken } from './compare-and-swap-token'
 import { VFS_NAMESPACE } from './namespace'
 
 // Reject oversized writes. The body is already buffered by Elysia's t.ArrayBuffer() parser, so this
@@ -124,6 +125,39 @@ export function vfsRoutes(vfs: VirtualFileSystem) {
           }
         },
         { query: t.Object({ path: t.Optional(t.String()) }), body: t.ArrayBuffer() },
+      )
+      // The compare-and-swap the browser cannot do itself: its VFS is stateless requests, so the compare
+      // and the write have to happen where the file is. `expected` is the sha256 of what the client
+      // last saw, or `absent` (see compare-and-swap-token.ts); the body is what to write if it still
+      // holds. Read-compare-write runs under the server VFS's own path lock, and the write is the RAW
+      // `vfs.write` — VirtualFile.write() would take the same non-re-entrant lock. 409 is the honest
+      // "someone else moved it first", which the client turns back into `false`.
+      .put(
+        '/compare-and-swap',
+        async ({ query, body, status }) => {
+          if (body.byteLength > MAX_WRITE_BYTES) return status(413, 'Payload Too Large')
+          try {
+            const path = safePath(query.path, { allowEmpty: false })
+            const token = parseExpectedToken(query.expected)
+            const swapped = await vfs.lock(path, async () => {
+              let current: Uint8Array | null
+              try {
+                current = await vfs.read(path)
+              } catch (e) {
+                if (!hasErrorCode(e, 'FileNotFound')) throw e
+                current = null
+              }
+              if (!matchesToken(current, token)) return false
+              await vfs.write(path, new Uint8Array(body))
+              return true
+            })
+            return swapped ? new Response(null, { status: 204 }) : status(409, 'Conflict')
+          } catch (e) {
+            if (hasErrorCode(e, 'ValidationError')) return status(400, 'Bad Request')
+            throw e
+          }
+        },
+        { query: t.Object({ path: t.Optional(t.String()), expected: t.Optional(t.String()) }), body: t.ArrayBuffer() },
       )
       .delete(
         '/delete',

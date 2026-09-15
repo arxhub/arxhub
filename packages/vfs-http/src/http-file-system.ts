@@ -2,7 +2,16 @@ import type { Logger } from '@arxhub/core'
 import { type RequestSigner, signingMiddleware } from '@arxhub/crypto'
 import { createTypedHttp, isHttpError } from '@arxhub/http'
 import { normalizePath } from '@arxhub/path'
-import { type DeleteOptions, type FileHead, fileNotFound, GenericVirtualFileSystem, type RangeCapable, type VirtualEntry } from '@arxhub/vfs'
+import {
+  type CompareAndSwapCapable,
+  type DeleteOptions,
+  type FileHead,
+  fileNotFound,
+  GenericVirtualFileSystem,
+  type RangeCapable,
+  type VirtualEntry,
+} from '@arxhub/vfs'
+import { expectedToken } from './compare-and-swap-token'
 import type { VfsApp } from './server'
 
 export interface HttpFileSystemOptions {
@@ -22,7 +31,7 @@ export interface HttpFileSystemOptions {
 //
 // Locking cannot span stateless HTTP requests from the browser, so `lock`/`acquireLock` run the
 // critical section locally and rely on the server's per-request write atomicity.
-export class HttpFileSystem extends GenericVirtualFileSystem implements RangeCapable {
+export class HttpFileSystem extends GenericVirtualFileSystem implements RangeCapable, CompareAndSwapCapable {
   private readonly http: ReturnType<typeof createTypedHttp<VfsApp>>
   private readonly logger: Logger
 
@@ -63,6 +72,19 @@ export class HttpFileSystem extends GenericVirtualFileSystem implements RangeCap
       return new Uint8Array(await this.http.get('/read-range', { query }))
     } catch (e) {
       if (isHttpError(e, 404)) throw fileNotFound(pathname)
+      throw e
+    }
+  }
+
+  // The swap happens on the server (see `/compare-and-swap` in server.ts): only the hash of `expected`
+  // travels, and the 409 the server answers when someone else moved the file first is the `false` the
+  // capability promises — every other status is the error it is.
+  async compareAndSwap(pathname: string, expected: Uint8Array | null, next: Uint8Array): Promise<boolean> {
+    try {
+      await this.http.put('/compare-and-swap', new Uint8Array(next), { query: { path: pathname, expected: expectedToken(expected) } })
+      return true
+    } catch (e) {
+      if (isHttpError(e, 409)) return false
       throw e
     }
   }
