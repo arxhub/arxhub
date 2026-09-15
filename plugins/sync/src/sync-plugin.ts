@@ -31,6 +31,18 @@ export const SyncConfigSchema = Type.Object({
     minimum: 0,
     deviceLocal: true,
   }),
+  // Device-local for the same reason autoSyncSeconds is: a phone with little storage keeps a small
+  // slice of the vault on disk while a desktop keeps everything, and the two must not agree by sync.
+  // A file already on disk stays current regardless (Repo.wantsContent) — this only decides what a
+  // NEW remote file costs to bring down.
+  materializeUpTo: Type.Number({
+    title: 'Keep files up to (MB) on this device',
+    description: '0 keeps everything on this device; larger files stay on the server until opened',
+    default: 0,
+    minimum: 0,
+    deviceLocal: true,
+    unit: 'MB',
+  }),
 })
 
 export class SyncPlugin extends Plugin {
@@ -61,6 +73,8 @@ export class SyncPlugin extends Plugin {
     const shell = ctx.extensions.get(ShellExtension)
     const sync = ctx.extensions.get(SyncExtension)
     this.repo = new Repo(ctx.services.get(RootVfs), ctx.services.get(PluginVfs).state)
+    // The extension stays free of a Repo import; it only knows how to ask for the pending set.
+    sync.setPendingSource(() => this.repo.pendingPaths())
 
     // Every vault write reaches the journal as it happens, in the repo's coordinates (the watcher speaks
     // vault-relative paths; the repo trees the root). A rename names both ends: the old path has to be
@@ -72,9 +86,7 @@ export class SyncPlugin extends Plugin {
         void this.repo.add(join('vault', path)).catch((error) => this.logger.error('Could not journal a vault change', error))
     })
     // A file left in the cloud comes down before whatever opens it mounts; a file that is on disk costs
-    // one index lookup here and nothing else. The policy that leaves files in the cloud is not yet
-    // surfaced (23-storage-model F-06: a pending file is not in the tree until the explorer learns of
-    // it), so today this hook is exercised only by tests and by a store another version left pending.
+    // one index lookup here and nothing else.
     const notes = ctx.extensions.get(NotesExtension)
     notes.registerPreparer(async (path) => {
       const full = join('vault', path)
@@ -132,6 +144,11 @@ export class SyncPlugin extends Plugin {
     const cfg = await ctx.services.get(PluginConfig).tryRead(SyncConfigSchema)
 
     if (this.stopping || cfg == null || !cfg.serverUrl) return
+
+    // A file without a size is a manifest entry written before sizes existed (completeLegacyEntries
+    // fills it in the next time this device writes a snapshot) — kept, never left in the cloud on a
+    // guess about how big it might be.
+    this.repo.setMaterializePolicy((file) => cfg.materializeUpTo === 0 || file.size == null || file.size <= cfg.materializeUpTo * 1024 * 1024)
 
     // Sync requires the user's identity: the keyring both encrypts content and authenticates to the
     // (protected) remote. Without it there is no safe way to sync, so we stay idle and surface why.

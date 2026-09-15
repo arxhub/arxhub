@@ -1,9 +1,11 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { illegalState } from '@arxhub/errors'
 import type { FileHistory, SyncEngine } from '@arxhub/sync'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 
 export type SyncStatus = 'idle' | 'syncing' | 'error'
+
+const VAULT_PREFIX = 'vault/'
 
 export class SyncExtension extends Extension {
   readonly status = ref<SyncStatus>('idle')
@@ -14,13 +16,21 @@ export class SyncExtension extends Extension {
   // `conflict-*` file while browsing. Not cumulative across rounds: a UI reacting to it (a toast) is
   // meant to fire once per round, not re-announce an older conflict the user already saw.
   readonly lastConflicts = ref<string[]>([])
+  // Paths this device left in the cloud, VAULT-relative (the repo's own `vault/` prefix stripped) —
+  // what the explorer draws as a phantom node. Refreshed from the repo after every sync round and
+  // every materialize(), never read reactively from the repo itself: the extension stays free of a
+  // `Repo` import, and the plugin is the one thing that knows how to ask it.
+  readonly pending = shallowRef<ReadonlySet<string>>(new Set())
   engine: SyncEngine | null = null
   history: FileHistory | null = null
+  // Set by SyncPlugin.configure() — the repo's own pendingPaths(), in repo coordinates (vault/…).
+  private refreshPendingPaths: (() => Promise<string[]>) | null = null
 
   // Bring a file this device left in the cloud onto disk. `path` in the repo's coordinates (vault/…).
   async materialize(path: string): Promise<void> {
     if (!this.engine) throw illegalState('Connect to the sync server to download this file.')
     await this.engine.materialize(path)
+    await this.refreshPending()
   }
 
   // A slice of a file left in the cloud, without materialising it. `path` in the repo's coordinates
@@ -32,6 +42,21 @@ export class SyncExtension extends Extension {
 
   constructor(args: ExtensionArgs) {
     super(args)
+  }
+
+  setPendingSource(refresh: () => Promise<string[]>): void {
+    this.refreshPendingPaths = refresh
+  }
+
+  private async refreshPending(): Promise<void> {
+    if (this.refreshPendingPaths == null) return
+    const paths = await this.refreshPendingPaths()
+    const vaultPaths = new Set<string>()
+    for (const path of paths) {
+      if (!path.startsWith(VAULT_PREFIX)) continue
+      vaultPaths.add(path.slice(VAULT_PREFIX.length))
+    }
+    this.pending.value = vaultPaths
   }
 
   // A round looks at what the journal names — every vault write the watcher saw since the last one —
@@ -57,6 +82,10 @@ export class SyncExtension extends Extension {
       this.logger.error('Sync failed', error)
       this.lastError.value = error instanceof Error ? error.message : String(error)
       this.status.value = 'error'
+    } finally {
+      // Either outcome may have changed what is pending — a round that failed partway can still have
+      // merged a head that left new files in the cloud.
+      await this.refreshPending()
     }
   }
 }

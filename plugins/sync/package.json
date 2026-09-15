@@ -16,13 +16,15 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "@arxhub/config": "workspace:*",
     "vue": "catalog:client"
   },
   "devDependencies": {
+    "@arxhub/logger": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
     "@sinclair/typebox": "catalog:shared",
