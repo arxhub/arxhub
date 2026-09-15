@@ -2,7 +2,7 @@
 import { Icon, Row } from '@arxhub/uikit/core'
 import type { EditorView } from 'prosemirror-view'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { type BlockCommand, matchingCommands, runSlashCommand, type SlashMenuState } from '../slash-commands'
+import { type BlockCommand, canRunSlashCommand, matchingCommands, runSlashCommand, type SlashMenuState } from '../slash-commands'
 
 const props = defineProps<{ view: EditorView; menu: SlashMenuState; menuId: string; commands: readonly BlockCommand[] }>()
 const list = ref<HTMLElement>()
@@ -20,7 +20,11 @@ onUnmounted(() => {
   window.visualViewport?.removeEventListener('resize', resize)
   window.visualViewport?.removeEventListener('scroll', resize)
 })
-const matches = computed(() => matchingCommands(props.menu.query, props.commands))
+// Read per menu state, not per view: the menu state is rebuilt by every transaction while it is open,
+// so a row's availability follows the document without watching the (non-reactive) view.
+const matches = computed(() =>
+  matchingCommands(props.menu.query, props.commands).map((command) => ({ command, disabled: !canRunSlashCommand(props.view.state, command) })),
+)
 const position = computed(() => {
   void viewportRevision.value
   const rect = props.view.coordsAtPos(props.menu.from)
@@ -48,13 +52,15 @@ watch(
   <Teleport to="body">
   <div ref="list" class="slash-menu" role="listbox" aria-label="Insert block" :id="menuId" :style="position" @mousedown.prevent>
     <Row
-      v-for="(command, index) in matches"
+      v-for="({ command, disabled }, index) in matches"
       :key="command.id"
       :id="`${menuId}-${command.id}`"
       as="button"
       role="option"
       :aria-selected="index === menu.index"
+      :aria-disabled="disabled || undefined"
       :selected="index === menu.index"
+      :disabled="disabled"
       @click="runSlashCommand(view.state, view.dispatch, command); view.focus()"
     >
       <Icon :name="command.icon" />{{ command.label }}

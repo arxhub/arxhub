@@ -17,16 +17,23 @@ export interface BlockCommand {
   run: Command
 }
 
+// The trigger paragraph is replaced only while it is empty; one that still has text (a `/` typed at
+// the start of a line the user meant to keep) stays, and the block lands after it — the same shape the
+// `+` handle produces (`insertBlock` in block-actions.ts). A fresh paragraph follows either way, so the
+// caret has a textblock to land in after an atom.
 const insertLeaf =
   (type: string): Command =>
   (state, dispatch) => {
     const { schema } = state
-    const { $from } = state.selection
-    if ($from.parent.type !== schema.nodes.paragraph || $from.parent.content.size !== 0) return false
+    const { $from, empty } = state.selection
+    const leaf = schema.nodes[type]?.createAndFill()
+    if (!empty || !leaf || $from.parent.type !== schema.nodes.paragraph) return false
     if (dispatch) {
-      const from = $from.before()
-      const tr = state.tr.replaceWith(from, $from.after(), [schema.nodes[type].create(), schema.nodes.paragraph.create()])
-      dispatch(tr.setSelection(TextSelection.create(tr.doc, from + 2)).scrollIntoView())
+      const tr = state.tr
+      const replace = $from.parent.content.size === 0
+      const from = replace ? $from.before() : $from.after()
+      tr.replaceWith(from, replace ? $from.after() : from, [leaf, schema.nodes.paragraph.create()])
+      dispatch(tr.setSelection(TextSelection.create(tr.doc, from + leaf.nodeSize + 1)).scrollIntoView())
     }
     return true
   }
@@ -107,11 +114,22 @@ function queryAtCursor(state: EditorState): Omit<SlashMenuState, 'index'> | null
   return match ? { from: $from.start(), to: $from.pos, query: match[1] } : null
 }
 
-export function runSlashCommand(state: EditorState, dispatch: (tr: Transaction) => void, command: BlockCommand): boolean {
+// Whether a row can act is decided the same way running it is — trigger deleted first, command tried on
+// what is left — so a menu never offers a block the Enter key would then refuse.
+function prepareSlashCommand(state: EditorState, command: BlockCommand): Transaction | null {
   const menu = slashKey.getState(state)
-  if (!menu || editorMode(state) !== 'editable') return false
+  if (!menu || editorMode(state) !== 'editable') return null
   const tr = state.tr.delete(menu.from, menu.to)
-  if (!runPreparedCommand(state, tr, command.run)) return false
+  return runPreparedCommand(state, tr, command.run) ? tr : null
+}
+
+export function canRunSlashCommand(state: EditorState, command: BlockCommand): boolean {
+  return prepareSlashCommand(state, command) !== null
+}
+
+export function runSlashCommand(state: EditorState, dispatch: (tr: Transaction) => void, command: BlockCommand): boolean {
+  const tr = prepareSlashCommand(state, command)
+  if (!tr) return false
   dispatch(closeHistory(tr).setMeta(slashKey, 'dismiss').scrollIntoView())
   return true
 }
@@ -163,7 +181,11 @@ export function slashCommands(menuId = 'arx-slash-menu', commands: readonly Bloc
         }
         if (event.key === 'Enter') {
           const command = matchingCommands(menu.query, commands)[menu.index]
-          return command ? runSlashCommand(view.state, view.dispatch, command) : false
+          if (!command) return false
+          // A disabled row takes the key and does nothing, as a disabled menu item would; letting Enter
+          // fall through would split the paragraph and leave the trigger in the text.
+          runSlashCommand(view.state, view.dispatch, command)
+          return true
         }
         return false
       },
