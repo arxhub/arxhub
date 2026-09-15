@@ -6,6 +6,8 @@ import { SyncEngine } from '../engine'
 import { FileHistory } from '../file-history'
 import { VfsSyncRemote } from '../remote/vfs-sync-remote'
 import { Repo } from '../repo'
+import { snapshotHash } from '../snapshot-hash'
+import type { Snapshot } from '../types'
 
 const encode = (text: string) => new TextEncoder().encode(text)
 const decode = (bytes: Uint8Array) => new TextDecoder().decode(bytes)
@@ -142,6 +144,26 @@ test('legacy imports are idempotent across retries and keep their timestamps', a
   expect(await contents(aHistory)).toEqual(['new', 'old'])
   expect((await aHistory.list(query)).at(-1)?.savedAt).toBe(checkpoint.savedAt)
   await expect(aHistory.record({ ...checkpoint, path: 'vault/../../state/secret' })).rejects.toThrow('path')
+})
+
+test('a version whose snapshot fell off the current head chain still reads back', async () => {
+  // A checkpoint is always written as its own snapshot file BEFORE any attempt to link it into head
+  // (see recordCheckpoint's comment on the optimistic-retry gap that a competing writer can still land
+  // in). So a version `list()` already handed back can end up with a snapshot that is no longer
+  // reachable by walking from wherever head ends up — not hypothetically: constructed directly here,
+  // without any race, by pointing head at a sibling snapshot descended from the SAME parent instead.
+  await save('first')
+  const [version] = await aHistory.list(query)
+  const orphaned = await aRepo.getSnapshotFile(version.id).readJSON<Snapshot>()
+
+  const sibling: Snapshot = { parent: orphaned.parent, files: {}, hash: snapshotHash(orphaned.parent, {}), timestamp: orphaned.timestamp + 1 }
+  await aRepo.getSnapshotFile(sibling.hash).writeJSON(sibling)
+  await aRepo.getHeadFile().writeText(sibling.hash)
+
+  // `list()` no longer sees it (head's chain never passes through it) — but the exact version the
+  // dialog already showed is still the one being asked for, and its snapshot is untouched on disk.
+  expect(await aHistory.list(query)).toEqual([])
+  expect(decode(await aHistory.read(query, version))).toBe('first')
 })
 
 test('a stalled remote does not block local checkpoint writes', async () => {

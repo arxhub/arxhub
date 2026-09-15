@@ -79,12 +79,26 @@ export class FileHistory {
   async read(query: FileHistoryQuery, version: FileVersion): Promise<Uint8Array> {
     await this.ready()
     const { known, snapshot } = await this.repo.exclusive(async () => {
-      const known = (await this.versions(query)).find(
-        (entry) => entry.id === version.id && entry.path === version.path && entry.hash === version.hash,
-      )
-      if (!known) throw validation('This version does not belong to the requested file')
-      const snapshot = await this.repo.getSnapshotFile(known.id).readJSON<Snapshot>()
-      return { known, snapshot }
+      // `version.id` already names its own snapshot — a content-addressed file that never changes once
+      // written. Re-deriving it by walking `versions(query)` from the CURRENT head (as this used to)
+      // made `read()` depend on the version still being reachable from wherever head is NOW, not just on
+      // the one snapshot it actually points at: a checkpoint that `recordCheckpoint`'s optimistic retry
+      // (see there) failed to link into head — its snapshot written, but head advancing to a sibling
+      // that does not descend from it — reads back as "does not belong to the requested file" even
+      // though the exact bytes `list()` showed a moment earlier are sitting on disk, untouched. Loading
+      // the named snapshot directly and checking its OWN file entry answers the only question that
+      // matters: does this snapshot really hold what `version` claims.
+      let snapshot: Snapshot
+      try {
+        snapshot = await this.repo.getSnapshotFile(version.id).readJSON<Snapshot>()
+      } catch {
+        throw validation('This version does not belong to the requested file')
+      }
+      const file = snapshot.files[version.path]
+      const belongs =
+        file != null && file.hash === version.hash && ('identity' in query ? file.identity === query.identity : version.path === query.path)
+      if (!belongs) throw validation('This version does not belong to the requested file')
+      return { known: version, snapshot }
     })
     const file = snapshot.files[known.path]
     for (const chunk of file.chunks) {
