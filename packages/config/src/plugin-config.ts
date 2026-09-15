@@ -1,4 +1,5 @@
 import { hasErrorCode } from '@arxhub/errors'
+import { createEventBus, type Unsubscribe } from '@arxhub/events'
 import type { Logger } from '@arxhub/logger'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import type { Static, TObject } from '@sinclair/typebox'
@@ -8,6 +9,15 @@ import { deviceLocalKeys, mergeConfig, pickSchema, splitConfig } from './device-
 import { readConfig, readRawConfig } from './read-config'
 import type { ConfigOptions } from './types'
 import { writeConfig } from './write-config'
+
+// One event per config file this service can write (opts.name ?? 'config'), so a watcher on one
+// section's file does not re-read on a write to another the same plugin happens to keep separately.
+// `value` is the freshly re-read, schema-defaulted config — read once per write() rather than once per
+// watcher, and awaited by write() itself so a caller that awaits write() also sees watch() listeners
+// having already run.
+interface PluginConfigEvents {
+  write: { name: string; value: unknown }
+}
 
 // Per-plugin config service — a single plugin's own TOML config, already scoped to its own views of
 // the plugin buckets. The DI-resolved analog of VfsPlugin's PluginVfs: a plugin reads its config via
@@ -25,11 +35,27 @@ export class PluginConfig {
   // predating the split) still works: with no state view every key stays in the synced file, which is
   // exactly the behaviour this class had before.
   private readonly state?: VirtualFileSystem
+  // Local to this instance, which is itself scoped one-per-plugin (ConfigPlugin.setup) — a plugin only
+  // ever hears its OWN writes, never another plugin's.
+  private readonly bus = createEventBus<PluginConfigEvents>()
 
   constructor(storage: VirtualFileSystem, logger: Logger, state?: VirtualFileSystem) {
     this.storage = storage
     this.logger = logger
     this.state = state
+  }
+
+  // The one way a running plugin learns its own setting changed — fired after every successful write()
+  // through this service, synced or device-local, with the freshly re-read merged value. Implemented on
+  // the write path rather than by polling files, per "Nothing hand-rolls a listener registry" (AGENTS.md):
+  // this reuses createEventBus instead of a bespoke callback list.
+  // `schema` is unused in the body — it exists so a caller's schema argument drives S, the same shape
+  // read()/write() use it for.
+  watch<S extends TObject>(_schema: S, listener: (value: Static<S>) => void, opts: ConfigOptions = {}): Unsubscribe {
+    const name = configPath(opts)
+    return this.bus.on('write', (event) => {
+      if (event.name === name) listener(event.value as Static<S>)
+    })
   }
 
   async read<S extends TObject>(schema: S, opts: ConfigOptions = {}): Promise<Static<S>> {
@@ -59,7 +85,11 @@ export class PluginConfig {
   async write<S extends TObject>(schema: S, data: Partial<Static<S>>, opts: ConfigOptions = {}): Promise<void> {
     const deviceKeys = deviceLocalKeys(schema)
     const state = this.state
-    if (state == null || deviceKeys.size === 0) return writeConfig(this.storage, schema, data, opts, this.logger)
+    if (state == null || deviceKeys.size === 0) {
+      await writeConfig(this.storage, schema, data, opts, this.logger)
+      await this.notifyWritten(schema, opts)
+      return
+    }
 
     const parts = splitConfig(deviceKeys, data as Record<string, unknown>)
     // Two files cannot be written atomically, and a settings section that spans both must not
@@ -92,6 +122,16 @@ export class PluginConfig {
       // The synced failure is what the user has to see and retry; a rollback failure only adds noise.
       throw error
     }
+    await this.notifyWritten(schema, opts)
+  }
+
+  // Re-reads and emits only if something is actually watching — a write with no watcher must not cost
+  // an extra read on every save.
+  private async notifyWritten<S extends TObject>(schema: S, opts: ConfigOptions): Promise<void> {
+    const name = configPath(opts)
+    if (this.bus.listenerCount('write') === 0) return
+    const value = await this.read(schema, opts)
+    this.bus.emit('write', { name, value })
   }
 }
 

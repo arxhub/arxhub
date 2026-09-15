@@ -26,6 +26,7 @@
     "@sinclair/typebox": "catalog:shared",
     "@arxhub/di": "workspace:*",
     "@arxhub/errors": "workspace:*",
+    "@arxhub/events": "workspace:*",
     "@arxhub/logger": "workspace:*",
     "@arxhub/vfs": "workspace:*",
     "smol-toml": "catalog:shared"

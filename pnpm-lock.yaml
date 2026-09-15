@@ -742,6 +742,9 @@ importers:
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../errors
+      '@arxhub/events':
+        specifier: workspace:*
+        version: link:../events
       '@arxhub/logger':
         specifier: workspace:*
         version: link:../logger

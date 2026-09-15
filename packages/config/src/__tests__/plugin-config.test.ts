@@ -153,6 +153,68 @@ describe('PluginConfig over two files', () => {
   })
 })
 
+describe('PluginConfig.watch', () => {
+  let storage: MemoryFileSystem
+  let state: MemoryFileSystem
+  let config: PluginConfig
+
+  beforeEach(() => {
+    storage = new MemoryFileSystem()
+    state = new MemoryFileSystem()
+    config = new PluginConfig(storage, silentLogger(), state)
+  })
+
+  it('fires with the freshly re-read value after a successful write', async () => {
+    const seen: Array<Record<string, unknown>> = []
+    config.watch(Schema, (value) => seen.push(value))
+
+    await config.write(Schema, { 'server.url': 'https://vault.test', 'sync.intervalMinutes': 30, 'ui.theme': 'slate' })
+
+    expect(seen).toEqual([{ 'server.url': 'https://vault.test', 'sync.intervalMinutes': 30, 'ui.theme': 'slate' }])
+  })
+
+  it('fires once per write, spanning both the synced and the device-local file', async () => {
+    const seen: Array<Record<string, unknown>> = []
+    config.watch(Schema, (value) => seen.push(value))
+
+    await config.write(Schema, { 'sync.intervalMinutes': 12 })
+    await config.write(Schema, { 'server.url': 'https://second.test' })
+
+    expect(seen).toHaveLength(2)
+    expect(seen[1]).toMatchObject({ 'server.url': 'https://second.test', 'sync.intervalMinutes': 12 })
+  })
+
+  it('does not fire when the write throws — nothing landed, so nothing changed', async () => {
+    storage.failWriteOn = PATH
+    const seen: Array<Record<string, unknown>> = []
+    config.watch(Schema, (value) => seen.push(value))
+
+    await expect(config.write(Schema, { 'server.url': 'https://vault.test' })).rejects.toThrow()
+
+    expect(seen).toEqual([])
+  })
+
+  it('stops notifying once unsubscribed', async () => {
+    const seen: Array<Record<string, unknown>> = []
+    const unsubscribe = config.watch(Schema, (value) => seen.push(value))
+    unsubscribe()
+
+    await config.write(Schema, { 'ui.theme': 'slate' })
+
+    expect(seen).toEqual([])
+  })
+
+  it('only reacts to writes on its own file name, not another config file the same instance keeps', async () => {
+    const Other = Type.Object({ flag: Type.Boolean({ default: false }) })
+    const seen: Array<Record<string, unknown>> = []
+    config.watch(Schema, (value) => seen.push(value))
+
+    await config.write(Other, { flag: true }, { name: 'other' })
+
+    expect(seen).toEqual([])
+  })
+})
+
 describe('PluginConfig with no device view', () => {
   it('keeps every key in the synced file, which is what it did before the split', async () => {
     const storage = new MemoryFileSystem()
