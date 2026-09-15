@@ -65,6 +65,7 @@ async function closeDoc() {
   pageObserver?.disconnect()
   for (const task of activeRenders.values()) task.cancel()
   activeRenders.clear()
+  renderQueue.clear()
   canvasEls.clear()
   const closing = loadingTask
   loadingTask = null
@@ -126,21 +127,24 @@ function onCanvasRef(index: number, el: Element | null) {
   void renderPage(index, canvas)
 }
 
-async function renderPage(index: number, canvas: HTMLCanvasElement) {
+// One render at a time per canvas, in arrival order. pdf.js refuses a second render() on a canvas
+// until the previous task has actually settled, and cancel() only asks — so two callers (the
+// intersection observer and the zoom/resize watcher fire independently) are chained rather than
+// raced: the in-flight task is asked to stop, and the next render starts only once the chain's
+// previous link has awaited it. Seen in the desktop app as 'Cannot use the same canvas during
+// multiple render() operations'; Chromium's timing never produced it.
+const renderQueue = new Map<number, Promise<void>>()
+
+function renderPage(index: number, canvas: HTMLCanvasElement): Promise<void> {
+  activeRenders.get(index)?.cancel()
+  const next = (renderQueue.get(index) ?? Promise.resolve()).then(() => renderPageNow(index, canvas))
+  renderQueue.set(index, next)
+  return next
+}
+
+async function renderPageNow(index: number, canvas: HTMLCanvasElement) {
   if (doc == null || pageSize.value == null) return
   const current = ticket
-  // A page mid-render when the zoom changes (or the observer fires while the resize watcher already
-  // did) gets a second call before the first resolves. pdf.js refuses a second render() on a canvas
-  // until the previous task has actually settled — cancel() alone is not enough, it only asks — so the
-  // stale task is cancelled AND awaited before the canvas is handed a new one. Seen in the desktop
-  // app as 'Cannot use the same canvas during multiple render() operations'.
-  const stale = activeRenders.get(index)
-  if (stale != null) {
-    stale.cancel()
-    await stale.promise.catch(() => undefined)
-    if (activeRenders.get(index) === stale) activeRenders.delete(index)
-  }
-  if (current !== ticket || doc == null || pageSize.value == null) return
   try {
     const page = await doc.getPage(index)
     if (current !== ticket || pageSize.value == null) return
