@@ -15,6 +15,26 @@ env:
   NODE_VERSION: 22
 
 jobs:
+  version-check:
+    name: One version number
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The root package.json is what every instance and the Tauri bundle read; Cargo.toml cannot read
+      # it and is held equal by hand, so this is what makes a drift visible instead of silent (FR-211).
+      - name: Cargo.toml matches the root package.json
+        run: |
+          node -e '
+            const fs = require("fs")
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")).version
+            const cargo = fs.readFileSync("instances/app/src-tauri/Cargo.toml", "utf8").match(/^version = "([^"]+)"/m)?.[1]
+            if (cargo !== pkg) {
+              console.error(`instances/app/src-tauri/Cargo.toml says ${cargo}, package.json says ${pkg} — one number, keep them equal`)
+              process.exit(1)
+            }
+            console.log(`version ${pkg}`)
+          '
+
   client-check:
     name: Check browser client
     runs-on: ubuntu-latest
@@ -267,7 +287,7 @@ jobs:
   release:
     name: Publish GitHub release
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [client-check, app-build, server-build, server-image, linux-flatpak, macos-dmg, windows-nsis, android-apk]
+    needs: [version-check, client-check, app-build, server-build, server-image, linux-flatpak, macos-dmg, windows-nsis, android-apk]
     runs-on: ubuntu-latest
     permissions:
       contents: write
