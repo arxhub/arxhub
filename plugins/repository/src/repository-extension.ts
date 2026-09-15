@@ -5,6 +5,7 @@ import type { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { FileHistory, type Repo, type Snapshot } from '@arxhub/sync'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { type ShallowRef, shallowRef } from 'vue'
+import { type ContentMergerRegistration, ContentMergerRegistry } from './content-mergers'
 import { migrateRepositoryStore, REPO_STORE_PATH } from './store-migration'
 
 const VAULT_PREFIX = 'vault/'
@@ -34,6 +35,7 @@ export class RepositoryExtension extends Extension {
 
   private readonly rootVfs: VirtualFileSystem
   private readonly keyring: KeyringExtension
+  private readonly mergers: ContentMergerRegistry
   private remote: RepositoryRemote | null = null
   private preparation: Promise<void> | null = null
 
@@ -42,6 +44,8 @@ export class RepositoryExtension extends Extension {
     this.repo = args.repo
     this.rootVfs = args.rootVfs
     this.keyring = args.keyring
+    this.mergers = new ContentMergerRegistry(this.logger)
+    this.repo.setContentMerger(this.mergers.merge)
     this.history = new FileHistory(
       this.repo,
       () => this.ready(),
@@ -57,6 +61,13 @@ export class RepositoryExtension extends Extension {
   // rather than silently pretending the content is here when sync is off.
   setRemote(remote: RepositoryRemote | null): void {
     this.remote = remote
+  }
+
+  // The one way a plugin contributes a merge for a format it owns (F-05, `14-sync`); `Repo`'s own slot
+  // is taken by the registry at construction and never handed out. Callable in configure(); the
+  // returned function unregisters, and a plugin calls it in its stop().
+  registerContentMerger(registration: ContentMergerRegistration): () => void {
+    return this.mergers.register(registration)
   }
 
   isPending(vaultPath: string): Promise<boolean> {

@@ -1,18 +1,25 @@
 import { ConsoleLogger } from '@arxhub/logger'
 import type { KeyringExtension } from '@arxhub/plugin-protection/ui'
-import type { Repo } from '@arxhub/sync'
+import type { ContentMerger, Repo } from '@arxhub/sync'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { describe, expect, test, vi } from 'vitest'
 import { RepositoryExtension } from '../repository-extension'
 import { REPO_STORE_PATH } from '../store-migration'
 
 // Only the methods the extension actually calls are real — same convention as sync-extension.test.ts's fakeEngine.
-function fakeRepo(pending: Set<string> = new Set(), prepare: () => Promise<void> = async () => {}): Repo {
+// `setContentMerger` records what it was handed, so a test can drive the repo's side of the registry.
+type FakeRepo = Repo & { contentMergers: (ContentMerger | null)[] }
+function fakeRepo(pending: Set<string> = new Set(), prepare: () => Promise<void> = async () => {}): FakeRepo {
+  const contentMergers: (ContentMerger | null)[] = []
   return {
+    contentMergers,
     isPending: async (path: string) => pending.has(path),
     pendingPaths: async () => [...pending],
     prepare,
-  } as unknown as Repo
+    setContentMerger: (merger: ContentMerger | null) => {
+      contentMergers.push(merger)
+    },
+  } as unknown as FakeRepo
 }
 
 function fakeKeyring(changed = false): KeyringExtension {
@@ -24,12 +31,14 @@ function fakeRootVfs(overrides: Partial<VirtualFileSystem> = {}): VirtualFileSys
 }
 
 function extension(opts: { pending?: Set<string>; changed?: boolean; rootVfs?: VirtualFileSystem; prepare?: () => Promise<void> } = {}) {
-  return new RepositoryExtension({
+  const repo = fakeRepo(opts.pending, opts.prepare)
+  const repository = new RepositoryExtension({
     logger: new ConsoleLogger(),
-    repo: fakeRepo(opts.pending, opts.prepare),
+    repo,
     rootVfs: opts.rootVfs ?? fakeRootVfs(),
     keyring: fakeKeyring(opts.changed),
   })
+  return Object.assign(repository, { fakeRepo: repo })
 }
 
 describe('pending', () => {
@@ -98,5 +107,35 @@ describe('ready', () => {
     await repository.ready()
 
     expect(del).not.toHaveBeenCalled()
+  })
+})
+
+describe('registerContentMerger', () => {
+  test('the repo is handed ONE merger, at construction, whatever is registered later', () => {
+    const repository = extension()
+    repository.registerContentMerger({ id: 'a', matches: () => true, merge: async () => null })
+    repository.registerContentMerger({ id: 'b', matches: () => true, merge: async () => null })
+    expect(repository.fakeRepo.contentMergers).toHaveLength(1)
+    expect(typeof repository.fakeRepo.contentMergers[0]).toBe('function')
+  })
+
+  test('a registration is reached through the merger the repo holds, with the repo-relative path', async () => {
+    const repository = extension()
+    const merge = vi.fn<ContentMerger>(async (_path, _base, local) => ({ merged: local, conflicts: 0 }))
+    repository.registerContentMerger({ id: 'text', matches: (path) => path.endsWith('.md'), merge })
+
+    const local = new Uint8Array([1])
+    const result = await repository.fakeRepo.contentMergers[0]?.('vault/a.md', null, local, new Uint8Array([2]))
+
+    expect(result).toEqual({ merged: local, conflicts: 0 })
+    expect(merge.mock.calls[0][0]).toBe('vault/a.md')
+  })
+
+  test('a duplicate id is refused, and the returned function frees it', () => {
+    const repository = extension()
+    const unregister = repository.registerContentMerger({ id: 'arx', matches: () => true, merge: async () => null })
+    expect(() => repository.registerContentMerger({ id: 'arx', matches: () => true, merge: async () => null })).toThrow(/arx/)
+    unregister()
+    expect(() => repository.registerContentMerger({ id: 'arx', matches: () => true, merge: async () => null })).not.toThrow()
   })
 })
