@@ -2,7 +2,7 @@
   "name": "@arxhub/plugin-preview",
   "sideEffects": false,
   "version": "0.1.0",
-  "description": "Viewers for images, audio and video in the vault",
+  "description": "Viewers for images, audio, video and PDF in the vault",
   "keywords": [
     "arxhub"
   ],
@@ -20,6 +20,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "pdfjs-dist": "catalog:client",
     "vue": "catalog:client"
   },
   "devDependencies": {

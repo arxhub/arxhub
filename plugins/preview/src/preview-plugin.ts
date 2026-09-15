@@ -5,8 +5,10 @@ import { markRaw } from 'vue'
 import { manifest } from './manifest'
 import { extensionsOf, MEDIA_KINDS, type MediaKind } from './media'
 import MediaPanel from './ui/MediaPanel.vue'
+import PdfPanel from './ui/PdfPanel.vue'
 
 export const PREVIEW_PANEL_ID = 'arxhub.preview'
+export const PDF_PANEL_ID = 'arxhub.preview.pdf'
 
 const TITLES: Record<MediaKind, string> = { image: 'Image', audio: 'Audio', video: 'Video' }
 
@@ -26,6 +28,9 @@ export class PreviewPlugin extends Plugin {
     // frames open through the panel store, the viewer registration is what claims the extensions.
     const { store } = ctx.extensions.get(PanelStoreExtension)
     store.registerPanel({ id: PREVIEW_PANEL_ID, title: 'Preview', component: markRaw(MediaPanel) })
+    // A second panel definition rather than a `kind` on the same one: a PDF is pages on a stage, not an
+    // element `mediaOf` can name, and the panel store maps one definition to one component.
+    store.registerPanel({ id: PDF_PANEL_ID, title: 'PDF', component: markRaw(PdfPanel) })
 
     const notes = ctx.extensions.get(NotesExtension)
     for (const kind of MEDIA_KINDS) {
@@ -40,5 +45,14 @@ export class PreviewPlugin extends Plugin {
         order: 5,
       })
     }
+
+    notes.registerViewer({
+      id: PDF_PANEL_ID,
+      panelId: PDF_PANEL_ID,
+      title: 'PDF',
+      extensions: ['.pdf'],
+      component: PdfPanel,
+      order: 5,
+    })
   }
 }

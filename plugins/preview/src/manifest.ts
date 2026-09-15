@@ -4,5 +4,5 @@ export const manifest = definePluginManifest({
   name: 'Preview',
   version: '0.1.0',
   author: 'arxhub',
-  description: 'Viewers for images, audio and video',
+  description: 'Viewers for images, audio, video and PDF',
 })
