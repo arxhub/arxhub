@@ -212,6 +212,11 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          # The action's default is `tools platform-tools`; Google stopped serving the legacy `tools`
+          # package on 2026-09-15 (android-actions/setup-android#537), so the default fails inside the
+          # action before our own sdkmanager line below ever runs.
+          packages: platform-tools
       - run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.2.12479018'
       - uses: dtolnay/rust-toolchain@stable
         with:
