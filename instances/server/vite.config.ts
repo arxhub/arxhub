@@ -51,7 +51,7 @@ export default defineConfig((env) => {
 
         async configureServer(server) {
           const { createArxHub } = await server.ssrLoadModule('/src/arxhub.ts')
-          const arxhub = await createArxHub()
+          const arxhub = await createArxHub({ version })
 
           server.httpServer?.on('close', async () => {
             await arxhub?.stop()

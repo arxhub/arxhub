@@ -34,7 +34,7 @@ function readDisabledPlugins(): string[] {
     .filter(Boolean)
 }
 
-export async function createArxHub(): Promise<ArxHub> {
+export async function createArxHub({ version }: { version: string }): Promise<ArxHub> {
   // The headless counterpart of the client's crash screen: there is nobody to click a button here, so
   // the same two switches come from the environment. Essential plugins (the gateway and the auth
   // guard) ignore both — a recovery boot must not be a way to expose an unprotected vault.
@@ -69,7 +69,7 @@ export async function createArxHub(): Promise<ArxHub> {
         .filter(Boolean)
     : '*'
 
-  arxhub.plugins.register(GatewayServerPlugin, () => ({ port: readPort() }))
+  arxhub.plugins.register(GatewayServerPlugin, () => ({ port: readPort(), version }))
   // Guard every route with signed-request auth. TOFU pins the first valid client key and, via
   // onPair, persists it so the next boot loads it above. GETs under the published-content prefix
   // are the ONE deliberate public hole (read-only, method-restricted).

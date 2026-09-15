@@ -12,7 +12,7 @@ import { NodeFileSystem } from '@arxhub/vfs-node'
 // Local-only (never synced) home for the TOFU pin. Lives under state/, like the sync repo store.
 const PINNED_KEY_FILE = 'state/protection/pinned-key'
 
-export async function createArxHub(port: number): Promise<ArxHub> {
+export async function createArxHub(port: number, version: string): Promise<ArxHub> {
   const arxhub = new ArxHub()
   // Same knob as the server instance. E2E runs point it at a throwaway directory — otherwise a test
   // would pin its ephemeral key into the developer's real vault and unpair their actual devices.
@@ -34,7 +34,7 @@ export async function createArxHub(port: number): Promise<ArxHub> {
         .filter(Boolean)
     : '*'
 
-  arxhub.plugins.register(GatewayServerPlugin, () => ({ port }))
+  arxhub.plugins.register(GatewayServerPlugin, () => ({ port, version }))
   // Guard every route with signed-request auth. TOFU pins the first valid client key and, via
   // onPair, persists it so the next boot loads it above. GETs under the published-content prefix
   // are the ONE deliberate public hole (read-only, method-restricted).

@@ -1,6 +1,6 @@
 import { createArxHub } from './arxhub'
 
-const arxhub = await createArxHub()
+const arxhub = await createArxHub({ version: __APP_VERSION__ })
 
 console.log('ArxHub server started')
 

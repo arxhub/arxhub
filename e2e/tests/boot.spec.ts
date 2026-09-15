@@ -12,6 +12,11 @@ test.describe('application boot', () => {
   test('reaches the working tree over the protected API', async ({ app }) => {
     const response = await app.request.get('/healthcheck')
     expect(response.status()).toBe(200)
+    // FR-210: the server names its build to whoever can reach it, and FR-43 bounds the answer to exactly
+    // that — the key set is asserted, not just the two fields.
+    const body = (await response.json()) as Record<string, unknown>
+    expect(Object.keys(body).sort()).toEqual(['status', 'version'])
+    expect(body).toMatchObject({ status: 'ok', version: expect.stringMatching(/^\d+\.\d+\.\d+/) })
 
     // The listener goes on BEFORE the boot that makes the calls. The vault is read while the app comes
     // up, so a watcher installed once `app` had already booted could never have seen a refusal — which

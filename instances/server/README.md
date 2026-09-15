@@ -17,10 +17,11 @@ docker run -d --name arxhub \
   arxhub-server
 ```
 
-Check that it is running:
+Check that it is running — the answer names the build, and nothing about the store (FR-43):
 
 ```bash
 curl http://localhost:3000/healthcheck
+# {"status":"ok","version":"0.1.7"}
 ```
 
 The default port is `3000`. Set `ARXHUB_PORT` to change it. Set `ARXHUB_DATA_DIR` when running the
