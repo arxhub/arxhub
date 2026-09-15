@@ -23,6 +23,13 @@ export class SyncExtension extends Extension {
     await this.engine.materialize(path)
   }
 
+  // A slice of a file left in the cloud, without materialising it. `path` in the repo's coordinates
+  // (vault/…) — same convention as materialize above.
+  async readRange(path: string, offset: number, length?: number): Promise<Uint8Array> {
+    if (!this.engine) throw illegalState('Connect to the sync server to read this file.')
+    return this.engine.readRange(path, offset, length)
+  }
+
   constructor(args: ExtensionArgs) {
     super(args)
   }

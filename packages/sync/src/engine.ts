@@ -1,5 +1,6 @@
 import { hasErrorCode, illegalState } from '@arxhub/errors'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
+import { resolveRange } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
 import { syncHeadMoved } from './errors'
@@ -199,9 +200,15 @@ export class SyncEngine {
         if (!(await this.local.getChunkFile(chunk.hash).exists())) missing.push(chunk.hash)
       }
     }
+    await this.fetchAndStore(missing)
+  }
 
-    for (let i = 0; i < missing.length; i += GET_BATCH) {
-      const batch = missing.slice(i, i + GET_BATCH)
+  // Fetches hashes not already local, batched by GET_BATCH, verifies each against its own address
+  // (zero-trust: a malicious server can swap blobs under hash-named keys) and writes it to the local
+  // chunk store. Shared by a head fetch and a range read so the verification rule lives in one place.
+  private async fetchAndStore(hashes: string[]): Promise<void> {
+    for (let i = 0; i < hashes.length; i += GET_BATCH) {
+      const batch = hashes.slice(i, i + GET_BATCH)
       const objects = await this.remote.getObjects(batch)
       for (const hash of batch) {
         const content = objects.get(hash)
@@ -215,6 +222,77 @@ export class SyncEngine {
         await this.local.getChunkFile(hash).write(content)
       }
     }
+  }
+
+  // A slice of a file this device left in the cloud, without materialising it — for playback/preview
+  // of a pending file (e.g. scrubbing a video) where downloading the whole thing first would be the
+  // opposite of the point. Deliberately outside the `sync` lock: a round in progress must not block a
+  // read, and every write this makes is idempotent (content-addressed, `write()` of the same bytes
+  // twice is harmless) so a concurrent round writing the same chunk is not a race worth guarding.
+  async readRange(path: string, offset: number, length?: number): Promise<Uint8Array> {
+    const head = await this.local.getHeadSnapshot()
+    const file = head.files[path]
+    if (file == null) throw illegalState(`${path} is not in the manifest`)
+
+    // A legacy entry (written before chunk sizes existed) cannot map an offset to a chunk without
+    // reading every chunk before it anyway — fetch the whole file and cut, honestly, rather than guess.
+    if (file.chunks.some((chunk) => chunk.size === undefined)) {
+      await this.fetchFile(head, path)
+      const bytes = await this.concatChunks(file.chunks.map((chunk) => chunk.hash))
+      const { start, end } = resolveRange(bytes.byteLength, offset, length)
+      return bytes.slice(start, end)
+    }
+
+    const size = file.size ?? file.chunks.reduce((total, chunk) => total + (chunk.size ?? 0), 0)
+    const { start, end } = resolveRange(size, offset, length)
+    if (start >= end) return new Uint8Array(0)
+
+    // Map [start, end) onto the chunks it intersects, in file order.
+    const intersecting: { hash: string; chunkStart: number; chunkEnd: number }[] = []
+    let running = 0
+    for (const chunk of file.chunks) {
+      const chunkStart = running
+      const chunkEnd = running + (chunk.size ?? 0)
+      running = chunkEnd
+      if (chunkEnd <= start || chunkStart >= end) continue
+      intersecting.push({ hash: chunk.hash, chunkStart, chunkEnd })
+    }
+
+    const missing: string[] = []
+    for (const { hash } of intersecting) {
+      if (!(await this.local.getChunkFile(hash).exists())) missing.push(hash)
+    }
+    await this.fetchAndStore(missing)
+
+    const result = new Uint8Array(end - start)
+    let written = 0
+    for (const { hash, chunkStart, chunkEnd } of intersecting) {
+      const bytes = await this.local.getChunkFile(hash).read()
+      const from = Math.max(0, start - chunkStart)
+      const to = Math.min(chunkEnd - chunkStart, end - chunkStart)
+      result.set(bytes.subarray(from, to), written)
+      written += to - from
+    }
+    return result
+  }
+
+  // Concatenates whole chunks in order — used only by the legacy (unsized) fallback above, where the
+  // chunks are already fully local by the time this runs (fetchFile just fetched them all).
+  private async concatChunks(hashes: string[]): Promise<Uint8Array> {
+    const parts: Uint8Array[] = []
+    let total = 0
+    for (const hash of hashes) {
+      const bytes = await this.local.getChunkFile(hash).read()
+      parts.push(bytes)
+      total += bytes.byteLength
+    }
+    const result = new Uint8Array(total)
+    let offset = 0
+    for (const part of parts) {
+      result.set(part, offset)
+      offset += part.byteLength
+    }
+    return result
   }
 
   // Zero-trust: a snapshot must prove itself twice — the declared hash must match the address it
