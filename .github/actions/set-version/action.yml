@@ -1,0 +1,30 @@
+name: Set build version
+description: >-
+  Writes the version this build carries into the three files that hold the number — the root
+  package.json (what every instance and the Tauri bundle read), Cargo.toml and Cargo.lock — so the
+  version-check job's rule holds on a prerelease build too. A tag build carries the tag as is; any
+  other build carries <base>-<sha7>, <base> being the root package.json version without a prerelease
+  suffix.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        node -e '
+          const fs = require("fs")
+          const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"))
+          const version =
+            process.env.GITHUB_REF_TYPE === "tag"
+              ? process.env.GITHUB_REF_NAME
+              : `${pkg.version.split("-")[0]}-${process.env.GITHUB_SHA.slice(0, 7)}`
+          pkg.version = version
+          fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n")
+          const rewrite = (path, pattern) => {
+            const source = fs.readFileSync(path, "utf8")
+            if (!pattern.test(source)) throw new Error(`${path}: found no version to rewrite`)
+            fs.writeFileSync(path, source.replace(pattern, `$1${version}$2`))
+          }
+          rewrite("instances/app/src-tauri/Cargo.toml", /^(version = ")[^"]+(")/m)
+          rewrite("instances/app/src-tauri/Cargo.lock", /^(name = "arxhub"\nversion = ")[^"]+(")/m)
+          console.log(`build version ${version}`)
+        '

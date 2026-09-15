@@ -63,14 +63,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Set prerelease version
-        env:
-          COMMIT_SHA: ${{ github.sha }}
-        run: |
-          BASE_VERSION="$GITHUB_REF_NAME"
-          if [ "$GITHUB_REF_TYPE" != "tag" ]; then BASE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('instances/app/package.json', 'utf8')).version.split('-')[0]"); fi
-          export BUILD_VERSION="${BASE_VERSION}-${COMMIT_SHA:0:7}"
-          node -e "const fs=require('fs'); const p='instances/app/package.json'; const x=JSON.parse(fs.readFileSync(p)); x.version=process.env.BUILD_VERSION; fs.writeFileSync(p, JSON.stringify(x, null, 2)+'\\n')"
+      - uses: ./.github/actions/set-version
       - run: pnpm --filter app build
 
   server-build:
@@ -124,14 +117,7 @@ jobs:
           flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak --user install --noninteractive flathub org.gnome.Platform//48 org.gnome.Sdk//48
       - run: pnpm install --frozen-lockfile
-      - name: Set prerelease version
-        env:
-          COMMIT_SHA: ${{ github.sha }}
-        run: |
-          BASE_VERSION="$GITHUB_REF_NAME"
-          if [ "$GITHUB_REF_TYPE" != "tag" ]; then BASE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('instances/app/package.json', 'utf8')).version.split('-')[0]"); fi
-          export BUILD_VERSION="${BASE_VERSION}-${COMMIT_SHA:0:7}"
-          node -e "const fs=require('fs'); const p='instances/app/package.json'; const x=JSON.parse(fs.readFileSync(p)); x.version=process.env.BUILD_VERSION; fs.writeFileSync(p, JSON.stringify(x, null, 2)+'\\n')"
+      - uses: ./.github/actions/set-version
       - run: pnpm --filter app exec tauri build --bundles appimage
       - name: Prepare Flatpak payload
         run: |
@@ -169,14 +155,7 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - run: pnpm install --frozen-lockfile
-      - name: Set prerelease version
-        env:
-          COMMIT_SHA: ${{ github.sha }}
-        run: |
-          BASE_VERSION="$GITHUB_REF_NAME"
-          if [ "$GITHUB_REF_TYPE" != "tag" ]; then BASE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('instances/app/package.json', 'utf8')).version.split('-')[0]"); fi
-          export BUILD_VERSION="${BASE_VERSION}-${COMMIT_SHA:0:7}"
-          node -e "const fs=require('fs'); const p='instances/app/package.json'; const x=JSON.parse(fs.readFileSync(p)); x.version=process.env.BUILD_VERSION; fs.writeFileSync(p, JSON.stringify(x, null, 2)+'\\n')"
+      - uses: ./.github/actions/set-version
       - run: pnpm --filter app exec tauri build --target ${{ matrix.target }} --bundles dmg
       - uses: actions/upload-artifact@v4
         with:
@@ -199,15 +178,7 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
       - run: pnpm install --frozen-lockfile
-      - name: Set prerelease version
-        shell: bash
-        env:
-          COMMIT_SHA: ${{ github.sha }}
-        run: |
-          BASE_VERSION="$GITHUB_REF_NAME"
-          if [ "$GITHUB_REF_TYPE" != "tag" ]; then BASE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('instances/app/package.json', 'utf8')).version.split('-')[0]"); fi
-          export BUILD_VERSION="${BASE_VERSION}-${COMMIT_SHA:0:7}"
-          node -e "const fs=require('fs'); const p='instances/app/package.json'; const x=JSON.parse(fs.readFileSync(p)); x.version=process.env.BUILD_VERSION; fs.writeFileSync(p, JSON.stringify(x, null, 2)+'\\n')"
+      - uses: ./.github/actions/set-version
       - run: pnpm --filter app exec tauri build --target x86_64-pc-windows-msvc --bundles nsis
       - uses: actions/upload-artifact@v4
         with:
@@ -242,14 +213,7 @@ jobs:
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
       - run: pnpm install --frozen-lockfile
-      - name: Set prerelease version
-        env:
-          COMMIT_SHA: ${{ github.sha }}
-        run: |
-          BASE_VERSION="$GITHUB_REF_NAME"
-          if [ "$GITHUB_REF_TYPE" != "tag" ]; then BASE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('instances/app/package.json', 'utf8')).version.split('-')[0]"); fi
-          export BUILD_VERSION="${BASE_VERSION}-${COMMIT_SHA:0:7}"
-          node -e "const fs=require('fs'); const p='instances/app/package.json'; const x=JSON.parse(fs.readFileSync(p)); x.version=process.env.BUILD_VERSION; fs.writeFileSync(p, JSON.stringify(x, null, 2)+'\\n')"
+      - uses: ./.github/actions/set-version
       - name: Configure Android signing
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
