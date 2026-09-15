@@ -2,7 +2,7 @@ import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { basename, dirname, extname, join } from '@arxhub/path'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { type VirtualEntry, type VirtualFileSystem, renameEntry as vfsRenameEntry } from '@arxhub/vfs'
-import { ref, type ShallowRef } from 'vue'
+import { ref, type ShallowRef, type WatchStopHandle, watch } from 'vue'
 
 export interface TreeNode {
   entry: VirtualEntry
@@ -70,6 +70,41 @@ export function mergePendingNodes(nodes: TreeNode[], dirPath: string, pendingPat
   return [...nodes, ...phantoms]
 }
 
+// Same identity iff the same elements in the same order — the cheap check that lets a real directory
+// whose subtree didn't change keep its own node object rather than being rebuilt on every pending-set
+// tick.
+function sameNodes(a: TreeNode[] | null, b: TreeNode[]): boolean {
+  return a != null && a.length === b.length && a.every((node, i) => node === b[i])
+}
+
+// Pure: the other half of mergePendingNodes — drops a phantom file whose path left the pending set (it
+// was materialized, or the remote deleted it outright) and a phantom directory that pruning leaves with
+// nothing under it, recursing into every real directory that is already listed (`children != null` —
+// one that has never been expanded has nothing to reconcile; merging it happens when it IS expanded).
+// A real node whose own subtree needed no change comes back as the exact object it went in as, so a
+// caller can tell "nothing happened here" from "something did" without a deep diff of its own.
+export function reconcilePending(nodes: TreeNode[], dirPath: string, pending: ReadonlySet<string>): TreeNode[] {
+  const kept: TreeNode[] = []
+  for (const node of nodes) {
+    if (node.pending) {
+      if (node.entry.kind === 'file') {
+        if (pending.has(node.entry.pathname)) kept.push(node)
+        continue
+      }
+      const children = reconcilePending(node.children ?? [], node.entry.pathname, pending)
+      if (children.length > 0) kept.push(sameNodes(node.children, children) ? node : { ...node, children })
+      continue
+    }
+    if (node.entry.kind === 'dir' && node.children != null) {
+      const children = reconcilePending(node.children, node.entry.pathname, pending)
+      kept.push(sameNodes(node.children, children) ? node : { ...node, children })
+    } else {
+      kept.push(node)
+    }
+  }
+  return mergePendingNodes(kept, dirPath, pending)
+}
+
 // Other plugins contribute context-menu actions for tree nodes (extension-only inter-plugin
 // channel). Called each time a menu opens; return [] to contribute nothing for a node.
 export type NodeActionContributor = (node: TreeNode) => ActionItem[]
@@ -127,13 +162,34 @@ export class ExplorerExtension extends Extension {
   }
 
   // Wired by the plugin during configure(), against `SyncExtension.pending` — cross-plugin access
-  // goes through an extension, never a direct import.
-  setPendingSource(source: PendingSource): void {
+  // goes through an extension, never a direct import. Returns the watch's stop handle: `Extension` has
+  // no stop hook of its own, so the plugin is the one that can dispose it in its own `stop()`.
+  setPendingSource(source: PendingSource): WatchStopHandle {
     this.pendingSource = source
+    // `pending` is a `ShallowRef` reassigned wholesale on every refresh (never mutated in place), so a
+    // plain `watch` on it fires exactly on those refreshes — no `deep` needed.
+    return watch(source.pending, (current, previous) => this.onPendingChanged(current, previous))
   }
 
   private currentPending(): ReadonlySet<string> {
     return this.pendingSource?.pending.value ?? NO_PENDING
+  }
+
+  // Re-merges the pending set into the tree that is already there — no VFS call, so a sync round that
+  // finishes while nobody is looking updates the tree instantly instead of waiting for the next click.
+  // A path that left the set either materialized (its directory is asked to pick up the real entry, once
+  // per directory) or was deleted outright (nothing to pick up, and refreshDir finding nothing new is
+  // harmless).
+  private onPendingChanged(pending: ReadonlySet<string>, previous: ReadonlySet<string> | undefined): void {
+    this.tree.value = reconcilePending(this.tree.value, this.root, pending)
+
+    const dirsToRefresh = new Set<string>()
+    for (const path of previous ?? NO_PENDING) {
+      if (!pending.has(path)) dirsToRefresh.add(dirname(path))
+    }
+    for (const dir of dirsToRefresh) {
+      void this.refreshDir(dir).catch((error) => this.logger.error('Could not refresh after a pending path resolved', error))
+    }
   }
 
   registerNodeActions(contributor: NodeActionContributor): void {

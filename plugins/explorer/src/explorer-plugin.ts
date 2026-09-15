@@ -2,7 +2,7 @@ import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { NotesExtension } from '@arxhub/plugin-notes/ui'
 import { SyncExtension } from '@arxhub/plugin-sync/ui'
 import { VaultVfs } from '@arxhub/vfs'
-import { markRaw } from 'vue'
+import { markRaw, type WatchStopHandle } from 'vue'
 import { ExplorerExtension } from './explorer-extension'
 import { manifest } from './manifest'
 import FileTreeView from './ui/FileTreeView.vue'
@@ -13,6 +13,9 @@ type ExplorerPluginArgs = PluginArgs & {
 
 export class ExplorerPlugin extends Plugin {
   private readonly root: string
+  // `ExplorerExtension` has no stop hook of its own — the plugin that started the watch is the one
+  // that stops it.
+  private stopPendingWatch: WatchStopHandle | null = null
 
   constructor(args: ExplorerPluginArgs) {
     super(args, manifest)
@@ -35,7 +38,7 @@ export class ExplorerPlugin extends Plugin {
     const notes = ctx.extensions.get(NotesExtension)
     // A pending path is a phantom node under its directory (23-storage-model F-06) — read straight off
     // sync's own extension, never sync's internals.
-    explorer.setPendingSource(ctx.extensions.get(SyncExtension))
+    this.stopPendingWatch = explorer.setPendingSource(ctx.extensions.get(SyncExtension))
 
     // The tree is the navigation of the "Notes" type, not a place of its own — and now that both
     // frames read the type registry, that is the ONLY way it reaches the screen. The mini-app
@@ -53,5 +56,11 @@ export class ExplorerPlugin extends Plugin {
       // rejects a bare file.
       return explorer.createFile(parent, 'New note.arx')
     })
+  }
+
+  override async stop(ctx: PluginContext): Promise<void> {
+    this.stopPendingWatch?.()
+    this.stopPendingWatch = null
+    await super.stop(ctx)
   }
 }
