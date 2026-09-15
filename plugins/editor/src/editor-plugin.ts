@@ -13,6 +13,7 @@ import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
 import { nextTick } from 'vue'
+import { mergeArx } from './arx-merge'
 import { createAssetStore } from './assets'
 import { searchDataSources } from './data-sources'
 import { createDraftStore } from './document-drafts'
@@ -78,6 +79,22 @@ export class ArxEditorPlugin extends Plugin {
     // sync (the optional remote exchange) is switched on.
     const repository = ctx.extensions.get(RepositoryExtension)
     editor.history ??= createSnapshotHistory(() => repository.history, ctx.services.get(PluginVfs).storage)
+    // The only plugin that knows what a `.arx` file's bytes mean, so it is the only one that can offer
+    // a merge finer than "whole file, one side wins, the other becomes a copy" — everything else keeps
+    // going through Repo's default (returning null here is exactly that fallback). A merge failure
+    // (corrupt JSON, a document neither device's schema can read) falls back the same way rather than
+    // failing the whole sync round over one file.
+    repository.repo.setContentMerger(async (path, base, local, remote) => {
+      if (!path.toLowerCase().endsWith('.arx')) return null
+      try {
+        const decoder = new TextDecoder()
+        const { merged, conflicts } = mergeArx(base ? decoder.decode(base) : null, decoder.decode(local), decoder.decode(remote))
+        return { merged: new TextEncoder().encode(merged), conflicts }
+      } catch (error) {
+        this.logger.error(`[editor] could not merge ${path} block by block; falling back to a conflict copy:`, error)
+        return null
+      }
+    })
     editor.links ??= createDocumentLinkStore(
       ctx.services.get(VaultVfs),
       () => editor.kit.schema,

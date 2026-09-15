@@ -171,6 +171,54 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
       ],
       toDOM: (node: Node) => ['div', { class: 'callout', 'data-type': node.attrs.type }, 0] as const,
     },
+    // Written only by a three-way merge (`arx-merge.ts`), never by hand or by a command: a block-level
+    // conflict two devices could not resolve on their own. `atom: true` even though it has real content
+    // (the two sides) — the point is that neither side is directly editable text, only a decision made
+    // through its own component, exactly like an atom node with structured data rather than a leaf.
+    // Preserved wholesale by an older client that does not know this node yet, the same way any other
+    // unrecognised block is (`unknown_block` — see editor-format.ts's `supportedJSON`): no separate
+    // format-version bump exists for base-schema nodes (`task_list`/`select`/`callout` never needed
+    // one either), because that fallback keys off schema membership, not a version number.
+    conflict: {
+      group: 'block',
+      atom: true,
+      content: 'conflict_side conflict_side',
+      attrs: {
+        kind: {
+          default: 'edit-edit',
+          validate: (value: unknown) => {
+            if (value !== 'edit-edit' && value !== 'edit-delete') throw validation('Invalid conflict kind')
+          },
+        },
+      },
+      parseDOM: [
+        {
+          tag: 'div[data-arx-conflict]',
+          getAttrs: (dom: HTMLElement) => ({ kind: dom.dataset.kind === 'edit-delete' ? 'edit-delete' : 'edit-edit' }),
+        },
+      ],
+      toDOM: (node: Node) => ['div', { 'data-arx-conflict': '', 'data-kind': node.attrs.kind }, 0] as const,
+    },
+    // `block*`, not `block+`: an edit-delete conflict has an empty side (whichever side deleted the
+    // file), so the empty side must be a legal `conflict_side` rather than an impossible one.
+    conflict_side: {
+      content: 'block*',
+      attrs: {
+        side: {
+          default: 'local',
+          validate: (value: unknown) => {
+            if (value !== 'local' && value !== 'remote') throw validation('Invalid conflict side')
+          },
+        },
+      },
+      parseDOM: [
+        {
+          tag: 'div[data-arx-conflict-side]',
+          getAttrs: (dom: HTMLElement) => ({ side: dom.dataset.arxConflictSide === 'remote' ? 'remote' : 'local' }),
+        },
+      ],
+      toDOM: (node: Node) => ['div', { 'data-arx-conflict-side': node.attrs.side }, 0] as const,
+    },
   })
 
 const marks = basicSchema.spec.marks.append({

@@ -11,7 +11,10 @@ export interface BlockDifference {
   index: number
 }
 
-function comparable(node: Node): string {
+// Content equality that ignores identity (arxId) — two blocks are "the same" for diff/merge purposes
+// when everything but their id matches. Exported for arx-merge.ts, which needs the same notion of
+// equality for its own (three-way, top-level-only) comparison.
+export function comparable(node: Node): string {
   return JSON.stringify(node.toJSON(), (key, value) => (key === 'arxId' ? undefined : value))
 }
 
