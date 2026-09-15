@@ -1,5 +1,5 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { basename, dirname } from '@arxhub/path'
+import { basename, dirname, join } from '@arxhub/path'
 import { ExplorerExtension, type TreeNode } from '@arxhub/plugin-explorer/ui'
 import { HotkeysExtension } from '@arxhub/plugin-hotkeys/ui'
 import { NOTES_TYPE_ID, NotesExtension, type NoteViewer } from '@arxhub/plugin-notes/ui'
@@ -24,6 +24,7 @@ import { deserialize, serialize } from './editor-format'
 import { declareProseMirrorChords } from './hotkeys'
 import { manifest } from './manifest'
 import { arxPathFor, isMarkdownPath, markdownToArx } from './md-to-arx'
+import { ensureProperties } from './properties'
 import { propertiesContribution } from './properties-block'
 import ArxEditor from './ui/ArxEditor.vue'
 
@@ -136,7 +137,12 @@ export class ArxEditorPlugin extends Plugin {
     if (!ctx.extensions.has(ExplorerExtension)) return
     const explorer = ctx.extensions.get(ExplorerExtension)
     const vault = ctx.services.get(VaultVfs)
-    explorer.registerNodeActions((node) => this.conversionAction(node, explorer, ctx.extensions.get(ShellExtension), vault))
+    const shell = ctx.extensions.get(ShellExtension)
+    explorer.registerNodeActions((node) => this.conversionAction(node, explorer, shell, vault))
+    // A-48: any file that is not itself `.arx` gets a properties card beside it. An `.arx` document
+    // carries its properties block in place — reached with the in-document `/properties` slash command
+    // — so this action does not offer itself there.
+    explorer.registerNodeActions((node) => this.propertiesAction(node, explorer, shell, vault, repository))
   }
 
   private conversionAction(node: TreeNode, explorer: ExplorerExtension, shell: ShellExtension, vault: VirtualFileSystem): ActionItem[] {
@@ -197,6 +203,52 @@ export class ArxEditorPlugin extends Plugin {
       return
     }
     toaster.create({ title: `Converted to ${name}`, description: `${basename(path)} was left in place.`, type: 'success' })
+  }
+
+  // A-48: every file gets a way to hold tags, a favourite flag and key/value fields. An `.arx` document
+  // keeps its own properties block in place (the `/properties` slash command); anything else — a photo, a
+  // PDF, a `.md` note — gets a `<name>.arx` card beside it, linked to its subject by `fileId` (from the
+  // repository's head manifest, when the file has ever been snapshotted) and by path for readability.
+  private propertiesAction(
+    node: TreeNode,
+    explorer: ExplorerExtension,
+    shell: ShellExtension,
+    vault: VirtualFileSystem,
+    repository: RepositoryExtension,
+  ): ActionItem[] {
+    if (node.entry.kind !== 'file' || node.pending || node.entry.pathname.toLowerCase().endsWith('.arx')) return []
+    const path = node.entry.pathname
+    return [
+      {
+        id: 'properties',
+        label: 'Properties…',
+        icon: 'lu:tags',
+        onSelect: () => {
+          this.openPropertiesCard(path, explorer, shell, vault, repository).catch((error) => {
+            this.logger.error(`[editor] failed to open properties for ${path}:`, error)
+            toaster.create({ title: 'Could not open properties', description: reasonOf(error), type: 'error' })
+          })
+        },
+      },
+    ]
+  }
+
+  private async openPropertiesCard(
+    path: string,
+    explorer: ExplorerExtension,
+    shell: ShellExtension,
+    vault: VirtualFileSystem,
+    repository: RepositoryExtension,
+  ): Promise<void> {
+    const cardPath = `${path}.arx`
+    if (!(await vault.exists(cardPath))) {
+      const head = await repository.repo.getHeadSnapshot()
+      const fileId = head.files[join('vault', path)]?.fileId
+      const doc = ensureProperties({ type: 'doc', content: [] }, { path, ...(fileId ? { fileId } : {}) })
+      await vault.write(cardPath, new TextEncoder().encode(JSON.stringify({ version: 1, doc })))
+      await explorer.refreshDir(dirname(cardPath))
+    }
+    await shell.workspace.openObject(NOTES_TYPE_ID, { id: cardPath })
   }
 }
 

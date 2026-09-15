@@ -151,6 +151,10 @@ function handleFocus() {
       />
     </span>
     <span v-else class="name">{{ basename(node.entry.pathname) || node.entry.pathname }}</span>
+    <!-- A-48: the file's `<name>.arx` properties card is folded into this row rather than shown as a
+         separate one (pairCards) — this glyph is the only sign of it, and the row's own "Properties…"
+         action opens the card that already exists here. -->
+    <Icon v-if="!renaming && node.propertiesCardPath" name="lu:tags" :size="14" aria-label="Has properties" class="properties-glyph" />
   </Row>
 
   <template v-if="node.expanded && node.children">
@@ -196,6 +200,11 @@ function handleFocus() {
 .name {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.properties-glyph {
+  flex-shrink: 0;
+  color: var(--gray-10);
 }
 
 /* The input itself owns its geometry (Control role, 32px, --radius-sm, the shared focus-visible ring)

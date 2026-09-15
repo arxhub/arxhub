@@ -12,6 +12,9 @@ export interface TreeNode {
   // (F-06), or a directory that holds nothing else (every one of its descendants is pending too, so
   // there is no real listing behind it). Absent, never false, for an ordinary disk node.
   pending?: boolean
+  // Path of this file's `<name>.arx` properties card (A-48), when one sits beside it in the same
+  // directory — the card is folded into this row rather than drawn as a row of its own (pairCards).
+  propertiesCardPath?: string
 }
 
 // What the extension needs from the repository to draw a pending file where it would sit on disk.
@@ -103,6 +106,41 @@ export function reconcilePending(nodes: TreeNode[], dirPath: string, pending: Re
     }
   }
   return mergePendingNodes(kept, dirPath, pending)
+}
+
+// A-48: a `<name>.arx` properties card sits beside its subject file rather than in front of it in the
+// tree. Scoped by directory (never by basename alone), so a flat list spanning several directories is
+// still handled correctly even though every real caller only ever hands it one directory's own siblings
+// at a time (loadRoot/expand/refreshExpanded). A card whose subject is not among its own siblings is an
+// orphan (the subject was renamed or deleted) and stays a visible row of its own, exactly as it is on
+// disk — the owner can see and deal with it rather than have it silently vanish.
+export function pairCards(nodes: readonly TreeNode[]): TreeNode[] {
+  const namesByDir = new Map<string, Set<string>>()
+  for (const node of nodes) {
+    if (node.entry.kind !== 'file') continue
+    const dir = dirname(node.entry.pathname)
+    const names = namesByDir.get(dir) ?? new Set<string>()
+    names.add(basename(node.entry.pathname))
+    namesByDir.set(dir, names)
+  }
+
+  const folded = new Set<string>() // full pathnames of cards folded into their subject's row
+  for (const node of nodes) {
+    if (node.entry.kind !== 'file') continue
+    const name = basename(node.entry.pathname)
+    if (!name.endsWith('.arx')) continue
+    const subjectName = name.slice(0, -'.arx'.length)
+    if (subjectName !== '' && namesByDir.get(dirname(node.entry.pathname))?.has(subjectName)) folded.add(node.entry.pathname)
+  }
+  if (folded.size === 0) return nodes as TreeNode[]
+
+  return nodes
+    .filter((node) => node.entry.kind !== 'file' || !folded.has(node.entry.pathname))
+    .map((node) => {
+      if (node.entry.kind !== 'file') return node
+      const cardPath = join(dirname(node.entry.pathname), `${basename(node.entry.pathname)}.arx`)
+      return folded.has(cardPath) ? { ...node, propertiesCardPath: cardPath } : node
+    })
 }
 
 // Other plugins contribute context-menu actions for tree nodes (extension-only inter-plugin
@@ -221,7 +259,7 @@ export class ExplorerExtension extends Extension {
 
   async loadRoot(): Promise<void> {
     const entries = await this.vfs.list(this.root)
-    this.tree.value = mergePendingNodes(reconcile(entries, this.tree.value), this.root, this.currentPending())
+    this.tree.value = pairCards(mergePendingNodes(reconcile(entries, this.tree.value), this.root, this.currentPending()))
     await this.refreshExpanded(this.tree.value)
   }
 
@@ -233,7 +271,7 @@ export class ExplorerExtension extends Extension {
       return
     }
     const entries = await this.vfs.list(node.entry.pathname)
-    node.children = mergePendingNodes(reconcile(entries, node.children ?? []), node.entry.pathname, this.currentPending())
+    node.children = pairCards(mergePendingNodes(reconcile(entries, node.children ?? []), node.entry.pathname, this.currentPending()))
     node.expanded = true
     await this.refreshExpanded(node.children)
   }
@@ -243,7 +281,7 @@ export class ExplorerExtension extends Extension {
       if (node.pending) continue
       if (node.entry.kind !== 'dir' || !node.expanded) continue
       const entries = await this.vfs.list(node.entry.pathname)
-      node.children = mergePendingNodes(reconcile(entries, node.children ?? []), node.entry.pathname, this.currentPending())
+      node.children = pairCards(mergePendingNodes(reconcile(entries, node.children ?? []), node.entry.pathname, this.currentPending()))
       await this.refreshExpanded(node.children)
     }
   }
