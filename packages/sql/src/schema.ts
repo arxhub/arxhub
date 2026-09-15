@@ -1,10 +1,11 @@
 // Bump whenever anything below changes shape, and whenever the parser starts producing rows the old
 // walk did not (nested `.arx` list items, at version 3; `block.arx_id`/`block.occurrence`, at version
 // 4 — a search hit needs to reopen the exact block it matched, not merely the first one that reads the
-// same). An index written by another version is discarded, not migrated (FR-217): every row is
-// recoverable by walking the content store, so rebuilding is cheaper than carrying a data migration for
-// a derived index.
-export const SQL_SCHEMA_VERSION = 4
+// same; the `property` table and `document.favorite`/`subject_path`/`subject_file_id`, at version 5 — an
+// `.arx` document's `properties` block, A-48). An index written by another version is discarded, not
+// migrated (FR-217): every row is recoverable by walking the content store, so rebuilding is cheaper
+// than carrying a data migration for a derived index.
+export const SQL_SCHEMA_VERSION = 5
 
 export const SCHEMA_VERSION_KEY = 'schema_version'
 
@@ -25,7 +26,7 @@ export const INDEX_META_DDL = `
 
 // Drop order, children first — the FKs are ON DELETE CASCADE, but CASCADE on the DROP is what makes
 // the order not matter; keeping it right anyway means the statement stays readable.
-export const CONTENT_TABLES = ['ref', 'tag', 'block', 'document'] as const
+export const CONTENT_TABLES = ['property', 'ref', 'tag', 'block', 'document'] as const
 
 // One statement per entry: `exec` would take them all at once, but a failure then names the batch
 // rather than the statement.
@@ -45,6 +46,15 @@ export const CONTENT_SCHEMA_DDL: readonly string[] = [
     ctime bigint NOT NULL,
     hash text,
     indexed_at timestamptz NOT NULL DEFAULT now(),
+    -- A-48: from the document's own properties block, when it has one. favorite is false and the
+    -- subject columns are null for every document without one -- never absent, so a query never has to
+    -- ask "does this document have properties" before reading them.
+    favorite boolean NOT NULL DEFAULT false,
+    -- Set only when this document is a card (a file named "<subject>.arx"): the non-arx file it is
+    -- about, by path (for readability) and by fileId from the sync manifest (survives a rename) when
+    -- the file has one. Not a foreign key: the subject is a vault file, not a row of this table.
+    subject_path text,
+    subject_file_id text,
     tsv tsvector GENERATED ALWAYS AS (
       setweight(to_tsvector('${FTS_CONFIG}', title), 'A') || setweight(to_tsvector('${FTS_CONFIG}', content), 'B')
     ) STORED
@@ -54,6 +64,10 @@ export const CONTENT_SCHEMA_DDL: readonly string[] = [
   'CREATE INDEX document_dir_idx ON document (dir)',
   'CREATE INDEX document_ext_idx ON document (ext)',
   'CREATE INDEX document_mtime_idx ON document (mtime)',
+  // Partial: most documents are not favourites, and a partial index over the ones that are is what the
+  // `is:favorite` qualifier scans instead of the whole table.
+  'CREATE INDEX document_favorite_idx ON document (path) WHERE favorite',
+  'CREATE INDEX document_subject_path_idx ON document (subject_path)',
   `CREATE TABLE block (
     id text PRIMARY KEY,
     doc_path text NOT NULL REFERENCES document (path) ON DELETE CASCADE,
@@ -98,6 +112,17 @@ export const CONTENT_SCHEMA_DDL: readonly string[] = [
   // NULLS NOT DISTINCT: block_id is null for a tag that came from the document's metadata, and the
   // default (nulls distinct) would let the same document-level tag be inserted twice on reindex.
   'CREATE UNIQUE INDEX tag_doc_name_block_idx ON tag (doc_path, name_fold, block_id) NULLS NOT DISTINCT',
+  // A-48: a key/value field of a document's `properties` block. One row per field — a document's tags
+  // go into `tag` instead (the same table frontmatter's tags already use), and `favorite`/the subject
+  // are scalar enough to sit directly on `document`.
+  `CREATE TABLE property (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    doc_path text NOT NULL REFERENCES document (path) ON DELETE CASCADE,
+    key text NOT NULL,
+    value text NOT NULL
+  )`,
+  'CREATE INDEX property_doc_path_idx ON property (doc_path)',
+  'CREATE INDEX property_key_value_idx ON property (key, value)',
 ]
 
 export interface SqlSchemaColumn {
@@ -135,6 +160,9 @@ export const SCHEMA_TABLES: readonly SqlSchemaTable[] = [
       { name: 'ctime', description: 'File creation time, ms.' },
       { name: 'hash', description: 'Content hash when it was indexed; null when unavailable.' },
       { name: 'indexed_at', description: 'When the row was last reindexed.' },
+      { name: 'favorite', description: "From the document's own `properties` block (A-48); false when it has none." },
+      { name: 'subject_path', description: 'Set when this document is a `<file>.arx` card: the non-.arx file it is about, by path.' },
+      { name: 'subject_file_id', description: 'The subject file’s fileId from the sync manifest, when it has one; survives a rename.' },
       {
         name: 'tsv',
         description: `Generated: title (weight A) and content (weight B) under the '${FTS_CONFIG}' configuration.`,
@@ -180,6 +208,16 @@ export const SCHEMA_TABLES: readonly SqlSchemaTable[] = [
       { name: 'block_id', description: 'Block the tag appeared in; null when it came from document metadata.' },
       { name: 'name', description: 'Tag as written, without the leading marker.' },
       { name: 'name_fold', description: 'Tag lower-cased and unaccented — what the tag: qualifier compares.' },
+    ],
+  },
+  {
+    name: 'property',
+    description: "A key/value field of a document's `properties` block (A-48). Dropped with its document.",
+    columns: [
+      { name: 'id', description: 'Surrogate key.' },
+      { name: 'doc_path', description: 'Owning document. ON DELETE CASCADE.' },
+      { name: 'key', description: 'Field name as written.' },
+      { name: 'value', description: 'Field value as written — what the prop: qualifier compares.' },
     ],
   },
   {

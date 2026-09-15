@@ -17,13 +17,16 @@ export async function indexDocument(index: SqlIndex, doc: ParsedDocument): Promi
 // The same write inside a transaction the caller already owns — a batch of documents shares one.
 export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument): Promise<void> {
   await tx.query(
-    `INSERT INTO document (path, name, dir, ext, kind, title, title_fold, content, frontmatter, size, mtime, ctime, hash, indexed_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, now())
+    `INSERT INTO document
+       (path, name, dir, ext, kind, title, title_fold, content, frontmatter, size, mtime, ctime, hash, indexed_at,
+        favorite, subject_path, subject_file_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, now(), $14, $15, $16)
      ON CONFLICT (path) DO UPDATE SET
        name = excluded.name, dir = excluded.dir, ext = excluded.ext, kind = excluded.kind,
        title = excluded.title, title_fold = excluded.title_fold, content = excluded.content,
        frontmatter = excluded.frontmatter, size = excluded.size, mtime = excluded.mtime,
-       ctime = excluded.ctime, hash = excluded.hash, indexed_at = now()`,
+       ctime = excluded.ctime, hash = excluded.hash, indexed_at = now(),
+       favorite = excluded.favorite, subject_path = excluded.subject_path, subject_file_id = excluded.subject_file_id`,
     [
       doc.path,
       doc.name,
@@ -40,6 +43,9 @@ export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument): Promi
       doc.mtime,
       doc.ctime,
       doc.hash,
+      doc.favorite,
+      doc.subjectPath,
+      doc.subjectFileId,
     ],
   )
 
@@ -48,6 +54,7 @@ export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument): Promi
   await tx.query('DELETE FROM block WHERE doc_path = $1', [doc.path])
   await tx.query('DELETE FROM tag WHERE doc_path = $1', [doc.path])
   await tx.query('DELETE FROM ref WHERE src_path = $1', [doc.path])
+  await tx.query('DELETE FROM property WHERE doc_path = $1', [doc.path])
 
   for (const chunk of chunks(doc.blocks, INSERT_CHUNK)) {
     await tx.query(
@@ -70,6 +77,13 @@ export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument): Promi
     await tx.query(
       `INSERT INTO tag (doc_path, block_id, name, name_fold) VALUES ${placeholders(chunk.length, 4)}`,
       chunk.flatMap((tag) => [doc.path, tag.blockId, tag.name, tag.nameFold]),
+    )
+  }
+
+  for (const chunk of chunks(doc.properties, INSERT_CHUNK)) {
+    await tx.query(
+      `INSERT INTO property (doc_path, key, value) VALUES ${placeholders(chunk.length, 3)}`,
+      chunk.flatMap((property) => [doc.path, property.key, property.value]),
     )
   }
 

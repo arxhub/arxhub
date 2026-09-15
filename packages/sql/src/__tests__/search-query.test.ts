@@ -78,6 +78,12 @@ describe('parseSearchQuery', () => {
     expect(parseSearchQuery('title:"две части" альфа').qualifiers).toEqual([{ name: 'title', value: 'две части' }])
   })
 
+  it('reads is: and prop: (A-48)', () => {
+    expect(parseSearchQuery('is:favorite').qualifiers).toEqual([{ name: 'is', value: 'favorite' }])
+    expect(parseSearchQuery('prop:status=done').qualifiers).toEqual([{ name: 'prop', value: 'status=done' }])
+    expect(parseSearchQuery('prop:status').qualifiers).toEqual([{ name: 'prop', value: 'status' }])
+  })
+
   it('keeps both values when the same qualifier is written twice', () => {
     expect(parseSearchQuery('tag:альфа tag:бета').qualifiers).toEqual([
       { name: 'tag', value: 'альфа' },

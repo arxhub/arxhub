@@ -146,6 +146,52 @@ describe('indexDocument', () => {
     const [block] = await rows<{ ordinal: number }>(`SELECT ordinal FROM block WHERE tsv @@ to_tsquery('simple', 'текста')`)
     expect(block.ordinal).toBe(1)
   })
+
+  // A-48: a properties block writes onto `document` (favorite, subject_*) and into its own `property`
+  // table — one row per field, dropped and rewritten whole like `block`/`tag`/`ref` on every reindex.
+  it('writes a properties block onto document and into property', async () => {
+    const arx = {
+      version: 1,
+      doc: {
+        type: 'doc',
+        content: [
+          {
+            type: 'properties',
+            attrs: {
+              tags: [],
+              favorite: true,
+              fields: [{ key: 'status', value: 'done' }],
+              subject: { path: 'photo.jpg', fileId: 'file-1' },
+            },
+          },
+        ],
+      },
+    }
+    await indexDocument(index, parseDocument('photo.jpg.arx', encoder.encode(JSON.stringify(arx)), { size: 10, mtime: 1, ctime: 1 }))
+
+    const [document] = await rows<{ favorite: boolean; subject_path: string | null; subject_file_id: string | null }>(
+      'SELECT favorite, subject_path, subject_file_id FROM document WHERE path = $1',
+      ['photo.jpg.arx'],
+    )
+    expect(document).toEqual({ favorite: true, subject_path: 'photo.jpg', subject_file_id: 'file-1' })
+    expect(await rows<{ key: string; value: string }>('SELECT key, value FROM property WHERE doc_path = $1', ['photo.jpg.arx'])).toEqual([
+      { key: 'status', value: 'done' },
+    ])
+  })
+
+  it('replaces the property rows of the previous version whole', async () => {
+    const withOneField = (value: string) => ({
+      version: 1,
+      doc: {
+        type: 'doc',
+        content: [{ type: 'properties', attrs: { tags: [], favorite: false, fields: [{ key: 'k', value }] } }],
+      },
+    })
+    await indexDocument(index, parseDocument('a.arx', encoder.encode(JSON.stringify(withOneField('one'))), { size: 1, mtime: 1, ctime: 1 }))
+    await indexDocument(index, parseDocument('a.arx', encoder.encode(JSON.stringify(withOneField('two'))), { size: 1, mtime: 2, ctime: 1 }))
+
+    expect(await rows<{ value: string }>('SELECT value FROM property WHERE doc_path = $1', ['a.arx'])).toEqual([{ value: 'two' }])
+  })
 })
 
 describe('removeDocument', () => {
@@ -161,6 +207,17 @@ describe('removeDocument', () => {
 
   it('does nothing for a document that is not in the index', async () => {
     await expect(removeDocument(index, 'notes/never.md')).resolves.toBeUndefined()
+  })
+
+  it('takes its property rows with it', async () => {
+    const arx = {
+      version: 1,
+      doc: { type: 'doc', content: [{ type: 'properties', attrs: { tags: [], favorite: false, fields: [{ key: 'k', value: 'v' }] } }] },
+    }
+    await indexDocument(index, parseDocument('a.arx', encoder.encode(JSON.stringify(arx)), { size: 1, mtime: 1, ctime: 1 }))
+    await removeDocument(index, 'a.arx')
+
+    expect(await rows('SELECT 1 FROM property')).toEqual([])
   })
 })
 

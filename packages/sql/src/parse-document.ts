@@ -1,6 +1,6 @@
 import { posix } from '@arxhub/path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
-import { parseArx } from './arx'
+import { type ArxProperties, parseArx } from './arx'
 import {
   blockId,
   type DocumentKind,
@@ -12,6 +12,7 @@ import {
   foldText,
   type ParsedBlock,
   type ParsedDocument,
+  type ParsedProperty,
   type ParsedRef,
   type ParsedTag,
 } from './document'
@@ -75,6 +76,10 @@ export function parseDocument(pathname: string, bytes: Uint8Array, stat?: Partia
     blocks,
     tags,
     refs,
+    favorite: source.properties?.favorite ?? false,
+    properties: propertyRows(source.properties),
+    subjectPath: source.properties?.subjectPath ?? null,
+    subjectFileId: source.properties?.subjectFileId ?? null,
   }
 }
 
@@ -102,7 +107,15 @@ function emptyRecord(path: string, kind: DocumentKind, stat: Partial<FileStat> |
     blocks: [],
     tags: [],
     refs: [],
+    favorite: false,
+    properties: [],
+    subjectPath: null,
+    subjectFileId: null,
   }
+}
+
+function propertyRows(properties: ArxProperties | null | undefined): ParsedProperty[] {
+  return properties?.fields.map((field) => ({ key: field.key, value: field.value })) ?? []
 }
 
 interface DocumentSource {
@@ -114,6 +127,9 @@ interface DocumentSource {
   // Links the format carried structurally (an `.arx` link mark), by block index — a block's text has no
   // link syntax left in it, so they cannot be read back out of it.
   markLinks: { blockIndex: number; ref: Omit<ParsedRef, 'srcBlock'> }[]
+  // The document's `properties` block (A-48) — only an `.arx` document with one as its FIRST block has
+  // this; null for markdown, text and an `.arx` that has none.
+  properties: ArxProperties | null
 }
 
 function readSource(kind: DocumentKind, text: string): DocumentSource {
@@ -126,6 +142,7 @@ function readSource(kind: DocumentKind, text: string): DocumentSource {
       frontmatterTitle: frontmatterTitle(frontmatter),
       frontmatterTags: frontmatterTags(frontmatter),
       markLinks: [],
+      properties: null,
     }
   }
 
@@ -134,7 +151,15 @@ function readSource(kind: DocumentKind, text: string): DocumentSource {
     // Not a readable tree: read it as plain text instead of dropping it. A file the editor cannot open
     // is exactly the file its owner needs to find.
     if (parsed == null) return textSource(text)
-    return { kind, blocks: parsed.blocks, frontmatter: null, frontmatterTitle: null, frontmatterTags: [], markLinks: parsed.markLinks }
+    return {
+      kind,
+      blocks: parsed.blocks,
+      frontmatter: null,
+      frontmatterTitle: null,
+      frontmatterTags: [],
+      markLinks: parsed.markLinks,
+      properties: parsed.properties,
+    }
   }
 
   return textSource(text)
@@ -143,7 +168,7 @@ function readSource(kind: DocumentKind, text: string): DocumentSource {
 function textSource(text: string): DocumentSource {
   const blocks: SourceBlock[] =
     text.trim() === '' ? [] : [{ type: 'paragraph', level: null, checked: null, arxId: null, raw: text, content: text }]
-  return { kind: 'text', blocks, frontmatter: null, frontmatterTitle: null, frontmatterTags: [], markLinks: [] }
+  return { kind: 'text', blocks, frontmatter: null, frontmatterTitle: null, frontmatterTags: [], markLinks: [], properties: null }
 }
 
 // Metadata first, then the first heading of the content, then the file name — and never empty (FR-220).
@@ -176,6 +201,9 @@ function collectTags(source: DocumentSource, blocks: readonly ParsedBlock[]): Pa
   }
 
   for (const name of source.frontmatterTags) push(name, null)
+  // A `properties` block's tags are document metadata the same way frontmatter's are (A-48) — never
+  // read from text, so a `#word` inside a note's own prose stays apart from a tag the owner attached.
+  for (const name of source.properties?.tags ?? []) push(name, null)
   for (const block of blocks) {
     // Code keeps its markers, so `#include` in a C snippet is not a tag.
     if (block.type === 'code') continue

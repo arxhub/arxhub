@@ -433,4 +433,60 @@ describe('parseDocument — arx', () => {
     const doc = arxDoc('notes/no-id.arx', para('без идентификатора'))
     expect(doc.blocks[0].arxId).toBeNull()
   })
+
+  // A-48: the properties block carries user metadata as attrs, not text — it must never become a row of
+  // `block` (there is nothing there for a snippet to show), and its tags are document metadata the same
+  // way frontmatter's are, not text a reader could mistake for a #tag in the note's own prose.
+  describe('the properties block (A-48)', () => {
+    it('produces no block of its own, and does not shift the ordinals of what follows', () => {
+      const doc = arxDoc(
+        'notes/props.arx',
+        { type: 'properties', attrs: { tags: ['family'], favorite: true, fields: [] } },
+        para('Текст заметки'),
+      )
+      expect(shape(doc)).toEqual([['paragraph', null, 'Текст заметки']])
+    })
+
+    it('reads favorite, subject and property fields onto the document', () => {
+      const doc = arxDoc('photo.jpg.arx', {
+        type: 'properties',
+        attrs: {
+          tags: [],
+          favorite: true,
+          fields: [{ key: 'location', value: 'Berlin' }],
+          subject: { path: 'photo.jpg', fileId: 'file-1' },
+        },
+      })
+      expect(doc.favorite).toBe(true)
+      expect(doc.subjectPath).toBe('photo.jpg')
+      expect(doc.subjectFileId).toBe('file-1')
+      expect(doc.properties).toEqual([{ key: 'location', value: 'Berlin' }])
+    })
+
+    it('defaults favorite/subject/properties for a document without one', () => {
+      const doc = arxDoc('notes/plain.arx', para('Ничего особенного'))
+      expect(doc.favorite).toBe(false)
+      expect(doc.subjectPath).toBeNull()
+      expect(doc.subjectFileId).toBeNull()
+      expect(doc.properties).toEqual([])
+    })
+
+    it('folds its tags into the document’s tags, the same as frontmatter’s', () => {
+      const doc = arxDoc(
+        'notes/tagged.arx',
+        { type: 'properties', attrs: { tags: ['work', 'home'], favorite: false, fields: [] } },
+        para('Заметка про #проект'),
+      )
+      expect(doc.tags.map((tag) => tag.name).sort()).toEqual(['home', 'work', 'проект'].sort())
+      expect(doc.tags.find((tag) => tag.name === 'work')?.blockId).toBeNull()
+      expect(doc.tags.find((tag) => tag.name === 'проект')?.blockId).not.toBeNull()
+    })
+
+    it('is only read from the FIRST block — a properties-shaped node elsewhere is not one', () => {
+      const buried = { type: 'properties', attrs: { tags: ['ignored'], favorite: true, fields: [] } }
+      const doc = arxDoc('notes/buried.arx', para('Первый абзац'), buried)
+      expect(doc.favorite).toBe(false)
+      expect(doc.tags).toEqual([])
+    })
+  })
 })

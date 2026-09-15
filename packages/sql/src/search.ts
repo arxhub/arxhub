@@ -289,6 +289,19 @@ function qualifierCondition(params: Params, qualifier: SearchQualifier): string 
     }
     case 'tag':
       return `EXISTS (SELECT 1 FROM tag t WHERE t.doc_path = d.path AND t.name_fold = ${params.add(foldText(qualifier.value.replace(/^#+/, '')))})`
+    case 'is':
+      // The only value understood today is `favorite`; anything else asks for something that does not
+      // exist and matches nothing, rather than being read as "any is: qualifier" and matching everything.
+      return qualifier.value.trim().toLowerCase() === 'favorite' ? 'd.favorite' : 'false'
+    case 'prop': {
+      // `prop:key=value` narrows to that exact value; a bare `prop:key` (no `=`) asks only whether the
+      // field is present at all, whatever its value.
+      const eq = qualifier.value.indexOf('=')
+      if (eq === -1) return `EXISTS (SELECT 1 FROM property p WHERE p.doc_path = d.path AND p.key = ${params.add(qualifier.value)})`
+      const key = params.add(qualifier.value.slice(0, eq))
+      const value = params.add(qualifier.value.slice(eq + 1))
+      return `EXISTS (SELECT 1 FROM property p WHERE p.doc_path = d.path AND p.key = ${key} AND p.value = ${value})`
+    }
   }
 }
 

@@ -47,11 +47,26 @@ const LIST_CONTAINERS = new Set(['bullet_list', 'ordered_list', 'task_list'])
 // Nodes that carry no text and become no block.
 const IGNORED = new Set(['horizontal_rule'])
 
+// The `properties` block's own shape (plugins/editor/src/properties.ts), read structurally here for the
+// same reason the rest of this file is: the index must not depend on the editor, and a document a future
+// editor version cannot open still has metadata worth finding by.
+export interface ArxProperties {
+  tags: string[]
+  favorite: boolean
+  fields: { key: string; value: string }[]
+  // Set only on a card `<file>.arx` beside a non-`.arx` subject; absent on a document's own in-place block.
+  subjectPath: string | null
+  subjectFileId: string | null
+}
+
 export interface ArxParse {
   blocks: SourceBlock[]
   // Links carried by the tree's own link marks, keyed by the block index they were found in. A block's
   // text has no brackets left in it, so these cannot be read back out of `content` later.
   markLinks: { blockIndex: number; ref: Omit<ParsedRef, 'srcBlock'> }[]
+  // The document's `properties` block (A-48), when its FIRST block is one — never read from elsewhere in
+  // the tree, the same "first block only" rule the editor's own `ensureProperties` enforces.
+  properties: ArxProperties | null
 }
 
 // Reads an `.arx` file. Returns null when the file is not a readable tree — the caller then indexes it
@@ -71,11 +86,37 @@ export function parseArx(text: string): ArxParse | null {
   const children = childrenOf(root as ArxNode)
   if (children == null) return null
 
-  const result: ArxParse = { blocks: [], markLinks: [] }
-  for (const child of children) {
+  const result: ArxParse = { blocks: [], markLinks: [], properties: null }
+  const [first, ...rest] = children
+  const isProperties = first != null && typeof first.type === 'string' && first.type === 'properties'
+  if (isProperties) result.properties = readProperties(first)
+  for (const child of isProperties ? rest : children) {
     appendNode(child, result, 0)
   }
   return result
+}
+
+function readProperties(node: ArxNode): ArxProperties {
+  const attrs = node.attrs != null && typeof node.attrs === 'object' ? (node.attrs as Record<string, unknown>) : {}
+  const tags = Array.isArray(attrs.tags) ? attrs.tags.filter((tag): tag is string => typeof tag === 'string') : []
+  const favorite = attrs.favorite === true
+  const fields = Array.isArray(attrs.fields)
+    ? attrs.fields.filter(
+        (field): field is { key: string; value: string } =>
+          field != null &&
+          typeof field === 'object' &&
+          typeof (field as { key: unknown }).key === 'string' &&
+          typeof (field as { value: unknown }).value === 'string',
+      )
+    : []
+  const subject = attrs.subject != null && typeof attrs.subject === 'object' ? (attrs.subject as Record<string, unknown>) : null
+  return {
+    tags,
+    favorite,
+    fields,
+    subjectPath: typeof subject?.path === 'string' ? subject.path : null,
+    subjectFileId: typeof subject?.fileId === 'string' ? subject.fileId : null,
+  }
 }
 
 function appendNode(node: ArxNode, result: ArxParse, depth: number): void {

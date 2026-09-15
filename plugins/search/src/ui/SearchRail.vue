@@ -48,6 +48,8 @@ const QUALIFIER_DOES: Record<(typeof SEARCH_QUALIFIERS)[number], string> = {
   tag: 'a #tag in the note',
   ext: 'a file extension',
   in: 'a folder to look inside',
+  is: 'favorite — is:favorite',
+  prop: 'a properties field — prop:key=value',
 }
 
 const QUALIFIER_HINTS = SEARCH_QUALIFIERS.map((name) => ({ name, does: QUALIFIER_DOES[name] }))

@@ -1,8 +1,10 @@
 import { foldText } from './document'
 
 // Prefixes that turn a lexeme into a filter on a column rather than into a word to look for. Kept as a
-// list because the search field advertises exactly these to the user (APP-01-05-FE 6).
-export const SEARCH_QUALIFIERS = ['title', 'path', 'tag', 'ext', 'in'] as const
+// list because the search field advertises exactly these to the user (APP-01-05-FE 6). `is` and `prop`
+// are A-48's: `is:favorite` and `prop:key=value` (or bare `prop:key` for "has this field at all") read
+// the `properties` block through `document.favorite` and the `property` table.
+export const SEARCH_QUALIFIERS = ['title', 'path', 'tag', 'ext', 'in', 'is', 'prop'] as const
 
 export type SearchQualifierName = (typeof SEARCH_QUALIFIERS)[number]
 

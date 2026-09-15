@@ -41,7 +41,7 @@ afterAll(async () => {
 
 describe('the schema reference read from the live index', () => {
   it('lists every table of the index, the described ones first', () => {
-    expect(reference.map((entry) => entry.name)).toEqual(['document', 'block', 'ref', 'tag', 'index_meta'])
+    expect(reference.map((entry) => entry.name)).toEqual(['document', 'block', 'ref', 'tag', 'property', 'index_meta'])
   })
 
   it('keeps the columns in the order the table declares them', () => {

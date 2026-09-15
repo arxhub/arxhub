@@ -171,7 +171,7 @@ describe('taking saved settings into use', () => {
 describe('the schema notes the console hangs on what it read', () => {
   it('describes every table of the index, and every column it names', () => {
     const tables = extension().schema
-    expect(tables.map((table) => table.name)).toEqual(['document', 'block', 'ref', 'tag', 'index_meta'])
+    expect(tables.map((table) => table.name)).toEqual(['document', 'block', 'ref', 'tag', 'property', 'index_meta'])
     for (const table of tables) {
       expect(table.description).not.toBe('')
       expect(table.columns.length).toBeGreaterThan(0)

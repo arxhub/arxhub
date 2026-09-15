@@ -48,6 +48,14 @@ export interface ParsedTag {
   blockId: string | null
 }
 
+// A key/value field from an `.arx` document's `properties` block (A-48). The block itself never becomes
+// a row of `block` (it carries no text) — this is the whole of what it contributes to the index besides
+// its tags (folded into `tag`, the same as frontmatter's) and `document.favorite`/`subject_*`.
+export interface ParsedProperty {
+  key: string
+  value: string
+}
+
 export interface ParsedRef {
   kind: RefKind
   targetRaw: string
@@ -79,6 +87,14 @@ export interface ParsedDocument {
   blocks: ParsedBlock[]
   tags: ParsedTag[]
   refs: ParsedRef[]
+  // From the document's own `properties` block, when it has one (A-48) — false/null/[] otherwise, never
+  // absent, so a writer never has to ask "does this document have properties" before writing the row.
+  favorite: boolean
+  properties: ParsedProperty[]
+  // Set only when this document is a `<file>.arx` card: the non-`.arx` file it is about, by path (for
+  // readability) and by `fileId` from the sync manifest (survives a rename) when the file has one.
+  subjectPath: string | null
+  subjectFileId: string | null
 }
 
 // Lower-cased with the diacritics folded away — what `similarity()` compares (FR-230) and what the

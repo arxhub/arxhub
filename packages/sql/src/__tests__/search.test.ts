@@ -160,6 +160,48 @@ describe('searchDocuments', () => {
     })
   })
 
+  describe('is: and prop: qualifiers (A-48)', () => {
+    function arxDoc(path: string, properties: Record<string, unknown>, text: string): Promise<void> {
+      const doc = {
+        version: 1,
+        doc: {
+          type: 'doc',
+          content: [
+            { type: 'properties', attrs: properties },
+            { type: 'paragraph', content: [{ type: 'text', text }] },
+          ],
+        },
+      }
+      return write(path, [JSON.stringify(doc)])
+    }
+
+    beforeEach(async () => {
+      await arxDoc(
+        'photo.jpg.arx',
+        { tags: [], favorite: true, fields: [{ key: 'status', value: 'done' }], subject: { path: 'photo.jpg' } },
+        'Бирюза на фото.',
+      )
+      await arxDoc('plain.arx', { tags: [], favorite: false, fields: [] }, 'Бирюза без свойств.')
+    })
+
+    it('narrows by is:favorite', async () => {
+      expect(paths(await search('бирюза is:favorite '))).toEqual(['photo.jpg.arx'])
+    })
+
+    it('treats an unknown is: value as matching nothing', async () => {
+      expect(paths(await search('бирюза is:bogus '))).toEqual([])
+    })
+
+    it('narrows by prop:key=value', async () => {
+      expect(paths(await search('бирюза prop:status=done '))).toEqual(['photo.jpg.arx'])
+      expect(paths(await search('бирюза prop:status=missing '))).toEqual([])
+    })
+
+    it('narrows by a bare prop:key — has the field, whatever its value', async () => {
+      expect(paths(await search('бирюза prop:status '))).toEqual(['photo.jpg.arx'])
+    })
+  })
+
   describe('incomplete input', () => {
     beforeEach(async () => {
       await write('notes/a.md', ['# Первый', '', 'быстрая лисица прыгает.'])
