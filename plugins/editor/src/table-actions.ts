@@ -15,29 +15,31 @@ import {
   splitCell,
   toggleHeaderRow,
 } from 'prosemirror-tables'
+import { placeBlocks } from './block-placement'
 import { editorMode } from './editor-mode'
 
 export const insertTable: Command = (state, dispatch) => {
   const {
     schema,
-    selection: { $from },
+    selection: { $from, empty },
   } = state
-  if (editorMode(state) !== 'editable' || $from.parent.type !== schema.nodes.paragraph || $from.parent.content.size) return false
-  if (dispatch) {
-    const rows = Array.from({ length: 3 }, (_, row) =>
-      schema.nodes.table_row.create(
-        null,
-        Array.from({ length: 3 }, () => (row === 0 ? schema.nodes.table_header : schema.nodes.table_cell).createAndFill()!),
-      ),
-    )
-    const from = $from.before()
-    const tr = state.tr.replaceWith(from, $from.after(), [schema.nodes.table.create(null, rows), schema.nodes.paragraph.create()])
+  if (editorMode(state) !== 'editable' || !empty || $from.parent.type !== schema.nodes.paragraph) return false
+  const rows = Array.from({ length: 3 }, (_, row) =>
+    schema.nodes.table_row.create(
+      null,
+      Array.from({ length: 3 }, () => (row === 0 ? schema.nodes.table_header : schema.nodes.table_cell).createAndFill()!),
+    ),
+  )
+  const tr = state.tr
+  const from = placeBlocks(tr, $from, [schema.nodes.table.create(null, rows), schema.nodes.paragraph.create()])
+  if (from === null) return false
+  // Into the first header cell's paragraph: table, row, cell, paragraph — one step into each.
+  if (dispatch)
     dispatch(
       closeHistory(tr)
         .setSelection(TextSelection.create(tr.doc, from + 4))
         .scrollIntoView(),
     )
-  }
   return true
 }
 

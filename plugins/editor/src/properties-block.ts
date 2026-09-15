@@ -21,9 +21,9 @@ function isValidSubject(value: unknown): boolean {
 }
 
 // Reveals the existing block instead of inserting a second one (at most one per document); otherwise
-// always lands at the TOP regardless of where the cursor was — replacing the trigger paragraph the same
-// way every other slash insertion replaces the one it was typed into (`insertLeaf` in slash-commands.ts),
-// except the new block is placed at position 0 rather than at the cursor.
+// always lands at the TOP regardless of where the cursor was — replacing an empty trigger paragraph the
+// same way a slash insertion does (`placeBlocks` in block-placement.ts), except the new block is placed
+// at position 0 rather than at the cursor.
 const insertOrRevealProperties: Command = (state, dispatch) => {
   const { schema, doc } = state
   const type = schema.nodes[PROPERTIES_NODE_TYPE]

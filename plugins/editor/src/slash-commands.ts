@@ -3,6 +3,7 @@ import { closeHistory } from 'prosemirror-history'
 import type { Schema } from 'prosemirror-model'
 import { wrapInList } from 'prosemirror-schema-list'
 import { type Command, type EditorState, Plugin, PluginKey, TextSelection, type Transaction } from 'prosemirror-state'
+import { placeBlocks } from './block-placement'
 import { arrangeColumns } from './columns'
 import { runPreparedCommand } from './command-state'
 import { editorMode } from './editor-mode'
@@ -17,10 +18,7 @@ export interface BlockCommand {
   run: Command
 }
 
-// The trigger paragraph is replaced only while it is empty; one that still has text (a `/` typed at
-// the start of a line the user meant to keep) stays, and the block lands after it — the same shape the
-// `+` handle produces (`insertBlock` in block-actions.ts). A fresh paragraph follows either way, so the
-// caret has a textblock to land in after an atom.
+// A fresh paragraph follows the leaf, so the caret has a textblock to land in after an atom.
 const insertLeaf =
   (type: string): Command =>
   (state, dispatch) => {
@@ -28,13 +26,10 @@ const insertLeaf =
     const { $from, empty } = state.selection
     const leaf = schema.nodes[type]?.createAndFill()
     if (!empty || !leaf || $from.parent.type !== schema.nodes.paragraph) return false
-    if (dispatch) {
-      const tr = state.tr
-      const replace = $from.parent.content.size === 0
-      const from = replace ? $from.before() : $from.after()
-      tr.replaceWith(from, replace ? $from.after() : from, [leaf, schema.nodes.paragraph.create()])
-      dispatch(tr.setSelection(TextSelection.create(tr.doc, from + leaf.nodeSize + 1)).scrollIntoView())
-    }
+    const tr = state.tr
+    const from = placeBlocks(tr, $from, [leaf, schema.nodes.paragraph.create()])
+    if (from === null) return false
+    if (dispatch) dispatch(tr.setSelection(TextSelection.create(tr.doc, from + leaf.nodeSize + 1)).scrollIntoView())
     return true
   }
 
