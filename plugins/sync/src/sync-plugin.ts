@@ -87,11 +87,13 @@ export class SyncPlugin extends Plugin {
     })
     // A file left in the cloud comes down before whatever opens it mounts; a file that is on disk costs
     // one index lookup here and nothing else.
-    const notes = ctx.extensions.get(NotesExtension)
-    notes.registerPreparer(async (path) => {
-      const full = join('vault', path)
-      if (await this.repo.isPending(full)) await sync.materialize(full)
-    })
+    // Optional like every cross-plugin dependency that is not essential: a boot without Notes still syncs.
+    if (ctx.extensions.has(NotesExtension)) {
+      ctx.extensions.get(NotesExtension).registerPreparer(async (path) => {
+        const full = join('vault', path)
+        if (await this.repo.isPending(full)) await sync.materialize(full)
+      })
+    }
     sync.history = new FileHistory(
       this.repo,
       () => this.prepare(ctx),

@@ -37,8 +37,9 @@ export class ExplorerPlugin extends Plugin {
     const explorer = ctx.extensions.get(ExplorerExtension)
     const notes = ctx.extensions.get(NotesExtension)
     // A pending path is a phantom node under its directory (23-storage-model F-06) — read straight off
-    // sync's own extension, never sync's internals.
-    this.stopPendingWatch = explorer.setPendingSource(ctx.extensions.get(SyncExtension))
+    // sync's own extension, never sync's internals. Optional on purpose: sync is a plugin the owner can
+    // switch off, and a tree that refuses to boot without it would turn that switch into a crash screen.
+    if (ctx.extensions.has(SyncExtension)) this.stopPendingWatch = explorer.setPendingSource(ctx.extensions.get(SyncExtension))
 
     // The tree is the navigation of the "Notes" type, not a place of its own — and now that both
     // frames read the type registry, that is the ONLY way it reaches the screen. The mini-app

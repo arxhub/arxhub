@@ -24,6 +24,11 @@ export default defineConfig({
   // connected page at once, and a test asserting at that moment reports the app as never having come up.
   globalSetup: './global-setup.ts',
   fullyParallel: true,
+  // Every worker drives the SAME stand and the same vault (one data dir per run, see globalSetup), so
+  // parallelism here is contention on one repo store, not throughput: at a dozen workers the history
+  // specs race each other's head writes and time out; at four the run is as fast as the stand allows
+  // and clean. Not a per-spec setting — the sharing is the suite's, and so is the cap.
+  workers: 4,
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? 'list' : [['list'], ['html', { open: 'never' }]],
