@@ -1,12 +1,13 @@
 import { PluginConfig } from '@arxhub/config'
 import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
+import { basename } from '@arxhub/path'
 import { ExplorerExtension } from '@arxhub/plugin-explorer/ui'
 import { NotesExtension } from '@arxhub/plugin-notes/ui'
 import { KeyringExtension } from '@arxhub/plugin-protection/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { HttpSyncRemote } from '@arxhub/sync'
-import type { ActionItem } from '@arxhub/uikit/core'
+import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs } from '@arxhub/vfs'
 import { type Static, Type } from '@sinclair/typebox'
@@ -28,6 +29,13 @@ export const PublishConfigSchema = Type.Object(
   },
   { description: 'Share selected notes and folders through public links.' },
 )
+
+// Honest about both halves of what publishing is: the content stops being encrypted, and a copy once
+// downloaded is out of the owner's hands for good — unpublishing only stops serving new ones (Q-05).
+function publishWarning(path: string, folder: boolean): string {
+  const subject = folder ? `"${basename(path)}" and everything inside it, attachments included,` : `"${basename(path)}" and its attachments`
+  return `${subject} will be uploaded unencrypted and readable by anyone with the link. Unpublishing stops serving them, but cannot recall copies already downloaded.`
+}
 
 export class PublishPlugin extends Plugin {
   // Guards a rebuild against a config write that lands while a previous one is still loading the
@@ -76,22 +84,36 @@ export class PublishPlugin extends Plugin {
       const path = node.entry.pathname
       const exports = node.entry.kind === 'file' ? publish.documentActions(path) : []
       if (!publish.enabled) return exports
+      const published = publish.isPublished(path)
+      const publishNow = () =>
+        run(
+          publish.publish(path).then(() => {
+            toaster.create({ title: 'Published', description: publish.publicUrl(path) ?? path, type: 'success' })
+          }),
+          `publish ${path}`,
+        )
       const actions: ActionItem[] = [
         ...exports,
         {
           id: 'publish',
-          label: publish.isPublished(path) ? 'Republish' : 'Publish',
+          label: published ? 'Republish' : 'Publish',
           icon: 'lu:globe',
-          onSelect: () =>
-            run(
-              publish.publish(path).then(() => {
-                toaster.create({ title: 'Published', description: publish.publicUrl(path) ?? path, type: 'success' })
-              }),
-              `publish ${path}`,
-            ),
+          // The question is asked once, at the moment a path LEAVES encryption (FR-167). A republish
+          // changes what a reader sees, not who can see it, so asking again would only teach the owner
+          // to click through.
+          onSelect: () => {
+            if (published) return publishNow()
+            modals.openConfirmModal({
+              title: 'Publish',
+              content: publishWarning(path, node.entry.kind === 'dir'),
+              labels: { confirm: 'Publish', cancel: 'Cancel' },
+              confirmProps: { danger: true },
+              onConfirm: publishNow,
+            })
+          },
         },
       ]
-      if (publish.isPublished(path)) {
+      if (published) {
         actions.push({
           id: 'copy-link',
           label: 'Copy public link',

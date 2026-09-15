@@ -1,4 +1,4 @@
-import { expect, openNavigation, test } from './fixtures'
+import { confirmPublish, expect, openNavigation, test } from './fixtures'
 
 // UJ-13 end to end: the owner marks a note published, and a reader with no identity opens it.
 // The dev stand is both the app and the publish server, so the origin under test is its own.
@@ -34,6 +34,7 @@ test.describe('publishing a note', () => {
     await openNavigation(app)
     await app.getByRole('treeitem', { name: path }).click({ button: 'right' })
     await app.getByRole('menuitem', { name: 'Publish', exact: true }).click()
+    await confirmPublish(app)
     const notifications = app.getByRole('region', { name: /Notifications/ })
     await expect(notifications.getByText('Published', { exact: true })).toBeVisible()
 
@@ -113,6 +114,7 @@ test('a publication transport failure keeps its cause in the log and can be retr
   await app.getByRole('treeitem', { name: path, exact: true }).click({ button: 'right' })
   const logged = app.waitForEvent('console', (message) => message.type() === 'error' && message.text().includes('[PublishPlugin]'))
   await app.getByRole('menuitem', { name: 'Publish', exact: true }).click()
+  await confirmPublish(app)
   const args = await Promise.all((await logged).args().map((arg) => arg.jsonValue()))
   expect(args).toContainEqual({ error: expect.stringMatching(/.+/) })
   const notifications = app.getByRole('region', { name: /Notifications/ })
@@ -122,6 +124,8 @@ test('a publication transport failure keeps its cause in the log and can be retr
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path, exact: true }).click({ button: 'right' })
   await app.getByRole('menuitem', { name: 'Publish', exact: true }).click()
+  // Still the FIRST publish of this path — the failed attempt published nothing — so it asks again.
+  await confirmPublish(app)
   await expect(notifications.getByText('Published', { exact: true })).toBeVisible()
   expect((await app.request.get(`/api/publish/public/${encodeURIComponent(path)}`)).status()).toBe(200)
 })

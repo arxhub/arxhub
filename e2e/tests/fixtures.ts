@@ -353,6 +353,15 @@ export async function openSettingsSection(page: Page, section: string): Promise<
   await page.locator('.settings-nav').getByRole('button', { name: section, exact: true }).click()
 }
 
+// The first publish of a path asks before its content leaves encryption (FR-167, Q-05); a republish does
+// not. Read the dialog's substance, not only its presence — a confirmation that says nothing is a click.
+export async function confirmPublish(page: Page): Promise<void> {
+  const dialog = page.getByRole('dialog', { name: 'Publish' })
+  await expect(dialog).toContainText('unencrypted')
+  await dialog.getByRole('button', { name: 'Publish', exact: true }).click()
+  await expect(dialog).toBeHidden()
+}
+
 export async function openSecuritySettings(page: Page): Promise<void> {
   await openSettingsSection(page, 'Security')
   await expect(page.getByRole('heading', { name: 'Device identity' })).toBeVisible()
