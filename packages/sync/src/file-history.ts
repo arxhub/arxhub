@@ -137,10 +137,10 @@ export class FileHistory {
       }
       if (imported && imported.hash !== sha256(checkpoint.content)) throw illegalState('Imported history source has changed')
     }
-    const head = await this.repo.getHeadSnapshot()
     const hash = sha256(checkpoint.content)
-    const previous = head.files[checkpoint.path]
-    if (!checkpoint.source && previous?.hash === hash && previous.identity === checkpoint.identity) return
+    // Content-addressed and independent of where head currently is, so this happens once — chunking
+    // is the slow part, and doing it inside the retry loop below would only widen the window it exists
+    // to close.
     const chunks: SnapshotFileChunk[] = []
     for await (const bytes of this.chunker.split({
       readable: async () =>
@@ -162,28 +162,48 @@ export class FileHistory {
         throw illegalState('Imported history chunks differ; originals have been retained')
       return
     }
-    const files = { ...head.files }
-    if (checkpoint.identity) {
-      for (const [path, file] of Object.entries(files)) {
-        if (file.identity === checkpoint.identity && path !== checkpoint.path) delete files[path]
+    // `exclusive()` serializes calls made through THIS `Repo` instance, but the head pointer lives in
+    // the store it reads and writes through — the same file a second tab, or a second device pointed at
+    // the same server, reaches directly. Reading head, then writing a NEW head an entire chunking pass
+    // later, left a window wide enough for one of those to advance head first; this device's own
+    // checkpoint then wrote its new snapshot but never linked it in, silently dropping it from history
+    // (a `Saved versions` list one entry short, or a version nobody can read back). There is no
+    // compare-and-swap this store offers, so the fix is optimistic concurrency: read head again right
+    // before the write, and start over against whatever it now is if it moved. That turns a multi-step
+    // race into a single read-then-write one, which is what makes it rare enough in practice.
+    for (;;) {
+      const head = await this.repo.getHeadSnapshot()
+      const previous = head.files[checkpoint.path]
+      if (!checkpoint.source && previous?.hash === hash && previous.identity === checkpoint.identity) return
+      const files = { ...head.files }
+      if (checkpoint.identity) {
+        for (const [path, file] of Object.entries(files)) {
+          if (file.identity === checkpoint.identity && path !== checkpoint.path) delete files[path]
+        }
       }
+      files[checkpoint.path] = {
+        fileId: previous?.fileId ?? crypto.randomUUID(),
+        pathname: checkpoint.path,
+        hash,
+        size: checkpoint.content.byteLength,
+        chunks,
+        ...(checkpoint.identity ? { identity: checkpoint.identity } : {}),
+        ...(checkpoint.source ? { historySource: checkpoint.source } : {}),
+      }
+      const snapshot: Snapshot = {
+        parent: head.hash,
+        files,
+        hash: snapshotHash(head.hash, files),
+        timestamp: (checkpoint.savedAt ?? Date.now()) / 1000,
+      }
+      await this.repo.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
+      const current = await this.repo
+        .getHeadFile()
+        .readText()
+        .catch(() => null)
+      if (current !== head.hash) continue
+      await this.repo.getHeadFile().writeText(snapshot.hash)
+      return
     }
-    files[checkpoint.path] = {
-      fileId: previous?.fileId ?? crypto.randomUUID(),
-      pathname: checkpoint.path,
-      hash,
-      size: checkpoint.content.byteLength,
-      chunks,
-      ...(checkpoint.identity ? { identity: checkpoint.identity } : {}),
-      ...(checkpoint.source ? { historySource: checkpoint.source } : {}),
-    }
-    const snapshot: Snapshot = {
-      parent: head.hash,
-      files,
-      hash: snapshotHash(head.hash, files),
-      timestamp: (checkpoint.savedAt ?? Date.now()) / 1000,
-    }
-    await this.repo.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
-    await this.repo.getHeadFile().writeText(snapshot.hash)
   }
 }
