@@ -16,3 +16,18 @@ export const syncHeadMoved = () =>
     title: 'Remote head moved',
     message: 'Another device committed to the remote while this sync was in progress.',
   })
+
+// Raised when the LOCAL repository head kept moving under a writer — another tab, worker or device
+// sharing the store won the compare-and-swap more times in a row than Repo allows (MAX_HEAD_RETRIES),
+// or the local chain was rewritten beneath a rebase. Kept apart from SyncHeadMovedError on purpose:
+// the engine re-runs the round on either, but "the server moved" and "this store is contending with
+// itself" point a reader at different places.
+export const repoHeadMovedSchema = defineAppError('RepoHeadMovedError', 409)
+
+export const repoHeadMoved = () =>
+  new AppError<Static<typeof repoHeadMovedSchema>>({
+    code: 'RepoHeadMovedError',
+    statusCode: 409,
+    title: 'Repository head moved',
+    message: 'Another writer advanced the repository head while this one was working; the change was not recorded.',
+  })

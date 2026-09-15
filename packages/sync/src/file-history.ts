@@ -1,7 +1,8 @@
 import { illegalState, validation } from '@arxhub/errors'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { Chunker } from './chunker'
-import type { Repo } from './repo'
+import { repoHeadMoved } from './errors'
+import { MAX_HEAD_RETRIES, type Repo } from './repo'
 import { snapshotHash } from './snapshot-hash'
 import type { Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 
@@ -186,22 +187,14 @@ export class FileHistory {
     // the same server, reaches directly. Reading head, then writing a NEW head an entire chunking pass
     // later, left a window wide enough for one of those to advance head first; this device's own
     // checkpoint then wrote its new snapshot but never linked it in, silently dropping it from history
-    // (a `Saved versions` list one entry short, or a version nobody can read back). There is no
-    // compare-and-swap this store offers, so the fix is optimistic concurrency: read head again right
-    // before the write, and start over against whatever it now is if it moved.
-    //
-    // That recheck alone still loses checkpoints: it only catches a head that had ALREADY moved by the
-    // time this loop asked, not a second writer's own write landing in the gap between that ask and this
-    // one's `writeText()` actually taking effect (a real filesystem write, not a single atomic step —
-    // two rechecks can both see the same unmoved head and both proceed to write, and whichever lands
-    // second wins silently). So the write is followed by a read of what is actually there: if it is not
-    // OUR snapshot, we lost the race exactly like a stale recheck would have caught, and retry the same
-    // way — rebuild against whatever head now is rather than trust that a `writeText()` call which
-    // returned actually stuck. `packages/sync/src/__tests__/file-history-race.test.ts` is what a version
-    // going missing under two concurrent devices looks like without this: `list()` on either side comes
-    // back short exactly the checkpoints that lost this way, because a snapshot that was written but
-    // never linked in is not on any chain `versions()` walks (see `list()`'s contract above).
-    for (;;) {
+    // (a `Saved versions` list one entry short, or a version nobody can read back). The head moves only
+    // through `Repo.advanceHead` — a compare-and-swap on the store — so a lost race is an answer rather
+    // than a silent overwrite, and the checkpoint is rebuilt on whatever head actually is and tried again,
+    // bounded like every other head writer. `packages/sync/src/__tests__/file-history-race.test.ts` is
+    // what a version going missing under two concurrent devices looks like without this: `list()` on
+    // either side comes back short exactly the checkpoints that lost, because a snapshot that was written
+    // but never linked in is not on any chain `versions()` walks (see `list()`'s contract above).
+    for (let attempt = 1; ; attempt++) {
       const head = await this.repo.getHeadSnapshot()
       const previous = head.files[checkpoint.path]
       if (!checkpoint.source && previous?.hash === hash && previous.identity === checkpoint.identity) return
@@ -227,18 +220,8 @@ export class FileHistory {
         timestamp: (checkpoint.savedAt ?? Date.now()) / 1000,
       }
       await this.repo.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
-      const current = await this.repo
-        .getHeadFile()
-        .readText()
-        .catch(() => null)
-      if (current !== head.hash) continue
-      await this.repo.getHeadFile().writeText(snapshot.hash)
-      const landed = await this.repo
-        .getHeadFile()
-        .readText()
-        .catch(() => null)
-      if (landed !== snapshot.hash) continue
-      return
+      if (await this.repo.advanceHead(head.hash, snapshot.hash)) return
+      if (attempt >= MAX_HEAD_RETRIES) throw repoHeadMoved()
     }
   }
 }

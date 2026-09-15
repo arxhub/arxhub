@@ -63,13 +63,16 @@ export class SyncEngine {
   // A SyncHeadMovedError from a losing round is retried here, whole, rather than left for the caller
   // to notice and re-invoke — the condition already says exactly what fixes it ("run sync again"), so
   // doing that automatically means a UI only ever sees a real failure, not a race it can't tell apart
-  // from one.
+  // from one. A RepoHeadMovedError is the same condition on the LOCAL head — another tab's sync rewrote
+  // the chain under this round's rebase — and re-running the round against what is there now is the
+  // same fix.
   async sync(): Promise<MergeResult> {
     for (let attempt = 1; ; attempt++) {
       try {
         return await this.lock.acquire('sync', () => this.syncOnce())
       } catch (error) {
-        if (!hasErrorCode(error, 'SyncHeadMovedError') || attempt >= MAX_HEAD_MOVED_RETRIES) throw error
+        const headMoved = hasErrorCode(error, 'SyncHeadMovedError') || hasErrorCode(error, 'RepoHeadMovedError')
+        if (!headMoved || attempt >= MAX_HEAD_MOVED_RETRIES) throw error
       }
     }
   }

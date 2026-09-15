@@ -2,14 +2,25 @@ import { hasErrorCode, illegalState } from '@arxhub/errors'
 import { join } from '@arxhub/path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
-import type { VirtualFile, VirtualFileSystem, VirtualWalker } from '@arxhub/vfs'
+import { compareAndSwap, type VirtualFile, type VirtualFileSystem, type VirtualWalker } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
 import { Checkout } from './checkout'
 import { Chunker } from './chunker'
 import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
+import { repoHeadMoved } from './errors'
 import { snapshotHash } from './snapshot-hash'
 import type { FileStatus, MergeResult, Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
+
+// A lost head compare-and-swap is self-healing — the writer re-reads head, rebuilds on it and tries
+// again, and every loss means another writer got a snapshot of its own in. The bound exists for a bug
+// that always loses, or a store that always answers no, so neither spins forever. It is deliberately
+// higher than the engine's MAX_HEAD_MOVED_RETRIES: a retry here costs a head read and a snapshot
+// rebuild, not a whole sync round, and the writers that share one store are a few tabs or a handful of
+// e2e workers, each of which wins at most once per attempt of ours before it has nothing left to write.
+export const MAX_HEAD_RETRIES = 16
+
+const encodeHash = (hash: string) => new TextEncoder().encode(hash)
 
 // What a checkpoint changed about a file is its content and its document identity — never the
 // sizes or the file id, which a manifest written before they existed simply lacks. Comparing the
@@ -176,12 +187,29 @@ export class Repo {
   }
 
   private async snapshotChanges(): Promise<Snapshot> {
-    const head = await this.getHeadSnapshot()
-    const changes = await this.status(head)
-    if (changes.length === 0) {
-      return head
+    for (let attempt = 1; ; attempt++) {
+      const head = await this.getHeadSnapshot()
+      const changes = await this.status(head)
+      if (changes.length === 0) {
+        return head
+      }
+      const snapshot = await this.buildSnapshot(head, changes)
+      await this.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
+      if (await this.advanceHead(head.hash, snapshot.hash)) {
+        await this.changes.writeJSON([])
+        return snapshot
+      }
+      // Another writer's snapshot landed on the head this one was built against. The retry starts from
+      // status() again rather than re-parenting `files` onto the new head: that writer shares this tree
+      // (a second tab, a second worker), so its head carries entries this pass never saw, and a snapshot
+      // re-parented blind would read as their deletion. The chunks are already in the store, so the
+      // second pass writes none of them again; the object this pass wrote stays behind, content-addressed
+      // and unlinked, which costs disk and nothing else.
+      if (attempt >= MAX_HEAD_RETRIES) throw repoHeadMoved()
     }
+  }
 
+  private async buildSnapshot(head: Snapshot, changes: FileStatus[]): Promise<Snapshot> {
     const files: Record<string, SnapshotFile> = { ...head.files }
     const deleted = new Set(changes.filter((change) => change.type === 'deleted').map((change) => change.pathname))
 
@@ -232,7 +260,7 @@ export class Repo {
     await this.completeLegacyEntries(files)
     await this.checkout.flush()
 
-    const snapshot = {
+    return {
       // The address commits to files AND parent (see snapshotHash) — matches prepare()'s
       // EMPTY_SNAPSHOT_HASH, which is snapshotHash(null, {}).
       hash: snapshotHash(head.hash, files),
@@ -240,12 +268,6 @@ export class Repo {
       timestamp: dayjs().unix(),
       files,
     }
-
-    await this.getSnapshotFile(snapshot.hash).writeJSON(snapshot)
-    await this.getHeadFile().writeText(snapshot.hash)
-
-    await this.changes.writeJSON([])
-    return snapshot
   }
 
   // Entries carried over from a manifest written before sizes and file ids existed are completed here,
@@ -283,6 +305,27 @@ export class Repo {
 
   async rebase(local: Snapshot, remote: Snapshot, base: Snapshot | null): Promise<void> {
     if (base?.hash === remote.hash) return
+    let from = local
+    for (let attempt = 1; ; attempt++) {
+      const top = await this.replay(from, remote, base)
+      if (await this.advanceHead(from.hash, top.hash)) return
+      // The local chain moved while this replayed it. If it merely GREW — a checkpoint landed on top of
+      // `from`, an editor save in another tab — that checkpoint belongs on the remote as much as the rest,
+      // so the replay starts over from the new head and carries it along; leaving it behind is exactly the
+      // orphan this exists to prevent. If it was REWRITTEN — no longer descends from `from`, which is what
+      // another device's own rebase leaves — this replay was computed against history that is gone, and
+      // the engine re-runs the whole round against what is there now.
+      const current = await this.getHeadSnapshot()
+      if (current.hash === top.hash) return
+      if (!(await this.isAncestor(from.hash, current.hash)) || attempt >= MAX_HEAD_RETRIES) throw repoHeadMoved()
+      from = current
+    }
+  }
+
+  // Writes every local snapshot since `base` again on top of `remote`, oldest first, each re-addressed to
+  // its new parent, and returns the new top. Objects only — moving the head is the caller's, so that a
+  // snapshot's address commits to a parent that is already there when head names it.
+  private async replay(local: Snapshot, remote: Snapshot, base: Snapshot | null): Promise<Snapshot> {
     const pending: Snapshot[] = []
     for await (const snapshot of this.ancestry(local.hash)) {
       if (snapshot.hash === base?.hash || snapshot.parent === null) break
@@ -301,7 +344,7 @@ export class Repo {
       await this.getSnapshotFile(replayed.hash).writeJSON(replayed)
       head = replayed
     }
-    await this.getHeadFile().writeText(head.hash)
+    return head
   }
 
   // Walks a snapshot's parent chain, yielding each successfully-read snapshot oldest-link-last.
@@ -550,8 +593,7 @@ export class Repo {
   async prepare(): Promise<void> {
     const hash = EMPTY_SNAPSHOT_HASH
     const snapshot = this.getSnapshotFile(hash)
-    const isSnapshotExists = await snapshot.exists()
-    if (!isSnapshotExists) {
+    if (!(await snapshot.exists())) {
       await snapshot.writeJSON({
         hash: hash,
         parent: null,
@@ -559,12 +601,17 @@ export class Repo {
         files: {},
       } satisfies Snapshot)
     }
+    // Losing the seed means another writer seeded first, which is the same outcome.
+    if (!(await this.getHeadFile().exists())) await this.advanceHead(null, hash)
+  }
 
-    const head = this.getHeadFile()
-    const isHeadExists = await head.exists()
-    if (!isHeadExists) {
-      await head.writeText(hash)
-    }
+  // The ONE way the head moves: `next` lands only while head still reads `expected` (null: no head yet),
+  // and a `false` means someone else moved it first — re-read, rebuild, try again. Every caller has
+  // already written `next`'s snapshot object, so head is always the LAST thing written and a reader that
+  // follows it finds what it names. Public because FileHistory writes checkpoints through it; there is
+  // deliberately no other write path to the head file.
+  async advanceHead(expected: string | null, next: string): Promise<boolean> {
+    return compareAndSwap(this.store, this.getHeadFile().pathname, expected === null ? null : encodeHash(expected), encodeHash(next))
   }
 
   async getHeadSnapshot(): Promise<Snapshot> {
