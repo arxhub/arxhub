@@ -22,6 +22,30 @@ watch(sync.lastConflicts, (conflicts) => {
   })
 })
 
+// A content merger (ArxEditor's, for `.arx`) absorbed the overlap INTO the file instead of writing a
+// copy beside it — there is nothing to browse to by accident here, so this is the only announcement
+// there is. One toast per file, each naming the file, so the user can open exactly the one that needs
+// a decision rather than searching the vault for it.
+watch(sync.lastUnresolved, (unresolved) => {
+  for (const { pathname, count } of unresolved) {
+    toaster.create({
+      title: `${count} conflict${count === 1 ? '' : 's'} in "${pathname}"`,
+      description: 'Open it to resolve.',
+      type: 'warning',
+    })
+  }
+})
+
+// The edit always wins over a delete — there is no document left on the deleting side to hold a
+// decision in — but it IS a decision made for the user, so it gets its own announcement rather than
+// passing for an ordinary, silent no-op merge.
+watch(sync.lastDecisions, (decisions) => {
+  for (const { pathname, kind } of decisions) {
+    if (kind !== 'edit-over-delete') continue
+    toaster.create({ title: `Edit kept over a deletion: ${pathname}`, type: 'warning' })
+  }
+})
+
 // Tick so relative "synced Ns ago" advances on its own instead of freezing at render time.
 const now = ref(Date.now())
 const timer = setInterval(() => {

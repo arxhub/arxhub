@@ -25,6 +25,19 @@ function sameEntry(a: SnapshotFile | undefined, b: SnapshotFile | undefined): bo
 // as 'pending' and fetches the content when the file is opened.
 export type MaterializePolicy = (file: SnapshotFile) => boolean
 
+// A format-aware merge, tried before merge() falls back to writing a whole-file conflict copy. `base`
+// is null when this device no longer holds the base version's chunks (or there was no base at all) —
+// the merger sees that as "no common ancestor" rather than this code guessing at one. Returning null
+// means "not my format, do what you did before" (F-05, `14-sync`): the caller (Repo.merge) never
+// interprets the bytes itself, so a format it does not recognise degrades to the pre-existing behaviour
+// instead of silently mangling content it can't parse.
+export type ContentMerger = (
+  pathname: string,
+  base: Uint8Array | null,
+  local: Uint8Array,
+  remote: Uint8Array,
+) => Promise<{ merged: Uint8Array; conflicts: number } | null>
+
 export class Repo {
   // The working tree being versioned (user content). Read for status/snapshot, written on merge.
   private readonly tree: VirtualFileSystem
@@ -37,6 +50,7 @@ export class Repo {
   // This device's view of the tree — see Checkout. Flushed at the end of every operation that touched it.
   private readonly checkout: Checkout
   private materializePolicy: MaterializePolicy = () => true
+  private contentMerger: ContentMerger | null = null
 
   constructor(tree: VirtualFileSystem, store: VirtualFileSystem = tree) {
     this.tree = tree
@@ -53,6 +67,13 @@ export class Repo {
 
   setMaterializePolicy(policy: MaterializePolicy): void {
     this.materializePolicy = policy
+  }
+
+  // Registered by whichever plugin owns a format's structure (ArxEditorPlugin, for `.arx`) — Repo
+  // itself knows nothing about any file format. `null` (the default) means every "both modified"
+  // conflict falls straight to a whole-file copy, exactly as before this existed.
+  setContentMerger(merger: ContentMerger | null): void {
+    this.contentMerger = merger
   }
 
   // Does a fetch owe this file its chunks: yes when the policy wants it, and yes when it is already on
@@ -344,6 +365,8 @@ export class Repo {
     remoteFiles: Record<string, SnapshotFile>,
   ): Promise<MergeResult> {
     const conflicts: string[] = []
+    const unresolved: { pathname: string; count: number }[] = []
+    const decisions: { pathname: string; kind: 'edit-over-delete' }[] = []
     const pathnames = new Set([...Object.keys(baseFiles), ...Object.keys(localFiles), ...Object.keys(remoteFiles)])
     for (const pathname of pathnames) {
       const baseFile = baseFiles[pathname]
@@ -365,9 +388,13 @@ export class Repo {
           await this.tree.delete(pathname, { force: true })
           await this.checkout.forget(pathname)
           await this.checkout.clearPending(pathname)
+        } else {
+          // local modified, remote deleted -> silently keep local (no conflict; the tree already holds
+          // the modified content, so there is nothing to write) — but it IS a decision made for the
+          // user, not merely a no-op, so it is reported. Never offered to a content merger: the deleting
+          // side has no document at all to hold a conflict marker in.
+          decisions.push({ pathname, kind: 'edit-over-delete' })
         }
-        // else: local modified, remote deleted -> silently keep local (no conflict; the tree already
-        // holds the modified content, so there is nothing to write).
         continue
       }
 
@@ -388,6 +415,7 @@ export class Repo {
           // resurfaces under its old name instead of landing inside the rename, which is a duplicate
           // for the user to reconcile rather than the data loss it was.
           await this.take(remoteFile)
+          decisions.push({ pathname, kind: 'edit-over-delete' })
         }
         continue
       }
@@ -400,13 +428,69 @@ export class Repo {
 
       // Both exist
       if (localFile.hash !== remoteFile.hash) {
-        conflicts.push(await this.writeConflictFile(remoteFile))
+        const merged = await this.tryContentMerge(pathname, baseFile ?? null, localFile, remoteFile)
+        if (merged) {
+          if (merged.conflicts > 0) unresolved.push({ pathname, count: merged.conflicts })
+        } else {
+          conflicts.push(await this.writeConflictFile(remoteFile))
+        }
       }
 
       // else: same content -> no-op
     }
     await this.checkout.flush()
-    return { conflicts }
+    return { conflicts, unresolved, decisions }
+  }
+
+  // Tried before a "both modified" conflict falls back to a whole-file copy. Returns null exactly when
+  // there is nothing this merger can do about it — no merger registered, or the remote side's chunks
+  // are not actually here yet (should not happen: a file this device keeps on disk is always fetched in
+  // full — see SyncEngine.fetch/wantsContent — but a truncated write is worse than a conflict copy, so
+  // this is checked rather than assumed).
+  private async tryContentMerge(
+    pathname: string,
+    baseFile: SnapshotFile | null,
+    localFile: SnapshotFile,
+    remoteFile: SnapshotFile,
+  ): Promise<{ conflicts: number } | null> {
+    if (!this.contentMerger) return null
+    if (!(await this.hasChunks(remoteFile))) return null
+    // The base version's chunks are not mirrored past the head (see fetch() in SyncEngine) — absent
+    // here reads as "no common ancestor" to the merger, same as a genuinely empty base.
+    const base = baseFile && (await this.hasChunks(baseFile)) ? await this.readChunks(baseFile.chunks) : null
+    const local = await this.tree.file(pathname).read()
+    const remote = await this.readChunks(remoteFile.chunks)
+    const result = await this.contentMerger(pathname, base, local, remote)
+    if (!result) return null
+    await this.writeMergedContent(pathname, result.merged)
+    return { conflicts: result.conflicts }
+  }
+
+  private async readChunks(chunks: SnapshotFileChunk[]): Promise<Uint8Array> {
+    const parts: Uint8Array[] = []
+    let total = 0
+    for (const chunk of chunks) {
+      const bytes = await this.getChunkFile(chunk.hash).read()
+      parts.push(bytes)
+      total += bytes.byteLength
+    }
+    const result = new Uint8Array(total)
+    let offset = 0
+    for (const part of parts) {
+      result.set(part, offset)
+      offset += part.byteLength
+    }
+    return result
+  }
+
+  // What a content merger's result is written through — not from stored chunks, so the chunker plays
+  // no part, but otherwise the same bookkeeping as writeFile: the checkout trusts the fresh stat
+  // without a re-read, and the journal picks the path up for this device's next snapshot.
+  private async writeMergedContent(pathname: string, content: Uint8Array): Promise<void> {
+    await this.tree.file(pathname).write(content)
+    await this.checkout.record(pathname, sha256(content))
+    await this.checkout.clearPending(pathname)
+    await this.add(pathname)
   }
 
   // Put the remote's version of a file on this device — as content when the chunks are here, as a

@@ -21,6 +21,12 @@ export class SyncExtension extends Extension {
   // `conflict-*` file while browsing. Not cumulative across rounds: a UI reacting to it (a toast) is
   // meant to fire once per round, not re-announce an older conflict the user already saw.
   readonly lastConflicts = ref<string[]>([])
+  // Same "most recent round only" shape, for the two other things a merge can report: a path a content
+  // merger absorbed conflicts into (still unresolved INSIDE the file, e.g. a `.arx` conflict block —
+  // see `arx-merge.ts`) rather than writing a copy beside it, and a path where an edit won over a
+  // delete because there was no document left on the other side to hold a decision in.
+  readonly lastUnresolved = ref<{ pathname: string; count: number }[]>([])
+  readonly lastDecisions = ref<{ pathname: string; kind: 'edit-over-delete' }[]>([])
   engine: SyncEngine | null = null
 
   private readonly repository: RepositoryExtension
@@ -56,12 +62,16 @@ export class SyncExtension extends Extension {
     this.status.value = 'syncing'
     this.lastError.value = null
     this.lastConflicts.value = []
+    this.lastUnresolved.value = []
+    this.lastDecisions.value = []
     try {
       if (options.full === true) await this.engine.add('vault')
       await this.engine.add('storage')
       const result = await this.engine.sync()
       this.lastSynced.value = new Date()
       this.lastConflicts.value = result.conflicts
+      this.lastUnresolved.value = result.unresolved
+      this.lastDecisions.value = result.decisions
       this.status.value = 'idle'
     } catch (error) {
       // Don't swallow: log for diagnostics and expose the message so the footer can surface it.

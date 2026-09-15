@@ -16,9 +16,9 @@ function extension(repository: RepositoryExtension = fakeRepository()): SyncExte
 function fakeEngine(opts: { syncError?: Error } = {}): SyncEngine {
   return {
     add: async (): Promise<void> => {},
-    sync: async (): Promise<{ conflicts: string[] }> => {
+    sync: async (): Promise<{ conflicts: string[]; unresolved: never[]; decisions: never[] }> => {
       if (opts.syncError) throw opts.syncError
-      return { conflicts: [] }
+      return { conflicts: [], unresolved: [], decisions: [] }
     },
     materialize: async (): Promise<void> => {},
     readRange: async (): Promise<Uint8Array> => new Uint8Array(),
@@ -63,7 +63,7 @@ describe('sync()', () => {
   test('does not run a second round while one is in flight', async () => {
     const engine = {
       add: async (): Promise<void> => {},
-      sync: () => new Promise<{ conflicts: string[] }>(() => {}),
+      sync: () => new Promise<{ conflicts: string[]; unresolved: never[]; decisions: never[] }>(() => {}),
     } as unknown as SyncEngine
     const sync = extension()
     sync.engine = engine
