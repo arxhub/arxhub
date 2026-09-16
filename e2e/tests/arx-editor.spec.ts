@@ -99,6 +99,106 @@ test('slash builds tasks and a configurable dropdown with keyboard and pointer',
   expect(saved).not.toContain('/drop')
 })
 
+test('a slash in a line that keeps its text puts the block after it, and a task keeps its list', async ({ app, vault }) => {
+  const path = await vault.write(
+    `${test.info().project.name}-slash-placement.arx`,
+    document([
+      paragraph('Keep this line'),
+      { type: 'task_list', content: [{ type: 'task_item', attrs: { checked: false }, content: [paragraph('Task text')] }] },
+    ]),
+  )
+  const editor = await openArx(app, path)
+  await editor.locator(':scope > p').first().click()
+  await app.keyboard.press('Home')
+  await app.keyboard.insertText('/drop')
+  await app.getByRole('option', { name: 'Dropdown', exact: true }).click()
+  await expect(editor.locator(':scope > p').first()).toHaveText('Keep this line')
+  await expect(editor.locator(':scope > *').nth(1)).toHaveAttribute('data-type', 'select')
+  await app.keyboard.insertText('after the dropdown')
+  await expect(editor.locator(':scope > p').nth(1)).toHaveText('after the dropdown')
+
+  // The same slash inside a task: the item's first child must stay a paragraph, so the block lands
+  // after it rather than in its place — the list is still one list of one task.
+  await editor.locator('li[data-type="task_item"] p').click()
+  await app.keyboard.press('Home')
+  await app.keyboard.insertText('/drop')
+  await app.getByRole('option', { name: 'Dropdown', exact: true }).click()
+  await expect(editor.locator('ul[data-type="task_list"]')).toHaveCount(1)
+  await expect(editor.locator('li[data-type="task_item"]')).toHaveCount(1)
+  await expect(editor.locator('li[data-type="task_item"] [data-type="select"]')).toHaveCount(1)
+  await expect(editor.locator('li[data-type="task_item"] p').first()).toHaveText('Task text')
+  await app.keyboard.insertText('inside the task')
+  await expect(editor.locator('li[data-type="task_item"] p').last()).toHaveText('inside the task')
+})
+
+test('interactive mode undoes and redoes a value it just changed', async ({ app, vault }) => {
+  const path = await vault.write(
+    `${test.info().project.name}-interactive-undo.arx`,
+    document([
+      paragraph('Protected text'),
+      { type: 'task_list', content: [{ type: 'task_item', attrs: { checked: false }, content: [paragraph('Tick me')] }] },
+    ]),
+  )
+  const editor = await openArx(app, path)
+  await mode(app, 'Interactive')
+  const checkbox = editor.getByRole('checkbox')
+  await editor.locator('[data-scope="checkbox"][data-part="control"]').click()
+  await expect(checkbox).toBeChecked()
+  // From where ticking the box left the focus — inside the checkbox's own component — and not through
+  // ProseMirror, which never sees a keydown while the view is not editable.
+  await app.keyboard.press('ControlOrMeta+z')
+  await expect(checkbox).not.toBeChecked()
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Redo', exact: true }).click()
+  await expect(checkbox).toBeChecked()
+  await expect(editor.locator('p').first()).toHaveText('Protected text')
+})
+
+test('Enter in the middle of a finished task starts an unfinished one', async ({ app, vault }) => {
+  // Not on the mobile frame: its device is an Android one, and prosemirror-view drops the Enter keydown
+  // outright on Chrome for Android (the key arrives inside a composition sequence there), leaving the
+  // split to the browser and a re-parse. What that asserts is the emulated browser, not the editor.
+  test.skip(await isMobileFrame(app), 'prosemirror-view hands Enter to the composition path on Android')
+  const path = await vault.write(
+    `${test.info().project.name}-split-task.arx`,
+    document([{ type: 'task_list', content: [{ type: 'task_item', attrs: { checked: true }, content: [paragraph('ne')] }] }]),
+  )
+  const editor = await openArx(app, path)
+  await editor.locator('li[data-type="task_item"] p').click()
+  // Typed rather than arrowed into place: an arrow key moves the caret in the browser, which only does
+  // that while the page holds focus — and two specs of one project run in two pages at once.
+  await app.keyboard.press('Home')
+  await app.keyboard.insertText('Do')
+  await expect(editor.locator('li[data-type="task_item"] p')).toHaveText('Done')
+  await app.keyboard.press('Enter')
+  await expect(editor.locator('li[data-type="task_item"]')).toHaveCount(2)
+  await expect(editor.locator('li[data-checked="true"] p')).toHaveText('Do')
+  await expect(editor.locator('li[data-checked="false"] p')).toHaveText('ne')
+})
+
+test('a space keeps the slash menu open, and the insert hint follows the caret', async ({ app, vault }) => {
+  const path = await vault.write(
+    `${test.info().project.name}-slash-space.arx`,
+    document([paragraph('Some text'), { type: 'paragraph' }, { type: 'paragraph' }]),
+  )
+  const editor = await openArx(app, path)
+  await expect(editor.locator('p[data-placeholder]')).toHaveCount(0)
+  await editor.locator('p').nth(1).click()
+  // The hint is on the empty paragraph the caret is in, not on every empty one.
+  await expect(editor.locator('p[data-placeholder]')).toHaveCount(1)
+  await expect(editor.locator('p').nth(1)).toHaveAttribute('data-placeholder', 'Type / to insert a block')
+  await app.keyboard.insertText('/heading 2')
+  const menu = app.getByRole('listbox', { name: 'Insert block' })
+  await expect(menu.getByRole('option')).toHaveText(['Heading 2'])
+  await app.keyboard.press('Enter')
+  await expect(editor.locator('h2')).toHaveCount(1)
+  // A sentence that only happens to start with a slash lets the menu go.
+  await editor.locator('p').nth(1).click()
+  await app.keyboard.insertText('/hello world')
+  await expect(menu).toHaveCount(0)
+  await expect(editor.locator('p').nth(1)).toHaveText('/hello world')
+})
+
 async function formatting(app: Page, label: string) {
   if (label === 'Undo') {
     await app.getByRole('button', { name: 'Document tools', exact: true }).click()
