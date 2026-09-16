@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { DocumentName } from '@arxhub/plugin-notes/ui'
+import { Strip } from '@arxhub/uikit/core'
 import { useKeyboardInset } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import SheetBar from './SheetBar.vue'
@@ -9,6 +11,7 @@ import SheetMessages from './SheetMessages.vue'
 import SheetTabs from './SheetTabs.vue'
 import { useSheet } from './use-sheet'
 
+defineProps<{ path: string }>()
 const { root, sheet, formulaFocused } = useSheet()
 const keyboardInset = useKeyboardInset()
 const typing = computed(() => formulaFocused.value && keyboardInset.value > 0)
@@ -16,6 +19,9 @@ const typing = computed(() => formulaFocused.value && keyboardInset.value > 0)
 
 <template>
   <div ref="root" class="sheet-editor sheet-mobile">
+    <Strip>
+      <DocumentName :path="path" />
+    </Strip>
     <SheetMessages />
     <SheetGrid v-if="sheet" :row-height="48" :column-width="120" />
     <SheetTabs v-show="!typing" />

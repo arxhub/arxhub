@@ -11,4 +11,4 @@ provide(sheetSessionKey, createSheetSession(props))
 const frame = useShellFrame() === 'mobile' ? SheetMobile : SheetDesktop
 </script>
 
-<template><component :is="frame" /><SheetTools /></template>
+<template><component :is="frame" :path="path" /><SheetTools /></template>

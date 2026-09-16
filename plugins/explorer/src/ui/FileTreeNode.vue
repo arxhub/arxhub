@@ -40,6 +40,12 @@ const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
 const actions = useFileActions()
 
+// OR-03: one name, answered where "what can open this" is known (NotesExtension, through the source the
+// plugin wires) and shown the same way here and above the open document. Reactive on both the setting
+// and the live viewer registry — a plugin that stops claiming an extension un-hides it here without this
+// component caching an answer of its own.
+const displayName = computed(() => explorer.displayName(props.node))
+
 function onContextMenu(event: MouseEvent) {
   actionMenu.open(actions.getNodeActions(props.node), {
     x: event.clientX,
@@ -58,16 +64,22 @@ const renameWrap = ref<HTMLElement | null>(null)
 
 watch(renaming, async (active) => {
   if (!active) return
-  renameValue.value = basename(props.node.entry.pathname)
+  // The visible name only — a hidden extension is never put in front of the owner to edit. Switching
+  // the setting off is what puts it back in the field, and is the one road to changing an extension.
+  renameValue.value = displayName.value.text
   await nextTick()
   renameWrap.value?.querySelector('input')?.select()
 })
 
 function commitRename() {
   if (!renaming.value) return
-  const newName = renameValue.value.trim()
+  const editedName = renameValue.value.trim()
   explorer.renamingPath.value = null
-  if (newName && newName !== basename(props.node.entry.pathname)) {
+  if (!editedName) return
+  // Glue the hidden tail back on: the input never showed it, so it must not be lost because it was not
+  // on screen.
+  const newName = displayName.value.fullName(editedName)
+  if (newName !== basename(props.node.entry.pathname)) {
     actions.runAction(explorer.renameEntry(props.node.entry.pathname, newName), `rename to ${newName}`)
   }
 }
@@ -150,7 +162,7 @@ function handleFocus() {
         @click.stop
       />
     </span>
-    <span v-else class="name">{{ basename(node.entry.pathname) || node.entry.pathname }}</span>
+    <span v-else class="name">{{ displayName.text }}</span>
     <!-- A-48: the file's `<name>.arx` properties card is folded into this row rather than shown as a
          separate one (pairCards) — this glyph is the only sign of it, and the row's own "Properties…"
          action opens the card that already exists here. -->

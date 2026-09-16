@@ -61,6 +61,11 @@ function newFolder() {
   const parent = explorer.selectedPath.value ?? explorer.root
   actions.runAction(explorer.createDir(parent, 'new-folder'), 'create the folder')
 }
+
+// OR-07. Same place-rule as New file: the strip acts on what is selected, and the root when nothing is.
+function addFiles() {
+  actions.runAction(actions.addFiles(explorer.selectedPath.value ?? explorer.root), 'add the files')
+}
 </script>
 
 <template>
@@ -71,6 +76,7 @@ function newFolder() {
       <template #actions>
         <IconButton size="lg" icon="lu:folder-plus" tooltip="New folder" @click="newFolder" />
         <IconButton size="lg" icon="lu:file-plus" tooltip="New file" @click="newFile" />
+        <IconButton size="lg" icon="lu:file-up" tooltip="Add files…" @click="addFiles" />
         <IconButton size="lg" icon="lu:refresh-cw" tooltip="Refresh" @click="actions.runAction(explorer.loadRoot(), 'refresh the files')" />
         <IconButton size="lg" icon="lu:chevrons-down-up" tooltip="Collapse tree" @click="explorer.collapseAll()" />
         <IconButton

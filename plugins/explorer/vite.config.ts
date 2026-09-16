@@ -6,6 +6,7 @@ export default defineConfig((env) =>
     entries: ['src/ui.ts'],
     external: [
       '@arxhub/core',
+      '@arxhub/errors',
       '@arxhub/vfs',
       '@arxhub/uikit',
       '@arxhub/plugin-notes',

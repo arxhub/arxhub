@@ -1,9 +1,12 @@
+import { PluginConfig } from '@arxhub/config'
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { dirname } from '@arxhub/path'
+import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { type ObjectGone, type ObjectRef, type OpenedObject, objectGone, ShellExtension } from '@arxhub/plugin-shell/ui'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { type Component, h, markRaw } from 'vue'
 import { manifest } from './manifest'
+import { NotesConfigSchema, toHideKnownExtensions } from './notes-config'
 import { NotesExtension } from './notes-extension'
 import { blockAnchorOf, NOTES_TYPE_ID, noteSnapshotPath } from './notes-type'
 import NotesNav from './ui/NotesNav.vue'
@@ -18,6 +21,7 @@ export interface NotesPluginArgs extends PluginArgs {
 export class NotesPlugin extends Plugin {
   private readonly root: string
   private unwatch: (() => void) | null = null
+  private unwatchConfig: (() => void) | null = null
   // The dock wrapper of the note that is active right now. `dock()` is asked on every render, so the
   // wrapper is remembered rather than rebuilt: a fresh closure each time is a fresh component
   // identity, and the bar would be torn down and remounted — losing focus and state — on every tick.
@@ -38,6 +42,25 @@ export class NotesPlugin extends Plugin {
 
     const notes = ctx.extensions.get(NotesExtension)
     const shell = ctx.extensions.get(ShellExtension)
+
+    // OR-03: how files are named is the type's own setting — every surface that shows a name reads
+    // `NotesExtension.displayName`, so the switch belongs beside it rather than in whichever surface
+    // happened to need it first.
+    const config = ctx.services.get(PluginConfig)
+    ctx.extensions.get(SettingsExtension).register({
+      id: 'notes',
+      title: 'Notes',
+      icon: 'lu:file-text',
+      order: 13,
+      schema: NotesConfigSchema,
+      config,
+    })
+    // Applies live, the same way Sync's own applyConfig does: a saved change reaches the tree and the
+    // open document with no restart, through the one PluginConfig.watch this section's Save writes
+    // through.
+    this.unwatchConfig = config.watch(NotesConfigSchema, (cfg) => {
+      notes.hideKnownExtensions.value = toHideKnownExtensions(cfg)
+    })
 
     // Open an object. Checking "is it already open" neither is needed nor belongs here: that check
     // lives in one place, in `Workspace.openObject`. An object always comes back from here — with the
@@ -117,6 +140,11 @@ export class NotesPlugin extends Plugin {
   override async start(ctx: PluginContext): Promise<void> {
     const shell = ctx.extensions.get(ShellExtension)
     const notes = ctx.extensions.get(NotesExtension)
+    // A local TOML read, not a network or database open — small enough to await directly rather than
+    // detach, the same trade ThemePlugin makes for its own single setting. tryRead: an unreachable
+    // settings store must not abort the boot, it just means the default (hide).
+    const cfg = await ctx.services.get(PluginConfig).tryRead(NotesConfigSchema)
+    notes.hideKnownExtensions.value = toHideKnownExtensions(cfg ?? {})
     this.unwatch = ctx.services.get(VaultWatcher).subscribe((change) => {
       if (change.kind === 'written') return
       const workspace = shell.attachedWorkspace
@@ -146,5 +174,7 @@ export class NotesPlugin extends Plugin {
   override async stop(): Promise<void> {
     this.unwatch?.()
     this.unwatch = null
+    this.unwatchConfig?.()
+    this.unwatchConfig = null
   }
 }

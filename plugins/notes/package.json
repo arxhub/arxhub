@@ -21,7 +21,9 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/config": "workspace:*",
     "@arxhub/path": "workspace:*",
+    "@sinclair/typebox": "catalog:shared",
     "vue": "catalog:client"
   },
   "devDependencies": {
@@ -33,6 +35,8 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/plugin-settings": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/uikit": "workspace:*",
     "@arxhub/vfs": "workspace:*"

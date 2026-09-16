@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { DocumentName } from '@arxhub/plugin-notes/ui'
 import SheetBar from './SheetBar.vue'
 import SheetFormulaBar from './SheetFormulaBar.vue'
 import SheetFormulaHelp from './SheetFormulaHelp.vue'
@@ -7,12 +8,15 @@ import SheetMessages from './SheetMessages.vue'
 import SheetTabs from './SheetTabs.vue'
 import { useSheet } from './use-sheet'
 
+defineProps<{ path: string }>()
 const { root, sheet } = useSheet()
 </script>
 
 <template>
   <div ref="root" class="sheet-editor">
-    <SheetBar />
+    <SheetBar>
+      <DocumentName :path="path" />
+    </SheetBar>
     <SheetMessages />
     <SheetFormulaBar />
     <SheetFormulaHelp />

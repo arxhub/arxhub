@@ -247,7 +247,9 @@ test('renaming and switching types retain the spreadsheet buffer and restart cal
   await app.getByRole('treeitem', { name: path, exact: true }).click({ button: 'right' })
   await app.getByRole('menuitem', { name: 'Rename', exact: true }).click()
   const renamed = path.replace('.arxs', '-renamed.arxs')
-  await app.getByRole('textbox', { name: 'New name', exact: true }).fill(renamed)
+  // OR-03: '.arxs' is an extension a viewer claims, so the row hides it and the field holds the stem
+  // alone — the tail is glued back on at commit, and typing it here would write '….arxs.arxs'.
+  await app.getByRole('textbox', { name: 'New name', exact: true }).fill(renamed.replace('.arxs', ''))
   await app.getByRole('textbox', { name: 'New name', exact: true }).press('Enter')
   await app.getByRole('treeitem', { name: renamed, exact: true }).click()
   await expect(cell(app, 'B1')).toHaveText('21')

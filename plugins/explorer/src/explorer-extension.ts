@@ -1,8 +1,11 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
+import { aggregate } from '@arxhub/errors'
 import { basename, dirname, extname, join } from '@arxhub/path'
 import type { ActionItem } from '@arxhub/uikit/core'
-import { type VirtualEntry, type VirtualFileSystem, renameEntry as vfsRenameEntry } from '@arxhub/vfs'
+import { type VfsChange, type VfsChangeSource, type VirtualEntry, type VirtualFileSystem, renameEntry as vfsRenameEntry } from '@arxhub/vfs'
 import { ref, type ShallowRef, type WatchStopHandle, watch } from 'vue'
+import { freeName } from './free-name'
+import { describeImportFailure, type ImportedFile, type ImportSource } from './import-files'
 
 export interface TreeNode {
   entry: VirtualEntry
@@ -25,6 +28,46 @@ export interface PendingSource {
 }
 
 const NO_PENDING: ReadonlySet<string> = new Set()
+
+// OR-03: what a row shows, and the tail it keeps off screen. The answer is the one the whole product
+// gives (NotesExtension owns it — its viewer registry is what "known" means), reached through this
+// delegate rather than an import, wired by the plugin in configure() exactly like setPendingSource below
+// (extensions are the only inter-plugin channel). Kept as this narrow shape for the same reason
+// PendingSource is. Asking on every render, never caching, is what keeps a plugin switched off losing
+// its claim at once rather than on some later cache invalidation nobody wrote.
+export interface DisplayName {
+  readonly text: string
+  readonly hiddenExtension: string
+  fullName(edited: string): string
+}
+
+type DisplayNameSource = (pathname: string) => DisplayName
+
+// The name as it is on disk, hiding nothing — what a row shows until the plugin wires the real source,
+// and what a directory always shows (a folder has no extension a viewer could claim).
+const PLAIN_NAME: DisplayNameSource = (pathname) => ({
+  text: basename(pathname) || pathname,
+  hiddenExtension: '',
+  fullName: (edited) => edited,
+})
+
+// Long enough for the write that caused a change to have started its own refresh (that one is a
+// microtask behind the notification), short enough that a file landing from sync shows up while the
+// owner is still looking at the tree. Same shape as workspace-persistence's own debounce.
+const REFRESH_DEBOUNCE_MS = 120
+
+// A directory is created by writing this file inside it (createDir). The file itself is never a row, so
+// what changed for the tree is the directory that now holds a new folder.
+const KEEP = '.keep'
+
+// The tree's own coordinates for a directory: '' is the root, everything else is slash-free of a leading
+// separator. `dirname` answers '.' at the top and the vfs is indifferent to a leading '/', so the two
+// spellings of the root have to collapse onto one key or a refresh of it would never match a listing of
+// it.
+function dirKey(pathname: string): string {
+  const norm = pathname.replace(/^\/+/, '')
+  return norm === '.' ? '' : norm
+}
 
 // A pending path is relevant under `dirPath` when it starts with `dirPath/` — the root is the empty
 // prefix, so everything is relevant there.
@@ -187,6 +230,25 @@ export class ExplorerExtension extends Extension {
   private readonly nodeActionContributors: NodeActionContributor[] = []
   readonly fileTemplates = ref<FileTemplate[]>([])
   private pendingSource: PendingSource | null = null
+  private displayNames: DisplayNameSource = PLAIN_NAME
+  // Directories whose listing a change made stale, each with the tick it was reported at; `listedAt`
+  // carries the tick each directory's last listing STARTED at. A write made in the tree refreshes its own
+  // directory the moment it lands and the watcher reports that same write — the comparison is what keeps
+  // that from being two listings of a directory that is already correct.
+  private readonly queuedDirs = new Map<string, number>()
+  private readonly listedAt = new Map<string, number>()
+  private tick = 0
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null
+
+  // Wired by the plugin during configure(), against `NotesExtension.displayName` — see the
+  // `DisplayNameSource` note above.
+  setDisplayNames(source: DisplayNameSource): void {
+    this.displayNames = source
+  }
+
+  displayName(node: TreeNode): DisplayName {
+    return node.entry.kind === 'file' ? this.displayNames(node.entry.pathname) : PLAIN_NAME(node.entry.pathname)
+  }
 
   registerFileTemplate(template: FileTemplate): void {
     if (this.fileTemplates.value.some((item) => item.extension === template.extension)) return
@@ -211,6 +273,70 @@ export class ExplorerExtension extends Extension {
 
   private currentPending(): ReadonlySet<string> {
     return this.pendingSource?.pending.value ?? NO_PENDING
+  }
+
+  // The tree used to be refreshed by whoever wrote, which held only while the tree was the one writing:
+  // a rename from the strip above an open document left the row carrying its old name until a reload.
+  // Wired by the plugin in start(), against `VaultWatcher` — the extension has no services of its own.
+  // Returns the handle that unsubscribes AND drops whatever is still queued, because `Extension` has no
+  // stop hook to do it in.
+  watchVault(source: VfsChangeSource): () => void {
+    const unsubscribe = source.subscribe((change) => this.onVaultChange(change))
+    return () => {
+      unsubscribe()
+      if (this.refreshTimer != null) clearTimeout(this.refreshTimer)
+      this.refreshTimer = null
+      this.queuedDirs.clear()
+    }
+  }
+
+  // A listener runs inside the operation that notified it, often under that path's lock, so nothing here
+  // may list a directory on the spot — it records which directories went stale and the timer does the
+  // reading. That also coalesces the two reports one write makes on a backend with a native watcher.
+  private onVaultChange(change: VfsChange): void {
+    this.queueRefresh(change.pathname)
+    if (change.from != null) this.queueRefresh(change.from)
+    if (this.refreshTimer != null) return
+    this.refreshTimer = setTimeout(() => {
+      this.refreshTimer = null
+      this.flushRefreshes()
+    }, REFRESH_DEBOUNCE_MS)
+  }
+
+  private queueRefresh(pathname: string): void {
+    const dir = basename(pathname) === KEEP ? dirname(dirname(pathname)) : dirname(pathname)
+    this.queuedDirs.set(dirKey(dir), ++this.tick)
+  }
+
+  private flushRefreshes(): void {
+    const stale = [...this.queuedDirs].filter(([dir, reported]) => (this.listedAt.get(dir) ?? 0) < reported)
+    this.queuedDirs.clear()
+    const targets = new Set<string>()
+    for (const [dir] of stale) {
+      const shown = this.shownAncestor(dir)
+      if (shown != null) targets.add(shown)
+    }
+    for (const dir of targets) {
+      void this.refreshDir(dir).catch((error) => this.logger.error(`Could not refresh ${dir || '/'} after a change outside the tree`, error))
+    }
+  }
+
+  // The directory the change actually shows up in: a folder nobody has opened draws none of its
+  // contents, so there is nothing to re-read — but a folder the tree does not know yet (a whole branch
+  // arriving from sync) has to reach the nearest parent that would draw it.
+  private shownAncestor(dir: string): string | null {
+    for (let current = dir; current !== ''; current = dirKey(dirname(current))) {
+      const node = findNode(this.tree.value, current)
+      if (node != null) return node.expanded ? current : null
+    }
+    return ''
+  }
+
+  // Every listing goes through here so the tick it started at is recorded — see `queuedDirs`. Stamped
+  // BEFORE the call, because a listing that starts after a change was reported already shows it.
+  private async listDir(pathname: string): Promise<VirtualEntry[]> {
+    this.listedAt.set(dirKey(pathname), ++this.tick)
+    return this.vfs.list(pathname)
   }
 
   // Re-merges the pending set into the tree that is already there — no VFS call, so a sync round that
@@ -258,7 +384,7 @@ export class ExplorerExtension extends Extension {
   }
 
   async loadRoot(): Promise<void> {
-    const entries = await this.vfs.list(this.root)
+    const entries = await this.listDir(this.root)
     this.tree.value = pairCards(mergePendingNodes(reconcile(entries, this.tree.value), this.root, this.currentPending()))
     await this.refreshExpanded(this.tree.value)
   }
@@ -270,7 +396,7 @@ export class ExplorerExtension extends Extension {
       node.expanded = true
       return
     }
-    const entries = await this.vfs.list(node.entry.pathname)
+    const entries = await this.listDir(node.entry.pathname)
     node.children = pairCards(mergePendingNodes(reconcile(entries, node.children ?? []), node.entry.pathname, this.currentPending()))
     node.expanded = true
     await this.refreshExpanded(node.children)
@@ -280,7 +406,7 @@ export class ExplorerExtension extends Extension {
     for (const node of nodes) {
       if (node.pending) continue
       if (node.entry.kind !== 'dir' || !node.expanded) continue
-      const entries = await this.vfs.list(node.entry.pathname)
+      const entries = await this.listDir(node.entry.pathname)
       node.children = pairCards(mergePendingNodes(reconcile(entries, node.children ?? []), node.entry.pathname, this.currentPending()))
       await this.refreshExpanded(node.children)
     }
@@ -309,16 +435,52 @@ export class ExplorerExtension extends Extension {
 
   async createFile(parentPath: string, name: string): Promise<string> {
     const path = await this.serializeCreation(async () => {
-      const ext = extname(name)
-      const stem = ext ? name.slice(0, -ext.length) : name
-      let candidate = join(parentPath, name)
-      for (let n = 2; await this.vfs.exists(candidate); n++) candidate = join(parentPath, `${stem} ${n}${ext}`)
-      const template = this.fileTemplates.value.find((item) => item.extension === ext.toLowerCase())
-      await this.vfs.file(candidate).writeText(template ? template.seed() : emptyContentFor(name))
+      const free = await freeName(name, (candidate) => this.vfs.exists(join(parentPath, candidate)))
+      const candidate = join(parentPath, free)
+      const template = this.fileTemplates.value.find((item) => item.extension === extname(free).toLowerCase())
+      await this.vfs.file(candidate).writeText(template ? template.seed() : emptyContentFor(free))
       return candidate
     })
     await this.refreshDir(parentPath)
     return path
+  }
+
+  // OR-07: a file the owner already has, copied into the vault. Every source is streamed through
+  // `VirtualFile.writable()` and never read whole here — a picked file can be a film. (What each
+  // backend does inside that stream is its own business: node writes straight to disk, while the http
+  // and tauri ones still buffer a whole file before their single write.)
+  //
+  // One failure does not end the gesture: five files picked at once are five independent copies, and
+  // stopping at the second would leave the owner guessing which of the rest landed. What failed is
+  // raised at the end instead, as one error naming both halves, so the ONE road a click-started action
+  // has to report itself (runAction) carries it.
+  async importFiles(parentPath: string, sources: readonly ImportSource[]): Promise<ImportedFile[]> {
+    const added: ImportedFile[] = []
+    const failed: string[] = []
+    const errors: unknown[] = []
+    for (const source of sources) {
+      try {
+        // Inside serializeCreation, so choosing a free name and taking it are one step: two files of
+        // one gesture can carry the same name, and a name checked before the previous write landed
+        // would be handed out twice.
+        const path = await this.serializeCreation(async () => {
+          const name = await freeName(source.name, (candidate) => this.vfs.exists(join(parentPath, candidate)))
+          const target = join(parentPath, name)
+          // pipeTo closes the sink on success and aborts it on failure, so the write lock the stream
+          // holds is released either way.
+          await source.stream().pipeTo(await this.vfs.file(target).writable())
+          return target
+        })
+        added.push({ name: source.name, path })
+      } catch (error) {
+        this.logger.error(`Could not add ${source.name} to ${parentPath}`, error)
+        failed.push(source.name)
+        errors.push(error)
+      }
+    }
+    await this.refreshDir(parentPath)
+    if (failed.length > 0) throw aggregate(errors, describeImportFailure(failed, added.length), 'Could not add every file')
+    return added
   }
 
   async createDir(parentPath: string, name: string): Promise<void> {
@@ -346,13 +508,12 @@ export class ExplorerExtension extends Extension {
     await this.refreshDir(dirname(destPath))
   }
 
-  // Public because a plugin may write into the vault through the VFS directly (the editor's md → arx
-  // conversion writes a file the tree has to show) and the tree does not observe VaultWatcher — it is
-  // refreshed by whoever wrote. Refreshing the one directory, not loadRoot(), keeps every other node's
-  // expanded state.
+  // Public because a write reaches the tree by two roads: the tree's own actions refresh the directory
+  // they touched the moment the write lands, and everything else arrives through VaultWatcher (see
+  // watchVault). Refreshing the one directory, not loadRoot(), keeps every other node's expanded state.
   async refreshDir(parentPath: string): Promise<void> {
-    const norm = parentPath.replace(/^\/+/, '')
-    if (!norm || norm === '.') {
+    const norm = dirKey(parentPath)
+    if (!norm) {
       await this.loadRoot()
       return
     }

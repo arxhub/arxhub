@@ -1742,12 +1742,18 @@ importers:
 
   plugins/notes:
     dependencies:
+      '@arxhub/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@arxhub/path':
         specifier: workspace:*
         version: link:../../packages/path
+      '@arxhub/plugin-settings':
+        specifier: workspace:*
+        version: link:../settings
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell
@@ -1757,6 +1763,9 @@ importers:
       '@arxhub/vfs':
         specifier: workspace:*
         version: link:../../packages/vfs
+      '@sinclair/typebox':
+        specifier: catalog:shared
+        version: 0.34.48
       vue:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)

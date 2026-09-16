@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { basename } from '@arxhub/path'
+import { DocumentName } from '@arxhub/plugin-notes/ui'
 import { IconButton, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
@@ -30,7 +30,6 @@ const props = defineProps<{ path: string }>()
 const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
 
-const name = computed(() => basename(props.path))
 const loading = ref(false)
 const error = ref('')
 const size = ref<number | null>(null)
@@ -160,7 +159,10 @@ async function renderPageNow(index: number, canvas: HTMLCanvasElement) {
     if (current === ticket && !(cause instanceof RenderingCancelledException)) {
       // The message is in the line itself: the webview relays only the first argument of a console error,
       // and 'could not render' without the reason is a report nobody can act on.
-      arxhub.logger.error(`[preview] could not render page ${index} of ${props.path}: ${cause instanceof Error ? cause.message : String(cause)}`, cause)
+      arxhub.logger.error(
+        `[preview] could not render page ${index} of ${props.path}: ${cause instanceof Error ? cause.message : String(cause)}`,
+        cause,
+      )
     }
   }
 }
@@ -213,7 +215,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="pdf-panel">
-    <Strip :title="name" flush-actions>
+    <Strip flush-actions>
+      <DocumentName :path="path" />
       <span v-if="meta" class="pdf-meta">{{ meta }}</span>
       <template #actions>
         <IconButton size="lg" icon="lu:zoom-out" tooltip="Zoom out" :disabled="zoom <= MIN_ZOOM" @click="zoom = stepZoom(zoom, -1)" />

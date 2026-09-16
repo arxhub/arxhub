@@ -1,8 +1,12 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
+import { validation } from '@arxhub/errors'
 import { basename, extname, join } from '@arxhub/path'
-import type { VirtualFileSystem } from '@arxhub/vfs'
-import { type Component, markRaw, shallowRef } from 'vue'
+import { renameEntry, type VirtualFileSystem } from '@arxhub/vfs'
+import { type Component, markRaw, ref, shallowRef } from 'vue'
+import { type DisplayName, displayNameOf } from './display-name'
+import { DEFAULT_HIDE_KNOWN_EXTENSIONS } from './notes-config'
 import type { BlockAnchor } from './notes-type'
+import { renameTarget } from './rename'
 
 // What opens an object of this type. The viewer registry belongs to the TYPE, not to the shell: the
 // shell has no business knowing what opens a `.md`, and it did know — `PanelDefinition.handles` lived
@@ -63,6 +67,9 @@ export class NotesExtension extends Extension {
   // folder and a tree that has to show the result.
   private creator: Creator | null = null
   private readonly preparers = new Set<Preparer>()
+  // OR-03: whether a name hides an extension a viewer claims. Applied live by the plugin's own
+  // PluginConfig.watch (notes-plugin.ts), so a saved change reaches every surface with no restart.
+  readonly hideKnownExtensions = ref<boolean>(DEFAULT_HIDE_KNOWN_EXTENSIONS)
   private readonly openViews = new Set<{ path: () => string; reveal: (anchor: BlockAnchor) => boolean; beforeClose?: () => Promise<boolean> }>()
 
   registerOpenView(path: () => string, reveal: (anchor: BlockAnchor) => boolean, beforeClose?: () => Promise<boolean>): () => void {
@@ -170,5 +177,29 @@ export class NotesExtension extends Extension {
 
   titleOf(path: string): string {
     return basename(path) || path
+  }
+
+  // What this file is CALLED on screen, for every surface that names one — the strip above the open
+  // document, and the explorer's rows through the source its plugin wires against this. The rule lives
+  // here because `viewerFor` is what "known" means, and two copies of it would be the product
+  // contradicting itself on one screen, which is exactly what it did.
+  displayName(path: string): DisplayName {
+    return displayNameOf(path, this.hideKnownExtensions.value, (it) => this.viewerFor(it) != null)
+  }
+
+  // Give an open object a new name, and answer where it now lives. It is a method here rather than
+  // five viewers reaching for `this.vfs` themselves, because the rules around the write are the type's
+  // and not each viewer's: what a name may be, and that a rename never silently eats the file already
+  // holding that name. Five copies of them would be five places to fix.
+  //
+  // Nothing here touches what is open: the write reaches `VaultWatcher`, and `NotesPlugin` retargets
+  // the tab from there — the same road a rename from the tree already travels, so a buffer with unsaved
+  // text survives either one.
+  async renameObject(path: string, name: string): Promise<string> {
+    const target = renameTarget(path, name)
+    if (target === path) return path
+    if (await this.vfs.exists(target)) throw validation(`"${basename(target)}" is already here`)
+    await renameEntry(this.vfs, path, target)
+    return target
   }
 }

@@ -136,6 +136,9 @@ function more(event: MouseEvent) {
 
 <template>
   <Strip class="sheet-bar">
+    <!-- Filled on the desktop, where this bar IS the top of the panel; empty on the phone, where it is
+         the bottom band and the name has its own strip above the grid. -->
+    <span class="sheet-lead"><slot /></span>
     <span class="sheet-status" role="status" :title="selectionLabel">{{ selectingRange ? selectionLabel : status }}{{ calculating ? ' · Calculating…' : '' }}</span>
     <IconButton size="lg" icon="lu:undo-2" tooltip="Undo" :disabled="!canUndo || !editable" @click="undo" />
     <IconButton size="lg" icon="lu:redo-2" tooltip="Redo" :disabled="!canRedo || !editable" @click="redo" />
@@ -145,5 +148,8 @@ function more(event: MouseEvent) {
 </template>
 
 <style scoped>
+.sheet-lead:empty { display: none; }
+/* Content-width: what leads the bar is a label, and the status line keeps the slack it always had. */
+.sheet-lead { display: flex; align-items: center; min-width: 0; }
 .sheet-status { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--gray-11); font-size: var(--font-size-xs); }
 </style>

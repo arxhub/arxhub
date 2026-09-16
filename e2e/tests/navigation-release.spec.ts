@@ -32,7 +32,8 @@ test('renaming an open document preserves its buffer and saves to the new path',
   await app.getByRole('menuitem', { name: 'Rename', exact: true }).click()
   const renamed = path.replace('.md', '-renamed.md')
   const input = app.getByRole('textbox', { name: 'New name', exact: true })
-  await input.fill(renamed)
+  // OR-03: the field holds the visible name only — '.md' is hidden and glued back on at commit.
+  await input.fill(renamed.replace('.md', ''))
   await input.press('Enter')
   await expect(app.getByRole('treeitem', { name: renamed, exact: true })).toBeVisible()
   await app.getByRole('treeitem', { name: renamed, exact: true }).click()

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { basename } from '@arxhub/path'
+import { DocumentName } from '@arxhub/plugin-notes/ui'
 import { IconButton, Strip } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { canOpenExternally, openExternally, VaultVfs } from '@arxhub/vfs'
@@ -94,7 +95,8 @@ onUnmounted(() => {
 
 <template>
   <div class="media-panel">
-    <Strip :title="name" :flush-actions="canOpen">
+    <Strip :flush-actions="canOpen">
+      <DocumentName :path="path" />
       <span v-if="meta" class="media-meta">{{ meta }}</span>
       <template v-if="canOpen" #actions>
         <IconButton size="lg" icon="lu:external-link" tooltip="Open in system app" @click="openInSystemApp" />

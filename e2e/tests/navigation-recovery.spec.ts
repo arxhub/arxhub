@@ -53,8 +53,9 @@ test('action menu returns focus on dismissal and hands it to inline rename on se
     else await rename.click()
     await expect(input).toBeFocused()
     const renamed = `${test.info().project.name}-renamed-${n}.md`
-    await app.keyboard.type(renamed, { delay: 40 })
-    await expect(input).toHaveValue(renamed)
+    // OR-03: '.md' is hidden in the row, so the field is typed — and read back — without it.
+    await app.keyboard.type(renamed.replace('.md', ''), { delay: 40 })
+    await expect(input).toHaveValue(renamed.replace('.md', ''))
     await expect(input).toBeFocused()
     await input.press('Enter')
     path = renamed

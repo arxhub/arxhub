@@ -1,7 +1,7 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { NotesExtension } from '@arxhub/plugin-notes/ui'
 import { RepositoryExtension } from '@arxhub/plugin-repository/ui'
-import { VaultVfs } from '@arxhub/vfs'
+import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { markRaw, type WatchStopHandle } from 'vue'
 import { ExplorerExtension } from './explorer-extension'
 import { manifest } from './manifest'
@@ -16,6 +16,7 @@ export class ExplorerPlugin extends Plugin {
   // `ExplorerExtension` has no stop hook of its own — the plugin that started the watch is the one
   // that stops it.
   private stopPendingWatch: WatchStopHandle | null = null
+  private stopVaultWatch: (() => void) | null = null
 
   constructor(args: ExplorerPluginArgs) {
     super(args, manifest)
@@ -41,6 +42,12 @@ export class ExplorerPlugin extends Plugin {
     // guard needed: version history and pending nodes stand on it whether or not sync is switched on.
     this.stopPendingWatch = explorer.setPendingSource(ctx.extensions.get(RepositoryExtension))
 
+    // OR-03: a row is named by whoever owns "what can open this" — the setting and the rule both live
+    // with the type (NotesExtension.displayName), so the tree and the strip above an open document
+    // cannot disagree about one file. Asked on every render rather than snapshotted here, so a plugin
+    // switched off (its viewer never registered) loses its claim without this needing to know why.
+    explorer.setDisplayNames((path) => notes.displayName(path))
+
     // The tree is the navigation of the "Notes" type, not a place of its own — and now that both
     // frames read the type registry, that is the ONLY way it reaches the screen. The mini-app
     // registration that stood beside it is gone with them (F-21): a second "Explorer" in the type row,
@@ -59,7 +66,17 @@ export class ExplorerPlugin extends Plugin {
     })
   }
 
+  override async start(ctx: PluginContext): Promise<void> {
+    await super.start(ctx)
+    // A write reaches the vault from more places than the tree — the name above an open document, the
+    // md → arx conversion, a sync round — and each one used to leave the row it changed stale until a
+    // reload. One subscription, in the one place that can dispose it.
+    this.stopVaultWatch = ctx.extensions.get(ExplorerExtension).watchVault(ctx.services.get(VaultWatcher))
+  }
+
   override async stop(ctx: PluginContext): Promise<void> {
+    this.stopVaultWatch?.()
+    this.stopVaultWatch = null
     this.stopPendingWatch?.()
     this.stopPendingWatch = null
     await super.stop(ctx)

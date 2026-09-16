@@ -2,10 +2,10 @@
 import { validation } from '@arxhub/errors'
 import { basename, dirname } from '@arxhub/path'
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
-import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes/ui'
+import { type BlockAnchor, DocumentName, NotesExtension } from '@arxhub/plugin-notes/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
-import { Button } from '@arxhub/uikit/core'
+import { Button, Strip } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { closeHistory, history } from 'prosemirror-history'
@@ -521,6 +521,12 @@ onUnmounted(() => {
 
 <template>
   <div class="editor-panel" @keydown.capture="historyChord" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
+    <!-- The name, and nothing else, at the very top (OR-02). The document's tools stay in the band at
+         the bottom: on the phone that is where a hand reaches, and reading a document is passive while
+         renaming one is rare — which is exactly what earns the name the top. -->
+    <Strip>
+      <DocumentName :path="path" />
+    </Strip>
     <DocumentFind v-if="findOpen && view && canSave" :view="view" :revision="revision" :mode="mode" @close="closeFind" />
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />

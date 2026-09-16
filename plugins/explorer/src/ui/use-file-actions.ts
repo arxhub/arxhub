@@ -5,6 +5,8 @@ import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { canOpenExternally, openExternally, type VirtualFileSystem } from '@arxhub/vfs'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
+import { describeImport } from '../import-files'
+import { pickFiles } from './pick-files'
 
 // Pure so the rule is unit-testable without the Vue plumbing the composable needs: a file (not a
 // directory), not pending (a file left in the cloud has nothing on disk to hand over), and the vault's
@@ -63,6 +65,20 @@ export function useFileActions() {
   async function newFile(node: TreeNode): Promise<void> {
     const parent = node.entry.kind === 'dir' ? node.entry.pathname : dirname(node.entry.pathname)
     await createFile(parent)
+  }
+
+  // OR-07. The picker is opened before anything is awaited — see pick-files.ts for why that ordering is
+  // not a style choice. The success toast is raised here rather than inside the extension: a failure
+  // already has one road out (runAction, below), and this is the other half of the same report — a
+  // rename is the one thing the tree alone does not tell, since the row it draws is under the new name.
+  async function addFiles(parent: string): Promise<void> {
+    const picked = await pickFiles()
+    if (picked.length === 0) return
+    toaster.create({ ...describeImport(await explorer.importFiles(parent, picked)), type: 'success' })
+  }
+
+  function addFilesAction(parent: string): ActionItem {
+    return { id: 'add-files', label: 'Add files…', icon: 'lu:file-up', onSelect: () => runAction(addFiles(parent), 'add the files') }
   }
 
   async function newFolder(node: TreeNode): Promise<void> {
@@ -127,6 +143,9 @@ export function useFileActions() {
     return [
       { id: 'new-file', label: 'New File', icon: 'lu:file-plus', onSelect: () => runAction(newFile(node), 'create the file') },
       { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => runAction(newFolder(node), 'create the folder') },
+      // A folder's own menu is how the owner says "here" — the strip's button acts on the selection,
+      // which is a different sentence.
+      addFilesAction(node.entry.pathname),
       { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
       { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
       ...explorer.getContributedActions(node).map(closeNavAfter),
@@ -148,6 +167,7 @@ export function useFileActions() {
         icon: 'lu:folder-plus',
         onSelect: () => runAction(explorer.createDir(explorer.root, 'new-folder'), 'create the folder'),
       },
+      addFilesAction(explorer.root),
     ]
   }
 
@@ -169,5 +189,17 @@ export function useFileActions() {
 
   // runAction is part of the surface: the toolbar and the inline rename start the same actions from a
   // plain click, and each one that reported failures on its own is one that could stop.
-  return { openFile, createFile, newFile, newFolder, startRename, confirmDelete, getNodeActions, getRootActions, getCreationActions, runAction }
+  return {
+    openFile,
+    createFile,
+    addFiles,
+    newFile,
+    newFolder,
+    startRename,
+    confirmDelete,
+    getNodeActions,
+    getRootActions,
+    getCreationActions,
+    runAction,
+  }
 }

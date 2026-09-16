@@ -42,7 +42,9 @@ test.describe('keeping the tree in order', () => {
     const input = app.getByRole('textbox', { name: 'New name' })
     await expect(input).toBeVisible()
     await input.click()
-    await input.fill(renamed)
+    // OR-03: the field holds the visible name, and '.md' is hidden because a viewer claims it — the
+    // tail is glued back on at commit (hide-extensions.spec.ts is where that rule is under test).
+    await input.fill(renamed.replace('.md', ''))
     await input.press('Enter')
 
     await expect.poll(() => vault.read(renamed).catch(() => null)).toBe('body\n')

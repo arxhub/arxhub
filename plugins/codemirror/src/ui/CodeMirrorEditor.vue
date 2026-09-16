@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
-import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes/ui'
+import { type BlockAnchor, DocumentName, NotesExtension } from '@arxhub/plugin-notes/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button, Strip } from '@arxhub/uikit/core'
@@ -185,10 +185,10 @@ onUnmounted(() => {
 
 <template>
   <div class="codemirror-wrapper" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <!-- One strip, not two. The path and the formatting keys used to sit on separate rows, which put
+    <!-- One strip, not two. The name and the formatting keys used to sit on separate rows, which put
          three bands of chrome (tab strip, path, toolbar) above every note before a word of it showed. -->
     <Strip>
-      <span class="codemirror-path">{{ path }}</span>
+      <DocumentName :path="path" />
       <MarkdownToolbar v-if="note && !loadError" :view="view" :revision="revision" />
       <template #actions>
         <Button variant="secondary" :disabled="!canSave" @click="save">Save</Button>
@@ -209,20 +209,6 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-}
-
-/* A strip, at the strip height — the same band as the tab bar above it and the status bar below. */
-/* The path takes the slack, so the formatting keys and Save stay put as the file name changes length
-   rather than sliding along the strip from note to note. */
-.codemirror-path {
-  flex: 1 1 0;
-  min-width: 0;
-  font-size: var(--font-size-xs);
-  color: var(--gray-9);
-  font-family: var(--font-mono);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .codemirror-error {
