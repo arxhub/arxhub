@@ -34,6 +34,13 @@ withDefaults(
   display: flex;
   flex-direction: column;
   min-width: 168px;
+  /* A menu taller than the room its trigger leaves used to run off the screen, and an item outside the
+     viewport cannot be tapped at all — not scrolled to, not reached. The positioner publishes how much
+     room there is (it measures the VISUAL viewport, so the on-screen keyboard counts); the menu takes
+     no more than that and scrolls instead. The fallback is for a menu rendered outside a positioner. */
+  max-height: var(--available-height, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 4px;
   background: var(--gray-2);
   border: 1px solid var(--gray-6);

@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openType, searchSheet, SETTINGS_TYPE, test, typeKey, waitForApp, withShellChrome } from './fixtures'
+import { expect, isMobileFrame, openType, SETTINGS_TYPE, searchSheet, test, typeKey, waitForApp, withShellChrome } from './fixtures'
 
 // The navigation model at the level both frames share: one registry of types behind the row, one sheet
 // as the way to everything that holds no key in it, one desk that comes back after a restart — and no

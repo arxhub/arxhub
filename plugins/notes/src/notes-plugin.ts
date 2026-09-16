@@ -78,7 +78,7 @@ export class NotesPlugin extends Plugin {
 
       return {
         key: path,
-        title: notes.titleOf(path),
+        title: notes.displayName(path).text,
         component: viewer?.component ?? markRaw(NoteUnsupported),
         // The same address as a prop — for the case where the note is NOT open yet: the editor mounts
         // and shows the place itself. Two roads to one thing, because there are two states: a live
@@ -161,7 +161,7 @@ export class NotesPlugin extends Plugin {
           workspace.replaceObject(NOTES_TYPE_ID, tab.key, {
             ...object,
             key: next,
-            title: notes.titleOf(next),
+            title: notes.displayName(next).text,
             props: { ...object.props, path: next },
             snapshot: () => ({ path: next }),
             beforeClose: () => notes.beforeClose(next),

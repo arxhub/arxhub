@@ -175,6 +175,9 @@ export class NotesExtension extends Extension {
     }
   }
 
+  // The file's name on disk, whole. What a surface SHOWS is `displayName` — this is for a message that
+  // has to name the file itself (a failed write, a confirmation), where a hidden extension would name a
+  // file that does not exist.
   titleOf(path: string): string {
     return basename(path) || path
   }
