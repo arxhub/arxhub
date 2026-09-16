@@ -1,4 +1,4 @@
-import { expect, openNote, openType, test } from './fixtures'
+import { expect, openNote, openType, SETTINGS_TYPE, test } from './fixtures'
 
 // F-05. Switching type is the row's basic operation, and on a phone it is the most frequent one there
 // is — so it must cost nothing. Both frames keep every type entered this session mounted and show only
@@ -15,7 +15,7 @@ test.describe('coming back to a type shows what was there', () => {
     await app.keyboard.type(' and typed')
     await expect(app.locator('.cm-content:visible')).toContainText('kept and typed')
 
-    await openType(app, 'Settings')
+    await openType(app, 'Settings', SETTINGS_TYPE)
     await openType(app, 'Notes')
 
     await expect(app.locator('.cm-content:visible')).toContainText('kept and typed')
@@ -37,7 +37,7 @@ test.describe('coming back to a type shows what was there', () => {
     })
     await expect.poll(() => scroller.evaluate((el) => el.scrollTop)).toBeGreaterThan(400)
 
-    await openType(app, 'Settings')
+    await openType(app, 'Settings', SETTINGS_TYPE)
     await openType(app, 'Notes')
 
     expect(await scroller.evaluate((el) => el.scrollTop)).toBeGreaterThan(400)

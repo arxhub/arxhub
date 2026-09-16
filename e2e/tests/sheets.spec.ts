@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, isMobileFrame, openNavigation, openType, test } from './fixtures'
+import { expect, isMobileFrame, openNavigation, openType, SETTINGS_TYPE, test } from './fixtures'
 
 const spreadsheet = (cells: Record<string, string>, rows = 1000, columns = 26) => JSON.stringify({ version: 1, rows, columns, cells })
 const cell = (page: Page, name: string) => page.getByRole('gridcell', { name, exact: true })
@@ -240,7 +240,7 @@ test('renaming and switching types retain the spreadsheet buffer and restart cal
   await openSheet(app, path)
   await input(app, 'A1', '7')
   await expect(cell(app, 'B1')).toHaveText('21')
-  await openType(app, 'Settings')
+  await openType(app, 'Settings', SETTINGS_TYPE)
   await openType(app, 'Notes')
   await expect(cell(app, 'B1')).toHaveText('21')
   await openNavigation(app)

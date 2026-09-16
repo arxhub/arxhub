@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { openSettingsSection, openType, test } from './fixtures'
+import { openSettingsSection, openType, SETTINGS_TYPE, test } from './fixtures'
 
 // A settings page reads its file over the API and rebinds the field when it lands, so an edit made
 // before that arrives does not survive it — and a section whose file does not exist yet legitimately
@@ -62,7 +62,7 @@ test.describe('applying settings', () => {
       await expect(app.getByRole('button', { name: /unsaved setting/ })).toBeVisible()
     }
 
-    await openType(app, 'Settings')
+    await openType(app, 'Settings', SETTINGS_TYPE)
     await app.getByRole('button', { name: 'Save & apply' }).click()
 
     // An apply stops at the first section that fails and leaves it staged, so the bar emptying is
@@ -123,7 +123,7 @@ test.describe('applying settings', () => {
 
     // Still staged is the whole assertion: an applied set empties the bar, so a bar that is still
     // there is the proof the chord did not reach Settings from outside it.
-    await openType(app, 'Settings')
+    await openType(app, 'Settings', SETTINGS_TYPE)
     await expect(app.getByRole('button', { name: 'Save & apply' })).toBeVisible()
     expect(await readConfig(vault, 'storage/sync/config.toml')).not.toContain(`chord-${testInfo.project.name}`)
 

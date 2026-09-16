@@ -299,6 +299,10 @@ export async function withShellChrome<T>(page: Page, read: (chrome: Locator) => 
 // the desktop keeps permanently in its bar.
 export const SHEET_LABEL = 'Open or switch to'
 
+// Settings is not pinned (OR-05), so it has no key in the row until it is open — every openType() for
+// it has to name the type so the helper can reach it through the sheet instead.
+export const SETTINGS_TYPE = 'arxhub.settings'
+
 export function searchSheet(page: Page): Locator {
   return page.getByRole('dialog', { name: SHEET_LABEL })
 }
@@ -379,7 +383,7 @@ export async function openDocumentList(page: Page): Promise<Locator> {
 }
 
 export async function openSettingsSection(page: Page, section: string): Promise<void> {
-  await openType(page, 'Settings')
+  await openType(page, 'Settings', SETTINGS_TYPE)
   // The section list is the mini-app's own rail, which on the mobile frame has to be summoned. On
   // desktop it is already beside the content.
   await openNavigation(page)

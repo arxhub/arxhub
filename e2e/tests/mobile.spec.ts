@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openDocumentList, openNavigation, openNote, openType, test, typeRow, waitForApp } from './fixtures'
+import { expect, isMobileFrame, openDocumentList, openNavigation, openNote, openType, SETTINGS_TYPE, test, typeRow, waitForApp } from './fixtures'
 
 test.describe('the frame is chosen once, by the bundle', () => {
   test('a phone-shaped client mounts the mobile frame and a desktop one the rail', async ({ app }) => {
@@ -97,7 +97,7 @@ test.describe('mobile navigation', () => {
   test('switching types does not stack navigation in the shared panel', async ({ app, vault }) => {
     const path = await vault.write('kept.md', 'kept\n')
     await openNote(app, path)
-    await openType(app, 'Settings')
+    await openType(app, 'Settings', SETTINGS_TYPE)
     await openNavigation(app)
     const panel = app.getByRole('region', { name: /navigation$/ })
     await expect(panel.locator('.settings-nav')).toHaveCount(1)

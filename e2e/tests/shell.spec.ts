@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openType, searchSheet, test, typeKey, waitForApp, withShellChrome } from './fixtures'
+import { expect, isMobileFrame, openType, searchSheet, SETTINGS_TYPE, test, typeKey, waitForApp, withShellChrome } from './fixtures'
 
 // The navigation model at the level both frames share: one registry of types behind the row, one sheet
 // as the way to everything that holds no key in it, one desk that comes back after a restart — and no
@@ -11,15 +11,21 @@ test.describe('the row of types', () => {
   // registration makes unrepresentable. Asked of BOTH frames deliberately — it is a claim about the
   // registry, and it used to be asked of the phone alone, which is the one place it could not fail.
   test('holds one key per type, and none for a type that is not open', async ({ app }) => {
-    for (const title of ['Notes', 'Settings']) {
-      await expect(typeKey(app, title)).toHaveCount(1)
-    }
+    // Notes is the only pinned type left: settings joined search and the log viewer behind the sheet
+    // (OR-05), because a permanent key is the frame's most reachable place and none of the three is
+    // where the owner works.
+    await expect(typeKey(app, 'Notes')).toHaveCount(1)
 
     // `pinned: false` means no permanent key — not "hidden", which is what it replaced. The key
     // appears for as long as the type is open and there is never a second one beside it.
-    await expect(typeKey(app, 'Search')).toHaveCount(0)
-    await openType(app, 'Search', 'arxhub.search')
-    await expect(typeKey(app, 'Search')).toHaveCount(1)
+    for (const [title, id] of [
+      ['Search', 'arxhub.search'],
+      ['Settings', 'arxhub.settings'],
+    ] as const) {
+      await expect(typeKey(app, title)).toHaveCount(0)
+      await openType(app, title, id)
+      await expect(typeKey(app, title)).toHaveCount(1)
+    }
   })
 
   test('reaches an unpinned type only through the sheet, which then lists it as open', async ({ app }) => {
@@ -41,7 +47,7 @@ test.describe('the row of types', () => {
 
 test.describe('the desk', () => {
   test('comes back after a restart, and a layer never does', async ({ app }) => {
-    await openType(app, 'Settings')
+    await openType(app, 'Settings', SETTINGS_TYPE)
     await app.keyboard.press('ControlOrMeta+k')
     await expect(searchSheet(app)).toBeVisible()
 
