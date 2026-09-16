@@ -3,7 +3,6 @@ import { rename } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { ArxHub } from '@arxhub/core'
-import { illegalState } from '@arxhub/errors'
 import GatewayServerPlugin from '@arxhub/plugin-gateway/server'
 import { ProtectionServerPlugin } from '@arxhub/plugin-protection/server'
 import { PUBLIC_READ_PATH, PublishServerPlugin } from '@arxhub/plugin-publish/server'
@@ -11,41 +10,26 @@ import { SyncServerPlugin } from '@arxhub/sync/server'
 import { removeInfoSidecars, ScopedFileSystem } from '@arxhub/vfs'
 import { VfsHttpServerPlugin } from '@arxhub/vfs-http/server'
 import { NodeFileSystem } from '@arxhub/vfs-node'
+import { ensureWritableDir, readDisabledPlugins, readMaintenance, readPort, refuseUnknownPlugins } from './read-env'
 
 // Local-only (never synced) home for the TOFU pin. Lives under state/, like the sync repo store.
 const PINNED_KEY_FILE = 'state/protection/pinned-key'
 
-function readPort(): number {
-  const raw = process.env.ARXHUB_PORT
-  if (raw == null || raw.trim() === '') return 3000
-  const port = Number(raw)
-  // A typo here would otherwise surface as a server listening on a port nobody expects.
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw illegalState(`ARXHUB_PORT must be an integer between 1 and 65535, got '${raw}'`)
-  }
-  return port
-}
-
-// Comma-separated manifest names, e.g. ARXHUB_DISABLED_PLUGINS=publish,SyncServer.
-function readDisabledPlugins(): string[] {
-  return (process.env.ARXHUB_DISABLED_PLUGINS ?? '')
-    .split(',')
-    .map((it) => it.trim())
-    .filter(Boolean)
-}
-
 export async function createArxHub({ version }: { version: string }): Promise<ArxHub> {
+  // Every switch is read and refused here, before anything is constructed: a value this process cannot
+  // make sense of has to stop the boot while there is still nothing listening (FR-209).
+  const disabled = readDisabledPlugins(process.env.ARXHUB_DISABLED_PLUGINS)
+  const maintenance = readMaintenance(process.env.ARXHUB_MAINTENANCE)
+  const port = readPort(process.env.ARXHUB_PORT)
   // The headless counterpart of the client's crash screen: there is nobody to click a button here, so
   // the same two switches come from the environment. Essential plugins (the gateway and the auth
   // guard) ignore both — a recovery boot must not be a way to expose an unprotected vault.
-  const arxhub = new ArxHub({
-    disabled: readDisabledPlugins(),
-    maintenance: process.env.ARXHUB_MAINTENANCE === '1',
-  })
+  const arxhub = new ArxHub({ disabled, maintenance })
   // FR-210: a problem report names the build it happened on, so the session log carries it from its first line.
   arxhub.logger.info(`ArxHub server ${version}`)
   // The data root lives outside the artifact so updating the server never touches the vault.
   const dataDir = process.env.ARXHUB_DATA_DIR?.trim() || (await defaultDataDir())
+  await ensureWritableDir(dataDir)
   const vfs = new NodeFileSystem(dataDir, arxhub.logger)
 
   // Every object the sync store ever received arrived through a write that left a sidecar beside it;
@@ -71,7 +55,7 @@ export async function createArxHub({ version }: { version: string }): Promise<Ar
         .filter(Boolean)
     : '*'
 
-  arxhub.plugins.register(GatewayServerPlugin, () => ({ port: readPort(), version }))
+  arxhub.plugins.register(GatewayServerPlugin, () => ({ port, version }))
   // Guard every route with signed-request auth. TOFU pins the first valid client key and, via
   // onPair, persists it so the next boot loads it above. GETs under the published-content prefix
   // are the ONE deliberate public hole (read-only, method-restricted).
@@ -89,7 +73,14 @@ export async function createArxHub({ version }: { version: string }): Promise<Ar
   // Published (plaintext, world-readable) content under public/.
   arxhub.plugins.register(PublishServerPlugin, () => ({ vfs: new ScopedFileSystem(vfs, 'public') }))
 
-  await arxhub.start()
+  // The roster exists only once the plugins are instantiated, so the misspelling is caught from start()'s
+  // configure hook — after create()/configure(), still before anything listens.
+  await arxhub.start(() =>
+    refuseUnknownPlugins(
+      disabled,
+      arxhub.catalog.map((it) => it.name),
+    ),
+  )
   return arxhub
 }
 

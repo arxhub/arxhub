@@ -8,6 +8,9 @@ const version = JSON.parse(readFileSync(new URL('../../package.json', import.met
 const define = { __APP_VERSION__: JSON.stringify(version) }
 
 export default defineConfig((env) => {
+  // Vitest loads this file too; the dev branch below would boot the whole server under it.
+  if (env.mode === 'test') return { test: { include: ['src/**/*.test.ts'] } }
+
   if (env.command === 'build') {
     return {
       define,

@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "test": "vitest"
   },
   "dependencies": {
     "@arxhub/core": "workspace:*",

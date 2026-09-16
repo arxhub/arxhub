@@ -24,8 +24,23 @@ curl http://localhost:3000/healthcheck
 # {"status":"ok","version":"0.1.7"}
 ```
 
-The default port is `3000`. Set `ARXHUB_PORT` to change it. Set `ARXHUB_DATA_DIR` when running the
-Node process directly; with Docker, keep the data directory mounted at `/data`.
+## Configuration
+
+The server is configured from the environment only — nothing inside the artifact is edited (FR-209).
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `ARXHUB_PORT` | `3000` | Port the gateway listens on. |
+| `ARXHUB_DATA_DIR` | `~/ArxHub` | Root of the store. With Docker, keep it mounted at `/data`. |
+| `ARXHUB_CORS_ORIGINS` | every origin | Comma-separated allowlist. Signed requests carry no ambient credential, so the default is safe. |
+| `ARXHUB_SYNC_PUBKEY` | the first key seen | Pins the owner's public key up front instead of trusting on first use. |
+| `ARXHUB_MAINTENANCE` | `0` | `1`/`true` boots the essential plugins only. |
+| `ARXHUB_DISABLED_PLUGINS` | none | Comma-separated manifest names, e.g. `PublishServer,SyncServer`. |
+
+A value the server cannot make sense of stops the boot with the value in the message, rather than
+falling back to a default: a misspelled `ARXHUB_MAINTENANCE` would otherwise mean "off", and a
+misspelled plugin name would leave the plugin running. An unknown name is answered with the list of
+names that do exist.
 
 ## GitHub Actions
 
