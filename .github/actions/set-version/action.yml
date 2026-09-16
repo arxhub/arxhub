@@ -25,6 +25,8 @@ runs:
             fs.writeFileSync(path, source.replace(pattern, `$1${version}$2`))
           }
           rewrite("instances/app/src-tauri/Cargo.toml", /^(version = ")[^"]+(")/m)
-          rewrite("instances/app/src-tauri/Cargo.lock", /^(name = "arxhub"\nversion = ")[^"]+(")/m)
+          // \r?\n, not \n: the Windows runner checks out with autocrlf, so the two lines this pattern
+          // spans are joined by CRLF there — the LF-only pattern found nothing and failed the job.
+          rewrite("instances/app/src-tauri/Cargo.lock", /^(name = "arxhub"\r?\nversion = ")[^"]+(")/m)
           console.log(`build version ${version}`)
         '
