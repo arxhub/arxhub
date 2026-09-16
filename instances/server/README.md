@@ -42,6 +42,23 @@ falling back to a default: a misspelled `ARXHUB_MAINTENANCE` would otherwise mea
 misspelled plugin name would leave the plugin running. An unknown name is answered with the list of
 names that do exist.
 
+## Updating
+
+The image carries code only — the vault, the sync objects and the device key pin all live on the
+volume, so an update is a new image against the same volume (FR-212):
+
+```bash
+docker pull <image>            # or: docker build -f instances/server/Dockerfile -t arxhub-server .
+docker stop arxhub && docker rm arxhub
+docker run -d --name arxhub -p 3000:3000 -v arxhub-data:/data arxhub-server
+curl http://localhost:3000/healthcheck   # the version in the answer is how you know the new build is up
+```
+
+The server and the devices update in any order and none of them has to wait for the others: the remote
+head moves by compare-and-swap, so a client left behind simply catches up on its next sync round. The
+full picture — what survives on each platform, and the two store renames that happen on boot — is in
+`forge-wiki/planning/initiatives/18-delivery/update.md`.
+
 ## GitHub Actions
 
 The `Build` workflow builds the server bundle and validates the Docker image on pushes to `main`, pull
