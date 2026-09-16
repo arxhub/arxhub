@@ -1,4 +1,16 @@
-import { expect, isMobileFrame, openDocumentList, openNavigation, openNote, openType, SETTINGS_TYPE, test, typeRow, waitForApp } from './fixtures'
+import {
+  expect,
+  isMobileFrame,
+  openDocumentList,
+  openNavigation,
+  openNote,
+  openType,
+  SETTINGS_TYPE,
+  shownName,
+  test,
+  typeRow,
+  waitForApp,
+} from './fixtures'
 
 test.describe('the frame is chosen once, by the bundle', () => {
   test('a phone-shaped client mounts the mobile frame and a desktop one the rail', async ({ app }) => {
@@ -85,10 +97,10 @@ test.describe('mobile navigation', () => {
     // One at a time hides how many are waiting, so the second level is a second tap on the type you are
     // already in — the counter on the key is what says there is anything behind it.
     const list = await openDocumentList(app)
-    await expect(list.getByRole('menuitem', { name: first })).toBeVisible()
-    await expect(list.getByRole('menuitem', { name: second })).toBeVisible()
+    await expect(list.getByRole('menuitem', { name: shownName(first) })).toBeVisible()
+    await expect(list.getByRole('menuitem', { name: shownName(second) })).toBeVisible()
 
-    await list.getByRole('menuitem', { name: first }).click()
+    await list.getByRole('menuitem', { name: shownName(first) }).click()
     // Choosing one is navigation, so the layer it was chosen from gets out of the way.
     await expect(list).toBeHidden()
     await expect(app.locator('.cm-content:visible')).toContainText('first')

@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openNote, SHEET_LABEL, searchSheet, test, typeKey } from './fixtures'
+import { expect, isMobileFrame, openNote, SHEET_LABEL, searchSheet, shownName, test, typeKey } from './fixtures'
 
 // One operation — open or switch to — and one sheet behind it in both frames: a dialog on the desktop,
 // a bottom sheet on the phone. Its two sections are guaranteed, so these tests assert that both are
@@ -34,7 +34,7 @@ test.describe('open or switch to', () => {
     // By name rather than by test id: every opener in the application still writes straight to the panel
     // store, so an open tab's key is the store's generated instance id and not the note's path.
     await app.keyboard.press('ControlOrMeta+k')
-    const row = searchSheet(app).getByRole('button', { name: new RegExp(`^${path}`) })
+    const row = searchSheet(app).getByRole('button', { name: new RegExp(`^${shownName(path)}`) })
     await expect(row).toBeVisible()
     await row.click()
 

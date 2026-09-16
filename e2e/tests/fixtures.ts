@@ -303,6 +303,14 @@ export const SHEET_LABEL = 'Open or switch to'
 // it has to name the type so the helper can reach it through the sheet instead.
 export const SETTINGS_TYPE = 'arxhub.settings'
 
+// What a surface that NAMES a file shows: a known extension is hidden there (plugins/notes/display-name.ts),
+// and every spec below writes files whose extension the app claims. The whole name survives where it is an
+// identity rather than a label — the file on disk, a tree row's aria-label — so locating a row still uses
+// the path.
+export function shownName(path: string): string {
+  return path.replace(/\.[^./]+$/, '')
+}
+
 export function searchSheet(page: Page): Locator {
   return page.getByRole('dialog', { name: SHEET_LABEL })
 }

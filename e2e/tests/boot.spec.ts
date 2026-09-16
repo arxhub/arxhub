@@ -6,7 +6,9 @@ test.describe('application boot', () => {
     // a row along the bottom of a phone. A type is named the same in both — there is one registration,
     // so there is nothing left for the two frames to disagree about.
     await expect(typeRow(app).getByRole('button', { name: /^Notes(,|$)/ })).toBeVisible()
-    await expect(typeRow(app).getByRole('button', { name: /^Settings(,|$)/ })).toBeVisible()
+    // Notes is the only pinned type: settings, search and the log viewer are reached from the sheet
+    // (OR-05), so the row carries no key for them until one is open.
+    await expect(typeRow(app).getByRole('button', { name: /^Settings(,|$)/ })).toHaveCount(0)
   })
 
   test('reaches the working tree over the protected API', async ({ app }) => {
