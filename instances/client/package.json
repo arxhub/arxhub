@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@arxhub/boot": "workspace:*",
     "@arxhub/core": "workspace:*",
-    "@arxhub/crypto": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
     "@arxhub/plugin-config": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",

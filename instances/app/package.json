@@ -9,8 +9,8 @@
     "tauri": "cross-env WEBKIT_DISABLE_DMABUF_RENDERER=1 tauri"
   },
   "dependencies": {
+    "@arxhub/boot": "workspace:*",
     "@arxhub/core": "workspace:*",
-    "@arxhub/crypto": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
     "@arxhub/plugin-config": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",
@@ -38,7 +38,6 @@
     "@arxhub/theme-preset": "workspace:*",
     "@arxhub/theme-slate": "workspace:*",
     "@arxhub/uikit": "workspace:*",
-    "@arxhub/vfs": "workspace:*",
     "@arxhub/vfs-http": "workspace:*",
     "@arxhub/vfs-tauri": "workspace:*",
     "@tauri-apps/api": "catalog:tauri",

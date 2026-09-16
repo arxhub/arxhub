@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/boot": "workspace:*",
     "@arxhub/core": "workspace:*",
     "@arxhub/errors": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
@@ -20,7 +21,6 @@
     "@arxhub/sync": "workspace:*",
     "@arxhub/vfs": "workspace:*",
     "@arxhub/vfs-http": "workspace:*",
-    "@arxhub/vfs-node": "workspace:*",
     "@elysiajs/node": "catalog:server",
     "@noble/hashes": "catalog:shared",
     "@scure/bip32": "catalog:shared",

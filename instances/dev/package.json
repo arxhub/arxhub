@@ -8,8 +8,8 @@
     "dev": "vite"
   },
   "dependencies": {
+    "@arxhub/boot": "workspace:*",
     "@arxhub/core": "workspace:*",
-    "@arxhub/crypto": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
     "@arxhub/plugin-config": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",
@@ -41,7 +41,6 @@
     "@arxhub/uikit": "workspace:*",
     "@arxhub/vfs": "workspace:*",
     "@arxhub/vfs-http": "workspace:*",
-    "@arxhub/vfs-node": "workspace:*",
     "lucide-vue-next": "catalog:client",
     "vue": "catalog:client"
   },
