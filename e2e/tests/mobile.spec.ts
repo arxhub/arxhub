@@ -113,6 +113,52 @@ test.describe('mobile navigation', () => {
     await expect(panel.locator('.search-rail')).toHaveCount(0)
   })
 
+  // Back with nothing left to close is the gesture that ends the session, and it is the same gesture
+  // that closes a sheet — so the one too many used to throw the owner out of the app, with no forward
+  // gesture to come back with (OR-04).
+  test('back with nothing left to close asks instead of leaving, and asking costs no history', async ({ app }) => {
+    const leaving = app.getByRole('dialog', { name: 'Leave ArxHub?' })
+
+    async function askAndCancel(): Promise<number> {
+      await app.goBack()
+      await expect(leaving).toBeVisible()
+      await leaving.getByRole('button', { name: 'Cancel' }).click()
+      await expect(leaving).toBeHidden()
+      return app.evaluate(() => window.history.length)
+    }
+
+    const first = await askAndCancel()
+    // Cancelling puts back the entry the gesture consumed, so asking again reaches the same question
+    // rather than a session one entry deeper each time.
+    expect(await askAndCancel()).toBe(first)
+    await waitForApp(app)
+  })
+
+  test('back inside the leave confirmation cancels it, like any other confirmation', async ({ app }) => {
+    const leaving = app.getByRole('dialog', { name: 'Leave ArxHub?' })
+    await app.goBack()
+    await expect(leaving).toBeVisible()
+
+    await app.goBack()
+    await expect(leaving).toBeHidden()
+    await waitForApp(app)
+  })
+
+  test('the app is left once the exit is confirmed', async ({ app }) => {
+    // A session whose only entry is the app has nowhere to go, so give it the page the owner would be
+    // returning to — landing back there is what leaving means from inside a browser.
+    await app.goto('about:blank')
+    await app.goto('/')
+    await waitForApp(app)
+
+    await app.goBack()
+    const leaving = app.getByRole('dialog', { name: 'Leave ArxHub?' })
+    await expect(leaving).toBeVisible()
+    await leaving.getByRole('button', { name: 'Exit' }).click()
+
+    await expect.poll(() => app.url()).toBe('about:blank')
+  })
+
   test('back in a confirmation means cancel, never confirm', async ({ app, vault }) => {
     const path = await vault.write('keep.md', 'keep me\n')
     await app.reload()

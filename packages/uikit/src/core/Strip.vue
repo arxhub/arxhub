@@ -54,9 +54,13 @@ withDefaults(
 }
 
 /* 8px more than the strip's own inset, so a title reads as a label of the region rather than as the
-   first control in a row of them. */
+   first control in a row of them. It SHRINKS (and only then ellipsizes, which is what the two rules
+   below were always for): with `flex-shrink: 0` the ellipsis could never fire, so a strip whose actions
+   outgrew its region clipped the last button instead — the vault tree's own strip lost the frame's
+   control that way, off the edge of a 280px column, still focusable and no longer visible. A label
+   cut short reads; a button cut off does not. */
 .strip-title {
-  flex-shrink: 0;
+  min-width: 0;
   padding-left: 8px;
   color: var(--gray-12);
   font-weight: var(--font-weight-medium);

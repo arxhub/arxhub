@@ -9,6 +9,7 @@ import { useNavigation } from '../use-navigation'
 import MobileBackgroundBar from './MobileBackgroundBar.vue'
 import MobileDock from './MobileDock.vue'
 import MobileEdgeGestures from './MobileEdgeGestures.vue'
+import MobileExitGuard from './MobileExitGuard.vue'
 import MobileNavPanel from './MobileNavPanel.vue'
 import MobileOpenLayer from './MobileOpenLayer.vue'
 import MobileSearchSheet from './MobileSearchSheet.vue'
@@ -108,12 +109,7 @@ useOpenSheetKey(() => {
            dock of the active tab (only if the type declared one) and the type row. Not one of them
            appears just in case. -->
       <MobileBackgroundBar :status="status" :workspace="workspace" />
-      <MobileDock
-        :component="workspace.dock()"
-        :nav-title="navTitle"
-        :create="navTitle == null ? (activeType?.create ?? null) : null"
-        @nav="openNav"
-      />
+      <MobileDock :component="workspace.dock()" :create="navTitle == null ? (activeType?.create ?? null) : null" />
 
       <MobileNavPanel :open="layer === 'nav'" :title="navTitle ?? 'Navigation'" :nav="nav?.component ?? null" @close="layer = null" />
     </div>
@@ -121,9 +117,12 @@ useOpenSheetKey(() => {
     <MobileTypeRow
       :row="workspace.row.value"
       :sheet-open="layer === 'search'"
+      :nav-title="navTitle"
+      :nav-open="layer === 'nav'"
       @select="workspace.activateType($event)"
       @peek="toggle('open')"
       @sheet="toggle('search')"
+      @nav="openNav"
     />
     <Toaster />
   </div>
@@ -131,6 +130,7 @@ useOpenSheetKey(() => {
   <MobileOpenLayer :open="layer === 'open'" :type="activeType" :workspace="workspace" @close="layer = null" />
   <MobileSearchSheet :open="layer === 'search'" :workspace="workspace" :types="types" :status="status" @close="layer = null" />
   <ModalsProvider />
+  <MobileExitGuard />
   <ActionMenuHost />
 </template>
 

@@ -2,8 +2,8 @@
 import { Icon } from '@arxhub/uikit/core'
 import type { TypeRowItem } from '../workspace'
 
-const props = defineProps<{ row: TypeRowItem[]; sheetOpen: boolean }>()
-const emit = defineEmits<{ select: [typeId: string]; peek: [typeId: string]; sheet: [] }>()
+const props = defineProps<{ row: TypeRowItem[]; sheetOpen: boolean; navTitle: string | null; navOpen: boolean }>()
+const emit = defineEmits<{ select: [typeId: string]; peek: [typeId: string]; sheet: []; nav: [] }>()
 
 // A count is part of what the key says, so it belongs in the accessible name and not only in the
 // badge — "Notes" and "Notes, 3 open" are different controls to someone who cannot see the dot.
@@ -46,17 +46,32 @@ function tap(item: TypeRowItem): void {
       </button>
     </div>
 
-    <!-- Immobile, and immobile in the literal sense: it sits outside the scrolling ribbon, so its
-         width does not depend on how many types are open. It is the way to everything that is not on
-         the screen right now: what is open elsewhere, every type with no place in the row, and the
-         status block this frame has no permanent bar for.
+    <!-- The active type's own navigation: the tree under Notes, the sections under Settings. It used
+         to be the only thing in the band above the row, which spent 48px of the shortest screen there
+         is on one button. The left-edge swipe still does the same thing, but a gesture is invisible
+         and the road to the tree has no right to be. -->
+    <button
+      v-if="props.navTitle != null"
+      type="button"
+      class="key edge"
+      :class="{ active: props.navOpen }"
+      data-testid="arxhub.shell.rail"
+      :aria-label="props.navTitle"
+      :aria-pressed="props.navOpen"
+      @click="emit('nav')"
+    >
+      <span class="glyph"><Icon name="lu:panel-bottom" :size="16" /></span>
+    </button>
+
+    <!-- The way to everything that is not on the screen right now: what is open elsewhere, every type
+         with no place in the row, and the status block this frame has no permanent bar for.
          A grid rather than a magnifier: the magnifier belongs to the Search type, which is one of the
          things reached through here, and one glyph answering two things is worse than an unfamiliar
          one. Not the ⌘ sign either — it is a Mac key, and on a phone (or Linux, or Windows) it names
          a keyboard the person does not have. -->
     <button
       type="button"
-      class="key opener"
+      class="key edge"
       :class="{ active: props.sheetOpen }"
       data-testid="arxhub.shell.search"
       aria-label="Open or switch to"
@@ -122,16 +137,20 @@ function tap(item: TypeRowItem): void {
   color: var(--accent-11);
 }
 
-/* Not a place you can be in, so it never takes the accent: what it opens is a layer ON TOP of where
-   you are, and a raised fill is how a layer states itself (F-17). */
-.opener {
+/* The two immobile keys, both at the RIGHT edge and both literally immobile: they sit outside the
+   scrolling ribbon, so their width does not depend on how many types are open. Right and low because
+   that is where the hand is on a phone held in one — the left edge and the top are for rare things,
+   and opening the tree is not one. */
+.edge {
   flex: 0 0 var(--size-xl);
   width: var(--size-xl);
   border-left: 1px solid var(--gray-6);
   border-radius: 0;
 }
 
-.opener.active {
+/* Neither is a place you can be in, so neither takes the accent: what they open is a layer ON TOP of
+   where you are, and a raised fill is how a layer states itself (F-17). */
+.edge.active {
   background: var(--gray-4);
   color: var(--gray-12);
 }

@@ -1,5 +1,5 @@
 export { ARXHUB_KEY, useArxHub } from './useArxHub'
-export { useBackStack } from './useBackStack'
+export { armExitGuard, leaveApp, useBackStack } from './useBackStack'
 export { type FileDocument, type UseFileDocumentOptions, useFileDocument } from './useFileDocument'
 export { useKeyboardInset } from './useKeyboardInset'
 export { useMediaQuery } from './useMediaQuery'

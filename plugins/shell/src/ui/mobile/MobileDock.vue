@@ -3,40 +3,24 @@ import { Icon } from '@arxhub/uikit/core'
 import type { Component } from 'vue'
 import type { TabTypeCreate } from '../tab-type'
 
-// The band directly above the type row — the most reachable part of the screen. It holds three
-// different things, deliberately:
+// The band directly above the type row. It belongs to the OBJECT that is open, and holds two things:
 //
-// 1. The key that opens the type's navigation. The FRAME puts it there, not the type: navigation
-//    belongs to many types, and making each draw its own button would give seven different ones. The
-//    left-edge swipe does the same thing, but a gesture is invisible — and the only road to the tree
-//    has no right to be.
+// 1. The dock of the active tab: the type declares it, the active object fills it.
 // 2. Creating, but only for a type WITHOUT navigation: the button normally lives in the navigation
 //    layer, and two buttons for one action would be worse than one. A type may declare `create` and no
 //    `nav`, and then the role would be unreachable.
-// 3. The dock of the active tab: the type declares it, the active object fills it.
 //
-// None of the three — no band at all: an empty one would spend 48px on nothing, on the frame with the
-// least room to spare.
-const props = defineProps<{ component: Component | null; navTitle: string | null; create: TabTypeCreate | null }>()
-const emit = defineEmits<{ nav: [] }>()
+// Neither — no band at all: an empty one would spend 48px on nothing, on the frame with the least room
+// to spare. The key that opens the type's navigation used to live here as a third role, and the band
+// then stood on EVERY screen for that one button, because nothing declares a dock yet; it moved into
+// the type row's right edge (`MobileTypeRow`), where the hand is.
+const props = defineProps<{ component: Component | null; create: TabTypeCreate | null }>()
 </script>
 
 <template>
-  <div v-if="props.component != null || props.navTitle != null || props.create != null" class="dock" data-testid="dock">
+  <div v-if="props.component != null || props.create != null" class="dock" data-testid="dock">
     <button
-      v-if="props.navTitle != null"
-      type="button"
-      class="key"
-      data-testid="arxhub.shell.rail"
-      :aria-label="props.navTitle"
-      @click="emit('nav')"
-    >
-      <Icon name="lu:panel-bottom" :size="16" />
-      <span class="key-label">{{ props.navTitle }}</span>
-    </button>
-
-    <button
-      v-if="props.create != null && props.navTitle == null"
+      v-if="props.create != null"
       type="button"
       class="key"
       data-testid="dock-create"
@@ -91,12 +75,6 @@ const emit = defineEmits<{ nav: [] }>()
   outline-offset: -1px;
 }
 
-.key-label {
-  overflow: hidden;
-  max-width: 12ch;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 /* The object's tools scroll sideways rather than wrapping: wrapping would make the band two storeys
    tall and eat the content the screen is open for. */
