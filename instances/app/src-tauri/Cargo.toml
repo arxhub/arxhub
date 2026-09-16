@@ -1,6 +1,6 @@
 [package]
 name = "arxhub"
-version = "0.1.8"
+version = "0.1.9"
 description = "Modular personal knowledge base"
 authors = ["rougsig"]
 license = "AGPL-3.0-or-later"
