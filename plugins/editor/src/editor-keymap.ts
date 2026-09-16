@@ -1,9 +1,11 @@
 import { baseKeymap, chainCommands, setBlockType, toggleMark } from 'prosemirror-commands'
 import { redo, undo } from 'prosemirror-history'
+import { keydownHandler } from 'prosemirror-keymap'
 import type { NodeType, Schema } from 'prosemirror-model'
 import { liftListItem, sinkListItem, splitListItem } from 'prosemirror-schema-list'
 import { type Command, TextSelection } from 'prosemirror-state'
 import { goToNextCell } from 'prosemirror-tables'
+import type { EditorView } from 'prosemirror-view'
 import { editorMode } from './editor-mode'
 
 // `baseKeymap` binds neither Home nor End on either platform (`prosemirror-commands` leaves line
@@ -102,4 +104,17 @@ export function buildKeymap(schema: Schema): Record<string, Command> {
       }) satisfies Command,
     ]),
   )
+}
+
+// Letting the history chords through `buildKeymap` is not enough on its own to make them work:
+// ProseMirror lists `keydown` among its EDIT handlers, so a view that is not editable never reaches
+// `handleKeyDown` at all, keymap included — and interactive mode is deliberately not editable. The
+// chords it may still use therefore need a door of their own, and it is the editor's own root that
+// listens rather than the view's DOM: a node view stops every event raised inside a control's component
+// from reaching the view (`control-views.ts`), and right after ticking the box you want back is exactly
+// where the focus is. WHICH chords get through is still decided in one place — the bindings handed in
+// here are the same gated ones the keymap plugin is given.
+export function interactiveKeydown(keys: Record<string, Command>): (view: EditorView, event: KeyboardEvent) => boolean {
+  const handler = keydownHandler(keys)
+  return (view, event) => editorMode(view.state) === 'interactive' && handler(view, event)
 }

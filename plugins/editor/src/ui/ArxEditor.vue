@@ -31,7 +31,7 @@ import { documentSearchKey, documentSearchPlugin } from '../document-search'
 import { ArxEditorExtension } from '../editor-extension'
 import { deserialize, emptyDoc, serialize } from '../editor-format'
 import { buildInputRules } from '../editor-input-rules'
-import { buildKeymap } from '../editor-keymap'
+import { buildKeymap, interactiveKeydown } from '../editor-keymap'
 import { type EditorMode, editorModeKey, modePlugin } from '../editor-mode'
 import { PROSEMIRROR_LAYER } from '../hotkeys'
 import { insertHint } from '../insert-hint'
@@ -122,6 +122,16 @@ const conflictCount = computed(() => {
 // window (F-06).
 useHotkeyLayer(useHotkeysExtension(), { id: PROSEMIRROR_LAYER, kind: 'editor' }, editorEl)
 
+const keys = buildKeymap(schema)
+const interactiveKeys = interactiveKeydown(keys)
+
+// Interactive mode is not editable, and ProseMirror does not deliver keydown to a view that is not —
+// see `interactiveKeydown`. Capture, so the chord is answered even while focus sits inside a control's
+// own component, which is where ticking a box leaves it.
+function historyChord(event: KeyboardEvent) {
+  if (view.value && interactiveKeys(view.value, event)) event.preventDefault()
+}
+
 function buildPlugins() {
   return [
     modePlugin(mode.value, kit.controls, [
@@ -152,7 +162,7 @@ function buildPlugins() {
       findOpen.value = true
     }),
     ...kit.plugins(),
-    keymap(buildKeymap(schema)),
+    keymap(keys),
     inputRules({ rules: buildInputRules(schema) }),
     tableEditing({ allowTableNodeSelection: true }),
   ]
@@ -510,7 +520,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="editor-panel" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
+  <div class="editor-panel" @keydown.capture="historyChord" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
     <DocumentFind v-if="findOpen && view && canSave" :view="view" :revision="revision" :mode="mode" @close="closeFind" />
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
