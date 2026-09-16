@@ -1,0 +1,37 @@
+{
+  "name": "@arxhub/boot",
+  "private": true,
+  "version": "0.1.0",
+  "description": "How an ArxHub instance comes up — the boot sequence every composition root shares",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    "./client": "./src/client.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/crypto": "workspace:*",
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/plugin-keystore": "workspace:*",
+    "@arxhub/plugin-maintenance": "workspace:*",
+    "@arxhub/plugin-notes": "workspace:*",
+    "@arxhub/plugin-panels": "workspace:*",
+    "@arxhub/plugin-protection": "workspace:*",
+    "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
+    "@arxhub/vfs-node": "workspace:*",
+    "@sinclair/typebox": "catalog:shared",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain"
+  }
+}

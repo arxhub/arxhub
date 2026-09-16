@@ -1,0 +1,11 @@
+{
+  "extends": "@arxhub/toolchain-tsconfig",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    /* The base names no runtime; the client half of this package mounts a browser app. */
+    "lib": ["esnext", "DOM", "DOM.Iterable"]
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules"]
+}

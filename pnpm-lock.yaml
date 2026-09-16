@@ -425,6 +425,61 @@ importers:
         specifier: catalog:toolchain
         version: 3.2.7(typescript@6.0.3)
 
+  instances/boot:
+    dependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@arxhub/plugin-keystore':
+        specifier: workspace:*
+        version: link:../../plugins/keystore
+      '@arxhub/plugin-maintenance':
+        specifier: workspace:*
+        version: link:../../plugins/maintenance
+      '@arxhub/plugin-notes':
+        specifier: workspace:*
+        version: link:../../plugins/notes
+      '@arxhub/plugin-panels':
+        specifier: workspace:*
+        version: link:../../plugins/panels
+      '@arxhub/plugin-protection':
+        specifier: workspace:*
+        version: link:../../plugins/protection
+      '@arxhub/plugin-shell':
+        specifier: workspace:*
+        version: link:../../plugins/shell
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
+      '@arxhub/vfs-node':
+        specifier: workspace:*
+        version: link:../../packages/vfs-node
+      '@sinclair/typebox':
+        specifier: catalog:shared
+        version: 0.34.48
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+
   instances/client:
     dependencies:
       '@arxhub/core':
