@@ -59,6 +59,21 @@ export function registeredPlugins(arxhub: ArxHub): readonly RegisteredPlugin[] {
   return arxhub.plugins.instantiate().map((it) => ({ name: it.manifest.name, essential: it.manifest.essential ?? false }))
 }
 
+// The check as a composition root runs it, between register() and start().
+//
+// A plugin CONSTRUCTOR that throws is left to core: start() instantiates again a moment later, wraps
+// the failure with the phase it died in and hands the crash screen a plugin to name. A composition
+// complaint about a roster that does not exist would replace that with a worse message.
+export function checkRegisteredComposition(arxhub: ArxHub, rules: CompositionRules): void {
+  let plugins: readonly RegisteredPlugin[]
+  try {
+    plugins = registeredPlugins(arxhub)
+  } catch {
+    return
+  }
+  checkComposition(plugins, rules)
+}
+
 // Every invariant the boot sequence stands on, checked in one pass before start() so a violation is
 // reported as itself instead of as whatever breaks four phases later. Collects everything it finds:
 // fixing a list one message at a time is three more boots.
