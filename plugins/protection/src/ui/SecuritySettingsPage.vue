@@ -6,9 +6,11 @@ import {
   disableDeviceLock,
   enableDeviceLock,
   isDeviceLocked,
+  isUnlockCodeValid,
   KeyStoreExtension,
   LocalStorageKeyStore,
   MIN_UNLOCK_CODE_LENGTH,
+  PinEntry,
 } from '@arxhub/plugin-keystore/ui'
 import { Badge, Button, Card, modals, PageLayout } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
@@ -46,9 +48,7 @@ const currentCode = ref('')
 const newCode = ref('')
 const lockBusy = ref(false)
 
-const newCodeLongEnough = computed(() => newCode.value.length >= MIN_UNLOCK_CODE_LENGTH)
-// Digits alone are brute-forceable offline in hours; say so rather than showing a green tick.
-const newCodeIsWeak = computed(() => newCodeLongEnough.value && /^\d+$/.test(newCode.value))
+const newCodeValid = computed(() => isUnlockCodeValid(newCode.value))
 
 onMounted(async () => {
   locked.value = await isDeviceLocked(rawKeystore)
@@ -95,7 +95,12 @@ function confirmDisableLock(): void {
 }
 
 function submitChangeCode(): void {
+  if (!newCodeValid.value || currentCode.value.length === 0) return
   void applyLockChange(() => changeUnlockCode(rawKeystore, currentCode.value, newCode.value), 'Unlock code changed')
+}
+
+function submitEnableLock(): void {
+  if (newCodeValid.value) confirmEnableLock()
 }
 
 const phrase = ref<string | null>(null)
@@ -299,49 +304,43 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
       </p>
 
       <template v-if="!locked">
-        <input
-          v-model="newCode"
-          class="entry code"
-          type="password"
-          autocomplete="new-password"
-          :placeholder="`Unlock code (at least ${MIN_UNLOCK_CODE_LENGTH} characters)`"
-          data-testid="new-unlock-code"
-        />
-        <p v-if="newCodeIsWeak" class="hint">
-          Digits only: someone who copies this profile can try every combination offline in a few hours. A phrase of a
-          few words is far stronger and no harder to remember.
+        <p class="hint">
+          The code is {{ MIN_UNLOCK_CODE_LENGTH }} digits or more. It stops whoever ends up with a copy of this
+          profile, not someone who came for your vault and can spend an afternoon on it.
         </p>
+        <PinEntry
+          v-model="newCode"
+          label="New unlock code"
+          :placeholder="`Unlock code, ${MIN_UNLOCK_CODE_LENGTH}+ digits`"
+          autocomplete="new-password"
+          test-id="new-unlock-code"
+          @submit="submitEnableLock"
+        />
         <div class="row">
-          <Button size="sm" variant="secondary" :disabled="!newCodeLongEnough || lockBusy" @click="confirmEnableLock">
+          <Button size="sm" variant="secondary" :disabled="!newCodeValid || lockBusy" @click="confirmEnableLock">
             Lock this device
           </Button>
         </div>
       </template>
 
       <template v-else>
-        <input
+        <PinEntry
           v-model="currentCode"
-          class="entry code"
-          type="password"
-          autocomplete="current-password"
+          label="Current unlock code"
           placeholder="Current unlock code"
-          data-testid="current-unlock-code"
+          autocomplete="current-password"
+          test-id="current-unlock-code"
         />
-        <input
+        <PinEntry
           v-model="newCode"
-          class="entry code"
-          type="password"
+          label="New unlock code"
+          :placeholder="`New code, ${MIN_UNLOCK_CODE_LENGTH}+ digits`"
           autocomplete="new-password"
-          placeholder="New unlock code (leave empty to only remove the lock)"
-          data-testid="new-unlock-code"
+          test-id="new-unlock-code"
+          @submit="submitChangeCode"
         />
         <div class="row">
-          <Button
-            size="sm"
-            variant="secondary"
-            :disabled="!newCodeLongEnough || currentCode.length === 0 || lockBusy"
-            @click="submitChangeCode"
-          >
+          <Button size="sm" variant="secondary" :disabled="!newCodeValid || currentCode.length === 0 || lockBusy" @click="submitChangeCode">
             Change code
           </Button>
           <Button size="sm" variant="danger" :disabled="currentCode.length === 0 || lockBusy" @click="confirmDisableLock">
@@ -475,12 +474,6 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   font-size: var(--font-size-sm);
   color: var(--gray-12);
   resize: vertical;
-}
-
-.code {
-  height: var(--size-xs);
-  max-width: 24rem;
-  resize: none;
 }
 
 .entry:focus-visible {

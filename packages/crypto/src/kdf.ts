@@ -10,12 +10,12 @@ const KEY_BYTES = 32 // AES-256
 // conventional defaults. Baked in, not configurable, so a value derived on one device reproduces on
 // another from the same passphrase + salt.
 //
-// This cannot rescue a short numeric PIN on its own. At these parameters a full 6-digit sweep is
-// ~36 core-hours — hours, not years, on a machine an attacker can rent. A PIN therefore buys real
-// protection against someone who merely gets a copy of the storage (a synced browser profile, a
-// borrowed laptop) and no protection against someone who targets you and is willing to spend an
-// afternoon. Length is the only thing that closes that gap, which is why the unlock UI accepts a
-// full passphrase and says so.
+// What the device lock actually buys, since the code it derives from is a PIN of 6 digits or more
+// (the keypad is the only input there is — see MIN_UNLOCK_CODE_LENGTH in plugins/keystore). At these
+// parameters a full 6-digit sweep is ~36 core-hours — hours, not years, on a machine an attacker can
+// rent. So the PIN is real protection against someone who merely gets a copy of the storage (a synced
+// browser profile, a borrowed laptop) and no protection against someone who targets you and is willing
+// to spend an afternoon. The unlock screen says exactly that rather than implying more.
 const SCRYPT_N = 1 << 16
 const SCRYPT_R = 8
 const SCRYPT_P = 1

@@ -1,5 +1,5 @@
 import { CHECK_ENTRY, EncryptedKeyStore, hasVerifier, SALT_ENTRY } from './encrypted-key-store'
-import { unlockCodeTooShort, unlockFailed } from './errors'
+import { unlockCodeNotNumeric, unlockCodeTooShort, unlockFailed } from './errors'
 import type { KeyStore } from './keystore'
 
 // Every name a migration below stages gets this prefix on the SAME underlying store, so a full
@@ -66,10 +66,21 @@ async function clearStaging(inner: KeyStore): Promise<void> {
 }
 
 // Six is the floor, not a recommendation. A six-digit PIN costs an attacker who already holds a copy
-// of the storage roughly a day of one core (see the scrypt note in @arxhub/crypto kdf) — enough to
-// deter someone who stumbles onto a synced browser profile, not someone who came for this vault. The
-// unlock field accepts any string, so a passphrase is the way to actually be safe.
+// of the storage ~36 core-hours at the KDF's parameters (see the scrypt note in @arxhub/crypto kdf) —
+// enough to deter someone who stumbles onto a synced browser profile, not someone who came for this
+// vault.
 export const MIN_UNLOCK_CODE_LENGTH = 6
+
+// Digits only, because the keypad is the only input the code is ever entered on — on a phone there is
+// no other one. A stored code carrying anything else could never be typed back in, so accepting one
+// would be locking the device against its owner.
+const DIGITS_ONLY = /^\d+$/
+
+// What a screen asks before it offers to set a code. It is not the enforcement — enableDeviceLock and
+// changeUnlockCode refuse on their own, so a caller that never renders anything cannot get past it.
+export function isUnlockCodeValid(code: string): boolean {
+  return code.length >= MIN_UNLOCK_CODE_LENGTH && DIGITS_ONLY.test(code)
+}
 
 // Whether this store is locked, i.e. its values are ciphertext and a code is needed to read them.
 export function isDeviceLocked(inner: KeyStore): Promise<boolean> {
@@ -88,7 +99,7 @@ export async function unlockDeviceKeyStore(inner: KeyStore, code: string): Promi
 // computed into a staging area first (see promoteStaged) — the real, currently-plaintext entries are
 // never touched until the whole new generation exists and is ready to promote in one pass.
 export async function enableDeviceLock(inner: KeyStore, code: string): Promise<KeyStore> {
-  requireLongEnough(code)
+  requireValidCode(code)
   if (await hasVerifier(inner)) throw unlockFailed(undefined, 'This device is already locked.')
 
   await clearStaging(inner)
@@ -105,7 +116,7 @@ export async function enableDeviceLock(inner: KeyStore, code: string): Promise<K
 // under `currentCode` — until the new generation is fully staged and ready to promote; the old code
 // only stops working once every value it could read has an already-verified replacement.
 export async function changeUnlockCode(inner: KeyStore, currentCode: string, newCode: string): Promise<KeyStore> {
-  requireLongEnough(newCode)
+  requireValidCode(newCode)
 
   const current = new EncryptedKeyStore(inner, currentCode)
   if (!(await current.verifyCode())) throw unlockFailed()
@@ -158,6 +169,10 @@ async function readAll(store: KeyStore): Promise<[string, string][]> {
   return entries
 }
 
-function requireLongEnough(code: string): void {
+// Only a code being SET goes through here. Unlocking and disabling take whatever the device was
+// locked with and answer unlockFailed on a mismatch: a device locked before the keypad existed still
+// has to report a wrong code as a wrong code, not as a rule it was never given a chance to follow.
+function requireValidCode(code: string): void {
   if (code.length < MIN_UNLOCK_CODE_LENGTH) throw unlockCodeTooShort(MIN_UNLOCK_CODE_LENGTH)
+  if (!DIGITS_ONLY.test(code)) throw unlockCodeNotNumeric()
 }

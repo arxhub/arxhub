@@ -5,6 +5,7 @@ import {
   disableDeviceLock,
   enableDeviceLock,
   isDeviceLocked,
+  isUnlockCodeValid,
   MIN_UNLOCK_CODE_LENGTH,
   resetDeviceKeyStore,
   unlockDeviceKeyStore,
@@ -13,7 +14,7 @@ import { type KeyStore, MemoryKeyStore } from '../keystore'
 
 const MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
 const CODE = '314159'
-const OTHER = 'correct horse battery staple'
+const OTHER = '862315'
 
 async function seeded(): Promise<MemoryKeyStore> {
   const inner = new MemoryKeyStore()
@@ -91,11 +92,60 @@ describe('device lock', () => {
 
   it('refuses a code below the minimum length', async () => {
     const inner = await seeded()
-    const short = 'x'.repeat(MIN_UNLOCK_CODE_LENGTH - 1)
+    const short = '1'.repeat(MIN_UNLOCK_CODE_LENGTH - 1)
 
     const error = await enableDeviceLock(inner, short).catch((e) => e)
     expect(hasErrorCode(error, 'UnlockCodeTooShortError')).toBe(true)
     expect(await isDeviceLocked(inner)).toBe(false)
+  })
+
+  // The keypad is the only input a code is ever entered on, so a stored code carrying anything else
+  // could not be typed back in — the refusal lives here rather than in the screen that renders the pad.
+  it.each(['passphrase', '12345a', '123 456', '-123456'])('refuses %j as a code', async (code) => {
+    const inner = await seeded()
+
+    const error = await enableDeviceLock(inner, code).catch((e) => e)
+    expect(hasErrorCode(error, 'UnlockCodeNotNumericError')).toBe(true)
+    expect(await isDeviceLocked(inner)).toBe(false)
+  })
+
+  // \d is ASCII, and the keypad only ever produces ASCII — a code pasted in from elsewhere that merely
+  // looks like digits would not be reproducible on the pad.
+  it('refuses digits that are not the ones on the keypad', async () => {
+    const inner = await seeded()
+
+    const error = await enableDeviceLock(inner, '١٢٣٤٥٦').catch((e) => e)
+    expect(hasErrorCode(error, 'UnlockCodeNotNumericError')).toBe(true)
+  })
+
+  it('refuses a non-numeric new code and leaves the current one working', async () => {
+    const inner = await seeded()
+    await enableDeviceLock(inner, CODE)
+
+    const error = await changeUnlockCode(inner, CODE, 'correct horse battery staple').catch((e) => e)
+    expect(hasErrorCode(error, 'UnlockCodeNotNumericError')).toBe(true)
+    expect(await (await unlockDeviceKeyStore(inner, CODE)).get('identity.mnemonic')).toBe(MNEMONIC)
+  })
+
+  // Unlocking is not held to the rule: a device locked before the keypad existed still has to report a
+  // wrong code as a wrong code, which is the only answer its owner can act on.
+  it('answers a non-numeric attempt at unlock with a failed unlock, not a rule', async () => {
+    const inner = await seeded()
+    await enableDeviceLock(inner, CODE)
+
+    const error = await unlockDeviceKeyStore(inner, 'correct horse battery staple').catch((e) => e)
+    expect(hasErrorCode(error, 'UnlockFailedError')).toBe(true)
+  })
+
+  it.each([
+    ['314159', true],
+    ['00000000000000', true],
+    ['12345', false],
+    ['1234a6', false],
+    ['1234 56', false],
+    ['', false],
+  ])('isUnlockCodeValid(%j) is %s', (code, valid) => {
+    expect(isUnlockCodeValid(code)).toBe(valid)
   })
 
   it('re-encrypts under a new code and stops accepting the old one', async () => {

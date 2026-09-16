@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { hasErrorCode } from '@arxhub/errors'
 import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef } from 'vue'
-import { enableDeviceLock, MIN_UNLOCK_CODE_LENGTH, resetDeviceKeyStore, unlockDeviceKeyStore } from '../device-lock'
+import { enableDeviceLock, isUnlockCodeValid, MIN_UNLOCK_CODE_LENGTH, resetDeviceKeyStore, unlockDeviceKeyStore } from '../device-lock'
 import type { KeyStore } from '../keystore'
+import PinEntry from './PinEntry.vue'
 
 const props = defineProps<{
   inner: KeyStore
@@ -14,12 +15,15 @@ const props = defineProps<{
   onDone: (store: KeyStore) => void
 }>()
 
+const entry = useTemplateRef<{ focus: () => void }>('entry')
 const code = ref('')
 const confirmCode = ref('')
+// Setup asks twice, one keypad at a time: two pads on screen at once is two places to look for the
+// digit you just pressed.
+const step = ref<'choose' | 'confirm'>('choose')
 const error = ref<string | null>(null)
 const busy = ref(false)
 const confirmingReset = ref(false)
-const input = useTemplateRef<HTMLInputElement>('input')
 
 // A deterrent against someone guessing codes through THIS screen on a device they have physical or
 // on-screen access to right now — not a defense against an offline attacker with a copy of the storage,
@@ -36,6 +40,8 @@ const backoffRemaining = ref(0)
 let backoffTimer: ReturnType<typeof setInterval> | undefined
 
 const backoffActive = computed(() => backoffRemaining.value > 0)
+const codeValid = computed(() => isUnlockCodeValid(code.value))
+const canSubmitSetup = computed(() => (step.value === 'choose' ? codeValid.value : confirmCode.value.length > 0))
 
 function startBackoff(): void {
   if (failures.value < FAILURES_BEFORE_BACKOFF) return
@@ -72,7 +78,7 @@ async function submitUnlock(): Promise<void> {
     busy.value = false
     code.value = ''
     await nextTick()
-    input.value?.focus()
+    entry.value?.focus()
   }
 }
 
@@ -80,12 +86,17 @@ async function submitSetup(): Promise<void> {
   if (busy.value) return
   error.value = null
 
-  if (code.value.length < MIN_UNLOCK_CODE_LENGTH) {
-    error.value = `A lock code must be at least ${MIN_UNLOCK_CODE_LENGTH} characters.`
+  if (!codeValid.value) {
+    error.value = `A lock code is at least ${MIN_UNLOCK_CODE_LENGTH} digits.`
+    return
+  }
+  if (step.value === 'choose') {
+    step.value = 'confirm'
     return
   }
   if (code.value !== confirmCode.value) {
     error.value = 'The two codes do not match.'
+    confirmCode.value = ''
     return
   }
 
@@ -97,6 +108,12 @@ async function submitSetup(): Promise<void> {
     error.value = `Could not set up the lock: ${String(e)}`
     busy.value = false
   }
+}
+
+function backToChoose(): void {
+  step.value = 'choose'
+  confirmCode.value = ''
+  error.value = null
 }
 
 function submit(): Promise<void> {
@@ -123,60 +140,78 @@ async function reset(): Promise<void> {
       <template v-if="mode === 'setup'">
         <h1 class="title">Set a lock code</h1>
         <p class="hint">
-          This device's keys will be encrypted at rest. Choose a code you can remember — there is no way to recover
-          it if you forget it; the recovery phrase in Security settings is the only way back in.
+          This device's keys will be encrypted at rest with a code of {{ MIN_UNLOCK_CODE_LENGTH }} digits or more.
+          There is no way to recover it if you forget it; the recovery phrase in Security settings is the only way
+          back in.
         </p>
 
-        <form @submit.prevent="submit">
-          <input
-            ref="input"
-            v-model="code"
-            class="input"
-            type="password"
-            autocomplete="new-password"
-            autofocus
-            :disabled="busy"
-            aria-label="New lock code"
-            data-testid="setup-lock-code"
-            placeholder="New lock code"
-          />
-          <input
-            v-model="confirmCode"
-            class="input"
-            type="password"
-            autocomplete="new-password"
-            :disabled="busy"
-            aria-label="Confirm lock code"
-            placeholder="Confirm lock code"
-          />
-          <p v-if="error" class="error" role="alert">{{ error }}</p>
-          <button class="submit" type="submit" :disabled="busy || code.length === 0">
-            {{ busy ? 'Setting up…' : 'Set up device lock' }}
+        <PinEntry
+          v-if="step === 'choose'"
+          v-model="code"
+          label="New lock code"
+          :placeholder="`New code, ${MIN_UNLOCK_CODE_LENGTH}+ digits`"
+          autocomplete="new-password"
+          autofocus
+          :disabled="busy"
+          test-id="setup-lock-code"
+          @submit="submit"
+        />
+        <PinEntry
+          v-else
+          v-model="confirmCode"
+          label="Confirm lock code"
+          placeholder="Enter it again"
+          autocomplete="new-password"
+          autofocus
+          :disabled="busy"
+          test-id="confirm-lock-code"
+          @submit="submit"
+        />
+
+        <p v-if="error" class="error" role="alert">{{ error }}</p>
+
+        <div class="row">
+          <button class="submit" type="button" :disabled="busy || !canSubmitSetup" @click="submit">
+            {{ busy ? 'Setting up…' : step === 'choose' ? 'Continue' : 'Set up device lock' }}
           </button>
-        </form>
+          <button v-if="step === 'confirm'" class="link" type="button" :disabled="busy" @click="backToChoose">Back</button>
+        </div>
       </template>
 
       <template v-else>
         <h1 class="title">Unlock ArxHub</h1>
-        <p class="hint">This device's keys are encrypted. Enter your code to continue.</p>
+        <!-- Said plainly because the gate is where it would be believed: the code makes a copy of this
+             profile useless to whoever picked it up, and buys hours — not safety — against someone who
+             came for this vault. See the scrypt note in @arxhub/crypto's kdf.ts. -->
+        <p class="hint">
+          The code encrypts this device's keys: it stops someone who ends up with a copy of this profile, not someone
+          who came for your vault and can spend an afternoon on it.
+        </p>
 
-        <form @submit.prevent="submit">
-          <input
-            ref="input"
-            v-model="code"
-            class="input"
-            type="password"
-            autocomplete="current-password"
-            autofocus
-            :disabled="busy || backoffActive"
-            aria-label="Unlock code"
-            placeholder="Unlock code"
-          />
-          <p v-if="error" class="error" role="alert">{{ error }}</p>
-          <button class="submit" type="submit" :disabled="busy || code.length === 0 || backoffActive">
+        <PinEntry
+          ref="entry"
+          v-model="code"
+          label="Unlock code"
+          placeholder="Unlock code"
+          autocomplete="current-password"
+          autofocus
+          :disabled="busy || backoffActive"
+          test-id="unlock-code"
+          @submit="submit"
+        />
+        <p v-if="error" class="error" role="alert">{{ error }}</p>
+        <div class="row">
+          <!-- The click must not take focus off the field: the pad is only up while the entry holds it. -->
+          <button
+            class="submit"
+            type="button"
+            :disabled="busy || code.length === 0 || backoffActive"
+            @mousedown.prevent
+            @click="submit"
+          >
             {{ backoffActive ? `Try again in ${backoffRemaining}s` : busy ? 'Unlocking…' : 'Unlock' }}
           </button>
-        </form>
+        </div>
 
         <div class="recover">
           <button v-if="!confirmingReset" class="link" type="button" :disabled="busy" @click="confirmingReset = true">
@@ -206,116 +241,103 @@ async function reset(): Promise<void> {
   z-index: 9999;
   display: grid;
   place-items: center;
-  padding: 1rem;
-  background: var(--gray-1, #fff);
-  font-family: var(--font-sans, system-ui, sans-serif);
+  padding: 16px;
+  background-color: var(--gray-1);
+  font-family: var(--font-sans);
+  overflow-y: auto;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 12px;
   width: 100%;
-  max-width: 22rem;
+  max-width: 320px;
 }
 
 .title {
   margin: 0;
-  font-size: var(--font-size-lg, 1.125rem);
-  font-weight: var(--font-weight-medium, 500);
-  color: var(--gray-12, #111);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-12);
 }
 
 .hint {
   margin: 0;
-  font-size: var(--font-size-xs, 0.8125rem);
-  color: var(--gray-11, #666);
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-}
-
-.input {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid var(--gray-7, #ccc);
-  border-radius: var(--radius-sm, 4px);
-  background: var(--gray-1, #fff);
-  font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-sm, 0.875rem);
-  color: var(--gray-12, #111);
-}
-
-/* The one focus treatment (.claude/rules/design.md), not a bespoke ring — this is the first screen a
-   locked-out user sees and it must not look like a different product from the one behind it. */
-.input:focus-visible {
-  outline: 2px solid var(--accent-8, #2f6feb);
-  outline-offset: -1px;
+  font-size: var(--font-size-xs);
+  color: var(--gray-11);
 }
 
 .submit {
-  padding: 0.5rem 0.75rem;
-  border: none;
-  border-radius: var(--radius-sm, 4px);
-  background: var(--accent-9, #06f);
-  color: var(--accent-contrast, #fff);
-  font-size: var(--font-size-sm, 0.875rem);
+  height: var(--size-xs);
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background-color: var(--accent-9);
+  color: var(--accent-contrast);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
+.submit:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: 1px;
+}
+
 .submit:disabled {
-  opacity: 0.6;
-  cursor: default;
+  background-color: var(--gray-3);
+  color: var(--gray-9);
+  cursor: not-allowed;
 }
 
 .error {
   margin: 0;
-  font-size: var(--font-size-xs, 0.8125rem);
-  color: var(--danger-11, #c00);
+  font-size: var(--font-size-xs);
+  color: var(--danger-11);
 }
 
 .recover {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--gray-6, #eee);
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-6);
 }
 
 .warn {
   margin: 0;
-  font-size: var(--font-size-xs, 0.8125rem);
-  color: var(--gray-11, #666);
+  font-size: var(--font-size-xs);
+  color: var(--gray-11);
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 0.5rem);
+  gap: 8px;
 }
 
 .link {
   padding: 0;
   border: none;
   background: none;
-  color: var(--gray-11, #666);
-  font-size: var(--font-size-xs, 0.8125rem);
+  color: var(--gray-11);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
   text-decoration: underline;
   cursor: pointer;
 }
 
 .danger {
-  padding: 0.375rem 0.625rem;
-  border: 1px solid var(--danger-7, #f99);
-  border-radius: var(--radius-sm, 4px);
-  background: none;
-  color: var(--danger-11, #c00);
-  font-size: var(--font-size-xs, 0.8125rem);
+  height: var(--size-xs);
+  padding: 0 12px;
+  border: 1px solid var(--danger-7);
+  border-radius: var(--radius-xs);
+  background-color: var(--gray-1);
+  color: var(--danger-11);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
   cursor: pointer;
 }
 </style>
