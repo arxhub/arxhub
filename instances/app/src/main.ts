@@ -48,11 +48,8 @@ await bootClient({
   version: __APP_VERSION__,
   // A shipped build never boots with its secrets in the clear.
   requireLock: true,
-  // Decided from TAURI_ENV_PLATFORM at build time — see vite.config.ts.
-  frame: __ARXHUB_FRAME__,
-  // The one instance that knows its frame as a literal, so the ternary is folded away at build time and
-  // the package ships the shell it mounts and no other. Boot's own fallback cannot: its branch is a
-  // runtime value, and a phone package has no use for the desktop tree.
+  // The frame is a build decision here — __ARXHUB_FRAME__ comes from TAURI_ENV_PLATFORM, see
+  // vite.config.ts — so this ternary is folded away and a phone package never carries the desktop tree.
   loadShell: () =>
     __ARXHUB_FRAME__ === 'mobile'
       ? import('@arxhub/plugin-shell/ui-mobile').then((it) => it.MobileShell)

@@ -6,7 +6,7 @@ import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension, restoreNavigationWorkspace, StorePanelHost } from '@arxhub/plugin-panels/ui'
 import { loadOrCreateKeyring } from '@arxhub/plugin-protection/ui'
 import { ObjectGonePage, ShellExtension, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell/ui'
-import { ARXHUB_KEY, type ShellFrame } from '@arxhub/uikit/hooks'
+import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { type App, type Component, createApp, markRaw } from 'vue'
 import { CLIENT_COMPOSITION, checkRegisteredComposition } from '../composition'
@@ -35,16 +35,13 @@ export interface BootClientOptions {
   // panel, a settings section one bundle has and another does not. Runs after the boot resolved (so
   // every extension exists) and before the desk is assembled.
   contribute?(arxhub: ArxHub): void | Promise<void>
-  // Which frame this bundle mounts: a value the instance decided, not a probe made here. The Tauri
-  // bundles know it at build time from TAURI_ENV_PLATFORM; the browser ones probe once at boot with
-  // detectShellFrame(), because one build is served to phones and desktops alike. Published to the tree
-  // either way, so it stays required even when `loadShell` below answers the same question.
-  frame: ShellFrame
-  // How this bundle reaches its shell component, for a build that can do better than a runtime branch.
-  // A bundle whose frame is a build-time literal folds its own ternary away and never emits a chunk for
-  // the shell it cannot mount; boot's own branch is a runtime value, so it would emit both. A build
-  // served to phones and desktops alike has nothing to fold and leaves this unset.
-  loadShell?: () => Promise<Component>
+  // Which frame this bundle mounts, as the import that fetches it. The choice is the instance's and
+  // cannot be boot's: a Tauri package knows its frame as a build-time literal, so ITS ternary folds away
+  // and the package ships the one shell it can mount — a branch written here would be a runtime one and
+  // would put both shells in every bundle, including the phone's. A bundle genuinely served to both
+  // frames hands over `shellForFrame(detectShellFrame())` and gets that runtime branch deliberately.
+  // The shell itself publishes the frame to the tree (`provideShellFrame`), so nothing else needs it.
+  loadShell(): Promise<Component>
   version: string
 }
 
@@ -107,19 +104,11 @@ export async function bootClient(options: BootClientOptions): Promise<BootedClie
   // fail BEFORE app.mount() and leave a blank white page instead of a shell.
   await restoreNavigationWorkspace(panels, workspace, desk, NOTES_TYPE_ID)
 
-  const Shell = await (options.loadShell ?? (() => loadShellFor(options.frame)))()
+  const Shell = await options.loadShell()
 
   const app = createApp(Shell)
   app.provide(ARXHUB_KEY, arxhub)
   app.mount('#app')
 
   return { arxhub, workspace, app }
-}
-
-// The fallback for a bundle served to both frames: the branch is a runtime value, so both shells are in
-// it — which is correct there and is exactly what `loadShell` exists to avoid elsewhere.
-function loadShellFor(frame: ShellFrame): Promise<Component> {
-  return frame === 'mobile'
-    ? import('@arxhub/plugin-shell/ui-mobile').then((it) => it.MobileShell)
-    : import('@arxhub/plugin-shell/ui-desktop').then((it) => it.DesktopShell)
 }

@@ -5,7 +5,7 @@ import '@arxhub/theme'
 import '@arxhub/theme-slate'
 import '@arxhub/theme-catppuccin'
 
-import { bootClient } from '@arxhub/boot/client'
+import { bootClient, shellForFrame } from '@arxhub/boot/client'
 import { apiBaseUrl } from '@arxhub/core'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
 import { ConfigPlugin } from '@arxhub/plugin-config/ui'
@@ -51,7 +51,7 @@ await bootClient({
   requireLock: false,
   // One browser build is served to phones and desktops alike, so this bundle cannot know its frame and
   // probes once, here, at boot. Nothing below the shell measures the window again.
-  frame: detectShellFrame(),
+  loadShell: () => shellForFrame(detectShellFrame()),
 
   createVfs: ({ signer, logger }) => Promise.resolve(new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer }, logger)),
 
