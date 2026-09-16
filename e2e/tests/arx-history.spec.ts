@@ -105,7 +105,11 @@ test('one block can be restored while a different edited block stays current', a
   await editor.locator('p').first().fill('First changed')
   await editor.locator('p').last().fill('Second changed')
   const dialog = await versions(app)
-  await dialog.getByRole('navigation', { name: 'Saved document versions' }).getByRole('button').first().click()
+  // The OLDEST version is the one this asks about — the file as it stood before Save. The newest is
+  // whatever autosave last wrote, so `.first()` names the saved original only while the debounce has not
+  // expired: under load it names the edited draft instead, and a version equal to the draft has no block
+  // changes to click.
+  await dialog.getByRole('navigation', { name: 'Saved document versions' }).getByRole('button').last().click()
   await dialog
     .getByRole('navigation', { name: 'Changes from saved version' })
     .getByRole('button', { name: 'changed · First changed', exact: true })

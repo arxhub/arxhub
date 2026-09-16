@@ -10,13 +10,10 @@ const WEB_PORT = Number(process.env.ARXHUB_E2E_WEB_PORT ?? 3100)
 const API_PORT = Number(process.env.ARXHUB_E2E_API_PORT ?? 3101)
 
 // Two stands, not one. They used to share a single dev server and a single vault, which meant every
-// worker of both Playwright projects wrote through one repo store with no compare-and-swap on the
-// history head — orphaned checkpoints and timeouts above two workers, and the residual flakiness
-// below that (see forge-wiki/planning/worklog/2026-09-15.md, the evening entries). A project is the
-// right unit of isolation, not a worker: the two frames are already separate runs of the whole suite,
-// so each gets its own port pair and its own throwaway data dir, and workers within a project are free
-// to share it exactly as before (one worker per project still applies the same repo-store rule the
-// comment below the workers setting used to state for the single stand).
+// worker of both Playwright projects wrote through one repo store (see
+// forge-wiki/planning/worklog/2026-09-15.md, the evening entries). A project is the right unit of
+// isolation, not a worker: the two frames are already separate runs of the whole suite, so each gets
+// its own port pair and its own throwaway data dir, and the workers within a project share theirs.
 //
 // Ports: mobile is the desktop pair plus 10 (3110/3111 by default) — one scheme, extend it the same
 // way if a third project is ever added.
@@ -50,13 +47,13 @@ export default defineConfig({
   // as never having come up.
   globalSetup: './global-setup.ts',
   fullyParallel: true,
-  // The two PROJECTS no longer share a repo store, so they no longer contend with each other — but
-  // Playwright's worker pool is shared across projects (nothing pins a fixed number of workers to
-  // each), and within ONE project the tests still write through that project's own single repo store
-  // with no compare-and-swap on the history head. So the original limit still applies, just scoped
-  // down to a project instead of the whole run: each project caps itself at 2 (below), which is what
-  // measured clean before this change and still does. The total here is what lets both projects' 2
-  // run at the same time — raise it only alongside the per-project caps, and only by measuring.
+  // One number again, and no per-project cap under it. Splitting the stands took the contention out
+  // from BETWEEN the two projects; what stayed was the contention a project's own workers had on its
+  // own single repo store, which is why each project used to cap itself at 2 on top of this. The head
+  // of that store now moves only by compare-and-swap (Repo.advanceHead), so a losing writer rebuilds
+  // on the head that won instead of overwriting it — the defect the cap was working around, rather
+  // than the parallelism. Raise this only by measuring: a worker is a browser plus its share of one
+  // Vite stand, so past the machine's cores the suite gets slower and starts timing out on load alone.
   workers: 4,
   forbidOnly: !!process.env.CI,
   retries: 0,
@@ -75,11 +72,8 @@ export default defineConfig({
   // Each project sets its own baseURL because webServer is an array below — Playwright does not infer
   // one from a port in that shape (see the webServer doc comment on TestConfigWebServer).
   projects: [
-    // workers: 2 per project — see the top-level workers comment. This is the per-project repo-store
-    // limit the whole run used to need; splitting the stand did not remove it, only made it local to
-    // one project's store instead of shared by both.
-    { name: 'desktop', workers: 2, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${desktopStand.webPort}` } },
-    { name: 'mobile', workers: 2, use: { ...devices['Pixel 7'], baseURL: `http://localhost:${mobileStand.webPort}` } },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${desktopStand.webPort}` } },
+    { name: 'mobile', use: { ...devices['Pixel 7'], baseURL: `http://localhost:${mobileStand.webPort}` } },
   ],
 
   webServer: [
