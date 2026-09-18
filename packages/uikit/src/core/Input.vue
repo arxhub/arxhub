@@ -49,6 +49,10 @@ const touch = useShellFrame() === 'mobile'
   border-color: var(--accent-8);
 }
 
+.input::placeholder {
+  color: var(--gray-10);
+}
+
 .input:disabled {
   background-color: var(--gray-3);
   color: var(--gray-9);
