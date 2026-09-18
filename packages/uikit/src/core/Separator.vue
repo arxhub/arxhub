@@ -28,7 +28,7 @@ withDefaults(
    margin here on top of that gap doubled the space around a separator versus between two plain icons. */
 .separator.vertical {
   width: 1px;
-  height: 16px;
+  height: var(--size-xs-half);
 }
 
 .separator.horizontal {

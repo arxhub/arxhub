@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { IconButton } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue'
 import { address, columnName, type Point, pointOf } from '../model'
 import { formulaReferences } from '../references'
@@ -7,6 +8,7 @@ import { useSheet } from './use-sheet'
 
 const props = defineProps<{ rowHeight: number; columnWidth: number }>()
 const session = useSheet()
+const fillHandleSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const { grid, sheet, active, end, select, move, edit, clear, setVisible, cellText, onCopy, onPaste, editable } = session
 const { referenceMode, canPointReference, pointReference, extendReference, hiddenRows, fillTo } = session
 const id = useId()
