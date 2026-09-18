@@ -32,7 +32,8 @@ function levelTone(level: number): 'neutral' | 'danger' | 'warning' {
 
 const arxhub = useArxHub()
 const ext = arxhub.extensions.get(LoggerExtension)
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'md' : 'sm'
 
 const enabled = ref<Record<LevelName, boolean>>({ debug: true, info: true, warn: true, error: true })
 const search = ref('')
@@ -106,7 +107,7 @@ onMounted(loadSessions)
 </script>
 
 <template>
-  <div class="log-panel">
+  <div class="log-panel" :class="{ touch }">
     <Strip>
       <div class="levels">
         <button
@@ -177,6 +178,11 @@ onMounted(loadSessions)
   cursor: pointer;
 }
 
+.log-panel.touch .chip {
+  height: var(--size-md);
+  padding: 0 12px;
+}
+
 .chip.off {
   background: var(--gray-2);
   color: var(--gray-9);
@@ -205,6 +211,11 @@ onMounted(loadSessions)
   font-size: var(--font-size-xs);
   font-family: var(--font-sans);
   padding: 0 8px;
+}
+
+.log-panel.touch .session {
+  height: var(--size-md);
+  font-size: var(--font-size-sm);
 }
 
 .chip:focus-visible,
