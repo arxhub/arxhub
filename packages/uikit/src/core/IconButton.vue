@@ -105,7 +105,7 @@ const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20 })[props.size]
 }
 
 .size-md {
-  width: 28px;
+  width: var(--size-2xs);
   height: var(--size-2xs);
 }
 
