@@ -29,7 +29,7 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
 .root {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   cursor: pointer;
 }
 
@@ -68,19 +68,20 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
 }
 
 .thumb {
-  width: 0.75rem;
-  height: 0.75rem;
+  /* Optical inset inside --size-xs-half (16): 12px thumb leaves 2px, not a grid step. */
+  width: 12px;
+  height: 12px;
   background-color: var(--white);
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-xs);
   position: absolute;
-  top: 0.125rem;
-  left: 0.125rem;
+  top: 2px;
+  left: 2px;
   transition: transform var(--duration-fast);
 }
 
 .control[data-state='checked'] .thumb {
-  transform: translateX(1rem);
+  transform: translateX(16px);
 }
 
 @media (prefers-reduced-motion: reduce) {

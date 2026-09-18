@@ -81,13 +81,13 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 10vh 1rem 1rem;
+  padding: 10vh 16px 16px;
   z-index: var(--z-index-modal);
 }
 
 .dialog-positioner.centered {
   align-items: center;
-  padding: 1rem;
+  padding: 16px;
 }
 
 /* The closed state has to win over the box. Ark marks the content `hidden` while the dialog is closed and

@@ -107,14 +107,14 @@ function onPointerUp(): void {
 }
 
 .grabber-area {
-  padding: 0.5rem 1rem;
+  padding: 8px 16px;
   cursor: grab;
   /* Only the handle owns the vertical gesture; the body must stay scrollable. */
   touch-action: none;
 }
 
 .grabber {
-  width: 2.25rem;
+  width: 36px;
   height: 4px;
   margin: 0 auto;
   border-radius: var(--radius-xs);
@@ -122,7 +122,7 @@ function onPointerUp(): void {
 }
 
 .sheet-title {
-  margin: 0.5rem 0 0;
+  margin: 8px 0 0;
   text-align: center;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -131,6 +131,6 @@ function onPointerUp(): void {
 
 .sheet-body {
   overflow-y: auto;
-  padding: 0.25rem 0 max(0.5rem, env(safe-area-inset-bottom));
+  padding: 0 0 max(8px, env(safe-area-inset-bottom));
 }
 </style>
