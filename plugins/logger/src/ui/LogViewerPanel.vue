@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { LogRecord } from '@arxhub/logger'
 import { Button, IconButton, Input, Row, Strip } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import dayjs from 'dayjs'
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
 import { LoggerExtension } from '../logger-extension'
@@ -32,6 +32,7 @@ function levelTone(level: number): 'neutral' | 'danger' | 'warning' {
 
 const arxhub = useArxHub()
 const ext = arxhub.extensions.get(LoggerExtension)
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 
 const enabled = ref<Record<LevelName, boolean>>({ debug: true, info: true, warn: true, error: true })
 const search = ref('')
@@ -122,7 +123,7 @@ onMounted(loadSessions)
       </div>
       <template #actions>
         <IconButton size="lg" icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
-        <Button variant="secondary" size="sm" :disabled="source !== ''" @click="ext.clear()">Clear</Button>
+        <Button variant="secondary" :size="buttonSize" :disabled="source !== ''" @click="ext.clear()">Clear</Button>
       </template>
     </Strip>
     <Strip>

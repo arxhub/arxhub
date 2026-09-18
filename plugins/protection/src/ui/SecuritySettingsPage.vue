@@ -13,7 +13,7 @@ import {
   PinEntry,
 } from '@arxhub/plugin-keystore/ui'
 import { Badge, Button, Card, modals, PageLayout } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { computed, markRaw, onMounted, ref } from 'vue'
 import { IDENTITY_MNEMONIC_KEY } from '../identity'
@@ -23,6 +23,7 @@ import { clearVaultWorkingTree, isVaultEmpty } from '../vault-reset'
 import OwnerHandoverDialog from './OwnerHandoverDialog.vue'
 
 const arxhub = useArxHub()
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const keystore = arxhub.extensions.get(KeyStoreExtension).keystore
 const keyrings = arxhub.extensions.get(KeyringExtension)
 const keyring = keyrings.keyring
@@ -284,7 +285,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
         </p>
         <div class="row">
           <code class="value" data-testid="public-key">{{ keyring.authPublicKey }}</code>
-          <Button size="sm" variant="secondary" @click="run(copy(keyring.authPublicKey, 'Public key'), 'Could not copy')">Copy</Button>
+          <Button :size="buttonSize" variant="secondary" @click="run(copy(keyring.authPublicKey, 'Public key'), 'Could not copy')">Copy</Button>
         </div>
       </template>
     </section>
@@ -317,7 +318,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
           @submit="submitEnableLock"
         />
         <div class="row">
-          <Button size="sm" variant="secondary" :disabled="!newCodeValid || lockBusy" @click="confirmEnableLock">
+          <Button :size="buttonSize" variant="secondary" :disabled="!newCodeValid || lockBusy" @click="confirmEnableLock">
             Lock this device
           </Button>
         </div>
@@ -340,10 +341,10 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
           @submit="submitChangeCode"
         />
         <div class="row">
-          <Button size="sm" variant="secondary" :disabled="!newCodeValid || currentCode.length === 0 || lockBusy" @click="submitChangeCode">
+          <Button :size="buttonSize" variant="secondary" :disabled="!newCodeValid || currentCode.length === 0 || lockBusy" @click="submitChangeCode">
             Change code
           </Button>
-          <Button size="sm" variant="danger" :disabled="currentCode.length === 0 || lockBusy" @click="confirmDisableLock">
+          <Button :size="buttonSize" variant="danger" :disabled="currentCode.length === 0 || lockBusy" @click="confirmDisableLock">
             Remove lock
           </Button>
         </div>
@@ -357,13 +358,13 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
         this one. Store them outside this device.
       </p>
       <div v-if="phrase == null" class="row">
-        <Button size="sm" variant="secondary" @click="confirmReveal">Show recovery phrase</Button>
+        <Button :size="buttonSize" variant="secondary" @click="confirmReveal">Show recovery phrase</Button>
       </div>
       <template v-else>
         <code class="value phrase" data-testid="recovery-phrase">{{ phrase }}</code>
         <div class="row">
-          <Button size="sm" variant="secondary" @click="run(copy(phrase, 'Recovery phrase'), 'Could not copy')">Copy</Button>
-          <Button size="sm" variant="ghost" @click="phrase = null">Hide</Button>
+          <Button :size="buttonSize" variant="secondary" @click="run(copy(phrase, 'Recovery phrase'), 'Could not copy')">Copy</Button>
+          <Button :size="buttonSize" variant="ghost" @click="phrase = null">Hide</Button>
         </div>
       </template>
     </section>
@@ -387,7 +388,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
       <p v-else-if="verdict" class="hint" data-testid="phrase-verdict">{{ verdict }}</p>
       <div class="row">
         <Button
-          size="sm"
+          :size="buttonSize"
           :variant="restoring ? 'primary' : 'danger'"
           :disabled="!canApply || replaceBusy"
           data-testid="replace-identity"

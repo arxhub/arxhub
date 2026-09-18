@@ -2,7 +2,7 @@
 import { useHotkeys } from '@arxhub/plugin-hotkeys/ui'
 import { typeLayerId, useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { Button, StatusDot } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, watch } from 'vue'
 import { SETTINGS_TYPE_ID } from '../contributions'
 import { SettingsExtension } from '../settings-extension'
@@ -10,6 +10,7 @@ import { SettingsExtension } from '../settings-extension'
 const arxhub = useArxHub()
 const settings = arxhub.extensions.get(SettingsExtension)
 const changes = settings.changes
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 
 const fields = computed(() => changes.fieldCount.value)
 const sections = computed(() => changes.sectionCount.value)
@@ -80,8 +81,8 @@ useHotkeys(hotkeys, [
       <!-- Drawn per platform from the one function that knows how (F-02): the sign used to be typed
            in, and read "⌘S" on Linux and Windows, where it is Ctrl. -->
       <kbd v-else class="shortcut">{{ hotkeys.label('Mod-s') }}</kbd>
-      <Button size="sm" variant="secondary" :disabled="changes.saving.value" @click="changes.revertAll()">Revert</Button>
-      <Button size="sm" variant="primary" :disabled="changes.saving.value || changes.invalid.value" @click="apply">
+      <Button :size="buttonSize" variant="secondary" :disabled="changes.saving.value" @click="changes.revertAll()">Revert</Button>
+      <Button :size="buttonSize" variant="primary" :disabled="changes.saving.value || changes.invalid.value" @click="apply">
         Save &amp; apply
       </Button>
     </div>
