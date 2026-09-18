@@ -60,7 +60,7 @@ function onValueChange(details: { value: number[] }): void {
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 16px;
+  height: var(--size-xs-half);
   cursor: pointer;
 }
 
@@ -117,7 +117,7 @@ function onValueChange(details: { value: number[] }): void {
 }
 
 .readout {
-  min-width: 24px;
+  min-width: var(--size-xl-half);
   text-align: right;
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
