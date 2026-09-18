@@ -98,7 +98,7 @@ defineProps<{
 
 /* Sizes */
 .btn-sm {
-  height: 24px;
+  height: var(--size-xl-half);
   padding: 0 8px;
   font-size: var(--font-size-sm);
 }
