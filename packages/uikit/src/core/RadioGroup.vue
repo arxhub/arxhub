@@ -82,9 +82,9 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .control {
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
+  flex: 0 0 var(--size-xs-half);
+  width: var(--size-xs-half);
+  height: var(--size-xs-half);
   margin-top: 4px;
   border: 1.5px solid var(--gray-7);
   border-radius: var(--radius-full);
