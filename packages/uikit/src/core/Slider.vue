@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { Slider } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 
 const props = defineProps<{
   modelValue?: number
@@ -13,6 +14,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<(e: 'update:modelValue', value: number) => void>()
+const touch = useShellFrame() === 'mobile'
 
 // Ark models every slider as a multi-thumb range; this wrapper only ever exposes the first thumb.
 function onValueChange(details: { value: number[] }): void {
@@ -24,6 +26,7 @@ function onValueChange(details: { value: number[] }): void {
 <template>
   <Slider.Root
     class="root"
+    :class="{ touch }"
     :model-value="props.modelValue == null ? undefined : [props.modelValue]"
     :min="min"
     :max="max"
@@ -61,6 +64,10 @@ function onValueChange(details: { value: number[] }): void {
   cursor: pointer;
 }
 
+.root.touch .control {
+  height: var(--size-md);
+}
+
 .root[data-disabled] .control {
   cursor: not-allowed;
 }
@@ -70,6 +77,10 @@ function onValueChange(details: { value: number[] }): void {
   height: 4px;
   border-radius: var(--radius-full);
   background: var(--gray-4);
+}
+
+.root.touch .track {
+  height: 6px;
 }
 
 .range {
@@ -89,6 +100,11 @@ function onValueChange(details: { value: number[] }): void {
   border-radius: var(--radius-full);
   background: var(--gray-1);
   box-shadow: var(--shadow-xs);
+}
+
+.root.touch .thumb {
+  width: 20px;
+  height: 20px;
 }
 
 .thumb[data-focus-visible] {
