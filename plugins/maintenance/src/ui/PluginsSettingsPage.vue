@@ -101,12 +101,12 @@ function reset(): void {
         thing from the inside: boot the essentials only, fix what broke, come back.
       </p>
       <div class="row-actions">
-        <Button v-if="!arxhub.maintenance" size="sm" variant="secondary" @click="confirmMaintenance">
+        <Button v-if="!arxhub.maintenance" :size="buttonSize" variant="secondary" @click="confirmMaintenance">
           Restart in maintenance mode
         </Button>
         <Button
           v-if="anyDisabled || arxhub.maintenance"
-          size="sm"
+          :size="buttonSize"
           variant="secondary"
           @click="reset"
         >
