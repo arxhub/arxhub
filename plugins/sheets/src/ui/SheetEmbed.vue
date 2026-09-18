@@ -158,7 +158,7 @@ onUnmounted(() => {
       <span class="embed-title" :title="node.attrs.path">{{ node.attrs.path || 'Spreadsheet' }}</span>
       <template #actions>
         <Button v-if="node.attrs.path" variant="secondary" @click="open">Open spreadsheet</Button>
-        <IconButton v-if="mode === 'editable'" icon="lu:settings-2" tooltip="Configure spreadsheet" @click="setup = true" />
+        <IconButton v-if="mode === 'editable'" size="lg" icon="lu:settings-2" tooltip="Configure spreadsheet" @click="setup = true" />
       </template>
     </Strip>
     <p v-if="error" role="alert">{{ error }} <Button variant="secondary" @click="load">Retry</Button></p>
