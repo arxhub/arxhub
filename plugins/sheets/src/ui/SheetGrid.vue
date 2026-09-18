@@ -316,7 +316,7 @@ function keydown(event: KeyboardEvent): void {
           :style="{ left: `${columnLeft(column)}px`, width: `${columnSize(column)}px` }">{{ columnName(column) }}</div>
         <div role="columnheader" :aria-colindex="1" aria-label="Row" class="sheet-cell sheet-heading sheet-corner" :style="{ left: `${x}px`, width: '48px' }" />
       </div>
-      <div v-if="handle" class="fill-handle" :style="handle"><IconButton icon="lu:grip" tooltip="Drag to autofill" @keydown.enter.prevent="session.tool.value = 'help'" /></div>
+      <div v-if="handle" class="fill-handle" :style="handle"><IconButton :size="fillHandleSize" icon="lu:grip" tooltip="Drag to autofill" @keydown.enter.prevent="session.tool.value = 'help'" /></div>
     </div>
   </div>
 </template>
