@@ -47,15 +47,15 @@ const active = computed(() => themes.activeId.value)
 <style scoped>
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: 12px;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
+  gap: 8px;
+  padding: 12px;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-md);
   background: var(--gray-2);
@@ -77,7 +77,7 @@ const active = computed(() => themes.activeId.value)
 
 .swatches {
   display: flex;
-  height: 2rem;
+  height: var(--size-xs);
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);
   overflow: hidden;

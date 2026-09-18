@@ -48,7 +48,9 @@ function openSettings(): void {
 .fx-item {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  min-width: var(--size-md);
   height: var(--size-md);
   padding: 0 8px;
   border: none;
