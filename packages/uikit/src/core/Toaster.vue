@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { Toaster as ArkToaster, ToastCloseTrigger, ToastDescription, ToastRoot, ToastTitle } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 import { toaster } from '../hooks/useToast'
 import Icon from './Icon.vue'
+
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
   <ArkToaster v-slot="toast" :toaster="toaster">
-    <ToastRoot class="toast" :data-type="toast.type ?? 'info'">
+    <ToastRoot class="toast" :class="{ touch }" :data-type="toast.type ?? 'info'">
       <div class="toast-body">
         <ToastTitle class="toast-title">{{ toast.title }}</ToastTitle>
         <ToastDescription v-if="toast.description" class="toast-desc">{{ toast.description }}</ToastDescription>
       </div>
       <ToastCloseTrigger class="toast-close" aria-label="Dismiss">
-        <Icon name="lu:x" :size="14" />
+        <Icon name="lu:x" :size="touch ? 16 : 14" />
       </ToastCloseTrigger>
     </ToastRoot>
   </ArkToaster>
@@ -80,12 +83,20 @@ import Icon from './Icon.vue'
 .toast-close {
   display: flex;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
   color: var(--gray-10);
   cursor: pointer;
   padding: 4px;
   border-radius: var(--radius-xs);
+}
+
+.toast.touch .toast-close {
+  width: var(--size-xs);
+  height: var(--size-xs);
+  padding: 0;
 }
 
 .toast-close:hover { color: var(--gray-12); background: var(--gray-4); }
