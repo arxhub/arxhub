@@ -56,6 +56,7 @@ defineOptions({ name: 'ArxEditor' })
 const AUTOSAVE_DEBOUNCE_MS = 1500
 
 const props = defineProps<{ path: string; anchor?: BlockAnchor }>()
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 
 const arxhub = useArxHub()
 const extension = arxhub.extensions.get(ArxEditorExtension)
