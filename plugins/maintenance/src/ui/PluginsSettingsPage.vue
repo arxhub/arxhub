@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button, modals, PageLayout, Switch } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, reactive, ref } from 'vue'
 import { MaintenanceExtension } from '../maintenance-extension'
 import { pluginLabel } from '../plugin-label'
@@ -8,6 +8,7 @@ import { pluginLabel } from '../plugin-label'
 const arxhub = useArxHub()
 const policy = arxhub.extensions.get(MaintenanceExtension).policy
 const plugins = arxhub.catalog
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 
 // The policy is plain storage, so the switches keep their own reactive mirror of it.
 const enabled = reactive<Record<string, boolean>>(Object.fromEntries(plugins.map((it) => [it.name, !policy.isDisabled(it.name)])))
@@ -56,7 +57,7 @@ function reset(): void {
         <p class="banner-title">Maintenance mode is on</p>
         <p class="hint">Only essential plugins are running. Switch off whatever broke, then leave maintenance mode.</p>
       </div>
-      <Button size="sm" @click="setMaintenance(false)">Leave and restart</Button>
+      <Button :size="buttonSize" @click="setMaintenance(false)">Leave and restart</Button>
     </section>
 
     <section class="block">
@@ -89,7 +90,7 @@ function reset(): void {
 
       <div v-if="pending" class="pending" role="status">
         <span class="hint">Plugin changes apply on the next start.</span>
-        <Button size="sm" @click="restart">Restart now</Button>
+        <Button :size="buttonSize" @click="restart">Restart now</Button>
       </div>
     </section>
 
