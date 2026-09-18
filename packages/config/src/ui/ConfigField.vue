@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Button, CheckboxGroup, ChipInput, Icon, Input, NumberInput, RadioGroup, Segmented, Slider, Switch } from '@arxhub/uikit/core'
-import { toaster } from '@arxhub/uikit/hooks'
+import { toaster, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { type FieldModel, isInline } from './field-model'
 
 const props = defineProps<{ field: FieldModel; modelValue: unknown; error: string | null; technical?: boolean }>()
 const emit = defineEmits<(e: 'update:modelValue', value: unknown) => void>()
 
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const inline = computed(() => isInline(props.field.kind))
 
 const asText = computed(() => (props.modelValue == null ? '' : String(props.modelValue)))
@@ -122,7 +123,7 @@ async function copy(): Promise<void> {
 
       <div v-else-if="field.kind === 'readonly'" class="readonly">
         <code class="readonly-value">{{ asText || '—' }}</code>
-        <Button size="sm" variant="secondary" @click="copy">Copy</Button>
+        <Button :size="buttonSize" variant="secondary" @click="copy">Copy</Button>
       </div>
 
       <div v-else-if="field.kind === 'secret'" class="secret">
@@ -134,7 +135,7 @@ async function copy(): Promise<void> {
           :aria-label="field.label"
           @update:model-value="set($event)"
         />
-        <Button size="sm" variant="secondary" :disabled="field.disabled" @click="revealed = !revealed">
+        <Button :size="buttonSize" variant="secondary" :disabled="field.disabled" @click="revealed = !revealed">
           {{ revealed ? 'Hide' : 'Show' }}
         </Button>
       </div>
