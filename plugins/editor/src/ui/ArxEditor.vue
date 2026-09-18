@@ -536,7 +536,7 @@ onUnmounted(() => {
     <div v-if="draftError" class="editor-error" role="alert"><span>Draft backup unavailable: {{ draftError }}</span><Button variant="secondary" @click="backupDraft()">Retry draft backup</Button></div>
     <div v-if="loadError" class="editor-error">
       <span>{{ (loadError instanceof Error ? loadError.message : String(loadError)) || "Couldn't load this file." }} Saving is disabled.</span>
-      <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>
+      <Button :size="buttonSize" variant="secondary" @click="reload(path)">Retry</Button>
     </div>
     <div v-if="assets.error.value" class="editor-error" role="alert">
       <span>{{ assets.error.value }}</span><Button variant="secondary" @click="assets.retry">Retry upload</Button><Button variant="ghost" @click="assets.dismiss">Dismiss</Button>
