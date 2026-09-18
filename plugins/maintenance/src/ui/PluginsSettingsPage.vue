@@ -8,7 +8,8 @@ import { pluginLabel } from '../plugin-label'
 const arxhub = useArxHub()
 const policy = arxhub.extensions.get(MaintenanceExtension).policy
 const plugins = arxhub.catalog
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const mobile = useShellFrame() === 'mobile'
+const buttonSize = mobile ? 'md' : 'sm'
 
 // The policy is plain storage, so the switches keep their own reactive mirror of it.
 const enabled = reactive<Record<string, boolean>>(Object.fromEntries(plugins.map((it) => [it.name, !policy.isDisabled(it.name)])))
@@ -68,7 +69,7 @@ function reset(): void {
       </p>
 
       <ul class="list">
-        <li v-for="plugin in plugins" :key="plugin.name" class="row">
+        <li v-for="plugin in plugins" :key="plugin.name" class="row" :class="{ touch: mobile }">
           <div class="row-text">
             <p class="row-title">
               <span class="name">{{ pluginLabel(plugin.name) }}</span>
@@ -126,7 +127,7 @@ function reset(): void {
 .block {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .block-title {
@@ -146,8 +147,8 @@ function reset(): void {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem;
+  gap: 16px;
+  padding: 12px;
   border: 1px solid var(--warning-6);
   border-radius: var(--radius-sm);
   background: var(--warning-2);
@@ -172,11 +173,15 @@ function reset(): void {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.5rem 0;
+  gap: 16px;
+  padding: 8px 0;
   /* Hairline INSIDE one region (the plugin list), not a border BETWEEN regions — --gray-4 per
      .claude/rules/design.md, not --gray-6. */
   border-bottom: 1px solid var(--gray-4);
+}
+
+.row.touch {
+  min-height: var(--size-xl);
 }
 
 .row:last-child {
@@ -186,7 +191,7 @@ function reset(): void {
 .row-title {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 8px;
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--gray-12);
@@ -199,7 +204,7 @@ function reset(): void {
 }
 
 .tag {
-  padding: 0 0.25rem;
+  padding: 0 4px;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-xs);
 }
@@ -207,14 +212,14 @@ function reset(): void {
 .pending {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding-top: 0.5rem;
+  gap: 12px;
+  padding-top: 8px;
 }
 
 .row-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
+  gap: 8px;
+  margin-top: 4px;
 }
 </style>
