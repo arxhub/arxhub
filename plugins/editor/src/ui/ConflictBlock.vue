@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Button } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Node } from 'prosemirror-model'
 import { computed } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
 import { versionText } from '../document-history'
 
 const props = defineProps<ArxEditorControlProps>()
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 
 function side(name: 'local' | 'remote'): Node | null {
   let found: Node | null = null
