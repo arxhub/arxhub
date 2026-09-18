@@ -2,7 +2,7 @@
 import { ConfigForm } from '@arxhub/config/ui'
 import { SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { Button, PageLayout, StatusDot } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onMounted, ref } from 'vue'
 import { SEARCH_SETTINGS_SECTION } from '../contributions'
 import { type SearchConfig, SearchConfigSchema, toSearchSettings } from '../search-config'
@@ -13,7 +13,7 @@ const arxhub = useArxHub()
 const search = arxhub.extensions.get(SearchExtension)
 const settings = arxhub.extensions.get(SettingsExtension)
 const index = useIndexStatus()
-
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const values = ref<Record<string, unknown>>({})
 const draft = ref<Record<string, unknown> | undefined>(undefined)
 const form = ref<{ revert: () => void } | null>(null)
@@ -84,7 +84,7 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
            collect into a change set that Save would apply (FE 11). -->
       <Button
         variant="secondary"
-        size="sm"
+        :size="buttonSize"
         :disabled="index.unavailable.value || index.busy.value"
         data-testid="search-settings-reindex"
         @click="index.reindex()"
