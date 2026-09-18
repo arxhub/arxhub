@@ -269,8 +269,8 @@ async function reset(): Promise<void> {
 }
 
 .submit {
-  height: var(--size-xs);
-  padding: 0 12px;
+  height: var(--size-md);
+  padding: 0 16px;
   border: 1px solid transparent;
   border-radius: var(--radius-xs);
   background-color: var(--accent-9);
@@ -330,14 +330,14 @@ async function reset(): Promise<void> {
 }
 
 .danger {
-  height: var(--size-xs);
-  padding: 0 12px;
+  height: var(--size-md);
+  padding: 0 16px;
   border: 1px solid var(--danger-7);
   border-radius: var(--radius-xs);
   background-color: var(--gray-1);
   color: var(--danger-11);
   font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 </style>
