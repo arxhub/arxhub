@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { TagsInput } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 import Icon from './Icon.vue'
 
 defineProps<{
@@ -11,11 +12,13 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'update:modelValue', value: string[]) => void>()
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
   <TagsInput.Root
     class="root"
+    :class="{ touch }"
     :model-value="modelValue"
     :disabled="disabled"
     @value-change="$emit('update:modelValue', $event.value)"
@@ -32,7 +35,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
           <TagsInput.ItemPreview class="chip-preview">
             <TagsInput.ItemText class="chip-text">{{ entry }}</TagsInput.ItemText>
             <TagsInput.ItemDeleteTrigger class="chip-remove" :aria-label="`Remove ${entry}`">
-              <Icon name="lu:x" :size="14" />
+              <Icon name="lu:x" :size="touch ? 16 : 14" />
             </TagsInput.ItemDeleteTrigger>
           </TagsInput.ItemPreview>
           <TagsInput.ItemInput class="chip-edit" />
@@ -61,6 +64,12 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   background: var(--gray-1);
 }
 
+.root.touch .control {
+  min-height: var(--size-md);
+  gap: 8px;
+  padding: 8px;
+}
+
 .control:focus-within {
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
@@ -86,6 +95,11 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   color: var(--gray-12);
 }
 
+.root.touch .chip-preview {
+  height: var(--size-xs);
+  padding: 0 4px 0 12px;
+}
+
 .chip[data-highlighted] .chip-preview {
   border-color: var(--accent-8);
   background: var(--accent-3);
@@ -101,6 +115,11 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   background: transparent;
   color: var(--gray-10);
   cursor: pointer;
+}
+
+.root.touch .chip-remove {
+  width: var(--size-xs-half);
+  height: var(--size-xs-half);
 }
 
 .chip-remove[data-hover] {
@@ -120,6 +139,10 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   outline: none;
 }
 
+.root.touch .chip-edit {
+  height: var(--size-xs);
+}
+
 .draft {
   flex: 1;
   min-width: 96px;
@@ -131,6 +154,10 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   font-size: var(--font-size-sm);
   color: var(--gray-12);
   outline: none;
+}
+
+.root.touch .draft {
+  height: var(--size-xs);
 }
 
 .draft::placeholder {
