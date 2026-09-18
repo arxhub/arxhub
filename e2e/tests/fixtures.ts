@@ -415,6 +415,19 @@ export async function openSecuritySettings(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Device identity' })).toBeVisible()
 }
 
+// A vault-strip control: on the desktop every action is its own icon; on the phone occasional ones
+// sit behind "More vault actions" so the strip stays thumb-reachable.
+export async function vaultStripAction(page: Page, name: string): Promise<void> {
+  await openNavigation(page)
+  const direct = page.getByRole('button', { name, exact: true })
+  if (await direct.isVisible().catch(() => false)) {
+    await direct.click()
+    return
+  }
+  await page.getByRole('button', { name: 'More vault actions', exact: true }).click()
+  await page.getByRole('menuitem', { name, exact: true }).click()
+}
+
 export function storedMnemonic(page: Page): Promise<string | null> {
   return page.evaluate((key) => window.localStorage.getItem(key), IDENTITY_KEY)
 }

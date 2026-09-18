@@ -1,4 +1,16 @@
-import { expect, isMobileFrame, openNavigation, openNote, openSearchApp, openType, searchSheet, SETTINGS_TYPE, test, typeKey } from './fixtures'
+import {
+  expect,
+  isMobileFrame,
+  openNavigation,
+  openNote,
+  openSearchApp,
+  openType,
+  SETTINGS_TYPE,
+  searchSheet,
+  test,
+  typeKey,
+  vaultStripAction,
+} from './fixtures'
 
 const arx = (text: string) =>
   JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] } })
@@ -107,7 +119,7 @@ test('folders stay expanded after switching types and restarting', async ({ app,
   await app.reload()
   await openNavigation(app)
   await expect(app.getByRole('treeitem', { name: 'child.md', exact: true })).toBeVisible()
-  await app.getByRole('button', { name: 'Collapse tree' }).click()
+  await vaultStripAction(app, 'Collapse tree')
   await expect(app.getByRole('treeitem', { name: folder, exact: true })).toHaveAttribute('aria-expanded', 'false')
 })
 

@@ -1,5 +1,5 @@
 import type { Page, TestInfo } from '@playwright/test'
-import { expect, openNavigation, test } from './fixtures'
+import { expect, openNavigation, test, vaultStripAction } from './fixtures'
 
 // OR-07: putting a file the owner already has into the vault. The chooser is the platform's own, opened
 // through a plain `<input type="file">` — so what is driven here is the real dialog Playwright
@@ -33,7 +33,7 @@ test.describe('adding an existing file to the vault', () => {
     await app.reload()
     await openNavigation(app)
 
-    await chooseFiles(app, () => app.getByRole('button', { name: 'Add files…' }).click(), [{ name, body: 'what the owner already had\n' }])
+    await chooseFiles(app, () => vaultStripAction(app, 'Add files…'), [{ name, body: 'what the owner already had\n' }])
 
     await expect(app.getByRole('treeitem', { name })).toBeVisible()
     // The bytes, not only the row: a tree that draws a name it was handed proves nothing about what
@@ -49,7 +49,7 @@ test.describe('adding an existing file to the vault', () => {
     await app.reload()
     await openNavigation(app)
 
-    await chooseFiles(app, () => app.getByRole('button', { name: 'Add files…' }).click(), [
+    await chooseFiles(app, () => vaultStripAction(app, 'Add files…'), [
       { name: first, body: 'first\n' },
       { name: second, body: 'second\n' },
     ])
@@ -69,7 +69,7 @@ test.describe('adding an existing file to the vault', () => {
     await app.reload()
     await openNavigation(app)
 
-    await chooseFiles(app, () => app.getByRole('button', { name: 'Add files…' }).click(), [{ name: taken, body: 'the new one\n' }])
+    await chooseFiles(app, () => vaultStripAction(app, 'Add files…'), [{ name: taken, body: 'the new one\n' }])
 
     await expect(app.locator('.toast-desc').first()).toHaveText(`The name was taken, so ${taken} → ${beside}.`)
     await expect.poll(() => vault.read(taken).catch(() => null)).toBe('the one that was already there\n')

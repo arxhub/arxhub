@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openNavigation, test, waitForApp } from './fixtures'
+import { expect, isMobileFrame, openNavigation, test, vaultStripAction, waitForApp } from './fixtures'
 
 test('malformed saved tabs do not prevent opening and using the vault', async ({ app, vault }) => {
   const path = await vault.write('recovered.md', 'still on disk')
@@ -27,7 +27,7 @@ test('refresh rereads expanded descendants without collapsing the tree', async (
   await expect(app.getByRole('treeitem', { name: 'old.md', exact: true })).toBeVisible()
   await vault.remove(oldPath)
   await vault.write(`${folder}/nested/new.md`, 'new')
-  await app.getByRole('button', { name: 'Refresh', exact: true }).click()
+  await vaultStripAction(app, 'Refresh')
   await expect(app.getByRole('treeitem', { name: 'new.md', exact: true })).toBeVisible()
   await expect(app.getByRole('treeitem', { name: 'old.md', exact: true })).toHaveCount(0)
   await expect(root).toHaveAttribute('aria-expanded', 'true')
