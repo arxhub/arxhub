@@ -428,6 +428,17 @@ export async function vaultStripAction(page: Page, name: string): Promise<void> 
   await page.getByRole('menuitem', { name, exact: true }).click()
 }
 
+// Publication row action: desktop exposes each icon; mobile keeps Copy link out and the rest behind More.
+export async function publicationAction(row: Locator, name: string): Promise<void> {
+  const direct = row.getByRole('button', { name, exact: true })
+  if (await direct.isVisible().catch(() => false)) {
+    await direct.click()
+    return
+  }
+  await row.getByRole('button', { name: 'More publication actions', exact: true }).click()
+  await row.page().getByRole('menuitem', { name, exact: true }).click()
+}
+
 export function storedMnemonic(page: Page): Promise<string | null> {
   return page.evaluate((key) => window.localStorage.getItem(key), IDENTITY_KEY)
 }

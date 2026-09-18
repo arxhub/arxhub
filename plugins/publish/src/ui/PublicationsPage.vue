@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { Badge, IconButton, PageLayout, Row } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { PublishExtension } from '../publish-extension'
 import type { PublicationKind, PublicationRecord } from '../publish-history'
+import PublicationActions from './PublicationActions.vue'
 
 const arxhub = useArxHub()
 const publish = arxhub.extensions.get(PublishExtension)
 const roots = publish.roots
 const history = publish.history
+const rowIconSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 
 const KIND_LABEL: Record<PublicationKind, string> = { publish: 'Published', unpublish: 'Unpublished', rollback: 'Rolled back' }
 
@@ -107,10 +109,13 @@ function counts(entry: PublicationRecord): string {
             <span class="meta mono">{{ publish.publicUrl(root) }}</span>
           </div>
           <div class="actions">
-            <IconButton icon="lu:link" size="sm" tooltip="Copy link" :disabled="busy" @click="copyLink(root)" />
-            <IconButton icon="lu:external-link" size="sm" tooltip="Open in browser" :disabled="busy" @click="openInBrowser(root)" />
-            <IconButton icon="lu:globe" size="sm" tooltip="Republish" :disabled="busy" @click="republish(root)" />
-            <IconButton icon="lu:eye-off" size="sm" tooltip="Unpublish" :disabled="busy" @click="unpublish(root)" />
+            <PublicationActions
+              :busy="busy"
+              :on-copy="() => copyLink(root)"
+              :on-open="() => openInBrowser(root)"
+              :on-republish="() => republish(root)"
+              :on-unpublish="() => unpublish(root)"
+            />
           </div>
         </Row>
       </ul>
@@ -127,7 +132,7 @@ function counts(entry: PublicationRecord): string {
           </div>
           <div class="actions">
             <Badge v-if="entry.hash === head">Current</Badge>
-            <IconButton v-else icon="lu:undo-2" size="sm" tooltip="Roll back" :disabled="busy" @click="rollback(entry)" />
+            <IconButton v-else :size="rowIconSize" icon="lu:undo-2" tooltip="Roll back" :disabled="busy" @click="rollback(entry)" />
           </div>
         </Row>
       </ul>

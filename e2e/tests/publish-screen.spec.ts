@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { confirmPublish, expect, openNavigation, openType, publishTest as test } from './fixtures'
+import { confirmPublish, expect, openNavigation, openType, publicationAction, publishTest as test } from './fixtures'
 
 interface HistoryEntry {
   hash: string
@@ -68,7 +68,7 @@ test('the Publications type lists what is public, and a roll back serves the ear
   // Republish from the screen, not the tree.
   await openType(app, 'Publications', 'arxhub.publish')
   await dismissToasts(app)
-  await row.getByRole('button', { name: 'Republish' }).click()
+  await publicationAction(row, 'Republish')
   await expect(notifications.getByText('Published', { exact: true })).toBeVisible()
   await expect.poll(async () => (await app.request.get(publicUrl)).text()).toContain('Second edition.')
   await expect(history.getByRole('listitem').filter({ hasText: firstShort }).getByRole('button', { name: 'Roll back' })).toBeVisible()
@@ -85,7 +85,7 @@ test('the Publications type lists what is public, and a roll back serves the ear
   await expect(history.getByRole('listitem').first().getByRole('button', { name: 'Roll back' })).toHaveCount(0)
 
   await dismissToasts(app)
-  await row.getByRole('button', { name: 'Unpublish' }).click()
+  await publicationAction(row, 'Unpublish')
   await expect(notifications.getByText('Unpublished', { exact: true })).toBeVisible()
   await expect(publications.getByRole('listitem').filter({ hasText: path })).toHaveCount(0)
   await expect.poll(async () => (await app.request.get(publicUrl)).status()).toBe(404)
