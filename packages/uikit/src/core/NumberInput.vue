@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { NumberInput } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 import Icon from './Icon.vue'
 
 defineProps<{
@@ -14,6 +15,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<(e: 'update:modelValue', value: number) => void>()
+const touch = useShellFrame() === 'mobile'
 
 // valueAsNumber is NaN while the field is mid-edit (empty, or just a minus sign); passing that up
 // would clobber the model with a NaN the user never typed.
@@ -25,6 +27,7 @@ function onValueChange(details: { valueAsNumber: number }): void {
 <template>
   <NumberInput.Root
     class="root"
+    :class="{ touch }"
     :model-value="modelValue == null ? undefined : String(modelValue)"
     :min="min"
     :max="max"
@@ -34,12 +37,12 @@ function onValueChange(details: { valueAsNumber: number }): void {
   >
     <NumberInput.Control class="control">
       <NumberInput.DecrementTrigger class="nudge" aria-label="Decrease">
-        <Icon name="lu:minus" :size="14" />
+        <Icon name="lu:minus" :size="touch ? 16 : 14" />
       </NumberInput.DecrementTrigger>
       <NumberInput.Input class="value" :aria-label="ariaLabel" />
       <span v-if="unit" class="unit">{{ unit }}</span>
       <NumberInput.IncrementTrigger class="nudge" aria-label="Increase">
-        <Icon name="lu:plus" :size="14" />
+        <Icon name="lu:plus" :size="touch ? 16 : 14" />
       </NumberInput.IncrementTrigger>
     </NumberInput.Control>
   </NumberInput.Root>
@@ -58,6 +61,10 @@ function onValueChange(details: { valueAsNumber: number }): void {
   border-radius: var(--radius-xs);
   background: var(--gray-1);
   overflow: hidden;
+}
+
+.root.touch .control {
+  height: var(--size-md);
 }
 
 .control:focus-within {
@@ -79,6 +86,10 @@ function onValueChange(details: { valueAsNumber: number }): void {
   background: transparent;
   color: var(--gray-11);
   cursor: pointer;
+}
+
+.root.touch .nudge {
+  width: var(--size-md);
 }
 
 .nudge:first-child { border-right: 1px solid var(--gray-4); }
@@ -103,6 +114,10 @@ function onValueChange(details: { valueAsNumber: number }): void {
   font-size: var(--font-size-sm);
   color: var(--gray-12);
   outline: none;
+}
+
+.root.touch .value {
+  width: 80px;
 }
 
 .value:disabled {

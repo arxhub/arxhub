@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useShellFrame } from '../hooks/useShellFrame'
+
 const model = defineModel<string>()
 
 defineProps<{
@@ -6,11 +8,14 @@ defineProps<{
   type?: string
   disabled?: boolean
 }>()
+
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
   <input
     class="input"
+    :class="{ touch }"
     :type="type || 'text'"
     :placeholder="placeholder"
     :disabled="disabled"
@@ -33,15 +38,15 @@ defineProps<{
   transition: border-color var(--duration-fast), background-color var(--duration-fast);
 }
 
+.input.touch {
+  height: var(--size-md);
+}
+
 /* A single focus ring shared with every other control — no border tint stacked under an outline. */
 .input:focus-visible {
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
   border-color: var(--accent-8);
-}
-
-.input::placeholder {
-  color: var(--gray-10);
 }
 
 .input:disabled {
