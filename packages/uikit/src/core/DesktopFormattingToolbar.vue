@@ -7,7 +7,7 @@ defineProps<{ actions: FormattingAction[] }>()
 
 <template>
   <div class="formatting" role="toolbar" aria-label="Formatting" @mousedown.prevent>
-    <IconButton v-for="action in actions" :key="action.id" :icon="action.icon" :tooltip="action.label" :active="action.active" @click="action.run()" />
+    <IconButton v-for="action in actions" :key="action.id" size="lg" :icon="action.icon" :tooltip="action.label" :active="action.active" @click="action.run()" />
   </div>
 </template>
 
