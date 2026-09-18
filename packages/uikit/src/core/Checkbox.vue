@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { Checkbox } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import Icon from './Icon.vue'
 
@@ -11,18 +12,20 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'update:modelValue', value: boolean) => void>()
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
   <Checkbox.Root
     class="root"
+    :class="{ touch }"
     :checked="modelValue"
     :disabled="disabled"
     @checked-change="$emit('update:modelValue', $event.checked === true)"
   >
     <Checkbox.Control class="control">
       <Checkbox.Indicator class="indicator">
-        <Icon name="lu:check" :size="12" />
+        <Icon name="lu:check" :size="touch ? 16 : 12" />
       </Checkbox.Indicator>
     </Checkbox.Control>
     <Checkbox.Label v-if="label" class="label">{{ label }}</Checkbox.Label>
@@ -58,6 +61,11 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
   justify-content: center;
   flex-shrink: 0;
   transition: background-color var(--duration-fast), border-color var(--duration-fast);
+}
+
+.root.touch .control {
+  width: var(--size-xs);
+  height: var(--size-xs);
 }
 
 /* Done is a filled box, not a tinted one — a checked row has to be readable at a glance down a list. */
