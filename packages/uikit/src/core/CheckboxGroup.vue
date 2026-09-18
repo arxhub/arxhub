@@ -103,12 +103,9 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .indicator {
-  display: flex;
+  display: grid;
+  place-items: center;
   color: var(--accent-contrast);
-}
-
-.indicator[hidden] {
-  display: none;
 }
 
 .label {
