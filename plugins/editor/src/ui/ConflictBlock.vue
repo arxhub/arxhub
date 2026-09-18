@@ -53,9 +53,9 @@ function keep(pick: 'local' | 'remote' | 'both') {
       <p v-else class="conflict-empty">Deleted on the other device</p>
     </div>
     <div v-if="mode === 'editable'" class="conflict-actions">
-      <Button variant="secondary" size="sm" @click="keep('local')">Keep this device's</Button>
-      <Button variant="secondary" size="sm" @click="keep('remote')">Keep other device's</Button>
-      <Button variant="secondary" size="sm" @click="keep('both')">Keep both</Button>
+      <Button variant="secondary" :size="buttonSize" @click="keep('local')">Keep this device's</Button>
+      <Button variant="secondary" :size="buttonSize" @click="keep('remote')">Keep other device's</Button>
+      <Button variant="secondary" :size="buttonSize" @click="keep('both')">Keep both</Button>
     </div>
   </div>
 </template>
