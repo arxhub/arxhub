@@ -57,7 +57,7 @@ defineProps<{
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 20px;
+  min-height: var(--size-md-half);
 }
 
 .title-wrapper {

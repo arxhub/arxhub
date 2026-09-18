@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { actionMenu, IconButton } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Node } from 'prosemirror-model'
 import type { EditorView } from 'prosemirror-view'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -9,6 +10,7 @@ import type { BlockCommand } from '../slash-commands'
 import { openBlockMenu } from './block-menu'
 
 const props = defineProps<{ view: EditorView; scroller: HTMLElement; revision: number; commands: readonly BlockCommand[] }>()
+const iconSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const layoutRevision = ref(0)
 const dragging = ref(false)
 const dragStyle = ref<{ top: string; left: string }>()
