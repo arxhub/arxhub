@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useShellFrame } from '../../hooks/useShellFrame'
 import Button from '../Button.vue'
 import { type ConfirmButtonProps, type ConfirmLabels, type ModalContent, modals } from './modals'
 
@@ -14,6 +15,8 @@ const props = defineProps<{
   onConfirm?: () => void
   onCancel?: () => void
 }>()
+
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 
 function handleCancel() {
   props.onCancel?.()
@@ -36,7 +39,7 @@ function handleConfirm() {
     <div class="confirm-actions">
       <Button
         :variant="cancelProps?.variant ?? 'secondary'"
-        size="sm"
+        :size="buttonSize"
         :disabled="cancelProps?.disabled"
         @click="handleCancel"
       >
@@ -44,7 +47,7 @@ function handleConfirm() {
       </Button>
       <Button
         :variant="confirmProps?.danger ? 'danger' : (confirmProps?.variant ?? 'primary')"
-        size="sm"
+        :size="buttonSize"
         :disabled="confirmProps?.disabled"
         @click="handleConfirm"
       >
@@ -58,7 +61,7 @@ function handleConfirm() {
 .confirm-modal {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .confirm-body {
