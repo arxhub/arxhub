@@ -439,6 +439,18 @@ export async function publicationAction(row: Locator, name: string): Promise<voi
   await row.page().getByRole('menuitem', { name, exact: true }).click()
 }
 
+// SQL console strip: Run is always out; Example/Schema sit behind More on mobile.
+export async function sqlConsoleAction(panel: Locator, name: string): Promise<void> {
+  const direct = panel.getByRole('button', { name, exact: true })
+  if (await direct.isVisible().catch(() => false)) {
+    await direct.click()
+    return
+  }
+  await panel.getByRole('button', { name: 'More console actions', exact: true }).click()
+  const menuName = name === 'Schema' ? /^(Show|Hide) schema$/ : name
+  await panel.page().getByRole('menuitem', { name: menuName }).click()
+}
+
 export function storedMnemonic(page: Page): Promise<string | null> {
   return page.evaluate((key) => window.localStorage.getItem(key), IDENTITY_KEY)
 }
