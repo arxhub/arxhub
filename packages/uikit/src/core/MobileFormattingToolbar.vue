@@ -3,7 +3,13 @@ import { actionMenu } from './action-menu/action-menu'
 import type { FormattingAction } from './formatting-action'
 import IconButton from './IconButton.vue'
 
-const props = defineProps<{ actions: FormattingAction[] }>()
+const props = withDefaults(
+  defineProps<{
+    actions: FormattingAction[]
+    variant?: 'strip' | 'bubble'
+  }>(),
+  { variant: 'strip' },
+)
 function more(): void {
   actionMenu.open(
     props.actions
