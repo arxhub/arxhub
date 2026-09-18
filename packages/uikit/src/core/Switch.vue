@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Switch } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 
 defineProps<{
   modelValue?: boolean
@@ -8,11 +9,13 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'update:modelValue', value: boolean) => void>()
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
   <Switch.Root
     class="root"
+    :class="{ touch }"
     :checked="modelValue"
     :disabled="disabled"
     @checked-change="$emit('update:modelValue', $event.checked)"
@@ -54,6 +57,12 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
   align-items: center;
 }
 
+/* Phone: a 32×16 track is hard to hit beside a 48px row; grow to --size-md × 24. */
+.root.touch .control {
+  width: var(--size-md);
+  height: 24px;
+}
+
 .control[data-state='checked'] {
   background-color: var(--accent-9);
 }
@@ -78,6 +87,11 @@ defineEmits<(e: 'update:modelValue', value: boolean) => void>()
   top: 2px;
   left: 2px;
   transition: transform var(--duration-fast);
+}
+
+.root.touch .thumb {
+  width: 20px;
+  height: 20px;
 }
 
 .control[data-state='checked'] .thumb {
