@@ -24,7 +24,7 @@ defineProps<{
     </Strip>
     <div v-if="loadError" class="codemirror-error">
       <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
-      <Button size="sm" variant="secondary" @click="onRetry()">Retry</Button>
+      <Button size="md" variant="secondary" @click="onRetry()">Retry</Button>
     </div>
     <slot />
     <div v-if="!loadError" class="editor-status">
