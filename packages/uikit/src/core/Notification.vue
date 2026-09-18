@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useShellFrame } from '../hooks/useShellFrame'
 import Icon from './Icon.vue'
 import IconButton from './IconButton.vue'
 
@@ -10,6 +11,7 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'close') => void>()
+const dismissSize = useShellFrame() === 'mobile' ? 'md' : 'xs'
 </script>
 
 <template>
@@ -23,7 +25,7 @@ defineEmits<(e: 'close') => void>()
         <div v-if="subtitle" class="subtitle">{{ subtitle }}</div>
       </div>
     </div>
-    <IconButton icon="lu:x" size="xs" aria-label="Dismiss" @click="$emit('close')" />
+    <IconButton icon="lu:x" :size="dismissSize" aria-label="Dismiss" @click="$emit('close')" />
   </div>
 </template>
 
