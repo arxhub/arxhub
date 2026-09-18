@@ -85,7 +85,7 @@ const touch = useShellFrame() === 'mobile'
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 24px;
+  height: var(--size-xl-half);
   padding: 0 4px 0 8px;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-xs);
@@ -108,8 +108,8 @@ const touch = useShellFrame() === 'mobile'
 .chip-remove {
   display: grid;
   place-items: center;
-  width: 16px;
-  height: 16px;
+  width: var(--size-xs-half);
+  height: var(--size-xs-half);
   border: none;
   border-radius: var(--radius-xs);
   background: transparent;
@@ -128,7 +128,7 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .chip-edit {
-  height: 24px;
+  height: var(--size-xl-half);
   padding: 0 8px;
   border: 1px solid var(--accent-8);
   border-radius: var(--radius-xs);
@@ -146,7 +146,7 @@ const touch = useShellFrame() === 'mobile'
 .draft {
   flex: 1;
   min-width: 96px;
-  height: 24px;
+  height: var(--size-xl-half);
   padding: 0 4px;
   border: none;
   background: transparent;

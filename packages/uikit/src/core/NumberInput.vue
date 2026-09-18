@@ -81,7 +81,7 @@ function onValueChange(details: { valueAsNumber: number }): void {
 .nudge {
   display: grid;
   place-items: center;
-  width: 28px;
+  width: var(--size-2xs);
   border: none;
   background: transparent;
   color: var(--gray-11);

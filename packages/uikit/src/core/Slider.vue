@@ -103,8 +103,8 @@ function onValueChange(details: { value: number[] }): void {
 }
 
 .root.touch .thumb {
-  width: 20px;
-  height: 20px;
+  width: var(--size-md-half);
+  height: var(--size-md-half);
 }
 
 .thumb[data-focus-visible] {

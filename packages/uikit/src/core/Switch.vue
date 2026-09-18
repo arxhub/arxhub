@@ -60,7 +60,7 @@ const touch = useShellFrame() === 'mobile'
 /* Phone: a 32×16 track is hard to hit beside a 48px row; grow to --size-md × 24. */
 .root.touch .control {
   width: var(--size-md);
-  height: 24px;
+  height: var(--size-xl-half);
 }
 
 .control[data-state='checked'] {
@@ -90,8 +90,8 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .thumb {
-  width: 20px;
-  height: 20px;
+  width: var(--size-md-half);
+  height: var(--size-md-half);
 }
 
 .control[data-state='checked'] .thumb {
