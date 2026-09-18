@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Button, ChipInput, Icon, IconButton, Input } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
-import { addField, type PropertiesAttrs, toggleFavorite, withField, withoutField } from '../properties'
+import { addField, type PropertiesAttrs, withField, withoutField } from '../properties'
 
 const props = defineProps<ArxEditorControlProps>()
+const iconSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 
 // The node's own attrs are already validated by the schema (properties-block.ts), so this just gives
 // them a stable shape to read — never a second source of truth for what they mean.
@@ -61,6 +63,7 @@ function removeFieldRow(index: number) {
         @update:model-value="setTags"
       />
       <IconButton
+        :size="iconSize"
         :icon="attrs.favorite ? 'lu:star' : 'lu:star-off'"
         :active="attrs.favorite"
         :disabled="!canFavorite"
@@ -86,7 +89,7 @@ function removeFieldRow(index: number) {
           placeholder="Value"
           @update:model-value="updateField(index, { value: $event })"
         />
-        <IconButton v-if="editable" icon="lu:x" aria-label="Remove field" @click="removeFieldRow(index)" />
+        <IconButton v-if="editable" :size="iconSize" icon="lu:x" aria-label="Remove field" @click="removeFieldRow(index)" />
       </div>
       <Button v-if="editable" variant="ghost" @click="addFieldRow">
         <Icon name="lu:plus" :size="14" />
