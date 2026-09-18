@@ -10,7 +10,8 @@ import { SettingsExtension } from '../settings-extension'
 const arxhub = useArxHub()
 const settings = arxhub.extensions.get(SettingsExtension)
 const changes = settings.changes
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const mobile = useShellFrame() === 'mobile'
+const buttonSize = mobile ? 'md' : 'sm'
 
 const fields = computed(() => changes.fieldCount.value)
 const sections = computed(() => changes.sectionCount.value)
@@ -70,23 +71,21 @@ useHotkeys(hotkeys, [
 </script>
 
 <template>
-  <Transition name="rise">
-    <div v-if="sections > 0" class="bar" role="status">
-      <StatusDot :tone="tone" :pulse="changes.saving.value" />
-      <div class="summary">
-        <span class="headline">{{ summary }}</span>
-        <span class="detail">{{ changes.staged.value.map((c) => `${c.title}: ${c.keys.join(', ')}`).join(' · ') }}</span>
-      </div>
-      <span v-if="changes.invalid.value" class="blocked">Fix the highlighted fields to apply</span>
-      <!-- Drawn per platform from the one function that knows how (F-02): the sign used to be typed
-           in, and read "⌘S" on Linux and Windows, where it is Ctrl. -->
-      <kbd v-else class="shortcut">{{ hotkeys.label('Mod-s') }}</kbd>
-      <Button :size="buttonSize" variant="secondary" :disabled="changes.saving.value" @click="changes.revertAll()">Revert</Button>
-      <Button :size="buttonSize" variant="primary" :disabled="changes.saving.value || changes.invalid.value" @click="apply">
-        Save &amp; apply
-      </Button>
+  <div v-if="sections > 0" class="bar" :class="{ compact: mobile }" role="status">
+    <StatusDot :tone="tone" :pulse="changes.saving.value" />
+    <div class="summary">
+      <span class="headline">{{ summary }}</span>
+      <span v-if="!mobile" class="detail">{{ changes.staged.value.map((c) => `${c.title}: ${c.keys.join(', ')}`).join(' · ') }}</span>
     </div>
-  </Transition>
+    <span v-if="changes.invalid.value" class="blocked">Fix the highlighted fields to apply</span>
+    <!-- Drawn per platform from the one function that knows how (F-02): the sign used to be typed
+         in, and read "⌘S" on Linux and Windows, where it is Ctrl. A phone has no Mod key. -->
+    <kbd v-else-if="!mobile" class="shortcut">{{ hotkeys.label('Mod-s') }}</kbd>
+    <Button :size="buttonSize" variant="secondary" :disabled="changes.saving.value" @click="changes.revertAll()">Revert</Button>
+    <Button :size="buttonSize" variant="primary" :disabled="changes.saving.value || changes.invalid.value" @click="apply">
+      Save &amp; apply
+    </Button>
+  </div>
 </template>
 
 <style scoped>
@@ -103,6 +102,12 @@ useHotkeys(hotkeys, [
   font-family: var(--font-sans);
 }
 
+/* Phone: one line, no Mod hint, less padding — the type row already spends 48px below. */
+.bar.compact {
+  gap: 8px;
+  padding: 8px 12px;
+}
+
 .summary {
   display: flex;
   flex-direction: column;
@@ -114,6 +119,12 @@ useHotkeys(hotkeys, [
 .headline {
   font-size: var(--font-size-sm);
   color: var(--gray-12);
+}
+
+.bar.compact .headline {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detail {
@@ -134,23 +145,5 @@ useHotkeys(hotkeys, [
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   color: var(--gray-9);
-}
-
-.rise-enter-active,
-.rise-leave-active {
-  transition: transform var(--duration-fast) ease, opacity var(--duration-fast) ease;
-}
-
-.rise-enter-from,
-.rise-leave-to {
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rise-enter-active,
-  .rise-leave-active {
-    transition: none;
-  }
 }
 </style>

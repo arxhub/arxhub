@@ -70,5 +70,17 @@ test('compact tools keep their controls within the viewport', async ({ app }) =>
   await openSettingsSection(app, 'Sync')
   await expect(app.getByRole('button', { name: 'Technical details', exact: true })).toBeVisible()
   await capture(app, 'settings-compact')
+  // Stage an edit so the pending bar appears: its enter animation used to leave a stuck
+  // translateY that parked Save on top of the type row (unreachable on a short phone).
+  if (mobile) {
+    await app.keyboard.press('Escape')
+    const input = app.locator('input[aria-label="Server URL"]:visible')
+    await expect(async () => {
+      await input.fill('http://127.0.0.1:3999')
+      await expect(input).toHaveValue('http://127.0.0.1:3999')
+    }).toPass({ timeout: 10_000 })
+    await unobstructed(app.getByRole('button', { name: 'Save & apply', exact: true }))
+    await capture(app, 'settings-pending-bar')
+  }
   expect(await app.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
