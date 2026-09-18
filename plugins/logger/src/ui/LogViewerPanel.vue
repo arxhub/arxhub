@@ -121,7 +121,7 @@ onMounted(loadSessions)
         </button>
       </div>
       <template #actions>
-        <IconButton icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
+        <IconButton size="lg" icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
         <Button variant="secondary" size="sm" :disabled="source !== ''" @click="ext.clear()">Clear</Button>
       </template>
     </Strip>

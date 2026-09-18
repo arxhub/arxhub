@@ -571,10 +571,14 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 16px;
-  padding: 4px 12px;
+  gap: 4px 8px;
+  flex-shrink: 0;
+  min-height: var(--size-md);
+  padding: 0 8px;
   color: var(--gray-11);
   font-size: var(--font-size-xs);
+  border-top: 1px solid var(--gray-6);
+  background: var(--gray-2);
 }
 .editor-content {
   min-height: 0;

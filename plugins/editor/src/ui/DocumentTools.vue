@@ -47,7 +47,9 @@ function cmd(command: Command) {
 
 <template>
   <Dropdown placement="top-end">
-    <template #trigger><IconButton icon="lu:ellipsis" tooltip="Document tools" :title="`Editor mode: ${modeLabel}`" /></template>
+    <template #trigger>
+      <IconButton size="lg" icon="lu:ellipsis" tooltip="Document tools" :title="`Editor mode: ${modeLabel}`" />
+    </template>
     <MenuItem v-for="item in modes" :key="item.value" :value="item.value" :disabled="busy" :title="item.description" :aria-current="mode === item.value ? 'true' : undefined" @select="selectMode(item.value)">{{ item.label }}</MenuItem>
     <MenuItem v-if="mode !== 'readonly'" value="save" :disabled="!canSave" @select="onSave?.()">Save</MenuItem>
     <MenuItem v-for="action in HISTORY" v-show="mode !== 'readonly'" :key="action.label" :value="action.label" :disabled="!canSave || !view || !action.run(view.state)" @select="cmd(action.run)">{{ action.label }}</MenuItem>
