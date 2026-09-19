@@ -108,7 +108,7 @@ function onPointerUp(): void {
 
 .grabber-area {
   /* Tall enough to grab with a thumb; the visible handle stays a hairline. */
-  min-height: var(--size-md);
+  min-height: var(--size-xl);
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -119,7 +119,7 @@ function onPointerUp(): void {
 }
 
 .grabber {
-  width: 36px;
+  width: var(--size-md);
   height: 4px;
   margin: 0;
   border-radius: var(--radius-xs);
