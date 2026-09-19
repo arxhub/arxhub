@@ -1,6 +1,6 @@
-import { definePluginManifest } from '@arxhub/core'
+import type { PluginManifest } from '@arxhub/core'
 
-export const manifest = definePluginManifest({
+export const manifest = {
   name: 'Hotkeys',
   version: '0.1.0',
   author: 'arxhub',
@@ -11,4 +11,4 @@ export const manifest = definePluginManifest({
   // was written to fix would come back — a switch that reproduces the bug is not a switch. Nothing
   // here reaches the network, a database or the store, so there is nothing to switch off anyway.
   essential: true,
-})
+} satisfies PluginManifest

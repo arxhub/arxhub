@@ -1,8 +1,9 @@
-import { definePluginManifest, type Logger, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { type Logger, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { AUTH_HEADERS, type RequestDescriptor, type SignedRequestHeaders } from '@arxhub/crypto'
-import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
+import { GatewayServerExtension } from '@arxhub/plugin-gateway'
 import Elysia, { type AnyElysia } from 'elysia'
 import { RequestAuthenticator, type RequestAuthenticatorOptions } from './authenticator'
+import { serverManifest } from './manifest'
 
 export { RequestAuthenticator, type RequestAuthenticatorOptions } from './authenticator'
 
@@ -45,7 +46,7 @@ async function readBodyBounded(request: Request, maxBytes: number): Promise<Uint
   return out
 }
 
-// Builds the same RequestDescriptor the client signed (see @arxhub/http describeRequest): method, the
+// Builds the same RequestDescriptor the client signed (see @arxhub/crypto describeRequest): method, the
 // URL pathname and raw query string, and the raw request body. The body is read from a clone so the
 // original stream is left intact for the route handler. Returns null when the body exceeds
 // maxBodyBytes — rejected on the declared content-length first (cheap), then enforced while reading
@@ -84,6 +85,8 @@ export interface AuthGuardOptions {
 
 function isPublicRead(method: string, pathname: string, prefixes: string[]): boolean {
   if (method !== 'GET' && method !== 'HEAD') return false
+  // FR-43: liveness probes must not depend on each composition root remembering the prefix.
+  if (pathname === '/healthcheck') return true
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`))
 }
 
@@ -161,16 +164,6 @@ export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Lo
   })
 }
 
-const manifest = definePluginManifest({
-  name: 'ProtectionServer',
-  version: '0.1.0',
-  author: 'arxhub',
-  description: 'Authenticates gateway requests via signed challenges with TOFU key pinning',
-  // Switching this off would leave the vault open to anyone who can reach the port. A recovery boot
-  // must not be a way to get there.
-  essential: true,
-})
-
 export interface ProtectionServerPluginArgs extends PluginArgs, RequestAuthenticatorOptions, AuthGuardOptions {}
 
 // Mounts the auth guard onto the gateway during configure(). Register alongside GatewayServerPlugin and
@@ -183,7 +176,7 @@ export class ProtectionServerPlugin extends Plugin {
   private readonly corsOrigins?: string[] | '*'
 
   constructor(args: ProtectionServerPluginArgs) {
-    super(args, manifest)
+    super(args, serverManifest)
     this.publicGetPrefixes = args.publicGetPrefixes
     this.maxBodyBytes = args.maxBodyBytes
     this.corsOrigins = args.corsOrigins

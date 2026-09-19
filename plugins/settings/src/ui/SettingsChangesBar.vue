@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useHotkeys } from '@arxhub/plugin-hotkeys/ui'
-import { typeLayerId, useHotkeysExtension } from '@arxhub/plugin-shell/ui'
+import { typeLayerId } from '@arxhub/plugin-shell'
+import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { Button, StatusDot } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, watch } from 'vue'

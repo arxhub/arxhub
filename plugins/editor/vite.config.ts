@@ -3,24 +3,29 @@ import { defineConfig } from 'vite'
 
 export default defineConfig((env) =>
   createVueConfig(__dirname, env, {
-    entries: ['src/ui.ts'],
+    entries: ['src/index.ts', 'src/manifest.ts', 'src/ui.ts'],
     // Exact subpaths keep extension constructors and UI singletons owned by their peer packages.
     external: [
       '@arxhub/core',
-      '@arxhub/plugin-repository/ui',
+      '@arxhub/plugin-repository',
       '@arxhub/sync',
       '@arxhub/crypto',
-      '@arxhub/plugin-protection/ui',
-      '@arxhub/plugin-publish/ui',
+      '@arxhub/plugin-protection',
+      '@arxhub/plugin-publish',
       '@arxhub/errors',
       '@arxhub/stdlib/collections/container',
       '@arxhub/stdlib/scheduling/debounced-task',
       '@arxhub/path',
       '@arxhub/plugin-explorer/ui',
+      '@arxhub/plugin-explorer',
+      '@arxhub/plugin-hotkeys',
       '@arxhub/plugin-hotkeys/ui',
+      '@arxhub/plugin-notes',
       '@arxhub/plugin-notes/ui',
+      '@arxhub/plugin-panels',
       '@arxhub/plugin-shell/ui',
       '@arxhub/plugin-panels/ui',
+      '@arxhub/plugin-search',
       '@arxhub/plugin-search/ui',
       '@arxhub/uikit/core',
       '@arxhub/uikit/hooks',
@@ -42,6 +47,7 @@ export default defineConfig((env) =>
       'mdast-util-gfm',
       'micromark-extension-gfm',
       'vue',
+      '@arxhub/plugin-shell',
     ],
   }),
 )

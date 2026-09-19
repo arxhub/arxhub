@@ -1,6 +1,6 @@
 import { validation } from '@arxhub/errors'
 import { dirname, join, normalize } from '@arxhub/path'
-import type { BlockAnchor } from '@arxhub/plugin-notes/ui'
+import type { BlockAnchor } from '@arxhub/plugin-notes'
 import type { Node } from 'prosemirror-model'
 import { NodeSelection, Plugin, Selection, TextSelection } from 'prosemirror-state'
 import type { Ref } from 'vue'

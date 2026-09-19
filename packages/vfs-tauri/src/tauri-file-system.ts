@@ -240,7 +240,10 @@ export class TauriFileSystem
     const absDir = await this.absolutePath(prefix)
     if (absDir == null) throw illegalState('This store has no path the system can watch')
 
-    return watch(this.fullPath(prefix), (event) => void this.handleWatchEvent(absDir, event, listener), {
+    const watchPath = this.fullPath(prefix)
+    if (watchPath) await mkdir(watchPath, { baseDir: this.baseDir, recursive: true })
+
+    return watch(watchPath, (event) => void this.handleWatchEvent(absDir, event, listener), {
       baseDir: this.baseDir,
       recursive: true,
       delayMs: 300,

@@ -10,7 +10,8 @@
   "author": "",
   "type": "module",
   "exports": {
-    "./ui": "./src/ui.ts"
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest.ts"
   },
   "files": [
     "dist"
@@ -20,7 +21,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "exceljs": "4.4.0",
+    "exceljs": "catalog:client",
     "vue": "catalog:client"
   },
   "devDependencies": {
@@ -46,9 +47,13 @@
   },
   "publishConfig": {
     "exports": {
-      "./ui": {
-        "import": "./dist/ui.js",
-        "types": "./dist/ui.d.ts"
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
       }
     }
   }

@@ -14,7 +14,7 @@ Then, configure Biome to use this configuration by extending it in your project'
 
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
   "extends": "@arxhub/toolchain-biome"
 }
 ```

@@ -7,26 +7,28 @@ import '@arxhub/theme-catppuccin'
 
 import { bootClient, shellForFrame } from '@arxhub/boot/client'
 import { apiBaseUrl } from '@arxhub/core'
-import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror/ui'
-import { ConfigPlugin } from '@arxhub/plugin-config/ui'
-import { ArxEditorPlugin } from '@arxhub/plugin-editor/ui'
-import { ExplorerPlugin } from '@arxhub/plugin-explorer/ui'
-import { HotkeysPlugin } from '@arxhub/plugin-hotkeys/ui'
-import { KeyStorePlugin } from '@arxhub/plugin-keystore/ui'
-import { LoggerPlugin } from '@arxhub/plugin-logger/ui'
-import { MaintenancePlugin } from '@arxhub/plugin-maintenance/ui'
-import { NotesPlugin } from '@arxhub/plugin-notes/ui'
-import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
-import { PreviewPlugin } from '@arxhub/plugin-preview/ui'
-import { ProtectionPlugin } from '@arxhub/plugin-protection/ui'
-import { RepositoryPlugin } from '@arxhub/plugin-repository/ui'
-import { SearchPlugin } from '@arxhub/plugin-search/ui'
-import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
-import { SheetsPlugin } from '@arxhub/plugin-sheets/ui'
-import { AboutSettingsPage, ShellPlugin } from '@arxhub/plugin-shell/ui'
-import { SyncPlugin } from '@arxhub/plugin-sync/ui'
-import { type Theme, ThemePlugin } from '@arxhub/plugin-theme/ui'
-import { VfsPlugin } from '@arxhub/plugin-vfs/ui'
+import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror'
+import { ConfigPlugin } from '@arxhub/plugin-config'
+import { ArxEditorPlugin } from '@arxhub/plugin-editor'
+import { ExplorerPlugin } from '@arxhub/plugin-explorer'
+import { HotkeysPlugin } from '@arxhub/plugin-hotkeys'
+import { KeyStorePlugin } from '@arxhub/plugin-keystore'
+import { LoggerPlugin } from '@arxhub/plugin-logger'
+import { MaintenancePlugin } from '@arxhub/plugin-maintenance'
+import { NotesPlugin } from '@arxhub/plugin-notes'
+import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels'
+import { PreviewPlugin } from '@arxhub/plugin-preview'
+import { ProtectionPlugin } from '@arxhub/plugin-protection'
+import { PublishPlugin } from '@arxhub/plugin-publish'
+import { RepositoryPlugin } from '@arxhub/plugin-repository'
+import { SearchPlugin } from '@arxhub/plugin-search'
+import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings'
+import { SheetsPlugin } from '@arxhub/plugin-sheets'
+import { ShellPlugin } from '@arxhub/plugin-shell'
+import { AboutSettingsPage } from '@arxhub/plugin-shell/ui'
+import { SyncPlugin } from '@arxhub/plugin-sync'
+import { type Theme, ThemePlugin } from '@arxhub/plugin-theme'
+import { VfsPlugin } from '@arxhub/plugin-vfs'
 import { detectShellFrame } from '@arxhub/uikit/hooks'
 import { HttpFileSystem, VFS_NAMESPACE } from '@arxhub/vfs-http'
 import { h, markRaw } from 'vue'
@@ -77,7 +79,7 @@ await bootClient({
     // sync never walks it (FR-214). A headless server has no index at all (FR-218).
     arxhub.plugins.register(SearchPlugin, () => ({ dataDir: 'idb://arxhub-sql' }))
     arxhub.plugins.register(ThemePlugin, () => ({ themes }))
-    arxhub.plugins.register(KeyStorePlugin, () => ({ keystore }))
+    arxhub.plugins.register(KeyStorePlugin, () => ({ keystore, deviceLockRequired: true }))
     arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
     arxhub.plugins.register(MaintenancePlugin, () => ({ policy }))
     // The local repository (manifest chain, chunk store, checkout index, file history) is essential —
@@ -85,6 +87,7 @@ await bootClient({
     // layered over it) is switched off (A-50). Registered right before it for the same reason.
     arxhub.plugins.register(RepositoryPlugin)
     arxhub.plugins.register(SyncPlugin)
+    arxhub.plugins.register(PublishPlugin)
   },
 
   contribute: (arxhub) => {

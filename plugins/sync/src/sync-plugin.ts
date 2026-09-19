@@ -1,10 +1,10 @@
 import { PluginConfig } from '@arxhub/config'
 import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
-import { KeyringExtension } from '@arxhub/plugin-protection/ui'
-import { RepositoryExtension } from '@arxhub/plugin-repository/ui'
-import { SettingsExtension } from '@arxhub/plugin-settings/ui'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { KeyringExtension } from '@arxhub/plugin-protection'
+import { RepositoryExtension } from '@arxhub/plugin-repository'
+import { SettingsExtension } from '@arxhub/plugin-settings'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import { EncryptedSyncRemote, HttpSyncRemote, SYNC_NAMESPACE, SyncEngine } from '@arxhub/sync'
 import { type Static, Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
@@ -31,8 +31,13 @@ export const SyncConfigSchema = Type.Object({
 })
 
 export class SyncPlugin extends Plugin {
+  // Serialises boot bring-up and config.watch behind one chain — without it a section save
+  // during the first startSync could race setRemote / engine assignment with boot.
+  private applying: Promise<void> = Promise.resolve()
   private bringUp: Promise<void> | null = null
   private stopping = false
+  // Cleared when config.watch delivers a save while boot tryRead is still in flight (TH-24-01).
+  private bootConfigPending = true
   private syncTimer: ReturnType<typeof setInterval> | null = null
   private onVisible: (() => void) | null = null
   // The serverUrl this plugin has already reacted to (attempted, not necessarily succeeded) — null
@@ -59,7 +64,8 @@ export class SyncPlugin extends Plugin {
     // The server address and the auto-sync cadence both apply without a restart: every write of this
     // section is routed through the same applyConfig() startSync uses on boot.
     config.watch(SyncConfigSchema, (cfg) => {
-      this.applyConfig(ctx, cfg).catch((error) => this.logger.error('Could not apply the new Sync configuration', error))
+      this.bootConfigPending = false
+      this.queueApplyConfig(ctx, cfg)
     })
 
     const shell = ctx.extensions.get(ShellExtension)
@@ -82,6 +88,7 @@ export class SyncPlugin extends Plugin {
 
   override start(ctx: PluginContext): Promise<void> {
     this.stopping = false
+    this.bootConfigPending = true
     this.bringUp = this.startSync(ctx)
     void this.bringUp.catch((error) => {
       const sync = ctx.extensions.get(SyncExtension)
@@ -103,7 +110,16 @@ export class SyncPlugin extends Plugin {
     // sync idle instead of aborting the whole boot.
     const cfg = await ctx.services.get(PluginConfig).tryRead(SyncConfigSchema)
     if (this.stopping || cfg == null) return
-    await this.applyConfig(ctx, cfg)
+    if (this.bootConfigPending) this.queueApplyConfig(ctx, cfg)
+    await this.applying
+  }
+
+  private queueApplyConfig(ctx: PluginContext, cfg: Static<typeof SyncConfigSchema>): void {
+    this.applying = this.applying.then(
+      () => this.applyConfig(ctx, cfg),
+      () => this.applyConfig(ctx, cfg),
+    )
+    this.applying.catch((error) => this.logger.error('Could not apply the new Sync configuration', error))
   }
 
   // Builds, rebuilds or tears down the live remote — the one place that decision is made, called from
@@ -194,6 +210,7 @@ export class SyncPlugin extends Plugin {
   override async stop(ctx: PluginContext): Promise<void> {
     this.stopping = true
     await this.bringUp?.catch(() => {})
+    await this.applying.catch(() => {})
     ctx.extensions.get(RepositoryExtension).setRemote(null)
     ctx.extensions.get(SyncExtension).engine = null
     this.lastServerUrl = null

@@ -1,8 +1,9 @@
 import { PluginConfig } from '@arxhub/config'
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { dirname } from '@arxhub/path'
-import { SettingsExtension } from '@arxhub/plugin-settings/ui'
-import { type ObjectGone, type ObjectRef, type OpenedObject, objectGone, ShellExtension } from '@arxhub/plugin-shell/ui'
+import { RepositoryExtension } from '@arxhub/plugin-repository'
+import { SettingsExtension } from '@arxhub/plugin-settings'
+import { type ObjectGone, type ObjectRef, type OpenedObject, objectGone, ShellExtension } from '@arxhub/plugin-shell'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { type Component, h, markRaw } from 'vue'
 import { manifest } from './manifest'
@@ -22,6 +23,11 @@ export class NotesPlugin extends Plugin {
   private readonly root: string
   private unwatch: (() => void) | null = null
   private unwatchConfig: (() => void) | null = null
+  private unregisterMaterialize: (() => void) | null = null
+  private bringUp: Promise<void> | null = null
+  private stopping = false
+  // Cleared when config.watch delivers a save while boot tryRead is still in flight (TH-24-01).
+  private bootConfigPending = true
   // The dock wrapper of the note that is active right now. `dock()` is asked on every render, so the
   // wrapper is remembered rather than rebuilt: a fresh closure each time is a fresh component
   // identity, and the bar would be torn down and remounted — losing focus and state — on every tick.
@@ -59,6 +65,7 @@ export class NotesPlugin extends Plugin {
     // open document with no restart, through the one PluginConfig.watch this section's Save writes
     // through.
     this.unwatchConfig = config.watch(NotesConfigSchema, (cfg) => {
+      this.bootConfigPending = false
       notes.hideKnownExtensions.value = toHideKnownExtensions(cfg)
     })
 
@@ -137,14 +144,21 @@ export class NotesPlugin extends Plugin {
     })
   }
 
-  override async start(ctx: PluginContext): Promise<void> {
+  override start(ctx: PluginContext): Promise<void> {
     const shell = ctx.extensions.get(ShellExtension)
     const notes = ctx.extensions.get(NotesExtension)
-    // A local TOML read, not a network or database open — small enough to await directly rather than
-    // detach, the same trade ThemePlugin makes for its own single setting. tryRead: an unreachable
-    // settings store must not abort the boot, it just means the default (hide).
-    const cfg = await ctx.services.get(PluginConfig).tryRead(NotesConfigSchema)
-    notes.hideKnownExtensions.value = toHideKnownExtensions(cfg ?? {})
+    const repository = ctx.extensions.get(RepositoryExtension)
+    // start() runs after every plugin's configure(), so RepositoryExtension is always there even though
+    // Notes registers earlier — materialize belongs on the open path, not on repository→notes.
+    this.unregisterMaterialize = notes.registerPreparer((path) => repository.materializeIfPending(path))
+    // The vault subscription is free; the config read is not — on the browser client PluginConfig
+    // goes through HttpFileSystem, so awaiting it here held first paint behind a network round-trip.
+    // Default stays until the read lands (and config.watch in configure() covers later saves).
+    this.stopping = false
+    this.bootConfigPending = true
+    this.bringUp = this.loadConfig(ctx, notes)
+    void this.bringUp.catch((error) => this.logger.error('Could not read Notes settings — using defaults', error))
+
     this.unwatch = ctx.services.get(VaultWatcher).subscribe((change) => {
       if (change.kind === 'written') return
       const workspace = shell.attachedWorkspace
@@ -169,12 +183,26 @@ export class NotesPlugin extends Plugin {
         }
       }
     })
+    return super.start(ctx)
   }
 
-  override async stop(): Promise<void> {
+  private async loadConfig(ctx: PluginContext, notes: NotesExtension): Promise<void> {
+    // tryRead: an unreachable settings store must not abort the boot, it just means the default (hide).
+    const cfg = await ctx.services.get(PluginConfig).tryRead(NotesConfigSchema)
+    if (this.stopping) return
+    // A section save can land while this read is still in flight on vfs-http — do not replay stale hide/show.
+    if (this.bootConfigPending) notes.hideKnownExtensions.value = toHideKnownExtensions(cfg ?? {})
+  }
+
+  override async stop(ctx: PluginContext): Promise<void> {
+    this.stopping = true
+    await this.bringUp?.catch(() => {})
+    this.unregisterMaterialize?.()
+    this.unregisterMaterialize = null
     this.unwatch?.()
     this.unwatch = null
     this.unwatchConfig?.()
     this.unwatchConfig = null
+    await super.stop(ctx)
   }
 }

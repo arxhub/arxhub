@@ -20,6 +20,17 @@ describe('createEventBus', () => {
     expect(pong).not.toHaveBeenCalled()
   })
 
+  it('removes a listener via off()', () => {
+    const bus = createEventBus<TestEvents>()
+    const listener = vi.fn()
+    bus.on('ping', listener)
+    bus.off('ping', listener)
+
+    bus.emit('ping', { n: 1 })
+
+    expect(listener).not.toHaveBeenCalled()
+  })
+
   it('stops delivering once the handle returned by on() is called', () => {
     const bus = createEventBus<TestEvents>()
     const listener = vi.fn()

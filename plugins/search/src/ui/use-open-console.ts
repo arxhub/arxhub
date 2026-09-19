@@ -1,6 +1,7 @@
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
-import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
-import { ShellExtension, useNavHost } from '@arxhub/plugin-shell/ui'
+import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
+import { PanelStoreExtension } from '@arxhub/plugin-panels'
+import { ShellExtension } from '@arxhub/plugin-shell'
+import { useNavHost } from '@arxhub/plugin-shell/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { SQL_CONSOLE_PANEL } from '../contributions'
 

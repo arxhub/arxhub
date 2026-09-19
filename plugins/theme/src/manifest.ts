@@ -1,8 +1,8 @@
-import { definePluginManifest } from '@arxhub/core'
+import type { PluginManifest } from '@arxhub/core'
 
-export const manifest = definePluginManifest({
+export const manifest = {
   name: 'theme',
   version: '0.1.0',
   author: 'arxhub',
   description: 'Registry of themes and the setting that picks one',
-})
+} satisfies PluginManifest

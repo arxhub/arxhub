@@ -1,4 +1,4 @@
-import type { Json } from '@arxhub/plugin-shell/ui'
+import type { Json } from '@arxhub/plugin-shell'
 
 // An address of a place inside a note. It is the TEXT that matched, not an ordinal: `${path}#${n}`
 // goes stale the moment a paragraph is inserted above it, so an address handed over by search already

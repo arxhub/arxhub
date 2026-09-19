@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
-import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes/ui'
+import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
@@ -25,10 +25,9 @@ const AUTOSAVE_DEBOUNCE_MS = 1500
 
 const props = defineProps<{ path: string; anchor?: BlockAnchor }>()
 
-// ⌘⇧K for the link, not ⌘K: the plain chord is the application's global "open or switch to" (F-10), and
-// a key that means one thing everywhere except inside a note is a key the owner cannot trust. CodeMirror
-// binds the shifted chord as its own, so the global listener — which ignores anything carrying shift —
-// never sees it.
+// ⌘⇧K for the link, not ⌘K: the plain chord is the application's global "open or switch to" (F-10). The
+// registry resolves ⌘K in the `app` layer and this note's layer claims ⌘⇧K as foreign — two entries, not
+// one listener special-casing shift.
 const markdownKeymap = [
   { key: 'Mod-b', run: toggleBold },
   { key: 'Mod-i', run: toggleItalic },

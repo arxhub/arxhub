@@ -36,6 +36,21 @@ function extension(): SearchExtension {
   return new SearchExtension({ logger: silentLogger() })
 }
 
+describe('shell background line', () => {
+  it('reports opening and scanning, not idle or failed', () => {
+    const search = extension()
+    search.status.value = 'opening'
+    expect(search.busyWork()).toEqual({ label: 'Opening the index…' })
+    search.status.value = 'scanning'
+    search.processed.value = 12
+    expect(search.busyWork()).toEqual({ label: 'Indexing… 12 processed' })
+    search.status.value = 'ready'
+    expect(search.busyWork()).toBeNull()
+    search.status.value = 'failed'
+    expect(search.busyWork()).toBeNull()
+  })
+})
+
 describe('what a plugin gets when the index is not there', () => {
   it('rejects with a reason rather than answering with no rows (FR-238)', async () => {
     const search = extension()

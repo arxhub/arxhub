@@ -49,8 +49,9 @@ does not render at all, or that a panel wears a page header.
 </Steps>
 
 <Gotchas>
-- **The suite boots its own stand** on ports 3100/3101 against a temp `ARXHUB_DATA_DIR`. Never point it at the default
-  data dir: the stand pins the TOFU key of the first device it sees and would unpair the developer's real devices.
+- **The suite boots two stands** (desktop `3100/3101`, mobile `+10` on those ports) with separate temp
+  `ARXHUB_DATA_DIR` per Playwright project. Never point either at the default data dir: a stand pins the TOFU key of
+  the first device it sees and would unpair the developer's real devices.
 - **A component that does not render measures as absent, not as wrong.** The desktop `.app-header` only mounts when it
   has content, so its literal height is a code-level finding with no on-screen effect. Report the difference.
 - **In `single` layout mode every page stays mounted** (`v-show`, not `v-if`), so a selector like `.page > .header`

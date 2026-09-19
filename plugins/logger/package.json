@@ -10,21 +10,26 @@
   "author": "",
   "type": "module",
   "exports": {
-    "./ui": "./src/ui.ts"
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest.ts"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "dayjs": "catalog:shared",
     "vue": "catalog:client"
   },
   "devDependencies": {
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/path": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
     "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {
@@ -37,9 +42,13 @@
   },
   "publishConfig": {
     "exports": {
-      "./ui": {
-        "import": "./dist/ui.js",
-        "types": "./dist/ui.d.ts"
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
       }
     }
   }

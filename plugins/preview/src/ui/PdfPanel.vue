@@ -10,7 +10,7 @@ import {
   type RenderTask,
 } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { formatBytes } from '../media'
+import { copyBytes, formatBytes } from '../media'
 import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, MAX_ZOOM, MIN_ZOOM, stepZoom } from '../pdf'
 import PdfShell from './PdfShell.vue'
 
@@ -85,7 +85,7 @@ async function load() {
     // pdf.js refuses a Node Buffer outright (it transfers `data` to its worker and a Buffer's shared
     // pool allocation is not safe to detach) — the node VFS backend's `read()` returns exactly that, so
     // a copy into a plain Uint8Array is not optional here the way it would be for any other backend.
-    const task = getDocument({ data: new Uint8Array(bytes) })
+    const task = getDocument({ data: copyBytes(bytes) })
     loadingTask = task
     const opened = await task.promise
     if (current !== ticket) {

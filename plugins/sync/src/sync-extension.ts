@@ -1,6 +1,6 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { illegalState } from '@arxhub/errors'
-import type { RepositoryExtension } from '@arxhub/plugin-repository/ui'
+import type { RepositoryExtension } from '@arxhub/plugin-repository'
 import type { SyncEngine } from '@arxhub/sync'
 import { ref } from 'vue'
 

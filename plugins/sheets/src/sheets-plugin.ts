@@ -1,10 +1,11 @@
-import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { ArxEditorExtension } from '@arxhub/plugin-editor/ui'
-import { ExplorerExtension } from '@arxhub/plugin-explorer/ui'
-import { NotesExtension } from '@arxhub/plugin-notes/ui'
-import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
-import { RepositoryExtension } from '@arxhub/plugin-repository/ui'
+import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { ArxEditorExtension } from '@arxhub/plugin-editor'
+import { ExplorerExtension } from '@arxhub/plugin-explorer'
+import { NotesExtension } from '@arxhub/plugin-notes'
+import { PanelStoreExtension } from '@arxhub/plugin-panels'
+import { RepositoryExtension } from '@arxhub/plugin-repository'
 import { sheetContribution } from './embed'
+import { manifest } from './manifest'
 import { emptySheet } from './model'
 import SheetEditor from './ui/SheetEditor.vue'
 import { parseWorkbook, serializeWorkbook } from './workbook'
@@ -14,10 +15,7 @@ export class SheetsPlugin extends Plugin {
   private unregisterMerger: (() => void) | null = null
 
   constructor(args: PluginArgs) {
-    super(
-      args,
-      definePluginManifest({ name: 'ArxSheets', version: '0.1.0', author: 'arxhub', description: 'Spreadsheets with offline formulas' }),
-    )
+    super(args, manifest)
   }
 
   override configure(ctx: PluginContext): void {

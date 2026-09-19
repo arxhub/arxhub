@@ -1,5 +1,5 @@
-import { describe, expectTypeOf, it } from 'vitest'
-import { createTypedHttp, type Endpoints, type TypedHttp } from '../typed-client'
+import { describe, expect, expectTypeOf, it } from 'vitest'
+import { createTypedHttp, type Endpoints, isHttpError, type TypedHttp } from '../typed-client'
 
 // Stand-in for `ReturnType<typeof syncRoutes>`: the shape Elysia produces at `App['~Routes']`. Method
 // keys are lowercase; responses are keyed by status code. Includes a query endpoint (`/vfs/read`) and a
@@ -81,5 +81,13 @@ describe('createTypedHttp inference', () => {
 
   it('exposes createTypedHttp returning the inferred facade', () => {
     expectTypeOf<ReturnType<typeof createTypedHttp<MockApp>>>().toEqualTypeOf<Http>()
+  })
+})
+
+describe('isHttpError', () => {
+  it('matches wretch-style rejections carrying a numeric status', () => {
+    expect(isHttpError({ status: 404 }, 404)).toBe(true)
+    expect(isHttpError({ status: 404 }, 409)).toBe(false)
+    expect(isHttpError(new Error('nope'), 404)).toBe(false)
   })
 })

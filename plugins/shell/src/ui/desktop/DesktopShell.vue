@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { APP_LAYER, useHotkeys } from '@arxhub/plugin-hotkeys/ui'
+import { APP_LAYER } from '@arxhub/plugin-hotkeys'
+import { useHotkeys } from '@arxhub/plugin-hotkeys/ui'
 import { ActionMenuHost, ModalsProvider, Toaster } from '@arxhub/uikit/core'
 import { provideShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'

@@ -1,5 +1,5 @@
 import { validation } from '@arxhub/errors'
-import type { ArxEditorContribution } from '@arxhub/plugin-editor/ui'
+import type { ArxEditorContribution } from '@arxhub/plugin-editor'
 import { embedRange, validateEmbedPath } from './embed-model'
 import SheetEmbed from './ui/SheetEmbed.vue'
 

@@ -1,7 +1,9 @@
 import { validation } from '@arxhub/errors'
-import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
+import { compareAndSwap, type VirtualFile, type VirtualFileSystem } from '@arxhub/vfs'
 import { isObjectHash } from './is-object-hash'
 import type { SyncRemote } from './sync-remote'
+
+const encodeHead = (hash: string | null): Uint8Array | null => (hash === null ? null : new TextEncoder().encode(hash))
 
 // SyncRemote backed by a VirtualFileSystem. Two homes: the server mounts it over its object store
 // (syncRoutes is a thin HTTP skin over this class), and tests/file-based remotes use it directly.
@@ -22,16 +24,9 @@ export class VfsSyncRemote implements SyncRemote {
 
   async setHead(expected: string | null, next: string): Promise<boolean> {
     if (!isObjectHash(next)) throw validation(`Invalid head hash: ${next}`)
-    // The read-compare-write must be atomic per store, or two devices finishing a sync together
-    // could both pass the compare — the exact lost-update race CAS exists to prevent. Inside the
-    // critical section use the RAW vfs write: VirtualFile.write() takes the same per-path lock
-    // for its .arxmeta hash sidecar, and the lock is not re-entrant (deadlock).
-    return this.store.lock('/head', async () => {
-      const current = await this.getHead()
-      if (current !== expected) return false
-      await this.store.write('/head', new TextEncoder().encode(next))
-      return true
-    })
+    // Same compare-and-swap path as the local repo head (`Repo.advanceHead`): one implementation,
+    // native on Node (process-wide) and on HTTP (server-side), fallback lock+raw write elsewhere.
+    return compareAndSwap(this.store, '/head', encodeHead(expected), encodeHead(next)!)
   }
 
   async hasObjects(hashes: string[]): Promise<Set<string>> {

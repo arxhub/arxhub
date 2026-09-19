@@ -1,6 +1,6 @@
 import { Plugin, type PluginArgs, type PluginContext, type PluginHost } from '@arxhub/core'
 import { bindPluginLogger, LogBufferKey, type Logger, RootLogger } from '@arxhub/logger'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import { PluginVfs } from '@arxhub/vfs'
 import { markRaw } from 'vue'
 import { LOGS_TYPE_ID } from './contributions'
@@ -17,6 +17,8 @@ export class LoggerPlugin extends Plugin {
   // The instance's base, unprefixed logger, captured before the base constructor binds this.logger.
   private readonly rootLogger: Logger
   private writer: LogFileWriter | null = null
+  private bringUp: Promise<void> | null = null
+  private stopping = false
 
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -54,14 +56,26 @@ export class LoggerPlugin extends Plugin {
     shell.status.register({ id: 'arxhub.logger', kind: 'status', component: markRaw(LogStatus) })
   }
 
-  override async start(ctx: PluginContext): Promise<void> {
-    await super.start(ctx)
+  override start(ctx: PluginContext): Promise<void> {
+    // Opening the session file can touch a remote VFS (browser client) — do not hold first paint.
+    this.stopping = false
+    this.bringUp = this.openSession(ctx)
+    return super.start(ctx)
+  }
+
+  private async openSession(ctx: PluginContext): Promise<void> {
     const ext = ctx.extensions.get(LoggerExtension)
     const vfs = ctx.services.get(PluginVfs).state
     ext.bindVfs(vfs)
     this.writer = new LogFileWriter(vfs, ext.buffer, this.logger)
     try {
-      ext.sessionFile.value = await this.writer.open(Date.now())
+      const path = await this.writer.open(Date.now())
+      if (this.stopping) {
+        await this.writer.dispose().catch(() => {})
+        this.writer = null
+        return
+      }
+      ext.sessionFile.value = path
     } catch (error) {
       // Losing the session file must not take the app down — the live buffer and the viewer stay
       // usable, and this is exactly the situation the user needs a log for.
@@ -71,6 +85,8 @@ export class LoggerPlugin extends Plugin {
   }
 
   override async stop(ctx: PluginContext): Promise<void> {
+    this.stopping = true
+    await this.bringUp?.catch(() => {})
     await this.writer?.dispose()
     this.writer = null
     await super.stop(ctx)

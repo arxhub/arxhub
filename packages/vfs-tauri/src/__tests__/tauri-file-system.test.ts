@@ -171,6 +171,14 @@ describe('TauriFileSystem', () => {
     expect(listed).toEqual(['notes/a.md', 'notes/deep'])
   })
 
+  it('does not hide dot-prefixed files such as .keep', async () => {
+    const fs = makeFs()
+    await fs.write('vault/sub/.keep', new Uint8Array())
+
+    const listed = (await fs.list('vault/sub')).map((it) => it.pathname)
+    expect(listed).toEqual(['vault/sub/.keep'])
+  })
+
   it('round-trips through a stream the way a direct write does', async () => {
     const fs = makeFs()
     await fs.write('notes/direct.md', new TextEncoder().encode('hello'))

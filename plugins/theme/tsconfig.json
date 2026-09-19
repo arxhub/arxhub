@@ -1,4 +1,7 @@
 {
   "extends": "@arxhub/toolchain-tsconfig",
+  "compilerOptions": {
+    "rootDir": "src"
+  },
   "include": ["src/**/*"]
 }

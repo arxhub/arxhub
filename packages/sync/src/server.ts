@@ -1,13 +1,8 @@
-import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { hasErrorCode } from '@arxhub/errors'
-import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
-import type { VirtualFileSystem } from '@arxhub/vfs'
 import Elysia, { t } from 'elysia'
-import { SYNC_NAMESPACE } from './namespace'
 import { decodeObjectFrame } from './remote/decode-object-frame'
 import { encodeObjectFrame } from './remote/encode-object-frame'
 import type { SyncRemote } from './remote/sync-remote'
-import { VfsSyncRemote } from './remote/vfs-sync-remote'
 
 // A put frame carries at most PUT_BATCH_BYTES from the engine plus one chunk (≤ 8 MiB) plus
 // per-object framing — 64 MiB is a comfortable ceiling that still bounds a disk-DoS attempt.
@@ -97,37 +92,3 @@ export function objectStoreRoutes(remote: SyncRemote) {
 
 // The exported route-tree type the client infers from. `import type { SyncApp } from '@arxhub/sync/server'`.
 export type SyncApp = ReturnType<typeof objectStoreRoutes>
-
-const manifest = definePluginManifest({
-  name: 'SyncServer',
-  namespace: SYNC_NAMESPACE,
-  version: '0.1.0',
-  author: 'arxhub',
-  description: 'Serves the batched sync object-store protocol over HTTP',
-})
-
-type SyncServerPluginArgs = PluginArgs & {
-  // Root for the sync object store (`/head`, `/objects/...`) — typically a ScopedFileSystem over the
-  // instance root, e.g. `new ScopedFileSystem(vfs, 'repo')`. The server stores opaque
-  // (client-encrypted) blobs here and never interprets them.
-  vfs: VirtualFileSystem
-}
-
-// Mounts the sync object store at `/api/sync` during configure(). Register alongside GatewayServerPlugin
-// in a server instance, injecting the backing object store (mirrors VfsHttpServerPlugin).
-export class SyncServerPlugin extends Plugin {
-  private readonly vfs: VirtualFileSystem
-
-  constructor(args: SyncServerPluginArgs) {
-    super(args, manifest)
-    this.vfs = args.vfs
-  }
-
-  override configure(ctx: PluginContext): void {
-    super.configure(ctx)
-    ctx.extensions
-      .get(GatewayServerExtension)
-      .forPlugin(this)
-      .use(objectStoreRoutes(new VfsSyncRemote(this.vfs)))
-  }
-}

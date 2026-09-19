@@ -130,8 +130,13 @@ export class PluginConfig {
   private async notifyWritten<S extends TObject>(schema: S, opts: ConfigOptions): Promise<void> {
     const name = configPath(opts)
     if (this.bus.listenerCount('write') === 0) return
-    const value = await this.read(schema, opts)
-    this.bus.emit('write', { name, value })
+    try {
+      const value = await this.read(schema, opts)
+      this.bus.emit('write', { name, value })
+    } catch (error) {
+      // The files already landed — failing write() here would tell Settings the section did not save.
+      this.logger.warn('[config] wrote successfully but could not re-read for watch listeners', error)
+    }
   }
 }
 

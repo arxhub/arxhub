@@ -1,6 +1,6 @@
 import { validation } from '@arxhub/errors'
 import { basename } from '@arxhub/path'
-import type { SearchExtension } from '@arxhub/plugin-search/ui'
+import type { SearchExtension } from '@arxhub/plugin-search'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import type { Schema } from 'prosemirror-model'
 import { identifyBlocks } from './block-identity'

@@ -10,7 +10,8 @@
   "author": "",
   "type": "module",
   "exports": {
-    "./ui": "./src/ui.ts"
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest.ts"
   },
   "files": [
     "dist"
@@ -35,7 +36,6 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/errors": "workspace:*",
     "@arxhub/path": "workspace:*",
-    "@arxhub/plugin-notes": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
     "@arxhub/sync": "workspace:*",
@@ -43,9 +43,13 @@
   },
   "publishConfig": {
     "exports": {
-      "./ui": {
-        "import": "./dist/ui.js",
-        "types": "./dist/ui.d.ts"
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
       }
     }
   }

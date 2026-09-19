@@ -185,6 +185,17 @@ describe('createAuthGuard (body size cap)', () => {
   })
 })
 
+describe('createAuthGuard (/healthcheck)', () => {
+  it('serves GET /healthcheck without a signature even when no public prefixes are configured', async () => {
+    const app = new Elysia()
+      .use(createAuthGuard(new RequestAuthenticator()))
+      .get('/healthcheck', () => ({ status: 'ok', version: '0.0.0' }))
+      .compile()
+    const res = await app.handle(new Request('http://localhost/healthcheck'))
+    expect(res.status).toBe(200)
+  })
+})
+
 describe('createAuthGuard (public GET prefixes)', () => {
   // The published-content surface: GET under /p is world-readable, everything else stays guarded.
   function makePublicApp() {

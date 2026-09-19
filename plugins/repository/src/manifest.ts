@@ -1,6 +1,6 @@
-import { definePluginManifest } from '@arxhub/core'
+import type { PluginManifest } from '@arxhub/core'
 
-export const manifest = definePluginManifest({
+export const manifest = {
   name: 'Repository',
   version: '0.1.0',
   author: 'arxhub',
@@ -9,4 +9,4 @@ export const manifest = definePluginManifest({
   // that silently removed version history is a switch nobody would knowingly flip (A-50). `Sync`
   // stays optional: it is the remote exchange layered on top of this.
   essential: true,
-})
+} satisfies PluginManifest

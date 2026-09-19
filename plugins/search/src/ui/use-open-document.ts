@@ -1,5 +1,5 @@
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 
 // What a result row hands the opener: the matched text, and — when the index has it — the exact block

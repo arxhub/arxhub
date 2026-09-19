@@ -32,6 +32,11 @@ export function isConstructor(value: unknown): value is AnyConstructor<unknown> 
   return typeof value === 'function' && (value as { prototype?: unknown }).prototype != null
 }
 
+function describeToken<T>(token: Token<T>): string {
+  if (typeof token === 'function') return token.name || '<anonymous>'
+  return token.name
+}
+
 // A lazy DI container. The registered token IS the lookup key — keyed by object identity (the
 // constructor *reference* or the `Key` object), not by name, so it survives minification with no
 // `keepNames`. Two binding styles:
@@ -82,18 +87,18 @@ export class LazyContainer<T> {
   }
 
   get<R extends T>(token: Token<R>): R {
-    const cached = this._instances.get(token as Token<T>)
-    if (cached != null) return cached as R
+    const key = token as Token<T>
+    if (this._instances.has(key)) return this._instances.get(key) as R
 
     const entry = this._factories.get(token as Token<T>)
     if (entry == null) {
       // Not bound locally — fall through to the parent so its singletons stay shared.
       if (this.parent != null) return this.parent.get(token)
-      throw keyError(`${this.domain} '${token.name}' not found`)
+      throw keyError(`${this.domain} '${describeToken(token)}' not found`)
     }
 
     const instance = entry.kind === 'value' ? entry.factory() : entry.args == null ? new entry.impl() : new entry.impl(...entry.args())
-    this._instances.set(token as Token<T>, instance)
+    this._instances.set(key, instance)
     return instance as R
   }
 

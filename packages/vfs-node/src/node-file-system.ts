@@ -1,4 +1,4 @@
-import { createReadStream, createWriteStream, type Dirent, type FSWatcher, watch as watchFs } from 'node:fs'
+import { createReadStream, createWriteStream, type Dirent, type FSWatcher, mkdirSync, watch as watchFs } from 'node:fs'
 import fs from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { Readable, Writable } from 'node:stream'
@@ -39,7 +39,7 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
     // Resolve once so the containment check below compares two absolute, normalized OS paths.
     this.rootDir = resolve(rootDir)
     this.logger = logger.child({ name: 'NodeFileSystem' })
-    fs.mkdir(this.rootDir, { recursive: true })
+    mkdirSync(this.rootDir, { recursive: true })
   }
 
   // The SINGLE OS boundary (ADR 008): node:path is used only here to turn a logical VFS pathname into
@@ -214,7 +214,8 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
     return swapLocks.acquire(filePath, async () => {
       let current: Uint8Array | null
       try {
-        current = await fs.readFile(filePath)
+        const buf = await fs.readFile(filePath)
+        current = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
       } catch (e) {
         if (!isNodeError(e, 'ENOENT')) throw e
         current = null

@@ -1,6 +1,6 @@
 import { generateMnemonic, validateMnemonic } from '@arxhub/crypto'
 import { hasErrorCode } from '@arxhub/errors'
-import { MemoryKeyStore } from '@arxhub/plugin-keystore/ui'
+import { MemoryKeyStore } from '@arxhub/plugin-keystore'
 import { describe, expect, it } from 'vitest'
 import { IDENTITY_MNEMONIC_KEY, loadOrCreateKeyring } from '../identity'
 

@@ -2,11 +2,11 @@ import { PluginConfig } from '@arxhub/config'
 import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
 import { basename } from '@arxhub/path'
-import { ExplorerExtension } from '@arxhub/plugin-explorer/ui'
-import { NotesExtension } from '@arxhub/plugin-notes/ui'
-import { KeyringExtension } from '@arxhub/plugin-protection/ui'
-import { SettingsExtension } from '@arxhub/plugin-settings/ui'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { ExplorerExtension } from '@arxhub/plugin-explorer'
+import { NotesExtension } from '@arxhub/plugin-notes'
+import { KeyringExtension } from '@arxhub/plugin-protection'
+import { SettingsExtension } from '@arxhub/plugin-settings'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import { HttpSyncRemote } from '@arxhub/sync'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
@@ -56,6 +56,12 @@ export class PublishPlugin extends Plugin {
   // published-paths file — without it two overlapping applyConfig() calls could race to assign
   // PublishExtension.publisher, and the loser's (possibly stale) result would win.
   private applying: Promise<void> = Promise.resolve()
+  // Detached from start() so a slow published-paths read cannot hold the first paint (same shape as
+  // SyncPlugin / SearchPlugin). stop() awaits it before clearing the publisher.
+  private bringUp: Promise<void> | null = null
+  private stopping = false
+  // Cleared when config.watch delivers a save while boot tryRead is still in flight (TH-24-01).
+  private bootConfigPending = true
 
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -89,7 +95,10 @@ export class PublishPlugin extends Plugin {
 
     // The server address applies without a restart: every write of THIS section rebuilds the remote
     // (or tears it down when serverUrl is cleared) the same way start() builds it the first time.
-    config.watch(PublishConfigSchema, (cfg) => this.queueApplyConfig(ctx, cfg))
+    config.watch(PublishConfigSchema, (cfg) => {
+      this.bootConfigPending = false
+      this.queueApplyConfig(ctx, cfg)
+    })
 
     const publish = ctx.extensions.get(PublishExtension)
     publish.readFile = (path) => ctx.services.get(VaultVfs).read(path)
@@ -165,18 +174,26 @@ export class PublishPlugin extends Plugin {
     })
   }
 
-  override async start(ctx: PluginContext): Promise<void> {
-    await super.start(ctx)
+  override start(ctx: PluginContext): Promise<void> {
+    this.stopping = false
+    this.bootConfigPending = true
+    this.bringUp = this.startPublish(ctx)
+    void this.bringUp.catch((error) => this.logger.error('Could not initialize publishing', error))
+    return super.start(ctx)
+  }
 
+  private async startPublish(ctx: PluginContext): Promise<void> {
     // tryRead, not read: an unreachable settings store leaves publishing idle rather than aborting
     // the boot (FR-147).
     const cfg = await ctx.services.get(PluginConfig).tryRead(PublishConfigSchema)
-    await this.applyConfig(ctx, cfg)
+    if (this.stopping) return
+    if (this.bootConfigPending) this.queueApplyConfig(ctx, cfg)
+    await this.applying
   }
 
   // Serialises rebuilds behind `applying` so a config write that lands mid-load joins the queue
   // instead of racing the load already in flight — see the field's own comment.
-  private queueApplyConfig(ctx: PluginContext, cfg: Static<typeof PublishConfigSchema>): void {
+  private queueApplyConfig(ctx: PluginContext, cfg: Static<typeof PublishConfigSchema> | null): void {
     this.applying = this.applying.then(
       () => this.applyConfig(ctx, cfg),
       () => this.applyConfig(ctx, cfg),
@@ -185,9 +202,10 @@ export class PublishPlugin extends Plugin {
   }
 
   // Builds (or tears down) the remote exactly the way the plugin's own start() used to inline — the
-  // one place that decision is made, called from start() on boot and from the config watcher below on
+  // one place that decision is made, called from startPublish on boot and from the config watcher below on
   // every later save, so "restart ArxHub after changing the server" is no longer true.
   private async applyConfig(ctx: PluginContext, cfg: Static<typeof PublishConfigSchema> | null): Promise<void> {
+    if (this.stopping) return
     const publish = ctx.extensions.get(PublishExtension)
 
     if (cfg == null || !cfg.serverUrl) {
@@ -240,7 +258,18 @@ export class PublishPlugin extends Plugin {
       )
       return
     }
+    if (this.stopping) return
     publish.serverUrl = cfg.serverUrl
     publish.publisher = publisher
+  }
+
+  override async stop(ctx: PluginContext): Promise<void> {
+    this.stopping = true
+    await this.bringUp?.catch(() => {})
+    await this.applying.catch(() => {})
+    const publish = ctx.extensions.get(PublishExtension)
+    publish.publisher = null
+    publish.serverUrl = ''
+    await super.stop(ctx)
   }
 }

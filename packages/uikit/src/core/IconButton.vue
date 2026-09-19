@@ -86,6 +86,7 @@ const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20, xl: 20 })[pro
 }
 
 .icon-button:disabled {
+  background-color: var(--gray-3);
   color: var(--gray-9);
   cursor: not-allowed;
 }

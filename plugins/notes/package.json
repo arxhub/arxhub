@@ -10,6 +10,8 @@
   "author": "",
   "type": "module",
   "exports": {
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest.ts",
     "./ui": "./src/ui.ts",
     "./type": "./src/notes-type.ts"
   },
@@ -27,8 +29,14 @@
     "vue": "catalog:client"
   },
   "devDependencies": {
+    "@arxhub/core": "workspace:*",
+    "@arxhub/di": "workspace:*",
+    "@arxhub/events": "workspace:*",
     "@arxhub/errors": "workspace:*",
     "@arxhub/logger": "workspace:*",
+    "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
     "@types/node": "catalog:toolchain"
@@ -36,6 +44,7 @@
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/errors": "workspace:*",
+    "@arxhub/plugin-repository": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/uikit": "workspace:*",
@@ -43,6 +52,14 @@
   },
   "publishConfig": {
     "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
+      },
       "./ui": {
         "import": "./dist/ui.js",
         "types": "./dist/ui.d.ts"

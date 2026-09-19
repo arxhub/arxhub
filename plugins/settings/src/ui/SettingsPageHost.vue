@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PageLayout } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { SettingsExtension } from '../settings-extension'
@@ -21,14 +22,15 @@ const section = computed(() => settings.sections.value.find((s) => s.id === prop
     :schema="section.schema"
     :config="section.config"
   />
-  <div v-else class="settings-missing">Unknown settings section: {{ sectionId }}</div>
+  <PageLayout v-else title="Settings">
+    <p class="settings-missing">Unknown settings section: {{ sectionId }}</p>
+  </PageLayout>
 </template>
 
 <style scoped>
 .settings-missing {
-  padding: 16px;
+  margin: 0;
   font-size: var(--font-size-sm);
-  font-family: var(--font-sans);
   color: var(--gray-10);
 }
 </style>

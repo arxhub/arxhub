@@ -66,7 +66,7 @@ async function load() {
     streamed.value = source.kind === 'url'
     if (source.kind === 'url') url.value = source.url
     else {
-      blobUrl = URL.createObjectURL(new Blob([Uint8Array.from(source.bytes).buffer], { type: source.mime }))
+      blobUrl = URL.createObjectURL(new Blob([source.bytes], { type: source.mime }))
       url.value = blobUrl
     }
   } catch (cause) {

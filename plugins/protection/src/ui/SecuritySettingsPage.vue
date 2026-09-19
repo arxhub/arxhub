@@ -10,8 +10,8 @@ import {
   KeyStoreExtension,
   LocalStorageKeyStore,
   MIN_UNLOCK_CODE_LENGTH,
-  PinEntry,
-} from '@arxhub/plugin-keystore/ui'
+} from '@arxhub/plugin-keystore'
+import { PinEntry } from '@arxhub/plugin-keystore/ui'
 import { Badge, Button, Card, modals, PageLayout } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
@@ -23,9 +23,11 @@ import { clearVaultWorkingTree, isVaultEmpty } from '../vault-reset'
 import OwnerHandoverDialog from './OwnerHandoverDialog.vue'
 
 const arxhub = useArxHub()
-const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const touch = useShellFrame() === 'mobile'
-const keystore = arxhub.extensions.get(KeyStoreExtension).keystore
+const buttonSize = touch ? 'lg' : 'sm'
+const keystoreExt = arxhub.extensions.get(KeyStoreExtension)
+const keystore = keystoreExt.keystore
+const deviceLockRequired = keystoreExt.deviceLockRequired
 const keyrings = arxhub.extensions.get(KeyringExtension)
 const keyring = keyrings.keyring
 
@@ -345,7 +347,13 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
           <Button :size="buttonSize" variant="secondary" :disabled="!newCodeValid || currentCode.length === 0 || lockBusy" @click="submitChangeCode">
             Change code
           </Button>
-          <Button :size="buttonSize" variant="danger" :disabled="currentCode.length === 0 || lockBusy" @click="confirmDisableLock">
+          <Button
+            v-if="!deviceLockRequired"
+            :size="buttonSize"
+            variant="danger"
+            :disabled="currentCode.length === 0 || lockBusy"
+            @click="confirmDisableLock"
+          >
             Remove lock
           </Button>
         </div>

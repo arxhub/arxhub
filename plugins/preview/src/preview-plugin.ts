@@ -1,6 +1,6 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { NotesExtension } from '@arxhub/plugin-notes/ui'
-import { PanelStoreExtension } from '@arxhub/plugin-panels/ui'
+import { NotesExtension } from '@arxhub/plugin-notes'
+import { PanelStoreExtension } from '@arxhub/plugin-panels'
 import { markRaw } from 'vue'
 import { manifest } from './manifest'
 import { extensionsOf, MEDIA_KINDS, type MediaKind } from './media'

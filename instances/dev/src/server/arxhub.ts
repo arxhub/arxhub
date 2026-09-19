@@ -5,9 +5,9 @@ import type { ArxHub } from '@arxhub/core'
 import GatewayServerPlugin from '@arxhub/plugin-gateway/server'
 import { ProtectionServerPlugin } from '@arxhub/plugin-protection/server'
 import { PUBLIC_READ_PATH, PublishServerPlugin } from '@arxhub/plugin-publish/server'
-import { SyncServerPlugin } from '@arxhub/sync/server'
+import { SyncServerPlugin } from '@arxhub/plugin-sync/server'
+import { VfsHttpServerPlugin } from '@arxhub/plugin-vfs/server'
 import { ScopedFileSystem } from '@arxhub/vfs'
-import { VfsHttpServerPlugin } from '@arxhub/vfs-http/server'
 
 // Local-only (never synced) home for the TOFU pin. Lives under state/, like the sync repo store.
 const PINNED_KEY_FILE = 'state/protection/pinned-key'
@@ -41,7 +41,7 @@ export async function createArxHub(port: number, version: string): Promise<ArxHu
       // are the ONE deliberate public hole (read-only, method-restricted).
       hub.plugins.register(ProtectionServerPlugin, () => ({
         pinnedPublicKey,
-        publicGetPrefixes: [PUBLIC_READ_PATH, '/healthcheck'],
+        publicGetPrefixes: [PUBLIC_READ_PATH],
         corsOrigins,
         onPair: (key: string) => {
           pinnedFile.writeText(key).catch((error) => logger.error('Failed to persist pinned client key', error))

@@ -42,7 +42,7 @@ export default defineConfig({
         const { createArxHub } = await server.ssrLoadModule('/src/server/arxhub.ts')
         const arxhub = await createArxHub(Number(process.env.ARXHUB_PORT) || 3001, version)
 
-        const { GatewayServerExtension } = await server.ssrLoadModule('/node_modules/@arxhub/plugin-gateway/src/server/extension.ts')
+        const { GatewayServerExtension } = await server.ssrLoadModule('@arxhub/plugin-gateway/server')
         const apiPort = arxhub.extensions.get(GatewayServerExtension).gateway.port ?? 3001
 
         server.middlewares.use(apiProxy(apiPort))

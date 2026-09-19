@@ -10,6 +10,8 @@
   "author": "",
   "type": "module",
   "exports": {
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest.ts",
     "./ui": "./src/ui.ts"
   },
   "files": [
@@ -35,6 +37,14 @@
   },
   "publishConfig": {
     "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
+      },
       "./ui": {
         "import": "./dist/ui.js",
         "types": "./dist/ui.d.ts"

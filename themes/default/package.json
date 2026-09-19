@@ -1,7 +1,7 @@
 {
   "name": "@arxhub/theme",
   "version": "0.1.0",
-  "description": "Default theme preset for Arxhub (Cyan & Slate)",
+  "description": "Default ArxHub theme family — warm Sand + Amber neutral under a cyan accent (light and dark)",
   "main": "index.css",
   "peerDependencies": {
     "@arxhub/theme-preset": "workspace:*"

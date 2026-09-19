@@ -5,6 +5,9 @@ import type { Constructor, Except } from 'type-fest'
 import type { PluginContext, PluginHost } from './plugin-context'
 
 export interface PluginManifest {
+  // Identity for composition checks, disabled lists, logs. Prefer PascalCase short names for new
+  // plugins (`Notes`, `Repository`). Do not rename existing lowercase / scoped names without a
+  // migration of device-local disabled switches. Server plugins use a `*Server` suffix.
   name: string
   version: string
   description?: string

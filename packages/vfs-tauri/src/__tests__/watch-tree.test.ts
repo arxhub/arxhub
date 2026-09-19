@@ -27,7 +27,7 @@ vi.mock('@tauri-apps/plugin-opener', () => ({
   openPath: vi.fn(),
 }))
 
-import { BaseDirectory, stat, watch } from '@tauri-apps/plugin-fs'
+import { BaseDirectory, mkdir, stat, watch } from '@tauri-apps/plugin-fs'
 import { TauriFileSystem } from '../tauri-file-system'
 
 // The plugin-fs types aren't exported in a way vitest's mock can reuse, so events are built as plain
@@ -46,6 +46,7 @@ describe('TauriFileSystem.watchTree', () => {
 
     const unwatch = await fs.watchTree('vault', () => {})
 
+    expect(mkdir).toHaveBeenCalledWith('ArxHub/vault', { baseDir: BaseDirectory.Home, recursive: true })
     expect(watch).toHaveBeenCalledWith('ArxHub/vault', expect.any(Function), {
       baseDir: BaseDirectory.Home,
       recursive: true,

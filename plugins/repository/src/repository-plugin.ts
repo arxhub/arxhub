@@ -1,9 +1,8 @@
 import { PluginConfig } from '@arxhub/config'
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { join } from '@arxhub/path'
-import { NotesExtension } from '@arxhub/plugin-notes/ui'
-import { KeyringExtension } from '@arxhub/plugin-protection/ui'
-import { SettingsExtension } from '@arxhub/plugin-settings/ui'
+import { KeyringExtension } from '@arxhub/plugin-protection'
+import { SettingsExtension } from '@arxhub/plugin-settings'
 import { Repo } from '@arxhub/sync'
 import { PluginVfs, RootVfs, VaultWatcher } from '@arxhub/vfs'
 import { type Static, Type } from '@sinclair/typebox'
@@ -46,6 +45,8 @@ export class RepositoryPlugin extends Plugin {
   private repo!: Repo
   private bringUp: Promise<void> | null = null
   private stopping = false
+  // Cleared when config.watch delivers a save while boot tryRead is still in flight (TH-24-01).
+  private bootConfigPending = true
   private unwatch: (() => void) | null = null
   private unwatchConfig: (() => void) | null = null
   private unregisterTextMerger: (() => void) | null = null
@@ -82,7 +83,10 @@ export class RepositoryPlugin extends Plugin {
     // The one merger this plugin contributes itself: a format-agnostic line merge for whatever the owner
     // says is text. Formats with structure of their own (.arx, .arxs) register theirs from their own plugin.
     this.unregisterTextMerger = repository.registerContentMerger(textMerger(() => this.textExtensions))
-    this.unwatchConfig = config.watch(RepositoryConfigSchema, (cfg) => this.applyMergeConfig(cfg))
+    this.unwatchConfig = config.watch(RepositoryConfigSchema, (cfg) => {
+      this.bootConfigPending = false
+      this.applyConfig(cfg)
+    })
 
     // Every vault write reaches the journal as it happens, in the repo's coordinates (the watcher
     // speaks vault-relative paths; the repo trees the root). A rename names both ends: the old path
@@ -93,15 +97,11 @@ export class RepositoryPlugin extends Plugin {
       for (const path of paths)
         void this.repo.add(join('vault', path)).catch((error) => this.logger.error('Could not journal a vault change', error))
     })
-
-    // A file left in the cloud comes down before whatever opens it mounts; a file that is on disk
-    // costs one index lookup here and nothing else. Notes is essential too, like this plugin — no
-    // has() guard needed: a boot with one of the two switched off is a state nobody has designed.
-    ctx.extensions.get(NotesExtension).registerPreparer((path) => repository.materializeIfPending(path))
   }
 
   override start(ctx: PluginContext): Promise<void> {
     this.stopping = false
+    this.bootConfigPending = true
     this.bringUp = this.bringUpRepository(ctx)
     void this.bringUp.catch((error) => this.logger.error('Could not prepare the local repository', error))
     return super.start(ctx)
@@ -116,16 +116,15 @@ export class RepositoryPlugin extends Plugin {
     // the default policy (keep everything) instead of aborting the whole boot.
     const cfg = await ctx.services.get(PluginConfig).tryRead(RepositoryConfigSchema)
     if (this.stopping || cfg == null) return
-    this.applyMergeConfig(cfg)
+    if (this.bootConfigPending) this.applyConfig(cfg)
+  }
 
+  private applyConfig(cfg: Static<typeof RepositoryConfigSchema>): void {
+    this.textExtensions = toTextExtensions(cfg['merge.textExtensions'])
     // A file without a size is a manifest entry written before sizes existed (completeLegacyEntries
     // fills it in the next time this device writes a snapshot) — kept, never left in the cloud on a
     // guess about how big it might be.
     this.repo.setMaterializePolicy((file) => cfg.materializeUpTo === 0 || file.size == null || file.size <= cfg.materializeUpTo * 1024 * 1024)
-  }
-
-  private applyMergeConfig(cfg: Static<typeof RepositoryConfigSchema>): void {
-    this.textExtensions = toTextExtensions(cfg['merge.textExtensions'])
   }
 
   override async stop(ctx: PluginContext): Promise<void> {

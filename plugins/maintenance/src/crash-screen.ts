@@ -68,6 +68,6 @@ export async function startWithCrashScreen(arxhub: ArxHub, policy: BootPolicy): 
 // A start() failure leaves a mountable app behind; anything earlier does not — a plugin that died in
 // create()/configure() never registered its half of the UI, and offering to carry on would just trade
 // this screen for a blank one.
-function continuable(failures: BootFailure[]): boolean {
+export function continuable(failures: BootFailure[]): boolean {
   return failures.length > 0 && failures.every((it) => it.phase === 'start')
 }

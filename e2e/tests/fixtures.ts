@@ -362,7 +362,7 @@ export async function openType(page: Page, title: string, typeId?: string): Prom
 // called while that rail is on screen — on a phone the console closes the panel it was opened from.
 export async function waitForIndex(page: Page): Promise<void> {
   // Longer than the default expect timeout, shorter than the test's own: a cold PGlite boots a WASM payload
-  // and then walks the vault, and eight workers do that at once.
+  // and then walks the vault, and four workers per project can do that at once.
   await expect(page.locator('.index-state-text')).toContainText(/\d+ in index/, { timeout: 20_000 })
 }
 

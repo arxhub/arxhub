@@ -55,8 +55,10 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
     keys: next.changedKeys,
     invalid: next.invalid,
     commit: async () => {
-      await props.config.write(props.schema, next.values)
-      values.value = { ...next.values }
+      const snapshot = settings.changes.draftFor(props.sectionId)
+      if (!snapshot) return
+      await props.config.write(props.schema, snapshot)
+      values.value = { ...snapshot }
       draft.value = undefined
     },
     revert: () => form.value?.revert(),
