@@ -432,7 +432,7 @@ summary {
 
 .primary,
 .secondary {
-  min-height: var(--size-md, 40px);
+  min-height: var(--size-xl, 48px);
   padding: 8px 12px;
   border-radius: var(--radius-sm, 4px);
   font-size: var(--font-size-sm);
