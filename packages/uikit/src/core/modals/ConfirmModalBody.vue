@@ -17,6 +17,7 @@ const props = defineProps<{
 }>()
 
 const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const touch = useShellFrame() === 'mobile'
 
 function handleCancel() {
   props.onCancel?.()
@@ -30,7 +31,7 @@ function handleConfirm() {
 </script>
 
 <template>
-  <div class="confirm-modal">
+  <div class="confirm-modal" :class="{ touch }">
     <div v-if="body" class="confirm-body">
       <template v-if="typeof body === 'string'">{{ body }}</template>
       <component :is="body" v-else v-bind="bodyProps" />
@@ -74,5 +75,14 @@ function handleConfirm() {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.confirm-modal.touch .confirm-actions {
+  flex-direction: column-reverse;
+  gap: 12px;
+}
+
+.confirm-modal.touch .confirm-actions :deep(.btn) {
+  width: 100%;
 }
 </style>
