@@ -1,13 +1,11 @@
 import { createVueConfig } from '@arxhub/toolchain-vite'
 import { defineConfig } from 'vite'
 
-// createVueConfig even though the first cut ships no SFC: createBrowserConfig takes neither `entries`
-// nor `external`, so the library build with `src/ui.ts` as its entry and vue left external cannot be
-// expressed with it. The vue plugin costs nothing while there is no SFC, and the shortcut sheet
-// (A-37) will need it.
+// The root entry is the plugin wire-up and contract; only `ui.ts` owns Vue composables. Keeping every
+// public entry in the build makes the source and publish export maps agree.
 export default defineConfig((env) =>
   createVueConfig(__dirname, env, {
-    entries: ['src/ui.ts'],
+    entries: ['src/index.ts', 'src/manifest.ts', 'src/ui.ts'],
     external: ['@arxhub/core', '@arxhub/events', 'vue'],
   }),
 )

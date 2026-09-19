@@ -1,6 +1,6 @@
 import { createEventBus } from '@arxhub/events'
 import { ConsoleLogger } from '@arxhub/logger'
-import { objectGone, TabTypeRegistry, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell/ui'
+import { objectGone, TabTypeRegistry, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { restoreNavigationWorkspace } from '../navigation-persistence'

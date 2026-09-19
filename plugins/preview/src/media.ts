@@ -57,7 +57,7 @@ export const BLOB_LIMIT = 256 * 1024 * 1024
 
 // Node's VFS returns a view into Buffer's shared pool; pdf.js transfers `data` to its worker and Blob
 // must not span a larger backing store than the file — always hand both an owning copy.
-export function copyBytes(bytes: Uint8Array): Uint8Array {
+export function copyBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(bytes)
 }
 
@@ -65,7 +65,7 @@ export type MediaSource =
   // The backend can be loaded from directly — seeking and all — without the bytes passing through JS.
   | { kind: 'url'; url: string; size: number }
   // No URL: the file is read whole and served to the element as a blob.
-  | { kind: 'bytes'; bytes: Uint8Array; mime: string; size: number }
+  | { kind: 'bytes'; bytes: Uint8Array<ArrayBuffer>; mime: string; size: number }
   // No URL and too big to hold. The panel says so rather than trying.
   | { kind: 'too-large'; size: number }
 

@@ -1,4 +1,4 @@
-import type { HotkeyBinding, HotkeysExtension } from '@arxhub/plugin-hotkeys/ui'
+import type { HotkeyBinding, HotkeysExtension } from '@arxhub/plugin-hotkeys'
 
 export const PROSEMIRROR_LAYER = 'editor:arxhub.editor'
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ConfigForm } from '@arxhub/config/ui'
-import { SettingsExtension } from '@arxhub/plugin-settings/ui'
+import { SettingsExtension } from '@arxhub/plugin-settings'
 import { Button, PageLayout, StatusDot } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { computed, onMounted, ref } from 'vue'

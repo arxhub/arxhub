@@ -1,6 +1,6 @@
 import { PluginConfig } from '@arxhub/config'
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { SettingsExtension } from '@arxhub/plugin-settings/ui'
+import { SettingsExtension } from '@arxhub/plugin-settings'
 import { Type } from '@sinclair/typebox'
 import { h, markRaw } from 'vue'
 import { manifest } from './manifest'

@@ -3,13 +3,14 @@ import { defineConfig } from 'vite'
 
 export default defineConfig((env) =>
   createVueConfig(__dirname, env, {
-    entries: ['src/ui.ts'],
+    entries: ['src/index.ts', 'src/manifest.ts', 'src/ui.ts'],
     external: [
       '@arxhub/core',
       '@arxhub/path',
       '@arxhub/plugin-notes',
       '@arxhub/plugin-notes/ui',
       '@arxhub/plugin-panels',
+      '@arxhub/plugin-panels/ui',
       '@arxhub/uikit',
       '@arxhub/vfs',
       'pdfjs-dist',

@@ -1,7 +1,1 @@
-export { type DisplayName, displayNameOf } from './display-name'
-export { DEFAULT_HIDE_KNOWN_EXTENSIONS, NotesConfigSchema, toHideKnownExtensions } from './notes-config'
-export { NotesExtension, type NotesExtensionArgs, type NoteViewer } from './notes-extension'
-export { NotesPlugin, type NotesPluginArgs } from './notes-plugin'
-export { type BlockAnchor, blockAnchorOf, NOTES_TYPE_ID, type NoteSnapshot, noteSnapshotPath } from './notes-type'
-export { renameTarget } from './rename'
 export { default as DocumentName } from './ui/DocumentName.vue'

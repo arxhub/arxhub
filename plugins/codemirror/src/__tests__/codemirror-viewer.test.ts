@@ -1,5 +1,5 @@
 import { ConsoleLogger } from '@arxhub/logger'
-import { NotesExtension } from '@arxhub/plugin-notes/ui'
+import { NotesExtension } from '@arxhub/plugin-notes'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { describe, expect, test } from 'vitest'
 import { CODEMIRROR_VIEWER } from '../codemirror-plugin'

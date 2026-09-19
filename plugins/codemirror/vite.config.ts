@@ -3,14 +3,15 @@ import { defineConfig } from 'vite'
 
 export default defineConfig((env) =>
   createVueConfig(__dirname, env, {
-    entries: ['src/ui.ts'],
+    entries: ['src/index.ts', 'src/manifest.ts', 'src/ui.ts'],
     external: [
       '@arxhub/core',
       '@arxhub/plugin-hotkeys',
+      '@arxhub/plugin-hotkeys/ui',
       '@arxhub/plugin-notes',
       '@arxhub/plugin-notes/ui',
-      '@arxhub/plugin-shell',
       '@arxhub/plugin-panels',
+      '@arxhub/plugin-panels/ui',
       '@arxhub/uikit',
       '@arxhub/vfs',
       'codemirror',
@@ -18,6 +19,7 @@ export default defineConfig((env) =>
       '@codemirror/language-data',
       '@codemirror/state',
       'vue',
+      '@arxhub/plugin-shell/ui',
     ],
   }),
 )

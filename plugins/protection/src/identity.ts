@@ -1,6 +1,6 @@
 import { generateMnemonic, type Keyring, keyringFromMnemonic, validateMnemonic } from '@arxhub/crypto'
 import { AppError, defineAppError } from '@arxhub/errors'
-import type { KeyStore } from '@arxhub/plugin-keystore/ui'
+import type { KeyStore } from '@arxhub/plugin-keystore'
 import type { Static } from '@sinclair/typebox'
 
 // KeyStore entry name for the device's root secret.

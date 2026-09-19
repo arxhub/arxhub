@@ -1,6 +1,6 @@
 import { Plugin, type PluginArgs, type PluginContext, type PluginHost } from '@arxhub/core'
 import { bindPluginLogger, LogBufferKey, type Logger, RootLogger } from '@arxhub/logger'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import { PluginVfs } from '@arxhub/vfs'
 import { markRaw } from 'vue'
 import { LOGS_TYPE_ID } from './contributions'

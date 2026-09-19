@@ -1,5 +1,5 @@
-import type { BlockAnchor } from '@arxhub/plugin-notes/ui'
-import type { SearchExtension } from '@arxhub/plugin-search/ui'
+import type { BlockAnchor } from '@arxhub/plugin-notes'
+import type { SearchExtension } from '@arxhub/plugin-search'
 import type { Ref } from 'vue'
 
 export type DataLayout = 'list' | 'board' | 'calendar'

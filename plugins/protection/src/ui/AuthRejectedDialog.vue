@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { SETTINGS_TYPE_ID, SettingsExtension } from '@arxhub/plugin-settings/ui'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { SETTINGS_TYPE_ID, SettingsExtension } from '@arxhub/plugin-settings'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import { Button } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'

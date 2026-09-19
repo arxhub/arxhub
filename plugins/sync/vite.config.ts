@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 
 export default defineConfig((env) =>
   createVueConfig(__dirname, env, {
-    entries: ['src/ui.ts', 'src/server.ts'],
+    entries: ['src/index.ts', 'src/manifest.ts', 'src/server.ts'],
     external: [
       '@arxhub/config',
       '@arxhub/core',
@@ -14,11 +14,13 @@ export default defineConfig((env) =>
       '@arxhub/plugin-repository',
       '@arxhub/plugin-settings',
       '@arxhub/plugin-shell',
+      '@arxhub/plugin-shell/ui',
       '@arxhub/sync',
       '@arxhub/sync/server',
       '@arxhub/uikit',
       '@arxhub/vfs',
       'vue',
+      '@arxhub/plugin-gateway',
     ],
   }),
 )

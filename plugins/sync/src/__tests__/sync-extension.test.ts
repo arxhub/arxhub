@@ -1,5 +1,5 @@
 import { ConsoleLogger } from '@arxhub/logger'
-import type { RepositoryExtension } from '@arxhub/plugin-repository/ui'
+import type { RepositoryExtension } from '@arxhub/plugin-repository'
 import type { SyncEngine } from '@arxhub/sync'
 import { describe, expect, test, vi } from 'vitest'
 import { SyncExtension } from '../sync-extension'

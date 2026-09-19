@@ -1,4 +1,4 @@
-import type { HostedPanel, Json, PanelHost } from '@arxhub/plugin-shell/ui'
+import type { HostedPanel, Json, PanelHost } from '@arxhub/plugin-shell'
 import { nanoid } from 'nanoid'
 import { type Component, defineComponent, h, markRaw, type PropType } from 'vue'
 import { getAllGroupIds } from './panel-store'
@@ -6,7 +6,7 @@ import type { LayoutNode, PanelGroup, PanelInstance, PanelStore } from './types'
 import PanelsLayout from './ui/PanelsLayout.vue'
 
 // The panels side of the navigation model: one `PanelStore` per tab type, seen through the shell's
-// `PanelHost` port. The port lives in `@arxhub/plugin-shell/ui` and its implementation lives here,
+// `PanelHost` port. The port lives in `@arxhub/plugin-shell` and its implementation lives here,
 // because that is the direction the dependency already runs — `panels` peer-depends on `shell`, and
 // `shell` must not depend on `panels`.
 //

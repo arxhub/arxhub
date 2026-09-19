@@ -3,8 +3,8 @@ import { ExtensionContainer, type PluginContext } from '@arxhub/core'
 import { LazyContainer } from '@arxhub/di'
 import { createEventBus, type EventMap } from '@arxhub/events'
 import type { Logger } from '@arxhub/logger'
-import { SettingsExtension } from '@arxhub/plugin-settings/ui'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { SettingsExtension } from '@arxhub/plugin-settings'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { VaultVfs } from '@arxhub/vfs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -29,7 +29,7 @@ function registerPluginConfig(services: LazyContainer<object>, config: PluginCon
     class extends PluginConfig {
       constructor() {
         super({} as VirtualFileSystem, silentLogger())
-        return config
+        Object.assign(this, config)
       }
     },
   )

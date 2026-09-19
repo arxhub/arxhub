@@ -1,6 +1,6 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { NotesExtension } from '@arxhub/plugin-notes/ui'
-import { RepositoryExtension } from '@arxhub/plugin-repository/ui'
+import { NotesExtension } from '@arxhub/plugin-notes'
+import { RepositoryExtension } from '@arxhub/plugin-repository'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { markRaw, type WatchStopHandle } from 'vue'
 import { ExplorerExtension } from './explorer-extension'

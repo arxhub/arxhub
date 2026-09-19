@@ -1,4 +1,5 @@
-import { APP_LAYER, HotkeysExtension, useHotkeyLayer, useHotkeys } from '@arxhub/plugin-hotkeys/ui'
+import { APP_LAYER, HotkeysExtension } from '@arxhub/plugin-hotkeys'
+import { useHotkeyLayer, useHotkeys } from '@arxhub/plugin-hotkeys/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import type { Ref } from 'vue'
 

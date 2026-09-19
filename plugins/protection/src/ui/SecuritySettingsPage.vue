@@ -10,8 +10,8 @@ import {
   KeyStoreExtension,
   LocalStorageKeyStore,
   MIN_UNLOCK_CODE_LENGTH,
-  PinEntry,
-} from '@arxhub/plugin-keystore/ui'
+} from '@arxhub/plugin-keystore'
+import { PinEntry } from '@arxhub/plugin-keystore/ui'
 import { Badge, Button, Card, modals, PageLayout } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'

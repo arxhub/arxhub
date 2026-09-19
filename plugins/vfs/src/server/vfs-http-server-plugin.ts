@@ -1,16 +1,8 @@
-import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
+import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { GatewayServerExtension } from '@arxhub/plugin-gateway'
 import type { VirtualFileSystem } from '@arxhub/vfs'
-import { VFS_NAMESPACE } from '@arxhub/vfs-http'
 import { vfsRoutes } from '@arxhub/vfs-http/server'
-
-const manifest = definePluginManifest({
-  name: 'VfsHttpServer',
-  namespace: VFS_NAMESPACE,
-  version: '0.1.0',
-  author: 'arxhub',
-  description: 'Serves a VirtualFileSystem over HTTP for browser-mode clients',
-})
+import { serverManifest } from '../manifest'
 
 type VfsHttpServerPluginArgs = PluginArgs & {
   vfs: VirtualFileSystem
@@ -22,7 +14,7 @@ export class VfsHttpServerPlugin extends Plugin {
   private readonly vfs: VirtualFileSystem
 
   constructor(args: VfsHttpServerPluginArgs) {
-    super(args, manifest)
+    super(args, serverManifest)
     this.vfs = args.vfs
   }
 

@@ -1,6 +1,6 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { SettingsExtension } from '@arxhub/plugin-settings/ui'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { SettingsExtension } from '@arxhub/plugin-settings'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import { markRaw } from 'vue'
 import type { BootPolicy } from './boot-policy'
 import { MaintenanceExtension } from './maintenance-extension'

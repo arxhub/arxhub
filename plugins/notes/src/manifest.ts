@@ -1,6 +1,6 @@
-import { definePluginManifest } from '@arxhub/core'
+import type { PluginManifest } from '@arxhub/core'
 
-export const manifest = definePluginManifest({
+export const manifest = {
   name: 'Notes',
   version: '0.1.0',
   author: 'arxhub',
@@ -9,4 +9,4 @@ export const manifest = definePluginManifest({
   // `essential` two states nobody has designed become reachable: "notes off, explorer on" (a
   // navigation into a type that does not exist) and the reverse.
   essential: true,
-})
+} satisfies PluginManifest

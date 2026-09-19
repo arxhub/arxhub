@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import { StatusDot } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'

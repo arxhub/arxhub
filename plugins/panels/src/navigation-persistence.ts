@@ -1,4 +1,4 @@
-import type { Json, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell/ui'
+import type { Json, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell'
 import { watch } from 'vue'
 import type { PanelStoreExtension } from './panel-store-extension'
 import type { LayoutNode, PanelWorkspaceState } from './types'

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
-import { ShellExtension, useNavHost } from '@arxhub/plugin-shell/ui'
+import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
+import { ShellExtension } from '@arxhub/plugin-shell'
+import { useNavHost } from '@arxhub/plugin-shell/ui'
 import { actionMenu, IconButton, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted, watch } from 'vue'

@@ -1,19 +1,11 @@
-import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
+import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { GatewayServerExtension } from '@arxhub/plugin-gateway'
 import { VfsSyncRemote } from '@arxhub/sync'
 import { objectStoreRoutes } from '@arxhub/sync/server'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import Elysia from 'elysia'
-import { PUBLISH_NAMESPACE } from '../namespace'
+import { serverManifest } from '../manifest'
 import { publicReadRoutes } from './public-read-routes'
-
-const manifest = definePluginManifest({
-  name: 'PublishServer',
-  namespace: PUBLISH_NAMESPACE,
-  version: '0.1.0',
-  author: 'arxhub',
-  description: 'Serves published (plaintext, content-addressed) content and its owner-only upload routes',
-})
 
 type PublishServerPluginArgs = PluginArgs & {
   // Root for the public object store — typically a ScopedFileSystem over the instance root, e.g.
@@ -34,7 +26,7 @@ export class PublishServerPlugin extends Plugin {
   private readonly vfs: VirtualFileSystem
 
   constructor(args: PublishServerPluginArgs) {
-    super(args, manifest)
+    super(args, serverManifest)
     this.vfs = args.vfs
   }
 

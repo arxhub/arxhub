@@ -1,4 +1,4 @@
-import type { HotkeyBinding, HotkeysExtension } from '@arxhub/plugin-hotkeys/ui'
+import type { HotkeyBinding, HotkeysExtension } from '@arxhub/plugin-hotkeys'
 
 export const CODEMIRROR_LAYER = 'editor:arxhub.codemirror'
 

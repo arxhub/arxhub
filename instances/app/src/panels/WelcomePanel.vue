@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
-import { SEARCH_TYPE_ID } from '@arxhub/plugin-search/ui'
-import { ShellExtension, useHotkeysExtension } from '@arxhub/plugin-shell/ui'
+import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
+import { SEARCH_TYPE_ID } from '@arxhub/plugin-search'
+import { ShellExtension } from '@arxhub/plugin-shell'
+import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { Button } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 

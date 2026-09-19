@@ -1,7 +1,7 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { illegalState } from '@arxhub/errors'
 import { join } from '@arxhub/path'
-import type { KeyringExtension } from '@arxhub/plugin-protection/ui'
+import type { KeyringExtension } from '@arxhub/plugin-protection'
 import { FileHistory, type Repo, type Snapshot } from '@arxhub/sync'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { type ShallowRef, shallowRef } from 'vue'

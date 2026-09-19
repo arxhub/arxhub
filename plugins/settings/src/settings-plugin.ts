@@ -1,5 +1,5 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import { markRaw } from 'vue'
 import { SETTINGS_TYPE_ID } from './contributions'
 import { manifest } from './manifest'

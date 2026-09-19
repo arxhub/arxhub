@@ -1,5 +1,5 @@
 import { ConsoleLogger } from '@arxhub/logger'
-import type { KeyringExtension } from '@arxhub/plugin-protection/ui'
+import type { KeyringExtension } from '@arxhub/plugin-protection'
 import type { ContentMerger, Repo } from '@arxhub/sync'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { describe, expect, test, vi } from 'vitest'

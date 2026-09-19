@@ -1,6 +1,6 @@
 import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { internalServer } from '@arxhub/errors'
-import { type ArxEditorControlProps, ArxEditorExtension } from '@arxhub/plugin-editor/ui'
+import { type ArxEditorControlProps, ArxEditorExtension } from '@arxhub/plugin-editor'
 import { Button } from '@arxhub/uikit/core'
 import { defineComponent, h } from 'vue'
 

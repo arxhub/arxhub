@@ -1,5 +1,5 @@
 import type { Logger } from '@arxhub/logger'
-import { type ChordSource, type HotkeyOutcome, HotkeysExtension, type LayerProbe } from '@arxhub/plugin-hotkeys/ui'
+import { type ChordSource, type HotkeyOutcome, HotkeysExtension, type LayerProbe } from '@arxhub/plugin-hotkeys'
 import { describe, expect, test } from 'vitest'
 import { declareProseMirrorChords, PROSEMIRROR_BINDINGS, PROSEMIRROR_LAYER } from '../hotkeys'
 

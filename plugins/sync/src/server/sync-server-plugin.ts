@@ -1,16 +1,9 @@
-import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
-import { SYNC_NAMESPACE, VfsSyncRemote } from '@arxhub/sync'
+import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { GatewayServerExtension } from '@arxhub/plugin-gateway'
+import { VfsSyncRemote } from '@arxhub/sync'
 import { objectStoreRoutes } from '@arxhub/sync/server'
 import type { VirtualFileSystem } from '@arxhub/vfs'
-
-const manifest = definePluginManifest({
-  name: 'SyncServer',
-  namespace: SYNC_NAMESPACE,
-  version: '0.1.0',
-  author: 'arxhub',
-  description: 'Serves the batched sync object-store protocol over HTTP',
-})
+import { serverManifest } from '../manifest'
 
 type SyncServerPluginArgs = PluginArgs & {
   // Root for the sync object store (`/head`, `/objects/...`) — typically a ScopedFileSystem over the
@@ -25,7 +18,7 @@ export class SyncServerPlugin extends Plugin {
   private readonly vfs: VirtualFileSystem
 
   constructor(args: SyncServerPluginArgs) {
-    super(args, manifest)
+    super(args, serverManifest)
     this.vfs = args.vfs
   }
 

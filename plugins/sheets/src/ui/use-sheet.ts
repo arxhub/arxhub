@@ -1,6 +1,6 @@
 import { validation } from '@arxhub/errors'
 import { useHotkeyLayer, useHotkeys } from '@arxhub/plugin-hotkeys/ui'
-import { NotesExtension } from '@arxhub/plugin-notes/ui'
+import { NotesExtension } from '@arxhub/plugin-notes'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'

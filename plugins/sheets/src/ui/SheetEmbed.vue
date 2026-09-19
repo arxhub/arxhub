@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { validation } from '@arxhub/errors'
-import type { ArxEditorControlProps } from '@arxhub/plugin-editor/ui'
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
-import { ShellExtension } from '@arxhub/plugin-shell/ui'
+import type { ArxEditorControlProps } from '@arxhub/plugin-editor'
+import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
+import { ShellExtension } from '@arxhub/plugin-shell'
 import { Button, Dialog, IconButton, Input, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
-import { type BlockAnchor, DocumentName, NotesExtension } from '@arxhub/plugin-notes/ui'
+import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes'
+import { DocumentName } from '@arxhub/plugin-notes/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { Button, Strip } from '@arxhub/uikit/core'

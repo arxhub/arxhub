@@ -1,6 +1,6 @@
 import { createEventBus, type EventMap } from '@arxhub/events'
-import type { HostedPanel, ObjectRef, OpenedObject, TabType } from '@arxhub/plugin-shell/ui'
-import { TabTypeRegistry, Workspace } from '@arxhub/plugin-shell/ui'
+import type { HostedPanel, ObjectRef, OpenedObject, TabType } from '@arxhub/plugin-shell'
+import { TabTypeRegistry, Workspace } from '@arxhub/plugin-shell'
 import { beforeEach, describe, expect, test } from 'vitest'
 import { type Component, defineComponent } from 'vue'
 import { StorePanelHost } from '../panel-host'
