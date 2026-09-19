@@ -84,7 +84,7 @@ function drop(key: string): void {
 .entry-subtitle {
   overflow: hidden;
   color: var(--gray-11);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

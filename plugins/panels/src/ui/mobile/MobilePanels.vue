@@ -115,6 +115,6 @@ const { openTabs, current, pathOf } = useOpenTabsList(props.store)
   white-space: nowrap;
   color: var(--gray-10);
   font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
 }
 </style>
