@@ -100,7 +100,7 @@ defineExpose({ revert })
         @update:model-value="edit(field.key, $event)"
       />
     </section>
-    <Button variant="ghost" :aria-pressed="technical" @click="technical = !technical">{{ technical ? 'Hide technical details' : 'Technical details' }}</Button>
+    <Button :size="buttonSize" variant="ghost" :aria-pressed="technical" @click="technical = !technical">{{ technical ? 'Hide technical details' : 'Technical details' }}</Button>
   </div>
 </template>
 
