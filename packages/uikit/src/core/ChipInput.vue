@@ -118,8 +118,8 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .chip-remove {
-  width: var(--size-xs-half);
-  height: var(--size-xs-half);
+  width: var(--size-xs);
+  height: var(--size-xs);
 }
 
 .chip-remove[data-hover] {
