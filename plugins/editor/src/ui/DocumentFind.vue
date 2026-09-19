@@ -13,6 +13,7 @@ const query = ref(documentSearchKey.getState(props.view.state)?.query ?? '')
 const matchCase = ref(documentSearchKey.getState(props.view.state)?.matchCase ?? false)
 const replacement = ref('')
 const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const touch = useShellFrame() === 'mobile'
 const search = computed(() => {
   void props.revision
   return documentSearchKey.getState(props.view.state)
@@ -34,7 +35,7 @@ function replace(all = false) {
 </script>
 
 <template>
-  <section ref="root" class="document-find" role="search" aria-label="Find in document" @keydown.esc.stop.prevent="emit('close')">
+  <section ref="root" class="document-find" :class="{ touch }" role="search" aria-label="Find in document" @keydown.esc.stop.prevent="emit('close')">
     <div class="find-row">
       <Input v-model="query" class="find-input" aria-label="Find text" placeholder="Find in document" @keydown.enter.prevent="revealDocumentMatch(view, $event.shiftKey ? -1 : 1)" />
       <span class="find-count" role="status">{{ search?.matches.length ? `${search.index + 1} of ${search.matches.length}` : 'No matches' }}</span>
@@ -53,7 +54,9 @@ function replace(all = false) {
 
 <style scoped>
 .document-find { padding: 8px 12px; border-bottom: 1px solid var(--gray-6); background: var(--gray-2); }
+.document-find.touch { padding: 12px 16px; }
 .find-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block: 4px; }
+.document-find.touch .find-row { gap: 12px; margin-block: 6px; }
 .find-input { flex: 1; min-width: 140px; }
 .find-count { font-size: var(--font-size-xs); color: var(--gray-11); }
 </style>

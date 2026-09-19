@@ -81,7 +81,8 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .item {
-  height: var(--size-md);
+  height: var(--size-xl);
+  font-size: var(--font-size-md);
 }
 
 .item:last-of-type {
