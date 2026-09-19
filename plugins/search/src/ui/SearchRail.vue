@@ -371,6 +371,20 @@ onMounted(focusInput)
   padding: 12px;
 }
 
+.message {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+}
+
+.message.danger {
+  color: var(--danger-11);
+}
+
+.message.warning {
+  color: var(--warning-11);
+}
+
 .toggles {
   display: flex;
   flex-direction: column;
