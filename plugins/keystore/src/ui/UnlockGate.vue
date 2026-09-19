@@ -264,7 +264,7 @@ async function reset(): Promise<void> {
 
 .hint {
   margin: 0;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--gray-11);
 }
 
@@ -293,7 +293,7 @@ async function reset(): Promise<void> {
 
 .error {
   margin: 0;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--danger-11);
 }
 
