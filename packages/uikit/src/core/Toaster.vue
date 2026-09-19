@@ -95,8 +95,8 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .toast.touch .toast-close {
-  width: var(--size-xs);
-  height: var(--size-xs);
+  width: var(--size-md);
+  height: var(--size-md);
   padding: 0;
 }
 

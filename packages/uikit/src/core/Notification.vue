@@ -11,7 +11,7 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'close') => void>()
-const dismissSize = useShellFrame() === 'mobile' ? 'md' : 'xs'
+const dismissSize = useShellFrame() === 'mobile' ? 'lg' : 'xs'
 </script>
 
 <template>
