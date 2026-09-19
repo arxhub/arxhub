@@ -8,7 +8,7 @@ import { posix } from '@arxhub/path'
 // path mean the same thing. The tree moves files; this renames them in place.
 //
 // posix.* rather than the bare exports: a VFS pathname is always '/'-separated, and the node build of
-// @arxhub/path answers '\' on Windows (see packages/path/src/index.ts).
+// @arxhub/path answers '\' on Windows (see packages/path/src/index.node.ts).
 export function renameTarget(path: string, name: string): string {
   const trimmed = name.trim()
   if (trimmed === '') throw validation('A file needs a name')

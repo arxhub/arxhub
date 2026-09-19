@@ -8,6 +8,7 @@ export class MemoryFileSystem extends GenericVirtualFileSystem {
   readonly files = new Map<string, Uint8Array>()
   // Set to a path to make its next write reject — how a failed write of the synced file is staged.
   failWriteOn: string | null = null
+  failReadOn: string | null = null
 
   text(pathname: string): string | undefined {
     const found = this.files.get(pathname)
@@ -23,6 +24,7 @@ export class MemoryFileSystem extends GenericVirtualFileSystem {
   }
 
   override async read(pathname: string): Promise<Uint8Array> {
+    if (this.failReadOn === pathname) throw new Error(`read refused: ${pathname}`)
     const found = this.files.get(pathname)
     if (found == null) throw fileNotFound(pathname)
     return found

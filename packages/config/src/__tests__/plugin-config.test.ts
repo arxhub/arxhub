@@ -1,7 +1,7 @@
 import type { Logger } from '@arxhub/logger'
 import { Type } from '@sinclair/typebox'
 import { parse } from 'smol-toml'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { deviceLocalKeys, mergeConfig, pickSchema, splitConfig } from '../device-local'
 import { PluginConfig } from '../plugin-config'
 import { MemoryFileSystem } from './memory-file-system'
@@ -212,6 +212,55 @@ describe('PluginConfig.watch', () => {
     await config.write(Other, { flag: true }, { name: 'other' })
 
     expect(seen).toEqual([])
+  })
+})
+
+describe('PluginConfig.tryRead', () => {
+  it('answers defaults when the file is absent', async () => {
+    const storage = new MemoryFileSystem()
+    const config = new PluginConfig(storage, silentLogger())
+
+    expect(await config.tryRead(Schema)).toEqual({
+      'server.url': 'https://vault.example',
+      'sync.intervalMinutes': 5,
+      'ui.theme': 'default',
+    })
+  })
+
+  it('answers null when the store cannot be read, not defaults — settings are unknown', async () => {
+    const storage = new MemoryFileSystem()
+    storage.failReadOn = PATH
+    const config = new PluginConfig(storage, silentLogger())
+
+    expect(await config.tryRead(Schema)).toBeNull()
+  })
+
+  it('answers null when either half of a split config cannot be read', async () => {
+    const storage = new MemoryFileSystem()
+    const state = new MemoryFileSystem()
+    state.failReadOn = PATH
+    const config = new PluginConfig(storage, silentLogger(), state)
+
+    expect(await config.tryRead(Schema)).toBeNull()
+  })
+})
+
+describe('PluginConfig.notifyWritten resilience', () => {
+  it('does not fail write() when the post-write re-read fails — files already landed', async () => {
+    const storage = new MemoryFileSystem()
+    const config = new PluginConfig(storage, silentLogger())
+    const seen: Array<Record<string, unknown>> = []
+    config.watch(Schema, (value) => seen.push(value))
+
+    await config.write(Schema, { 'server.url': 'https://vault.test' })
+    expect(seen).toHaveLength(1)
+
+    vi.spyOn(config, 'read').mockRejectedValueOnce(new Error('re-read failed'))
+
+    await expect(config.write(Schema, { 'ui.theme': 'slate' })).resolves.toBeUndefined()
+
+    expect(keysOf(storage)).toContain('ui.theme')
+    expect(seen).toHaveLength(1)
   })
 })
 

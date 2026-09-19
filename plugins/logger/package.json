@@ -16,15 +16,19 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "dayjs": "catalog:shared",
     "vue": "catalog:client"
   },
   "devDependencies": {
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/path": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs": "workspace:*",
     "@types/node": "catalog:toolchain"
   },
   "peerDependencies": {

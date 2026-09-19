@@ -6,6 +6,8 @@ import { manifest } from './manifest'
 export interface KeyStorePluginArgs extends PluginArgs {
   // The KeyStore built at the composition root (also used there before start() to resolve identity).
   keystore: KeyStore
+  // Mirrors boot's `requireLock` for the same instance — see KeyStoreExtension.
+  deviceLockRequired?: boolean
 }
 
 // Publishes the injected KeyStore via KeyStoreExtension. Thin by design — the store is constructed and
@@ -13,14 +15,19 @@ export interface KeyStorePluginArgs extends PluginArgs {
 // extension exists so runtime plugins/UI can reach the same store.
 export class KeyStorePlugin extends Plugin {
   private readonly keystore: KeyStore
+  private readonly deviceLockRequired: boolean
 
   constructor(args: KeyStorePluginArgs) {
     super(args, manifest)
     this.keystore = args.keystore
+    this.deviceLockRequired = args.deviceLockRequired ?? false
   }
 
   override create(ctx: PluginContext): void {
     super.create(ctx)
-    ctx.extensions.register(KeyStoreExtension, () => ({ keystore: this.keystore }))
+    ctx.extensions.register(KeyStoreExtension, () => ({
+      keystore: this.keystore,
+      deviceLockRequired: this.deviceLockRequired,
+    }))
   }
 }

@@ -29,14 +29,16 @@ export class HotkeysPlugin extends Plugin {
     this.hotkeys = ctx.extensions.get(HotkeysExtension)
   }
 
-  override async start(_ctx: PluginContext): Promise<void> {
+  override start(_ctx: PluginContext): Promise<void> {
     // Capture, so the order between a chord and a library keymap is decided by the layer stack rather
     // than by which DOM node the library happened to listen on. A chord nothing claims is left
     // untouched, so listening first costs nobody anything.
     window.addEventListener('keydown', this.onKeydown, true)
+    return super.start(_ctx)
   }
 
-  override async stop(_ctx: PluginContext): Promise<void> {
+  override stop(_ctx: PluginContext): Promise<void> {
     window.removeEventListener('keydown', this.onKeydown, true)
+    return super.stop(_ctx)
   }
 }

@@ -35,10 +35,17 @@ export class LogFileWriter {
     this.currentPath = posix.join(LOGS_DIR, `session-${sessionId(now)}.ndjson`)
     await this.vfs.write(this.currentPath, new Uint8Array(0))
     await this.prune()
+    // Detached session open: boot logs land in the live buffer long before this resolves. Backfill
+    // once, then subscribe for new records only (snapshot before subscribe avoids duplicates).
+    const backlog = [...this.buffer.getAll()]
     this.unsubscribe = this.buffer.subscribe((record) => {
       this.pending.push(record)
       this.scheduleFlush()
     })
+    if (backlog.length > 0) {
+      this.pending.push(...backlog)
+      this.scheduleFlush()
+    }
     return this.currentPath
   }
 

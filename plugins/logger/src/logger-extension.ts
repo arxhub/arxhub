@@ -16,7 +16,7 @@ export class LoggerExtension extends Extension {
   readonly buffer: LogBuffer
   readonly records = shallowRef<LogRecord[]>([])
   readonly sessionFile = ref<string | null>(null)
-  // The plugin's scoped state VFS (state/<id>), injected by LoggerPlugin.start() once available.
+  // The plugin's scoped state VFS (state/<id>), bound in LoggerPlugin's detached openSession once ready.
   private vfs: VirtualFileSystem | null = null
 
   constructor(args: LoggerExtensionArgs) {
