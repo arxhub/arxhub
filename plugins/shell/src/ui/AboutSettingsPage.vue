@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { PageLayout } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { ref } from 'vue'
 
 const props = defineProps<{ version: string; repository?: string }>()
 const state = ref<'idle' | 'checking' | 'current' | 'available' | 'failed'>('idle')
 const latest = ref<{ version: string; url: string } | null>(null)
+const touch = useShellFrame() === 'mobile'
 
 async function checkForUpdates(): Promise<void> {
   state.value = 'checking'
@@ -30,11 +32,11 @@ async function checkForUpdates(): Promise<void> {
     title="About"
     description="Quote this version when reporting a problem — the session log records it too."
   >
-    <div class="about-row">
+    <div class="about-row" :class="{ touch }">
       <span class="label">Version</span>
       <code class="value" data-testid="app-version">{{ props.version }}</code>
     </div>
-    <div class="update-row">
+    <div class="update-row" :class="{ touch }">
       <button class="update-button" type="button" :disabled="state === 'checking'" @click="checkForUpdates">
         {{ state === 'checking' ? 'Checking…' : 'Check for updates' }}
       </button>
@@ -66,6 +68,10 @@ async function checkForUpdates(): Promise<void> {
   color: var(--gray-12);
 }
 
+.about-row.touch .value {
+  font-size: var(--font-size-sm);
+}
+
 .update-row {
   display: flex;
   align-items: center;
@@ -84,6 +90,12 @@ async function checkForUpdates(): Promise<void> {
   cursor: pointer;
   font: inherit;
   font-size: var(--font-size-sm);
+}
+
+.update-row.touch .update-button {
+  height: var(--size-xl);
+  padding: 0 16px;
+  font-size: var(--font-size-md);
 }
 
 .update-button:disabled {

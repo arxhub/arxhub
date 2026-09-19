@@ -1,6 +1,9 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { isMobileFrame, openSettingsSection, openType, SETTINGS_TYPE, test } from './fixtures'
+// publishTest: the first case below also commits Publishing's serverUrl into the project's shared
+// storage/publish/config.toml. Without the publish lock, a parallel publish-screen worker that just
+// cleared that file to assert the "off" state would reload onto the URL this test wrote instead.
+import { isMobileFrame, openSettingsSection, openType, SETTINGS_TYPE, publishTest as test } from './fixtures'
 
 // A settings page reads its file over the API and rebinds the field when it lands, so an edit made
 // before that arrives does not survive it — and a section whose file does not exist yet legitimately

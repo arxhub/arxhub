@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect, openSearchApp, test, waitForApp } from './fixtures'
+import { expect, openSearchApp, sqlConsoleAction, test, waitForApp } from './fixtures'
 
 // UJ-25 «Вопрос к базе на SQL»: the owner asks their own base a question in SQL and gets a table back,
 // without being able to break anything doing it. Both halves matter — an answer, and a refusal that leaves
@@ -125,7 +125,7 @@ test.describe('asking the base a question in SQL', () => {
 
     const schema = panel(app).getByRole('region', { name: 'Index schema' })
     await expect(schema).toBeHidden()
-    await panel(app).getByRole('button', { name: 'Schema' }).click()
+    await sqlConsoleAction(panel(app), 'Schema')
 
     for (const table of ['document', 'block', 'ref', 'tag', 'index_meta']) {
       await expect(schema.getByRole('heading', { name: table, exact: true })).toBeVisible()

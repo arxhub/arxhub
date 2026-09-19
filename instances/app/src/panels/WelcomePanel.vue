@@ -31,7 +31,7 @@ async function createNote(): Promise<void> {
 </script>
 
 <template>
-  <div class="welcome-panel">
+  <div class="welcome-panel" :class="{ touch: mobile }">
     <div class="sheet">
       <h1>ArxHub</h1>
       <p class="lede">
@@ -39,8 +39,8 @@ async function createNote(): Promise<void> {
       </p>
 
       <div class="welcome-actions">
-        <Button @click="createNote">New note</Button>
-        <Button v-if="shell.types.has(SEARCH_TYPE_ID)" variant="secondary" @click="shell.workspace.activateType(SEARCH_TYPE_ID)">Find a note</Button>
+        <Button :size="mobile ? 'lg' : 'md'" @click="createNote">New note</Button>
+        <Button v-if="shell.types.has(SEARCH_TYPE_ID)" :size="mobile ? 'lg' : 'md'" variant="secondary" @click="shell.workspace.activateType(SEARCH_TYPE_ID)">Find a note</Button>
       </div>
       <p class="next">Use Vault to browse files, or Open or switch to to reach all your tools.</p>
 
@@ -69,6 +69,10 @@ async function createNote(): Promise<void> {
   overflow-y: auto;
 }
 
+.welcome-panel.touch {
+  padding: 16px;
+}
+
 /* Left-aligned inside a centred block: the block is what sits in the middle of the panel, not each of
    its lines — centred prose starts every line in a different place. */
 .sheet {
@@ -89,6 +93,11 @@ h1 {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   color: var(--gray-11);
+}
+
+.welcome-panel.touch .lede,
+.welcome-panel.touch .next {
+  font-size: var(--font-size-md);
 }
 
 .next {

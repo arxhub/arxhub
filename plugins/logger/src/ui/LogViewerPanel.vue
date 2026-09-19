@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { LogRecord } from '@arxhub/logger'
 import { Button, IconButton, Input, Row, Strip } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import dayjs from 'dayjs'
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
 import { LoggerExtension } from '../logger-extension'
@@ -32,6 +32,8 @@ function levelTone(level: number): 'neutral' | 'danger' | 'warning' {
 
 const arxhub = useArxHub()
 const ext = arxhub.extensions.get(LoggerExtension)
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
 
 const enabled = ref<Record<LevelName, boolean>>({ debug: true, info: true, warn: true, error: true })
 const search = ref('')
@@ -105,7 +107,7 @@ onMounted(loadSessions)
 </script>
 
 <template>
-  <div class="log-panel">
+  <div class="log-panel" :class="{ touch }">
     <Strip>
       <div class="levels">
         <button
@@ -121,8 +123,8 @@ onMounted(loadSessions)
         </button>
       </div>
       <template #actions>
-        <IconButton icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
-        <Button variant="secondary" size="sm" :disabled="source !== ''" @click="ext.clear()">Clear</Button>
+        <IconButton size="lg" icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
+        <Button variant="secondary" :size="buttonSize" :disabled="source !== ''" @click="ext.clear()">Clear</Button>
       </template>
     </Strip>
     <Strip>
@@ -176,6 +178,12 @@ onMounted(loadSessions)
   cursor: pointer;
 }
 
+.log-panel.touch .chip {
+  height: var(--size-xl);
+  padding: 0 12px;
+  font-size: var(--font-size-sm);
+}
+
 .chip.off {
   background: var(--gray-2);
   color: var(--gray-9);
@@ -204,6 +212,11 @@ onMounted(loadSessions)
   font-size: var(--font-size-xs);
   font-family: var(--font-sans);
   padding: 0 8px;
+}
+
+.log-panel.touch .session {
+  height: var(--size-xl);
+  font-size: var(--font-size-md);
 }
 
 .chip:focus-visible,

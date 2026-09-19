@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Button, Dropdown, Icon, Input, MenuItem } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useAssetSession } from '../asset-session'
 import { type ArxAsset, isImageAsset } from '../assets'
 import type { ArxEditorControlProps } from '../control-views'
 
 const props = defineProps<ArxEditorControlProps>()
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const session = useAssetSession()
 const image = computed(() => props.node.type.name === 'image_block')
 const fileInput = ref<HTMLInputElement>()
@@ -105,15 +107,15 @@ async function download() {
       <img v-if="image && url" :src="url" :alt="node.attrs.alt || node.attrs.name" draggable="false" loading="lazy" decoding="async" @error="loadError = 'Could not display this image'" />
       <div v-if="!image" class="asset-actions"><Icon name="lu:paperclip" /><span>{{ node.attrs.name }}</span><span class="asset-meta">{{ Math.ceil(node.attrs.size / 1024) }} KB</span></div>
       <span v-if="loading" role="status">Loading attachment…</span>
-      <div v-if="loadError" class="asset-actions" role="alert"><span>{{ loadError }}</span><Button variant="secondary" @click="load">Retry attachment</Button></div>
+      <div v-if="loadError" class="asset-actions" role="alert"><span>{{ loadError }}</span><Button :size="buttonSize" variant="secondary" @click="load">Retry attachment</Button></div>
       <figcaption v-if="node.attrs.caption">{{ node.attrs.caption }}</figcaption>
       <div class="asset-actions">
-        <Button variant="ghost" :disabled="loading" @click="download">Download</Button>
+        <Button :size="buttonSize" variant="ghost" :disabled="loading" @click="download">Download</Button>
         <template v-if="mode === 'editable'">
-          <Button variant="ghost" :disabled="session.pending.value > 0" @click="fileInput?.click()">Replace file</Button>
-          <Button variant="ghost" @click="configure">Edit caption</Button>
+          <Button :size="buttonSize" variant="ghost" :disabled="session.pending.value > 0" @click="fileInput?.click()">Replace file</Button>
+          <Button :size="buttonSize" variant="ghost" @click="configure">Edit caption</Button>
           <Dropdown v-if="image">
-            <template #trigger><Button variant="ghost" aria-label="Image width">{{ node.attrs.width }}%</Button></template>
+            <template #trigger><Button :size="buttonSize" variant="ghost" aria-label="Image width">{{ node.attrs.width }}%</Button></template>
             <MenuItem v-for="width in [25, 50, 75, 100]" :key="width" :value="String(width)" @select="change({ width })">{{ width }}%</MenuItem>
           </Dropdown>
         </template>
@@ -121,14 +123,14 @@ async function download() {
     </template>
     <div v-else class="asset-empty">
       <Icon :name="image ? 'lu:image' : 'lu:paperclip'" />
-      <Button v-if="mode === 'editable'" variant="secondary" :disabled="session.pending.value > 0" @click="fileInput?.click()">{{ image ? 'Choose image' : 'Choose file' }}</Button>
+      <Button v-if="mode === 'editable'" :size="buttonSize" variant="secondary" :disabled="session.pending.value > 0" @click="fileInput?.click()">{{ image ? 'Choose image' : 'Choose file' }}</Button>
       <span v-else>{{ image ? 'No image selected' : 'No file selected' }}</span>
       <span v-if="loadError" role="alert">{{ loadError }}</span>
     </div>
     <form v-if="configuring && mode === 'editable'" class="asset-config" @submit.prevent="apply" @keydown.stop>
       <label>Caption<Input v-model="caption" aria-label="Attachment caption" /></label>
       <label v-if="image">Alternative text<Input v-model="alt" aria-label="Image alternative text" /></label>
-      <div class="asset-actions"><Button type="submit" variant="secondary">Apply caption</Button><Button variant="ghost" @click="configuring = false">Cancel</Button></div>
+      <div class="asset-actions"><Button :size="buttonSize" type="submit" variant="secondary">Apply caption</Button><Button :size="buttonSize" variant="ghost" @click="configuring = false">Cancel</Button></div>
     </form>
   </figure>
 </template>

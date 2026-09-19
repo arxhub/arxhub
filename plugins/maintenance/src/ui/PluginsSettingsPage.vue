@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button, modals, PageLayout, Switch } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, reactive, ref } from 'vue'
 import { MaintenanceExtension } from '../maintenance-extension'
 import { pluginLabel } from '../plugin-label'
@@ -8,6 +8,8 @@ import { pluginLabel } from '../plugin-label'
 const arxhub = useArxHub()
 const policy = arxhub.extensions.get(MaintenanceExtension).policy
 const plugins = arxhub.catalog
+const mobile = useShellFrame() === 'mobile'
+const buttonSize = mobile ? 'lg' : 'sm'
 
 // The policy is plain storage, so the switches keep their own reactive mirror of it.
 const enabled = reactive<Record<string, boolean>>(Object.fromEntries(plugins.map((it) => [it.name, !policy.isDisabled(it.name)])))
@@ -51,12 +53,13 @@ function reset(): void {
 
 <template>
   <PageLayout title="Plugins" description="Which plugins this device loads. A switch takes effect on the next start.">
+    <div class="plugins-body" :class="{ touch: mobile }">
     <section v-if="arxhub.maintenance" class="banner">
       <div>
         <p class="banner-title">Maintenance mode is on</p>
         <p class="hint">Only essential plugins are running. Switch off whatever broke, then leave maintenance mode.</p>
       </div>
-      <Button size="sm" @click="setMaintenance(false)">Leave and restart</Button>
+      <Button :size="buttonSize" @click="setMaintenance(false)">Leave and restart</Button>
     </section>
 
     <section class="block">
@@ -67,7 +70,7 @@ function reset(): void {
       </p>
 
       <ul class="list">
-        <li v-for="plugin in plugins" :key="plugin.name" class="row">
+        <li v-for="plugin in plugins" :key="plugin.name" class="row" :class="{ touch: mobile }">
           <div class="row-text">
             <p class="row-title">
               <span class="name">{{ pluginLabel(plugin.name) }}</span>
@@ -89,7 +92,7 @@ function reset(): void {
 
       <div v-if="pending" class="pending" role="status">
         <span class="hint">Plugin changes apply on the next start.</span>
-        <Button size="sm" @click="restart">Restart now</Button>
+        <Button :size="buttonSize" @click="restart">Restart now</Button>
       </div>
     </section>
 
@@ -100,12 +103,12 @@ function reset(): void {
         thing from the inside: boot the essentials only, fix what broke, come back.
       </p>
       <div class="row-actions">
-        <Button v-if="!arxhub.maintenance" size="sm" variant="secondary" @click="confirmMaintenance">
+        <Button v-if="!arxhub.maintenance" :size="buttonSize" variant="secondary" @click="confirmMaintenance">
           Restart in maintenance mode
         </Button>
         <Button
           v-if="anyDisabled || arxhub.maintenance"
-          size="sm"
+          :size="buttonSize"
           variant="secondary"
           @click="reset"
         >
@@ -113,6 +116,7 @@ function reset(): void {
         </Button>
       </div>
     </section>
+    </div>
   </PageLayout>
 </template>
 
@@ -125,7 +129,7 @@ function reset(): void {
 .block {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .block-title {
@@ -141,12 +145,20 @@ function reset(): void {
   color: var(--gray-11);
 }
 
+.plugins-body.touch .hint {
+  font-size: var(--font-size-sm);
+}
+
+.plugins-body.touch .block-title {
+  font-size: var(--font-size-md);
+}
+
 .banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem;
+  gap: 16px;
+  padding: 12px;
   border: 1px solid var(--warning-6);
   border-radius: var(--radius-sm);
   background: var(--warning-2);
@@ -171,11 +183,15 @@ function reset(): void {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.5rem 0;
+  gap: 16px;
+  padding: 8px 0;
   /* Hairline INSIDE one region (the plugin list), not a border BETWEEN regions — --gray-4 per
      .claude/rules/design.md, not --gray-6. */
   border-bottom: 1px solid var(--gray-4);
+}
+
+.row.touch {
+  min-height: var(--size-xl);
 }
 
 .row:last-child {
@@ -185,7 +201,7 @@ function reset(): void {
 .row-title {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 8px;
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--gray-12);
@@ -198,7 +214,7 @@ function reset(): void {
 }
 
 .tag {
-  padding: 0 0.25rem;
+  padding: 0 4px;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-xs);
 }
@@ -206,14 +222,14 @@ function reset(): void {
 .pending {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding-top: 0.5rem;
+  gap: 12px;
+  padding-top: 8px;
 }
 
 .row-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
+  gap: 8px;
+  margin-top: 4px;
 }
 </style>

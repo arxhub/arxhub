@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { actionMenu, IconButton } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Node } from 'prosemirror-model'
 import type { EditorView } from 'prosemirror-view'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -9,6 +10,7 @@ import type { BlockCommand } from '../slash-commands'
 import { openBlockMenu } from './block-menu'
 
 const props = defineProps<{ view: EditorView; scroller: HTMLElement; revision: number; commands: readonly BlockCommand[] }>()
+const iconSize = useShellFrame() === 'mobile' ? 'xl' : 'sm'
 const layoutRevision = ref(0)
 const dragging = ref(false)
 const dragStyle = ref<{ top: string; left: string }>()
@@ -174,10 +176,10 @@ function cancel() {
 <template>
   <div v-if="position || dragging" class="block-handle" :style="dragging ? dragStyle : position ?? undefined" @mousedown.prevent
     @pointerdown.prevent="start" @pointermove="move" @pointerup="finish" @pointercancel="cancel" @lostpointercapture="cancel">
-    <IconButton icon="lu:grip-vertical" tooltip="Block actions" @click="$event.detail === 0 && open($event.currentTarget as HTMLElement)" />
+    <IconButton :size="iconSize" icon="lu:grip-vertical" tooltip="Block actions" @click="$event.detail === 0 && open($event.currentTarget as HTMLElement)" />
   </div>
   <div v-if="position && !dragging" class="block-insert" :style="position" @mousedown.prevent>
-    <IconButton icon="lu:plus" tooltip="Insert block" @click="insert($event.currentTarget as HTMLElement)" />
+    <IconButton :size="iconSize" icon="lu:plus" tooltip="Insert block" @click="insert($event.currentTarget as HTMLElement)" />
   </div>
   <div v-if="dropLine" class="block-drop-line" :style="dropLine" aria-hidden="true" />
 </template>

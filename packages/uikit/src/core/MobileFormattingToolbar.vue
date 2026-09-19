@@ -3,7 +3,13 @@ import { actionMenu } from './action-menu/action-menu'
 import type { FormattingAction } from './formatting-action'
 import IconButton from './IconButton.vue'
 
-const props = defineProps<{ actions: FormattingAction[] }>()
+const props = withDefaults(
+  defineProps<{
+    actions: FormattingAction[]
+    variant?: 'strip' | 'bubble'
+  }>(),
+  { variant: 'strip' },
+)
 function more(): void {
   actionMenu.open(
     props.actions
@@ -21,8 +27,8 @@ function more(): void {
 
 <template>
   <div class="formatting" role="toolbar" aria-label="Formatting" @mousedown.prevent>
-    <IconButton v-for="action in actions.filter((item) => item.primary)" :key="action.id" size="lg" :icon="action.icon" :tooltip="action.label" :active="action.active" @click="action.run()" />
-    <IconButton size="lg" icon="lu:ellipsis" tooltip="More formatting" @click="more" />
+    <IconButton v-for="action in actions.filter((item) => item.primary)" :key="action.id" size="xl" :icon="action.icon" :tooltip="action.label" :active="action.active" @click="action.run()" />
+    <IconButton size="xl" icon="lu:ellipsis" tooltip="More formatting" @click="more" />
   </div>
 </template>
 

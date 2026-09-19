@@ -66,7 +66,7 @@ const percent = computed(() => (props.ledger.total === 0 ? 0 : Math.round((props
   inset: 0;
   z-index: 9999;
   overflow: auto;
-  padding: 2rem 1rem;
+  padding: 32px 16px;
   background: var(--gray-1, #fff);
   font-family: var(--font-sans, system-ui, sans-serif);
   color: var(--gray-12, #111);
@@ -75,28 +75,28 @@ const percent = computed(() => (props.ledger.total === 0 ? 0 : Math.round((props
 .card {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 24px;
   width: 100%;
-  max-width: 32rem;
+  max-width: 512px;
   margin: 0 auto;
 }
 
 .head {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .title {
   margin: 0;
-  font-size: var(--font-size-xl, 1.25rem);
+  font-size: var(--font-size-xl);
   font-weight: 600;
 }
 
 .lede {
   margin: 0;
   color: var(--gray-11, #555);
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
 }
 
 .track {
@@ -134,7 +134,7 @@ const percent = computed(() => (props.ledger.total === 0 ? 0 : Math.round((props
   gap: 8px;
   align-items: center;
   height: var(--size-2xs, 28px);
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
 }
 
 .dot {
@@ -164,7 +164,7 @@ const percent = computed(() => (props.ledger.total === 0 ? 0 : Math.round((props
 .version,
 .state {
   color: var(--gray-11, #555);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
 }
 
 .version {

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { SETTINGS_TYPE_ID, SettingsExtension } from '@arxhub/plugin-settings'
 import { ShellExtension } from '@arxhub/plugin-shell'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 
 const arxhub = useArxHub()
 const shell = arxhub.extensions.get(ShellExtension)
 const settings = arxhub.extensions.get(SettingsExtension)
+const touch = useShellFrame() === 'mobile'
 
 function openPlugins(): void {
   settings.open('plugins')
@@ -14,7 +15,7 @@ function openPlugins(): void {
 </script>
 
 <template>
-  <button class="maintenance" type="button" title="Only essential plugins are running" @click="openPlugins">
+  <button class="maintenance" :class="{ touch }" type="button" title="Only essential plugins are running" @click="openPlugins">
     Maintenance mode
   </button>
 </template>
@@ -31,6 +32,11 @@ function openPlugins(): void {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
+}
+
+.maintenance.touch {
+  height: var(--size-xl);
+  font-size: var(--font-size-sm);
 }
 
 .maintenance:hover {

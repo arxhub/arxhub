@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
 import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes'
-import { DocumentName } from '@arxhub/plugin-notes/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
-import { Button, Strip } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { LanguageDescription } from '@codemirror/language'
@@ -18,7 +16,7 @@ import { editorTheme } from '../editor-theme'
 import { CODEMIRROR_LAYER } from '../hotkeys'
 import { insertLink, toggleBold, toggleInlineCode, toggleItalic } from '../markdown-commands'
 import { isMarkdown, markdownProfile } from '../markdown-profile'
-import MarkdownToolbar from './MarkdownToolbar.vue'
+import CodeMirrorShell from './CodeMirrorShell.vue'
 
 // Fires this long after the last keystroke, mirroring the search plugin's index-queue debounce shape
 // (a burst of edits coalesces into one write, not one per keystroke) and the ProseMirror editor's own
@@ -184,45 +182,21 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="codemirror-wrapper" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <!-- One strip, not two. The name and the formatting keys used to sit on separate rows, which put
-         three bands of chrome (tab strip, path, toolbar) above every note before a word of it showed. -->
-    <Strip>
-      <DocumentName :path="path" />
-      <MarkdownToolbar v-if="note && !loadError" :view="view" :revision="revision" />
-      <template #actions>
-        <Button variant="secondary" :disabled="!canSave" @click="save">Save</Button>
-      </template>
-    </Strip>
-    <div v-if="loadError" class="codemirror-error">
-      <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
-      <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>
-    </div>
+  <CodeMirrorShell
+    :path="path"
+    :view="view"
+    :revision="revision"
+    :note="note"
+    :can-save="canSave"
+    :load-error="loadError"
+    :on-save="save"
+    :on-retry="() => reload(path)"
+  >
     <div v-show="!loadError" ref="editorEl" class="codemirror-editor" />
-  </div>
+  </CodeMirrorShell>
 </template>
 
 <style scoped>
-.codemirror-wrapper {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.codemirror-error {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: var(--font-size-xs);
-  color: var(--danger-11);
-  background: var(--danger-2);
-  border-bottom: 1px solid var(--danger-6);
-}
-
 .codemirror-editor {
   flex: 1;
   overflow: auto;

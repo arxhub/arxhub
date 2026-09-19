@@ -3,7 +3,7 @@ import { useHotkeys } from '@arxhub/plugin-hotkeys/ui'
 import { typeLayerId } from '@arxhub/plugin-shell'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { Button, StatusDot } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, watch } from 'vue'
 import { SETTINGS_TYPE_ID } from '../contributions'
 import { SettingsExtension } from '../settings-extension'
@@ -11,6 +11,8 @@ import { SettingsExtension } from '../settings-extension'
 const arxhub = useArxHub()
 const settings = arxhub.extensions.get(SettingsExtension)
 const changes = settings.changes
+const mobile = useShellFrame() === 'mobile'
+const buttonSize = mobile ? 'lg' : 'sm'
 
 const fields = computed(() => changes.fieldCount.value)
 const sections = computed(() => changes.sectionCount.value)
@@ -70,23 +72,21 @@ useHotkeys(hotkeys, [
 </script>
 
 <template>
-  <Transition name="rise">
-    <div v-if="sections > 0" class="bar" role="status">
-      <StatusDot :tone="tone" :pulse="changes.saving.value" />
-      <div class="summary">
-        <span class="headline">{{ summary }}</span>
-        <span class="detail">{{ changes.staged.value.map((c) => `${c.title}: ${c.keys.join(', ')}`).join(' · ') }}</span>
-      </div>
-      <span v-if="changes.invalid.value" class="blocked">Fix the highlighted fields to apply</span>
-      <!-- Drawn per platform from the one function that knows how (F-02): the sign used to be typed
-           in, and read "⌘S" on Linux and Windows, where it is Ctrl. -->
-      <kbd v-else class="shortcut">{{ hotkeys.label('Mod-s') }}</kbd>
-      <Button size="sm" variant="secondary" :disabled="changes.saving.value" @click="changes.revertAll()">Revert</Button>
-      <Button size="sm" variant="primary" :disabled="changes.saving.value || changes.invalid.value" @click="apply">
-        Save &amp; apply
-      </Button>
+  <div v-if="sections > 0" class="bar" :class="{ compact: mobile }" role="status">
+    <StatusDot :tone="tone" :pulse="changes.saving.value" />
+    <div class="summary">
+      <span class="headline">{{ summary }}</span>
+      <span v-if="!mobile" class="detail">{{ changes.staged.value.map((c) => `${c.title}: ${c.keys.join(', ')}`).join(' · ') }}</span>
     </div>
-  </Transition>
+    <span v-if="changes.invalid.value" class="blocked">Fix the highlighted fields to apply</span>
+    <!-- Drawn per platform from the one function that knows how (F-02): the sign used to be typed
+         in, and read "⌘S" on Linux and Windows, where it is Ctrl. A phone has no Mod key. -->
+    <kbd v-else-if="!mobile" class="shortcut">{{ hotkeys.label('Mod-s') }}</kbd>
+    <Button :size="buttonSize" variant="secondary" :disabled="changes.saving.value" @click="changes.revertAll()">Revert</Button>
+    <Button :size="buttonSize" variant="primary" :disabled="changes.saving.value || changes.invalid.value" @click="apply">
+      Save &amp; apply
+    </Button>
+  </div>
 </template>
 
 <style scoped>
@@ -103,6 +103,13 @@ useHotkeys(hotkeys, [
   font-family: var(--font-sans);
 }
 
+/* Phone: one line, no Mod hint — the type row already spends 48px below. Horizontal inset matches
+   PageLayout's mobile 16 so the bar and the page share one edge. */
+.bar.compact {
+  gap: 8px;
+  padding: 8px 16px;
+}
+
 .summary {
   display: flex;
   flex-direction: column;
@@ -114,6 +121,13 @@ useHotkeys(hotkeys, [
 .headline {
   font-size: var(--font-size-sm);
   color: var(--gray-12);
+}
+
+.bar.compact .headline {
+  font-size: var(--font-size-md);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detail {
@@ -130,27 +144,13 @@ useHotkeys(hotkeys, [
   color: var(--danger-11);
 }
 
+.bar.compact .blocked {
+  font-size: var(--font-size-sm);
+}
+
 .shortcut {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   color: var(--gray-9);
-}
-
-.rise-enter-active,
-.rise-leave-active {
-  transition: transform var(--duration-fast) ease, opacity var(--duration-fast) ease;
-}
-
-.rise-enter-from,
-.rise-leave-to {
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rise-enter-active,
-  .rise-leave-active {
-    transition: none;
-  }
 }
 </style>

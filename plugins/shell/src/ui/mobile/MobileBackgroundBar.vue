@@ -60,12 +60,12 @@ function goToOwner(): void {
   background: var(--gray-3);
   color: var(--gray-11);
   font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   text-align: left;
 }
 
 .background-bar.tappable {
-  height: var(--size-lg);
+  height: var(--size-xl);
   cursor: pointer;
 }
 

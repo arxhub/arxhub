@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { RadioGroup } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 import type { SelectOption } from './options'
 
 defineProps<{
@@ -11,11 +12,13 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'update:modelValue', value: string) => void>()
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
   <RadioGroup.Root
     class="root"
+    :class="{ touch }"
     :model-value="modelValue"
     :disabled="disabled"
     :aria-label="ariaLabel"
@@ -55,6 +58,12 @@ defineEmits<(e: 'update:modelValue', value: string) => void>()
   user-select: none;
 }
 
+.root.touch .item {
+  min-height: var(--size-xl);
+  align-items: center;
+  padding: 12px;
+}
+
 .item[data-hover]:not([data-disabled]) {
   background: var(--gray-3);
 }
@@ -73,13 +82,20 @@ defineEmits<(e: 'update:modelValue', value: string) => void>()
 }
 
 .control {
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
+  flex: 0 0 var(--size-xs-half);
+  width: var(--size-xs-half);
+  height: var(--size-xs-half);
   margin-top: 4px;
   border: 1.5px solid var(--gray-7);
   border-radius: var(--radius-full);
   background: var(--gray-1);
+}
+
+.root.touch .control {
+  flex-basis: var(--size-md);
+  width: var(--size-md);
+  height: var(--size-md);
+  margin-top: 0;
 }
 
 /* The dot is drawn on the control itself — an inner element would need a second data-state hook for
@@ -87,6 +103,10 @@ defineEmits<(e: 'update:modelValue', value: string) => void>()
 .control[data-state='checked'] {
   border-color: var(--accent-9);
   box-shadow: inset 0 0 0 4px var(--accent-9);
+}
+
+.root.touch .control[data-state='checked'] {
+  box-shadow: inset 0 0 0 8px var(--accent-9);
 }
 
 .item[data-disabled] .control {
@@ -106,10 +126,18 @@ defineEmits<(e: 'update:modelValue', value: string) => void>()
   color: var(--gray-12);
 }
 
+.root.touch .label {
+  font-size: var(--font-size-md);
+}
+
 .hint {
   font-size: var(--font-size-xs);
   line-height: var(--line-height-normal);
   color: var(--gray-11);
+}
+
+.root.touch .hint {
+  font-size: var(--font-size-sm);
 }
 
 .item[data-disabled] .label,

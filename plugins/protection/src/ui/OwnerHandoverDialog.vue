@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button, Card, modals } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 
 // Both branches are irreversible and neither is safer than the other, so neither is offered as a
 // default: there is no primary button and no confirm-shaped pair to press through. Dismissing the
@@ -9,6 +10,8 @@ const props = defineProps<{
   onKeepLocalFiles: () => void
   onTakeFromServer: () => void
 }>()
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
 
 function choose(branch: () => void): void {
   modals.close(props.modalId)
@@ -17,7 +20,7 @@ function choose(branch: () => void): void {
 </script>
 
 <template>
-  <div class="handover">
+  <div class="handover" :class="{ touch }">
     <p class="lead">
       This recovery phrase belongs to a different owner, and this device holds files. Whichever you choose cannot be
       undone from here.
@@ -29,7 +32,7 @@ function choose(branch: () => void): void {
         new owner ends up holding your files.
       </p>
       <div class="branch-action">
-        <Button size="sm" variant="danger" data-testid="handover-keep" @click="choose(props.onKeepLocalFiles)">
+        <Button :size="buttonSize" variant="danger" data-testid="handover-keep" @click="choose(props.onKeepLocalFiles)">
           Keep the local files
         </Button>
       </div>
@@ -41,14 +44,14 @@ function choose(branch: () => void): void {
         here that was never synced is gone for good.
       </p>
       <div class="branch-action">
-        <Button size="sm" variant="danger" data-testid="handover-take-server" @click="choose(props.onTakeFromServer)">
+        <Button :size="buttonSize" variant="danger" data-testid="handover-take-server" @click="choose(props.onTakeFromServer)">
           Delete the local files
         </Button>
       </div>
     </Card>
 
     <div class="actions">
-      <Button size="sm" variant="secondary" @click="modals.close(props.modalId)">Cancel</Button>
+      <Button :size="buttonSize" variant="secondary" @click="modals.close(props.modalId)">Cancel</Button>
     </div>
   </div>
 </template>
@@ -76,6 +79,11 @@ function choose(branch: () => void): void {
   color: var(--gray-11);
 }
 
+.handover.touch .lead,
+.handover.touch .branch {
+  font-size: var(--font-size-md);
+}
+
 .branch-action {
   display: flex;
   margin-top: 4px;
@@ -85,5 +93,15 @@ function choose(branch: () => void): void {
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
+}
+
+.handover.touch .branch-action,
+.handover.touch .actions {
+  display: block;
+}
+
+.handover.touch .branch-action :deep(.btn),
+.handover.touch .actions :deep(.btn) {
+  width: 100%;
 }
 </style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Input } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref } from 'vue'
 import { NotesExtension } from '../notes-extension'
 
@@ -14,6 +14,7 @@ const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
 const notes = arxhub.extensions.get(NotesExtension)
+const touch = useShellFrame() === 'mobile'
 
 // OR-03: the name as every other surface shows it — the tree hid a known extension while this strip
 // spelled it out, which is the product contradicting itself about one file on one screen. The field
@@ -62,7 +63,7 @@ function commit(): void {
 </script>
 
 <template>
-  <span class="document-name" :class="{ editing: renaming }">
+  <span class="document-name" :class="{ editing: renaming, touch }">
     <span v-if="renaming" ref="field" class="document-name-field">
       <Input v-model="draft" aria-label="New name" @keydown.enter.prevent.stop="commit" @keydown.escape.prevent.stop="cancel" @blur="commit" @click.stop />
     </span>
@@ -109,6 +110,10 @@ function commit(): void {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.document-name.touch .document-name-button {
+  height: var(--size-xl);
 }
 
 .document-name-button:hover {

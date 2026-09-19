@@ -107,30 +107,35 @@ function onPointerUp(): void {
 }
 
 .grabber-area {
-  padding: 0.5rem 1rem;
+  /* Tall enough to grab with a thumb; the visible handle stays a hairline. */
+  min-height: var(--size-xl);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: grab;
   /* Only the handle owns the vertical gesture; the body must stay scrollable. */
   touch-action: none;
 }
 
 .grabber {
-  width: 2.25rem;
+  width: var(--size-md);
   height: 4px;
-  margin: 0 auto;
+  margin: 0;
   border-radius: var(--radius-xs);
   background: var(--gray-7);
 }
 
 .sheet-title {
-  margin: 0.5rem 0 0;
+  margin: 8px 0 0;
   text-align: center;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   color: var(--gray-11);
 }
 
 .sheet-body {
   overflow-y: auto;
-  padding: 0.25rem 0 max(0.5rem, env(safe-area-inset-bottom));
+  padding: 0 0 max(8px, env(safe-area-inset-bottom));
 }
 </style>

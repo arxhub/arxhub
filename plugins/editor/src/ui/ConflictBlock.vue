@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { Button } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Node } from 'prosemirror-model'
 import { computed } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
 import { versionText } from '../document-history'
 
 const props = defineProps<ArxEditorControlProps>()
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
 
 function side(name: 'local' | 'remote'): Node | null {
   let found: Node | null = null
@@ -38,7 +41,7 @@ function keep(pick: 'local' | 'remote' | 'both') {
 </script>
 
 <template>
-  <div class="conflict-block">
+  <div class="conflict-block" :class="{ touch }">
     <p class="conflict-header">Conflict · this device / other device</p>
     <div class="conflict-side">
       <span class="conflict-label">This device</span>
@@ -51,9 +54,9 @@ function keep(pick: 'local' | 'remote' | 'both') {
       <p v-else class="conflict-empty">Deleted on the other device</p>
     </div>
     <div v-if="mode === 'editable'" class="conflict-actions">
-      <Button variant="secondary" size="sm" @click="keep('local')">Keep this device's</Button>
-      <Button variant="secondary" size="sm" @click="keep('remote')">Keep other device's</Button>
-      <Button variant="secondary" size="sm" @click="keep('both')">Keep both</Button>
+      <Button variant="secondary" :size="buttonSize" @click="keep('local')">Keep this device's</Button>
+      <Button variant="secondary" :size="buttonSize" @click="keep('remote')">Keep other device's</Button>
+      <Button variant="secondary" :size="buttonSize" @click="keep('both')">Keep both</Button>
     </div>
   </div>
 </template>
@@ -73,6 +76,9 @@ function keep(pick: 'local' | 'remote' | 'both') {
   font-size: var(--font-size-xs);
   color: var(--gray-11);
 }
+.conflict-block.touch .conflict-header {
+  font-size: var(--font-size-sm);
+}
 .conflict-side {
   display: flex;
   flex-direction: column;
@@ -81,6 +87,9 @@ function keep(pick: 'local' | 'remote' | 'both') {
 .conflict-label {
   font-size: var(--font-size-xs);
   color: var(--gray-10);
+}
+.conflict-block.touch .conflict-label {
+  font-size: var(--font-size-sm);
 }
 .conflict-side p {
   margin: 0;

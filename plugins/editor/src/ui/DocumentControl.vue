@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Button, Checkbox, Dropdown, Icon, Input, MenuItem } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
 import { reconfigureSelect, selectedLabel, selectOptions } from '../editor-mode'
 
 const props = defineProps<ArxEditorControlProps>()
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const configuring = ref(false)
 const label = ref('')
 const options = ref('')
@@ -45,7 +47,7 @@ function apply() {
       <span>{{ node.attrs.label }}</span>
       <Dropdown>
         <template #trigger>
-          <Button variant="secondary" :disabled="mode === 'readonly'" :aria-label="node.attrs.label">
+          <Button :size="buttonSize" variant="secondary" :disabled="mode === 'readonly'" :aria-label="node.attrs.label">
             {{ chosen ?? 'Choose…' }}
             <Icon name="lu:chevron-down" />
           </Button>
@@ -55,14 +57,14 @@ function apply() {
           {{ option.label }}
         </MenuItem>
       </Dropdown>
-      <Button v-if="mode === 'editable' && !configuring" variant="ghost" @click="configure">Configure</Button>
+      <Button v-if="mode === 'editable' && !configuring" :size="buttonSize" variant="ghost" @click="configure">Configure</Button>
     </div>
     <form v-if="configuring && mode === 'editable'" class="select-config" @submit.prevent="apply" @keydown.stop>
       <label>Label<Input v-model="label" aria-label="Dropdown label" /></label>
       <label>Options, one per line<textarea v-model="options" aria-label="Dropdown options" rows="4" /></label>
       <div class="select-value">
-        <Button variant="secondary" type="submit" :disabled="!label.trim() || !lines.length">Apply</Button>
-        <Button variant="ghost" @click="configuring = false">Cancel</Button>
+        <Button :size="buttonSize" variant="secondary" type="submit" :disabled="!label.trim() || !lines.length">Apply</Button>
+        <Button :size="buttonSize" variant="ghost" @click="configuring = false">Cancel</Button>
       </div>
     </form>
   </div>

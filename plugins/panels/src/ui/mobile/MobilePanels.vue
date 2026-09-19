@@ -47,8 +47,8 @@ const { openTabs, current, pathOf } = useOpenTabsList(props.store)
       </span>
       <IconButton
         icon="lu:x"
-        size="lg"
-        aria-label="Close document"
+        size="xl"
+        ariaLabel="Close document"
         @click="props.store.requestClosePanel(current.instance.instanceId, current.groupId)"
       />
     </div>
@@ -85,7 +85,8 @@ const { openTabs, current, pathOf } = useOpenTabsList(props.store)
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  padding: 8px 8px 8px 16px;
+  min-height: var(--size-xl);
+  padding: 4px 8px 4px 16px;
   border-top: 1px solid var(--gray-4);
   background: var(--gray-2);
 }
@@ -114,6 +115,6 @@ const { openTabs, current, pathOf } = useOpenTabsList(props.store)
   white-space: nowrap;
   color: var(--gray-10);
   font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
 }
 </style>

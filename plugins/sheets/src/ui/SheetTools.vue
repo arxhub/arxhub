@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Button, Checkbox, Dialog, Input, NumberInput, RadioGroup } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, useId, watch } from 'vue'
 import { defaultFormat, type NumberKind } from '../format'
 import { columnName, pointOf } from '../model'
 import { validSheetName } from '../workbook'
 import { useSheet } from './use-sheet'
 
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const session = useSheet()
 const {
   xlsxInput,
@@ -99,7 +101,7 @@ const advanced = computed(() => (tool.value && tool.value in titles ? (tool.valu
       <label class="sheet-field">Cell address<Input v-model="target" aria-label="Cell address" placeholder="A1" autocomplete="off" /></label>
       <p class="sheet-hint">{{ sheet?.rows.toLocaleString() }} rows · {{ sheet?.columns }} columns</p>
     </form>
-    <template #footer><Button variant="secondary" type="submit" :form="formId" :disabled="!valid">Go</Button></template>
+    <template #footer><Button :size="buttonSize" variant="secondary" type="submit" :form="formId" :disabled="!valid">Go</Button></template>
   </Dialog>
   <Dialog v-if="advanced" :open="true" :title="titles[advanced]" size="sm" @update:open="!$event && !operationBusy && (tool = null)">
     <form :id="`${formId}-advanced`" class="sheet-tool-form" @submit.prevent="applyTool">
@@ -131,7 +133,7 @@ const advanced = computed(() => (tool.value && tool.value in titles ? (tool.valu
       <label class="sheet-field" v-if="advanced === 'rename'">Sheet name<Input v-model="name" aria-label="Sheet name" maxlength="31" /></label>
       <p v-if="advanced === 'delete'">Delete “{{ sheetName }}”? References to this sheet become #REF!. You can undo this operation.</p>
     </form>
-    <template #footer><Button variant="secondary" type="submit" :form="`${formId}-advanced`" :disabled="operationBusy || advanced === 'rename' && !nameValid">{{ operationBusy ? 'Working…' : advanced === 'delete' ? 'Delete sheet' : 'Apply' }}</Button></template>
+    <template #footer><Button :size="buttonSize" variant="secondary" type="submit" :form="`${formId}-advanced`" :disabled="operationBusy || advanced === 'rename' && !nameValid">{{ operationBusy ? 'Working…' : advanced === 'delete' ? 'Delete sheet' : 'Apply' }}</Button></template>
   </Dialog>
   <Dialog v-if="tool === 'help'" :open="true" title="Spreadsheet help" size="sm" @update:open="!$event && (tool = null)">
     <p>Tap a cell, then enter a value or formula in the input. Enter applies it and moves down. Escape cancels the input.</p>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useShellFrame } from '../hooks/useShellFrame'
 import Icon from './Icon.vue'
 import IconButton from './IconButton.vue'
 
@@ -10,10 +11,12 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'close') => void>()
+const touch = useShellFrame() === 'mobile'
+const dismissSize = touch ? 'xl' : 'xs'
 </script>
 
 <template>
-  <div class="notification" :class="variant || 'info'">
+  <div class="notification" :class="[variant || 'info', { touch }]">
     <div class="content">
       <div class="icon-wrapper" v-if="icon">
         <Icon :name="icon" :size="20" />
@@ -23,7 +26,7 @@ defineEmits<(e: 'close') => void>()
         <div v-if="subtitle" class="subtitle">{{ subtitle }}</div>
       </div>
     </div>
-    <IconButton icon="lu:x" size="xs" aria-label="Dismiss" @click="$emit('close')" />
+    <IconButton icon="lu:x" :size="dismissSize" aria-label="Dismiss" @click="$emit('close')" />
   </div>
 </template>
 
@@ -40,6 +43,15 @@ defineEmits<(e: 'close') => void>()
   justify-content: space-between;
   gap: 12px;
   font-family: var(--font-sans);
+}
+
+.notification.touch {
+  padding: 16px;
+  gap: 12px;
+}
+
+.notification.touch .title {
+  font-size: var(--font-size-md);
 }
 
 .notification.info .icon-wrapper {

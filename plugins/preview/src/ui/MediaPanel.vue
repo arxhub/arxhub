@@ -2,7 +2,7 @@
 import { basename } from '@arxhub/path'
 import { DocumentName } from '@arxhub/plugin-notes/ui'
 import { IconButton, Strip } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { canOpenExternally, openExternally, VaultVfs } from '@arxhub/vfs'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { formatBytes, mediaOf, resolveMediaSource } from '../media'
@@ -11,6 +11,7 @@ const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
+const touch = useShellFrame() === 'mobile'
 const canOpen = computed(() => canOpenExternally(vfs))
 
 async function openInSystemApp(): Promise<void> {
@@ -94,7 +95,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="media-panel">
+  <div class="media-panel" :class="{ touch }">
     <Strip :flush-actions="canOpen">
       <DocumentName :path="path" />
       <span v-if="meta" class="media-meta">{{ meta }}</span>
@@ -131,6 +132,10 @@ onUnmounted(() => {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   white-space: nowrap;
+}
+
+.media-panel.touch .media-meta {
+  font-size: var(--font-size-sm);
 }
 
 .media-stage {
@@ -171,5 +176,9 @@ onUnmounted(() => {
   font-size: var(--font-size-xs);
   overflow-wrap: anywhere;
   text-align: center;
+}
+
+.media-panel.touch .media-path {
+  font-size: var(--font-size-sm);
 }
 </style>

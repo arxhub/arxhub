@@ -2,6 +2,7 @@
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { Dialog } from '@ark-ui/vue'
 import { watch } from 'vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import Icon from './Icon.vue'
 // biome-ignore lint/correctness/noUnusedImports: used in template
@@ -18,6 +19,8 @@ const props = withDefaults(
   }>(),
   { centered: false, size: 'md', closeOnInteractOutside: true, closeOnEscape: true },
 )
+
+const touch = useShellFrame() === 'mobile'
 
 let opener: HTMLElement | null = null
 watch(
@@ -43,7 +46,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
     <Teleport to="body">
       <Dialog.Backdrop class="dialog-backdrop" />
       <Dialog.Positioner class="dialog-positioner" :class="{ centered }">
-        <Dialog.Content class="dialog-content" :class="`size-${size}`">
+        <Dialog.Content class="dialog-content" :class="[`size-${size}`, { touch }]">
           <Strip v-if="title || $slots.header" :bordered="false">
             <template v-if="title" #title>
               <Dialog.Title class="dialog-title">{{ title }}</Dialog.Title>
@@ -51,7 +54,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
             <slot name="header" />
             <template #actions>
               <Dialog.CloseTrigger class="dialog-close" aria-label="Close">
-                <Icon name="lu:x" :size="14" />
+                <Icon name="lu:x" :size="touch ? 16 : 14" />
               </Dialog.CloseTrigger>
             </template>
           </Strip>
@@ -81,13 +84,13 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 10vh 1rem 1rem;
+  padding: 10vh 16px 16px;
   z-index: var(--z-index-modal);
 }
 
 .dialog-positioner.centered {
   align-items: center;
-  padding: 1rem;
+  padding: 16px;
 }
 
 /* The closed state has to win over the box. Ark marks the content `hidden` while the dialog is closed and
@@ -142,6 +145,11 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   cursor: pointer;
 }
 
+.dialog-content.touch .dialog-close {
+  width: var(--size-md);
+  height: var(--size-md);
+}
+
 .dialog-close:hover {
   background: var(--gray-4);
   color: var(--gray-12);
@@ -161,6 +169,11 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   color: var(--gray-12);
 }
 
+.dialog-content.touch .dialog-body {
+  padding: 16px;
+  font-size: var(--font-size-md);
+}
+
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
@@ -168,5 +181,14 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   flex-shrink: 0;
   padding: 12px 16px;
   border-top: 1px solid var(--gray-4);
+}
+
+.dialog-content.touch .dialog-footer {
+  flex-direction: column-reverse;
+  gap: 12px;
+}
+
+.dialog-content.touch .dialog-footer :deep(.btn) {
+  width: 100%;
 }
 </style>

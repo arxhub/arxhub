@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { StatusDot } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { SyncExtension } from '../sync-extension'
 
 const arxhub = useArxHub()
 const sync = arxhub.extensions.get(SyncExtension)
+const touch = useShellFrame() === 'mobile'
 
 // The only place a conflict copy becomes visible without browsing the vault for a file that quietly
 // appeared. One toast per round, naming every copy this round wrote — merge() resolves conflicts
@@ -99,7 +100,7 @@ const dotTone = computed(() => {
 </script>
 
 <template>
-  <div class="sync-status" role="status" :aria-label="statusLabel">
+  <div class="sync-status" :class="{ touch }" role="status" :aria-label="statusLabel">
     <StatusDot :tone="dotTone" :pulse="syncing" />
     {{ statusLabel }}
   </div>
@@ -117,5 +118,10 @@ const dotTone = computed(() => {
   font-size: var(--font-size-xs);
   color: var(--gray-11);
   white-space: nowrap;
+}
+
+.sync-status.touch {
+  height: var(--size-xl);
+  font-size: var(--font-size-sm);
 }
 </style>

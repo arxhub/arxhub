@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { IconButton } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue'
 import { address, columnName, type Point, pointOf } from '../model'
 import { formulaReferences } from '../references'
@@ -7,6 +8,7 @@ import { useSheet } from './use-sheet'
 
 const props = defineProps<{ rowHeight: number; columnWidth: number }>()
 const session = useSheet()
+const fillHandleSize = useShellFrame() === 'mobile' ? 'xl' : 'sm'
 const { grid, sheet, active, end, select, move, edit, clear, setVisible, cellText, onCopy, onPaste, editable } = session
 const { referenceMode, canPointReference, pointReference, extendReference, hiddenRows, fillTo } = session
 const id = useId()
@@ -314,7 +316,7 @@ function keydown(event: KeyboardEvent): void {
           :style="{ left: `${columnLeft(column)}px`, width: `${columnSize(column)}px` }">{{ columnName(column) }}</div>
         <div role="columnheader" :aria-colindex="1" aria-label="Row" class="sheet-cell sheet-heading sheet-corner" :style="{ left: `${x}px`, width: '48px' }" />
       </div>
-      <div v-if="handle" class="fill-handle" :style="handle"><IconButton icon="lu:grip" tooltip="Drag to autofill" @keydown.enter.prevent="session.tool.value = 'help'" /></div>
+      <div v-if="handle" class="fill-handle" :style="handle"><IconButton :size="fillHandleSize" icon="lu:grip" tooltip="Drag to autofill" @keydown.enter.prevent="session.tool.value = 'help'" /></div>
     </div>
   </div>
 </template>

@@ -69,7 +69,7 @@ function onClick(edge: 'left' | 'right'): void {
   position: absolute;
   bottom: 20%;
   height: 24%;
-  width: 24px;
+  width: var(--size-xs);
   border: none;
   padding: 0;
   /* The gesture owns horizontal movement here; the page must not scroll under the finger instead. */

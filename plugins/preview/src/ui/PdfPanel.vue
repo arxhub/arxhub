@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { DocumentName } from '@arxhub/plugin-notes/ui'
-import { IconButton, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import {
@@ -14,6 +12,7 @@ import {
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { copyBytes, formatBytes } from '../media'
 import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, MAX_ZOOM, MIN_ZOOM, stepZoom } from '../pdf'
+import PdfShell from './PdfShell.vue'
 
 // pdf.js parses off the main thread. Vite recognises `new URL(specifier, import.meta.url)` and resolves
 // it to the built worker asset — a plain relative path here would resolve against this .vue file's own
@@ -215,32 +214,32 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="pdf-panel">
-    <Strip flush-actions>
-      <DocumentName :path="path" />
-      <span v-if="meta" class="pdf-meta">{{ meta }}</span>
-      <template #actions>
-        <IconButton size="lg" icon="lu:zoom-out" tooltip="Zoom out" :disabled="zoom <= MIN_ZOOM" @click="zoom = stepZoom(zoom, -1)" />
-        <IconButton size="lg" icon="lu:zoom-in" tooltip="Zoom in" :disabled="zoom >= MAX_ZOOM" @click="zoom = stepZoom(zoom, 1)" />
-      </template>
-    </Strip>
-    <div ref="stageEl" class="pdf-stage">
-      <p v-if="loading" class="media-state">Loading…</p>
-      <template v-else-if="error">
-        <p class="media-state">{{ error }}</p>
-        <p class="media-path">{{ path }}</p>
-      </template>
-      <div
-        v-for="page in pages"
-        v-else
-        :key="page.index"
-        :ref="(el) => observeWrapper(el as Element | null, page)"
-        class="pdf-page"
-        :data-page-index="page.index"
-        :style="pageSize ? { width: `${pageSize.width}px`, height: `${pageSize.height}px` } : undefined"
-      >
-        <canvas v-if="page.rendered" :ref="(el) => onCanvasRef(page.index, el as Element | null)" class="pdf-canvas" />
+    <PdfShell
+      :path="path"
+      :meta="meta"
+      :zoom="zoom"
+      :on-zoom-out="() => (zoom = stepZoom(zoom, -1))"
+      :on-zoom-in="() => (zoom = stepZoom(zoom, 1))"
+    >
+      <div ref="stageEl" class="pdf-stage">
+        <p v-if="loading" class="media-state">Loading…</p>
+        <template v-else-if="error">
+          <p class="media-state">{{ error }}</p>
+          <p class="media-path">{{ path }}</p>
+        </template>
+        <div
+          v-for="page in pages"
+          v-else
+          :key="page.index"
+          :ref="(el) => observeWrapper(el as Element | null, page)"
+          class="pdf-page"
+          :data-page-index="page.index"
+          :style="pageSize ? { width: `${pageSize.width}px`, height: `${pageSize.height}px` } : undefined"
+        >
+          <canvas v-if="page.rendered" :ref="(el) => onCanvasRef(page.index, el as Element | null)" class="pdf-canvas" />
+        </div>
       </div>
-    </div>
+    </PdfShell>
   </div>
 </template>
 
@@ -251,13 +250,6 @@ onBeforeUnmount(() => {
   height: 100%;
   min-height: 0;
   background: var(--gray-1);
-}
-
-.pdf-meta {
-  color: var(--gray-11);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  white-space: nowrap;
 }
 
 .pdf-stage {

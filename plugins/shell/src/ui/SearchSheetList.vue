@@ -78,7 +78,7 @@ function choose(entry: SheetEntry): void {
         <IconButton
           v-if="section.id === 'open' && entry.objectKey == null && types.get(entry.typeId)?.pinned === false"
           icon="lu:x"
-          size="lg"
+          size="xl"
           :aria-label="`Close ${entry.title}`"
           @click="workspace.closeType(entry.typeId)"
         />
@@ -113,6 +113,7 @@ function choose(entry: SheetEntry): void {
   margin: 0;
   padding: 0 8px 4px;
   color: var(--gray-10);
+  font-size: var(--font-size-sm);
 }
 
 .sheet-row-title {

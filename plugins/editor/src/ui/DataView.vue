@@ -14,7 +14,10 @@ const editor = useArxHub().extensions.get(ArxEditorExtension)
 const sources = editor.kit.dataSources
 const source = computed(() => sources[String(props.node.attrs.source)])
 const layout = computed(() => String(props.node.attrs.layout) as DataLayout)
-const board = useShellFrame() === 'mobile' ? DataBoardMobile : DataBoardDesktop
+const frame = useShellFrame()
+const board = frame === 'mobile' ? DataBoardMobile : DataBoardDesktop
+const touch = frame === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
 const items = ref<ArxDataItem[]>([])
 const busy = ref(false)
 const error = ref('')
@@ -73,11 +76,11 @@ async function open(item: ArxDataItem) {
 </script>
 
 <template>
-  <section class="data-view" aria-label="Data view" :aria-busy="busy">
+  <section class="data-view" :class="{ touch }" aria-label="Data view" :aria-busy="busy">
     <div class="data-options">
-      <Dropdown><template #trigger><Button variant="ghost" :disabled="mode !== 'editable'">{{ source?.label ?? node.attrs.source }}</Button></template><MenuItem v-for="(entry, id) in sources" :key="id" :value="String(id)" @select="configure({ source: id, layout: entry.layouts[0] })">{{ entry.label }}</MenuItem></Dropdown>
-      <Dropdown><template #trigger><Button variant="ghost" :disabled="mode !== 'editable'">{{ layout }}</Button></template><MenuItem v-for="option in source?.layouts ?? ['list']" :key="option" :value="option" @select="configure({ layout: option })">{{ option }}</MenuItem></Dropdown>
-      <Button variant="ghost" @click="refresh++">Refresh data</Button>
+      <Dropdown><template #trigger><Button :size="buttonSize" variant="ghost" :disabled="mode !== 'editable'">{{ source?.label ?? node.attrs.source }}</Button></template><MenuItem v-for="(entry, id) in sources" :key="id" :value="String(id)" @select="configure({ source: id, layout: entry.layouts[0] })">{{ entry.label }}</MenuItem></Dropdown>
+      <Dropdown><template #trigger><Button :size="buttonSize" variant="ghost" :disabled="mode !== 'editable'">{{ layout }}</Button></template><MenuItem v-for="option in source?.layouts ?? ['list']" :key="option" :value="option" @select="configure({ layout: option })">{{ option }}</MenuItem></Dropdown>
+      <Button :size="buttonSize" variant="ghost" @click="refresh++">Refresh data</Button>
     </div>
     <Input :model-value="String(node.attrs.query)" :readonly="mode !== 'editable'" aria-label="Filter data" placeholder="Filter by text" @update:model-value="configure({ query: $event })" />
     <p v-if="busy && !items.length" role="status">Loading data…</p><p v-if="error" role="alert">{{ error }}</p>
@@ -99,4 +102,6 @@ async function open(item: ArxDataItem) {
 .data-options { display: flex; flex-wrap: wrap; gap: 8px; }
 p, h3 { margin: 0; font-size: var(--font-size-sm); color: var(--gray-11); }
 small, .data-help { font-size: var(--font-size-xs); color: var(--gray-11); }
+.data-view.touch small,
+.data-view.touch .data-help { font-size: var(--font-size-sm); }
 </style>
