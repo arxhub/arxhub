@@ -9,6 +9,9 @@ export interface ContentMergerRegistration {
   id: string
   matches: (pathname: string) => boolean
   merge: ContentMerger
+  // Generic mergers run only when no format owner claimed the path. Once an owner matches, its
+  // decline or failure must become a conflict copy rather than letting a byte-level fallback mangle it.
+  fallback?: boolean
 }
 
 // The one merger `Repo` knows about is this registry's `merge`, composed over every registration. Repo
@@ -35,17 +38,25 @@ export class ContentMergerRegistry {
     }
   }
 
-  // Registration order, first taker wins. A merger that throws is logged and skipped: one plugin's bug
-  // must cost that plugin its merge (the file degrades to a conflict copy or to the next merger), never
-  // the whole sync round.
+  // Registration order is preserved within each tier, but format owners always run before generic
+  // fallbacks. A matched owner that cannot merge owns the refusal too: Repo writes a whole-file conflict
+  // copy instead of asking a byte-level fallback to reinterpret that format.
   readonly merge: ContentMerger = async (pathname, base, local, remote) => {
-    for (const registration of [...this.registrations]) {
-      try {
-        if (!registration.matches(pathname)) continue
-        const result = await registration.merge(pathname, base, local, remote)
-        if (result) return result
-      } catch (error) {
-        this.logger.error(`Content merger "${registration.id}" failed on ${pathname}; treating it as a decline`, error)
+    const registrations = [...this.registrations]
+    let ownerMatched = false
+
+    for (const fallback of [false, true]) {
+      if (fallback && ownerMatched) return null
+      for (const registration of registrations) {
+        if ((registration.fallback === true) !== fallback) continue
+        try {
+          if (!registration.matches(pathname)) continue
+          if (!fallback) ownerMatched = true
+          const result = await registration.merge(pathname, base, local, remote)
+          if (result) return result
+        } catch (error) {
+          this.logger.error(`Content merger "${registration.id}" failed on ${pathname}; treating it as a decline`, error)
+        }
       }
     }
     return null

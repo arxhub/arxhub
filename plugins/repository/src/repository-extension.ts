@@ -1,14 +1,21 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { illegalState } from '@arxhub/errors'
+import { illegalState, validation } from '@arxhub/errors'
 import { join } from '@arxhub/path'
 import type { KeyringExtension } from '@arxhub/plugin-protection'
 import { FileHistory, type Repo, type Snapshot } from '@arxhub/sync'
 import type { RangeReader, VirtualFileSystem } from '@arxhub/vfs'
-import { type ShallowRef, shallowRef } from 'vue'
+import { ref, type ShallowRef, shallowRef } from 'vue'
 import { type ContentMergerRegistration, ContentMergerRegistry } from './content-mergers'
 import { migrateRepositoryStore, REPO_STORE_PATH } from './store-migration'
 
 const VAULT_PREFIX = 'vault/'
+
+function storagePrefix(pluginName: string): string {
+  if (pluginName === '' || pluginName === '.' || pluginName === '..' || pluginName.includes('/') || pluginName.includes('\\')) {
+    throw validation(`Invalid plugin name for storage access: "${pluginName}"`)
+  }
+  return `storage/${pluginName}`
+}
 
 // The remote half of the same object — registered by SyncPlugin while it is running (setRemote),
 // cleared in its stop(). Kept as this narrow shape rather than a `SyncExtension` import: the
@@ -29,6 +36,9 @@ export interface RepositoryExtensionArgs extends ExtensionArgs {
 export class RepositoryExtension extends Extension {
   readonly repo: Repo
   readonly history: FileHistory
+  // storage/ is synced but not observed by VaultWatcher. A consumer watches this revision and
+  // re-reads its own storage after a sync round may have reconciled files there.
+  readonly storageRevision = ref(0)
   // Paths this device left in the cloud, VAULT-relative (the repo's own `vault/` prefix stripped) —
   // what the explorer draws as a phantom node. Refreshed from the repo after every sync round and
   // every materialize() — Sync calls refreshPending() itself; the repository never watches sync.
@@ -71,6 +81,10 @@ export class RepositoryExtension extends Extension {
     return this.mergers.register(registration)
   }
 
+  refreshStorage(): void {
+    this.storageRevision.value++
+  }
+
   isPending(vaultPath: string): Promise<boolean> {
     return this.repo.isPending(join('vault', vaultPath))
   }
@@ -92,6 +106,35 @@ export class RepositoryExtension extends Extension {
     if (!this.remote) throw illegalState('This file is on the server — turn sync on to open it.')
     await this.remote.materialize(join('vault', vaultPath))
     await this.refreshPending()
+  }
+
+  // A missing local file may be pending rather than empty. Consumers with binary attachments can
+  // prepare just their metadata (and conflict copies), leaving photos to an explicit read.
+  async materializeStorageIfPending(pluginName: string, includes: (relativePath: string) => boolean = () => true): Promise<void> {
+    const storage = storagePrefix(pluginName)
+    await this.ready()
+    const prefix = `${storage}/`
+    const pending = (await this.repo.pendingPaths()).filter((path) => path.startsWith(prefix) && includes(path.slice(prefix.length)))
+    if (pending.length === 0) return
+    if (!this.remote) throw illegalState(`Storage for plugin "${pluginName}" is on the server — turn sync on before using it.`)
+    for (const path of pending) await this.remote.materialize(path)
+  }
+
+  // Sync snapshots and reconciles under the same Repo lock. Storage has no watcher, so journal the
+  // bucket before running the write: even a work function that partly writes and then fails remains
+  // visible to the next snapshot. Materialisation stays outside the lock because it acquires it itself.
+  async mutateStorage<T>(pluginName: string, work: () => Promise<T>, includes: (relativePath: string) => boolean = () => true): Promise<T> {
+    const storage = storagePrefix(pluginName)
+    await this.materializeStorageIfPending(pluginName, includes)
+    return this.repo.exclusive(async () => {
+      const prefix = `${storage}/`
+      const pending = (await this.repo.pendingPaths()).filter((path) => path.startsWith(prefix) && includes(path.slice(prefix.length)))
+      if (pending.length > 0) {
+        throw illegalState(`Storage for plugin "${pluginName}" changed while it was being prepared — retry the action.`)
+      }
+      await this.repo.add(storage)
+      return work()
+    })
   }
 
   async openPendingRangeReader(vaultPath: string): Promise<RangeReader | null> {

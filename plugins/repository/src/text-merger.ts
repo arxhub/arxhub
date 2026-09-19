@@ -34,6 +34,7 @@ function decodeText(bytes: Uint8Array): string | null {
 export function textMerger(extensions: () => ReadonlySet<string>): ContentMergerRegistration {
   return {
     id: 'text',
+    fallback: true,
     matches: (pathname) => extensions().has(posix.extname(pathname).slice(1).toLowerCase()),
     merge: async (_pathname, base, local, remote) => {
       if (base == null) return null

@@ -25,6 +25,7 @@ describe('textMerger', () => {
     const merger = textMerger(() => extensions)
 
     expect(merger.id).toBe('text')
+    expect(merger.fallback).toBe(true)
     expect(merger.matches('vault/notes/a.md')).toBe(true)
     expect(merger.matches('vault/notes/A.MD')).toBe(true)
     expect(merger.matches('vault/notes/a.txt')).toBe(false)

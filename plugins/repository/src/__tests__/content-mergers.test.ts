@@ -16,8 +16,8 @@ const accept =
   async (_pathname, _base, local) => ({ merged: bytes(`${tag}:${text(local)}`), conflicts: 0 })
 const decline: ContentMerger = async () => null
 
-function registration(id: string, matches: (pathname: string) => boolean, merge: ContentMerger): ContentMergerRegistration {
-  return { id, matches, merge }
+function registration(id: string, matches: (pathname: string) => boolean, merge: ContentMerger, fallback = false): ContentMergerRegistration {
+  return { id, matches, merge, fallback }
 }
 
 describe('ContentMergerRegistry', () => {
@@ -53,6 +53,47 @@ describe('ContentMergerRegistry', () => {
 
     const result = await registry.merge('any', null, bytes('l'), bytes('r'))
     expect(result && text(result.merged)).toBe('willing:l')
+  })
+
+  test('a format owner runs before an earlier generic fallback', async () => {
+    const registry = new ContentMergerRegistry(fakeLogger())
+    const generic = vi.fn<ContentMerger>(accept('generic'))
+    registry.register(registration('generic', () => true, generic, true))
+    registry.register(registration('owner', () => true, accept('owner')))
+
+    const result = await registry.merge('budget.jsonl', null, bytes('l'), bytes('r'))
+    expect(result && text(result.merged)).toBe('owner:l')
+    expect(generic).not.toHaveBeenCalled()
+  })
+
+  test.each(['declines', 'throws'] as const)('a format owner that %s suppresses generic fallback', async (outcome) => {
+    const logger = fakeLogger()
+    const registry = new ContentMergerRegistry(logger)
+    const generic = vi.fn<ContentMerger>(accept('generic'))
+    registry.register(registration('generic', () => true, generic, true))
+    registry.register(
+      registration(
+        'owner',
+        () => true,
+        async () => {
+          if (outcome === 'throws') throw new Error('broken owner')
+          return null
+        },
+      ),
+    )
+
+    expect(await registry.merge('budget.jsonl', null, bytes('l'), bytes('r'))).toBeNull()
+    expect(generic).not.toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalledTimes(outcome === 'throws' ? 1 : 0)
+  })
+
+  test('generic fallback still handles a path no format owner claims', async () => {
+    const registry = new ContentMergerRegistry(fakeLogger())
+    registry.register(registration('generic', (path) => path.endsWith('.md'), accept('generic'), true))
+    registry.register(registration('owner', (path) => path.endsWith('.jsonl'), accept('owner')))
+
+    const result = await registry.merge('note.md', null, bytes('l'), bytes('r'))
+    expect(result && text(result.merged)).toBe('generic:l')
   })
 
   test('every matching registration declining is a null answer', async () => {

@@ -79,6 +79,9 @@ export class SyncExtension extends Extension {
       this.lastError.value = error instanceof Error ? error.message : String(error)
       this.status.value = 'error'
     } finally {
+      // storage/ has no watcher of its own. Signal consumers before the asynchronous pending refresh,
+      // including after a round that failed after partially reconciling the local tree.
+      this.repository.refreshStorage()
       // Either outcome may have changed what is pending — a round that failed partway can still have
       // merged a head that left new files in the cloud.
       await this.repository.refreshPending()

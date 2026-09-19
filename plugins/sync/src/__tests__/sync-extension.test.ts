@@ -2,10 +2,16 @@ import { ConsoleLogger } from '@arxhub/logger'
 import type { RepositoryExtension } from '@arxhub/plugin-repository'
 import type { SyncEngine } from '@arxhub/sync'
 import { describe, expect, test, vi } from 'vitest'
+import { ref } from 'vue'
 import { SyncExtension } from '../sync-extension'
 
 function fakeRepository(): RepositoryExtension {
-  return { refreshPending: vi.fn(async () => {}) } as unknown as RepositoryExtension
+  const storageRevision = ref(0)
+  return {
+    storageRevision,
+    refreshStorage: vi.fn(() => storageRevision.value++),
+    refreshPending: vi.fn(async () => {}),
+  } as unknown as RepositoryExtension
 }
 
 function extension(repository: RepositoryExtension = fakeRepository()): SyncExtension {
@@ -40,6 +46,8 @@ describe('sync()', () => {
     await sync.sync()
 
     expect(sync.status.value).toBe('idle')
+    expect(repository.storageRevision.value).toBe(1)
+    expect(repository.refreshStorage).toHaveBeenCalledTimes(1)
     expect(repository.refreshPending).toHaveBeenCalledTimes(1)
   })
 
@@ -54,6 +62,8 @@ describe('sync()', () => {
 
     expect(sync.status.value).toBe('error')
     expect(sync.lastError.value).toBe('offline')
+    expect(repository.storageRevision.value).toBe(1)
+    expect(repository.refreshStorage).toHaveBeenCalledTimes(1)
     expect(repository.refreshPending).toHaveBeenCalledTimes(1)
   })
 

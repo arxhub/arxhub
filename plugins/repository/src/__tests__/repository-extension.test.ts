@@ -1,7 +1,11 @@
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { ConsoleLogger } from '@arxhub/logger'
 import type { KeyringExtension } from '@arxhub/plugin-protection'
-import type { ContentMerger, Repo } from '@arxhub/sync'
+import { type ContentMerger, Repo } from '@arxhub/sync'
 import type { VirtualFileSystem } from '@arxhub/vfs'
+import { NodeFileSystem } from '@arxhub/vfs-node'
 import { describe, expect, test, vi } from 'vitest'
 import { RepositoryExtension } from '../repository-extension'
 import { REPO_STORE_PATH } from '../store-migration'
@@ -16,6 +20,8 @@ function fakeRepo(pending: Set<string> = new Set(), prepare: () => Promise<void>
     isPending: async (path: string) => pending.has(path),
     pendingPaths: async () => [...pending],
     prepare,
+    exclusive: async <T>(work: () => Promise<T>) => work(),
+    add: vi.fn(async () => {}),
     setContentMerger: (merger: ContentMerger | null) => {
       contentMergers.push(merger)
     },
@@ -72,12 +78,134 @@ describe('materializeIfPending', () => {
 
   test('delegates to the registered remote (repo-relative path) and refreshes pending afterwards', async () => {
     const repository = extension({ pending: new Set(['vault/x.md']) })
-    const materialize = vi.fn(async () => {})
+    const materialize = vi.fn(async (_path: string) => {})
     repository.setRemote({ fetchFile: async () => {}, fetchChunks: async () => {}, materialize })
 
     await repository.materializeIfPending('x.md')
 
     expect(materialize).toHaveBeenCalledWith('vault/x.md')
+  })
+})
+
+describe('materializeStorageIfPending', () => {
+  test('is a no-op when this plugin has no pending storage, even with no remote registered', async () => {
+    const prepare = vi.fn(async () => {})
+    const repository = extension({ pending: new Set(['storage/other/data.json', 'vault/note.md']), prepare })
+
+    await expect(repository.materializeStorageIfPending('budget')).resolves.toBeUndefined()
+
+    expect(prepare).toHaveBeenCalledTimes(1)
+  })
+
+  test('refuses before a plugin can treat pending storage as empty while sync is offline', async () => {
+    const repository = extension({ pending: new Set(['storage/budget/budget.jsonl']) })
+
+    await expect(repository.materializeStorageIfPending('budget')).rejects.toThrow('turn sync on')
+  })
+
+  test('materializes every pending file in only the requested plugin bucket', async () => {
+    const repository = extension({
+      pending: new Set([
+        'storage/budget/budget.jsonl',
+        'storage/budget/conflict-ab12cd34-budget.jsonl',
+        'storage/budget-archive/budget.jsonl',
+        'storage/other/data.json',
+        'vault/note.md',
+      ]),
+    })
+    const materialize = vi.fn(async (_path: string) => {})
+    repository.setRemote({ fetchFile: async () => {}, fetchChunks: async () => {}, materialize })
+
+    await repository.materializeStorageIfPending('budget')
+
+    expect(materialize.mock.calls.map(([path]) => path)).toEqual([
+      'storage/budget/budget.jsonl',
+      'storage/budget/conflict-ab12cd34-budget.jsonl',
+    ])
+  })
+
+  test.each(['', '.', '..', 'budget/other', 'budget\\other'])('refuses unsafe plugin name %j', async (pluginName) => {
+    const repository = extension()
+    await expect(repository.materializeStorageIfPending(pluginName)).rejects.toThrow('Invalid plugin name')
+  })
+})
+
+describe('mutateStorage', () => {
+  test('prepares selected metadata without downloading unrelated pending photos', async () => {
+    const pending = new Set(['storage/budget/budget.jsonl', 'storage/budget/receipts/remote.jpg'])
+    const repository = extension({ pending })
+    const materialize = vi.fn(async (path: string) => { pending.delete(path) })
+    repository.setRemote({ fetchFile: async () => {}, fetchChunks: async () => {}, materialize })
+    const work = vi.fn(async () => 'saved')
+
+    await expect(repository.mutateStorage('budget', work, (path) => path === 'budget.jsonl')).resolves.toBe('saved')
+    expect(materialize.mock.calls).toEqual([['storage/budget/budget.jsonl']])
+    expect(pending.has('storage/budget/receipts/remote.jpg')).toBe(true)
+    expect(work).toHaveBeenCalledTimes(1)
+  })
+
+  test('refuses to write if storage became pending between materialisation and taking the repository lock', async () => {
+    const repository = extension()
+    const pendingPaths = vi
+      .spyOn(repository.fakeRepo, 'pendingPaths')
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(['storage/budget/budget.jsonl'])
+    const work = vi.fn(async () => {})
+
+    await expect(repository.mutateStorage('budget', work)).rejects.toThrow('retry the action')
+
+    expect(pendingPaths).toHaveBeenCalledTimes(2)
+    expect(repository.fakeRepo.add).not.toHaveBeenCalled()
+    expect(work).not.toHaveBeenCalled()
+  })
+
+  test('waits for repository reconciliation, reads its result, and journals the mutation before writing', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'arxhub-repository-storage-'))
+    try {
+      const vfs = new NodeFileSystem(directory, new ConsoleLogger())
+      const repo = new Repo(vfs)
+      const repository = new RepositoryExtension({ logger: new ConsoleLogger(), repo, rootVfs: vfs, keyring: fakeKeyring() })
+      await repository.ready()
+      const file = vfs.file('storage/budget/budget.jsonl')
+      await file.writeText('A')
+
+      let releaseReconciliation = (): void => {}
+      const reconciliationRelease = new Promise<void>((resolve) => {
+        releaseReconciliation = resolve
+      })
+      let reconciliationEntered = (): void => {}
+      const reconciliationReady = new Promise<void>((resolve) => {
+        reconciliationEntered = resolve
+      })
+      const reconciliation = repo.exclusive(async () => {
+        await file.writeText('B')
+        reconciliationEntered()
+        await reconciliationRelease
+      })
+      await reconciliationReady
+
+      const work = vi.fn(async () => {
+        expect(await repo.getChangesFile().readJSON<string[]>([])).toEqual(['storage/budget'])
+        await file.writeText(`${await file.readText()}C`)
+      })
+      const mutation = repository.mutateStorage('budget', work)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(work).not.toHaveBeenCalled()
+
+      releaseReconciliation()
+      await Promise.all([reconciliation, mutation])
+
+      expect(await file.readText()).toBe('BC')
+      expect(await repo.getChangesFile().readJSON<string[]>([])).toEqual(['storage/budget'])
+      expect((await repo.snapshot()).files['storage/budget/budget.jsonl']).toBeDefined()
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test.each(['', '.', '..', 'budget/other', 'budget\\other'])('refuses unsafe plugin name %j', async (pluginName) => {
+    const repository = extension()
+    await expect(repository.mutateStorage(pluginName, async () => {})).rejects.toThrow('Invalid plugin name')
   })
 })
 
