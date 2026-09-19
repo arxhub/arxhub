@@ -15,6 +15,7 @@ const sources = editor.kit.dataSources
 const source = computed(() => sources[String(props.node.attrs.source)])
 const layout = computed(() => String(props.node.attrs.layout) as DataLayout)
 const board = useShellFrame() === 'mobile' ? DataBoardMobile : DataBoardDesktop
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const items = ref<ArxDataItem[]>([])
 const busy = ref(false)
 const error = ref('')
@@ -75,9 +76,9 @@ async function open(item: ArxDataItem) {
 <template>
   <section class="data-view" aria-label="Data view" :aria-busy="busy">
     <div class="data-options">
-      <Dropdown><template #trigger><Button variant="ghost" :disabled="mode !== 'editable'">{{ source?.label ?? node.attrs.source }}</Button></template><MenuItem v-for="(entry, id) in sources" :key="id" :value="String(id)" @select="configure({ source: id, layout: entry.layouts[0] })">{{ entry.label }}</MenuItem></Dropdown>
-      <Dropdown><template #trigger><Button variant="ghost" :disabled="mode !== 'editable'">{{ layout }}</Button></template><MenuItem v-for="option in source?.layouts ?? ['list']" :key="option" :value="option" @select="configure({ layout: option })">{{ option }}</MenuItem></Dropdown>
-      <Button variant="ghost" @click="refresh++">Refresh data</Button>
+      <Dropdown><template #trigger><Button :size="buttonSize" variant="ghost" :disabled="mode !== 'editable'">{{ source?.label ?? node.attrs.source }}</Button></template><MenuItem v-for="(entry, id) in sources" :key="id" :value="String(id)" @select="configure({ source: id, layout: entry.layouts[0] })">{{ entry.label }}</MenuItem></Dropdown>
+      <Dropdown><template #trigger><Button :size="buttonSize" variant="ghost" :disabled="mode !== 'editable'">{{ layout }}</Button></template><MenuItem v-for="option in source?.layouts ?? ['list']" :key="option" :value="option" @select="configure({ layout: option })">{{ option }}</MenuItem></Dropdown>
+      <Button :size="buttonSize" variant="ghost" @click="refresh++">Refresh data</Button>
     </div>
     <Input :model-value="String(node.attrs.query)" :readonly="mode !== 'editable'" aria-label="Filter data" placeholder="Filter by text" @update:model-value="configure({ query: $event })" />
     <p v-if="busy && !items.length" role="status">Loading data…</p><p v-if="error" role="alert">{{ error }}</p>

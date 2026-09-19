@@ -7,6 +7,7 @@ import { addField, type PropertiesAttrs, withField, withoutField } from '../prop
 
 const props = defineProps<ArxEditorControlProps>()
 const iconSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 
 // The node's own attrs are already validated by the schema (properties-block.ts), so this just gives
 // them a stable shape to read — never a second source of truth for what they mean.
@@ -91,7 +92,7 @@ function removeFieldRow(index: number) {
         />
         <IconButton v-if="editable" :size="iconSize" icon="lu:x" aria-label="Remove field" @click="removeFieldRow(index)" />
       </div>
-      <Button v-if="editable" variant="ghost" @click="addFieldRow">
+      <Button v-if="editable" :size="buttonSize" variant="ghost" @click="addFieldRow">
         <Icon name="lu:plus" :size="14" />
         Add field
       </Button>
