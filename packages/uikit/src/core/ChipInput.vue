@@ -96,7 +96,7 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .chip-preview {
-  height: var(--size-md);
+  height: var(--size-xl);
   padding: 0 4px 0 12px;
 }
 
@@ -118,8 +118,8 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .chip-remove {
-  width: var(--size-md);
-  height: var(--size-md);
+  width: var(--size-xl);
+  height: var(--size-xl);
 }
 
 .chip-remove[data-hover] {
@@ -140,7 +140,7 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .chip-edit {
-  height: var(--size-md);
+  height: var(--size-xl);
 }
 
 .draft {
@@ -157,7 +157,7 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .draft {
-  height: var(--size-md);
+  height: var(--size-xl);
 }
 
 .draft::placeholder {
