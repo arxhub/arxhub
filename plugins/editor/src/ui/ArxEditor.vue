@@ -533,13 +533,13 @@ onUnmounted(() => {
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
     <DocumentVersions v-if="versionsOpen && extension.history && historyId && view" :store="extension.history" :current="view.state.doc" :document-id="historyId" :kit="kit" :mode="mode" :restore="restoreVersion" @close="versionsOpen = false" />
     <DocumentRecovery v-if="recovery" :kit="kit" :saved="recovery.saved" :draft="recovery.draft.content" :conflict="recovery.conflict" :busy="recoveryBusy" :error="recoveryError" @choose="resolveRecovery" />
-    <div v-if="draftError" class="editor-error" role="alert"><span>Draft backup unavailable: {{ draftError }}</span><Button variant="secondary" @click="backupDraft()">Retry draft backup</Button></div>
+    <div v-if="draftError" class="editor-error" role="alert"><span>Draft backup unavailable: {{ draftError }}</span><Button :size="buttonSize" variant="secondary" @click="backupDraft()">Retry draft backup</Button></div>
     <div v-if="loadError" class="editor-error">
       <span>{{ (loadError instanceof Error ? loadError.message : String(loadError)) || "Couldn't load this file." }} Saving is disabled.</span>
       <Button :size="buttonSize" variant="secondary" @click="reload(path)">Retry</Button>
     </div>
     <div v-if="assets.error.value" class="editor-error" role="alert">
-      <span>{{ assets.error.value }}</span><Button variant="secondary" @click="assets.retry">Retry upload</Button><Button variant="ghost" @click="assets.dismiss">Dismiss</Button>
+      <span>{{ assets.error.value }}</span><Button :size="buttonSize" variant="secondary" @click="assets.retry">Retry upload</Button><Button :size="buttonSize" variant="ghost" @click="assets.dismiss">Dismiss</Button>
     </div>
     <div v-show="!loadError" ref="editorEl" class="editor-content" @scroll="dismissSlash" />
     <BlockHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :commands="kit.commands" />
@@ -550,7 +550,7 @@ onUnmounted(() => {
       <span role="status" aria-live="polite">{{ saveStatus }}</span>
       <span v-if="conflictCount" role="status">{{ conflictCount }} conflict{{ conflictCount === 1 ? '' : 's' }}</span>
       <span v-if="assets.pending.value" role="status">Uploading attachment…</span>
-      <Button v-if="saveError" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button>
+      <Button v-if="saveError" :size="buttonSize" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button>
       <span v-if="mode === 'readonly'">Read only · Select and copy text</span>
       <span v-else-if="mode === 'interactive'">Interactive · Change values; text stays protected</span>
     </div>
