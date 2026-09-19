@@ -94,6 +94,15 @@ const touch = useShellFrame() === 'mobile'
   border-radius: var(--radius-xs);
 }
 
+.toast.touch {
+  padding: 16px;
+  gap: 12px;
+}
+
+.toast.touch .toast-title {
+  font-size: var(--font-size-md);
+}
+
 .toast.touch .toast-close {
   width: var(--size-xl);
   height: var(--size-xl);
