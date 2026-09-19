@@ -7,16 +7,28 @@ import { usePinEntry } from './use-pin-entry'
 
 const props = defineProps<PinEntryProps>()
 const emit = defineEmits<{ 'update:modelValue': [string]; submit: [] }>()
-const { padOpen, claimPad, onInput, press, MAX_LENGTH, PAD_KEYS, focus } = usePinEntry(props, (value) => emit('update:modelValue', value))
+const { onInput, press, MAX_LENGTH, PAD_KEYS, focus } = usePinEntry(props, (value) => emit('update:modelValue', value))
 // Six is the minimum, not a fixed length. Longer existing codes remain visible as masked dots and
 // submission stays explicit so entering the sixth digit never submits a partially entered code.
 const dotCount = computed(() => Math.max(MIN_UNLOCK_CODE_LENGTH, props.modelValue.length))
 const letters: Record<string, string> = { '2': 'ABC', '3': 'DEF', '4': 'GHI', '5': 'JKL', '6': 'MNO', '7': 'PQRS', '8': 'TUV', '9': 'WXYZ' }
+// Focus may be on any keypad button after Tab. Keep typed digits local to this control without
+// moving that focus; Enter and Space still activate the focused button through native click.
+function onKeypadKeydown(event: KeyboardEvent): void {
+  if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return
+  if (!(event.target instanceof HTMLButtonElement)) return
+  const key = /^[0-9]$/.test(event.key) ? event.key : event.key === 'Backspace' || event.key === 'Delete' ? 'delete' : null
+  if (key === null) return
+  event.preventDefault()
+  event.stopPropagation()
+  press(key, false)
+}
+
 defineExpose({ focus })
 </script>
 
 <template>
-  <div class="pin" data-testid="mobile-pin-entry" :class="{ disabled }" @focusin="claimPad">
+  <div class="pin" data-testid="mobile-pin-entry" :class="{ disabled }">
     <label class="entry">
       <span class="label">{{ label }}</span>
       <span class="display">
@@ -27,6 +39,7 @@ defineExpose({ focus })
           class="input"
           type="password"
           inputmode="none"
+          tabindex="-1"
           :value="modelValue"
           :maxlength="MAX_LENGTH"
           :disabled="disabled"
@@ -41,7 +54,7 @@ defineExpose({ focus })
         </span>
       </span>
     </label>
-    <div v-if="padOpen" class="pad" role="group" aria-label="Numeric keypad">
+    <div class="pad" role="group" aria-label="Numeric keypad" @keydown="onKeypadKeydown">
       <template v-for="(key, index) in PAD_KEYS" :key="index">
         <span v-if="key === ''" aria-hidden="true" />
         <button
@@ -52,8 +65,7 @@ defineExpose({ focus })
           :disabled="disabled || (key === 'delete' && !modelValue)"
           :aria-label="key === 'delete' ? 'Delete last digit' : key"
           :data-testid="`pin-key-${key}`"
-          @mousedown.prevent
-          @click="press(key)"
+          @click="press(key, $event.detail !== 0)"
         >
           <Icon v-if="key === 'delete'" name="lu:delete" :size="20" />
           <template v-else>
@@ -71,7 +83,7 @@ defineExpose({ focus })
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: var(--size-xs-half);
   width: 100%;
 }
 
@@ -98,18 +110,17 @@ defineExpose({ focus })
   border-radius: var(--radius-sm);
 }
 
+/* The input is an assistive/hardware entry, not a second visual control. The always-visible dots
+   show its value; keyboard focus is drawn on the keypad buttons instead (M-16, owner decision). */
 .input {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: text;
-}
-
-.display:has(.input:focus-visible) .dots {
-  outline: 2px solid var(--accent-8);
-  outline-offset: 1px;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .dots {
@@ -138,23 +149,21 @@ defineExpose({ focus })
 
 .pad {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, var(--size-2xl));
   justify-items: center;
-  gap: 12px 16px;
-  width: 100%;
-  max-width: 288px;
+  gap: 8px var(--size-2xl-half);
 }
 
-/* DS-1: a PIN keypad is a spatial input, not a row of generic form buttons. Its 72px circular
-   targets keep the familiar phone layout and leave room between adjacent digits. */
+/* DS-1: a PIN keypad is a spatial input, not a row of form actions. Circular targets use the
+   shared 64px step so a four-row keypad leaves room for the primary action on short phones. */
 .key {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  width: 72px;
-  height: 72px;
+  width: var(--size-2xl);
+  height: var(--size-2xl);
   border: 0;
   border-radius: var(--radius-full);
   background: var(--gray-3);

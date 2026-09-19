@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { hasErrorCode } from '@arxhub/errors'
+import { Button } from '@arxhub/uikit/core'
 import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef } from 'vue'
 import { enableDeviceLock, isUnlockCodeValid, MIN_UNLOCK_CODE_LENGTH, resetDeviceKeyStore, unlockDeviceKeyStore } from '../device-lock'
 import type { KeyStore } from '../keystore'
@@ -197,30 +198,28 @@ async function reset(): Promise<void> {
 
     <template #actions>
       <div v-if="mode === 'setup'" class="row">
-        <button class="submit" type="button" :disabled="busy || !canSubmitSetup" @click="submit">
+        <Button class="action" size="lg" :disabled="busy || !canSubmitSetup" @click="submit">
           {{ busy ? 'Setting up…' : step === 'choose' ? 'Continue' : 'Set up device lock' }}
-        </button>
-        <button v-if="step === 'confirm'" class="link" type="button" :disabled="busy" @click="backToChoose">Back</button>
+        </Button>
+        <Button v-if="step === 'confirm'" class="action" size="lg" variant="ghost" :disabled="busy" @click="backToChoose">Back</Button>
       </div>
       <div v-else class="row">
-        <!-- The click must not take focus off the field: the pad is only up while the entry holds it. -->
-        <button
-          class="submit"
-          type="button"
+        <Button
+          class="action"
+          size="lg"
           :disabled="busy || code.length === 0 || backoffActive"
-          @mousedown.prevent
           @click="submit"
         >
           {{ backoffActive ? `Try again in ${backoffRemaining}s` : busy ? 'Unlocking…' : 'Unlock' }}
-        </button>
+        </Button>
       </div>
     </template>
 
     <template v-if="mode === 'unlock'" #recovery>
       <div class="recover">
-        <button v-if="!confirmingReset" class="link" type="button" :disabled="busy" @click="confirmingReset = true">
+        <Button v-if="!confirmingReset" size="lg" variant="ghost" :disabled="busy" @click="confirmingReset = true">
           I forgot my code
-        </button>
+        </Button>
         <template v-else>
           <p class="warn">
             There is no way to recover a forgotten code — the keys cannot be read without it. Resetting erases this
@@ -228,8 +227,8 @@ async function reset(): Promise<void> {
             device will start again as a new one.
           </p>
           <div class="row">
-            <button class="danger" type="button" :disabled="busy" @click="reset">Erase and start over</button>
-            <button class="link" type="button" :disabled="busy" @click="confirmingReset = false">Cancel</button>
+            <Button class="action" size="lg" variant="danger" :disabled="busy" @click="reset">Erase and start over</Button>
+            <Button class="action" size="lg" variant="ghost" :disabled="busy" @click="confirmingReset = false">Cancel</Button>
           </div>
         </template>
       </div>
@@ -252,28 +251,9 @@ async function reset(): Promise<void> {
   color: var(--gray-11);
 }
 
-.submit {
-  height: var(--size-xl);
-  padding: 0 16px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-xs);
-  background-color: var(--accent-9);
-  color: var(--accent-contrast);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-md);
+.action {
   width: var(--unlock-action-width, auto);
-  cursor: pointer;
-}
-
-.submit:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: 1px;
-}
-
-.submit:disabled {
-  background-color: var(--gray-3);
-  color: var(--gray-9);
-  cursor: not-allowed;
+  flex: var(--unlock-action-flex, initial);
 }
 
 .error {
@@ -306,29 +286,4 @@ async function reset(): Promise<void> {
   gap: 8px;
 }
 
-.link {
-  min-height: var(--size-xl);
-  padding: 8px 0;
-  border: none;
-  background: none;
-  color: var(--gray-11);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  width: var(--unlock-action-width, auto);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.danger {
-  height: var(--size-xl);
-  padding: 0 16px;
-  border: 1px solid var(--danger-7);
-  border-radius: var(--radius-xs);
-  background-color: var(--gray-1);
-  color: var(--danger-11);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-md);
-  width: var(--unlock-action-width, auto);
-  cursor: pointer;
-}
 </style>

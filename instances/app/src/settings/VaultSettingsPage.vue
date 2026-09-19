@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { Button, PageLayout } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { isTauri } from '@tauri-apps/api/core'
 import { homeDir, join } from '@tauri-apps/api/path'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { ref } from 'vue'
+
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'md'
 
 const vaultPath = ref<string | null>(null)
 const error = ref<string | null>(null)
@@ -24,7 +27,7 @@ async function openVault(): Promise<void> {
   <PageLayout title="Vault" description="The folder where your notes and attachments are stored on this device.">
     <div class="vault-settings">
       <p class="vault-path">{{ vaultPath ?? '~/.arxhub/vault' }}</p>
-      <Button variant="secondary" @click="openVault">Open vault folder</Button>
+      <Button :size="buttonSize" variant="secondary" @click="openVault">Open vault folder</Button>
       <p v-if="error" class="vault-error">{{ error }}</p>
     </div>
   </PageLayout>

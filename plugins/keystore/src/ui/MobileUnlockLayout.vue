@@ -30,20 +30,21 @@
 .viewport {
   display: flex;
   min-height: 100%;
-  padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
-    max(16px, env(safe-area-inset-left));
+  padding: max(var(--size-xs-half), env(safe-area-inset-top)) max(var(--size-xs-half), env(safe-area-inset-right))
+    max(var(--size-xs-half), env(safe-area-inset-bottom)) max(var(--size-xs-half), env(safe-area-inset-left));
 }
 
 .card {
   --unlock-copy-align: center;
-  --unlock-action-direction: column;
+  --unlock-action-direction: row;
   --unlock-action-align: stretch;
   --unlock-action-width: 100%;
+  --unlock-action-flex: 1;
   --unlock-recovery-align: center;
 
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
   max-width: 360px;
   margin: auto;

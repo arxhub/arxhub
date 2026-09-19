@@ -20,11 +20,14 @@ import { IDENTITY_MNEMONIC_KEY } from '../identity'
 import { KeyringExtension } from '../keyring-extension'
 import { decideIdentityChange } from '../owner-decision'
 import { clearVaultWorkingTree, isVaultEmpty } from '../vault-reset'
+import DesktopChangeCodeEntry from './DesktopChangeCodeEntry.vue'
+import MobileChangeCodeEntry from './MobileChangeCodeEntry.vue'
 import OwnerHandoverDialog from './OwnerHandoverDialog.vue'
 
 const arxhub = useArxHub()
 const touch = useShellFrame() === 'mobile'
 const buttonSize = touch ? 'lg' : 'sm'
+const ChangeCodeEntry = touch ? MobileChangeCodeEntry : DesktopChangeCodeEntry
 const keystoreExt = arxhub.extensions.get(KeyStoreExtension)
 const keystore = keystoreExt.keystore
 const deviceLockRequired = keystoreExt.deviceLockRequired
@@ -318,6 +321,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
           :placeholder="`Unlock code, ${MIN_UNLOCK_CODE_LENGTH}+ digits`"
           autocomplete="new-password"
           test-id="new-unlock-code"
+          :disabled="lockBusy"
           @submit="submitEnableLock"
         />
         <div class="row">
@@ -328,19 +332,10 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
       </template>
 
       <template v-else>
-        <PinEntry
-          v-model="currentCode"
-          label="Current unlock code"
-          placeholder="Current unlock code"
-          autocomplete="current-password"
-          test-id="current-unlock-code"
-        />
-        <PinEntry
-          v-model="newCode"
-          label="New unlock code"
-          :placeholder="`New code, ${MIN_UNLOCK_CODE_LENGTH}+ digits`"
-          autocomplete="new-password"
-          test-id="new-unlock-code"
+        <ChangeCodeEntry
+          v-model:current-code="currentCode"
+          v-model:new-code="newCode"
+          :disabled="lockBusy"
           @submit="submitChangeCode"
         />
         <div class="row">

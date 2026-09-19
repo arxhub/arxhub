@@ -1,7 +1,7 @@
 import { shallowRef } from 'vue'
 
-// Which entry's keypad is up, across every entry on screen. Security settings holds two of them and two
-// keypads would be two places to look for the digit just pressed, but the entries do not know about each
+// Which desktop entry's keypad is up. Desktop Security settings holds two entries; mobile instead
+// presents one step with its keypad always visible. Desktop entries do not know about each
 // other — so this lives beside them rather than in either. It is module state and not a `<script setup>`
 // binding because that block is a per-instance setup(), which would give every entry its own copy.
 //

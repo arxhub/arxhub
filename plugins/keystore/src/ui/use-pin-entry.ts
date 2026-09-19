@@ -32,11 +32,11 @@ export function usePinEntry(props: PinEntryProps, update: (value: string) => voi
     update(digits)
   }
 
-  function press(key: string): void {
+  function press(key: string, restoreInputFocus = true): void {
     if (props.disabled) return
     const next = key === 'delete' ? props.modelValue.slice(0, -1) : `${props.modelValue}${key}`.slice(0, MAX_LENGTH)
     update(next)
-    input.value?.focus()
+    if (restoreInputFocus) input.value?.focus()
   }
 
   // A gate restores focus after scrypt has disabled and blurred the field.
