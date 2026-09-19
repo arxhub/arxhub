@@ -34,7 +34,8 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
-    "@arxhub/errors": "workspace:*"
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/uikit": "workspace:*"
   },
   "publishConfig": {
     "exports": {

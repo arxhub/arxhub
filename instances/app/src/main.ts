@@ -47,6 +47,7 @@ const themes: Theme[] = [
 
 await bootClient({
   version: __APP_VERSION__,
+  frame: __ARXHUB_FRAME__,
   // A shipped build never boots with its secrets in the clear.
   requireLock: true,
   // The frame is a build decision here — __ARXHUB_FRAME__ comes from TAURI_ENV_PLATFORM, see

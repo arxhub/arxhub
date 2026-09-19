@@ -4,6 +4,6 @@ import { defineConfig } from 'vite'
 export default defineConfig((env) =>
   createVueConfig(__dirname, env, {
     entries: ['src/index.ts', 'src/manifest.ts', 'src/ui.ts'],
-    external: ['@arxhub/core', '@arxhub/crypto', '@arxhub/errors', 'vue'],
+    external: ['@arxhub/core', '@arxhub/crypto', '@arxhub/errors', '@arxhub/uikit/core', '@arxhub/uikit/hooks', 'vue'],
   }),
 )

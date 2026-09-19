@@ -45,14 +45,17 @@ const themes: Theme[] = [
   { id: 'catppuccin-mocha', title: 'Catppuccin Mocha', base: 'dark' },
 ]
 
+const frame = detectShellFrame()
+
 await bootClient({
   version: __APP_VERSION__,
+  frame,
   // The stand and the e2e suite seed a plaintext identity into storage before the app runs and must
   // come straight up with no interaction, so this one never demands the lock.
   requireLock: false,
   // One browser build is served to phones and desktops alike, so this bundle cannot know its frame and
   // probes once, here, at boot. Nothing below the shell measures the window again.
-  loadShell: () => shellForFrame(detectShellFrame()),
+  loadShell: () => shellForFrame(frame),
 
   createVfs: ({ signer, logger }) => Promise.resolve(new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer }, logger)),
 

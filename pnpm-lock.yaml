@@ -1661,6 +1661,9 @@ importers:
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
       '@noble/hashes':
         specifier: catalog:shared
         version: 2.2.0

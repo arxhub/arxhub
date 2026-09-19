@@ -9,7 +9,7 @@ import { PanelStoreExtension, restoreNavigationWorkspace, StorePanelHost } from 
 import { loadOrCreateKeyring } from '@arxhub/plugin-protection'
 import { ShellExtension, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell'
 import { ObjectGonePage } from '@arxhub/plugin-shell/ui'
-import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
+import { ARXHUB_KEY, type ShellFrame } from '@arxhub/uikit/hooks'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { type App, type Component, createApp, markRaw } from 'vue'
 import { CLIENT_COMPOSITION, checkRegisteredComposition } from '../composition'
@@ -23,6 +23,8 @@ export interface BootClientDeps {
 }
 
 export interface BootClientOptions {
+  // Chosen once by the instance and shared by the pre-boot key-store gate and the eventual shell.
+  frame: ShellFrame
   // A shipped, user-facing build never boots with its secrets in the clear, so it gates on first-run
   // lock setup. Dev and e2e leave it false: they seed a plaintext identity into storage before the app
   // runs and must come straight up with no interaction.
@@ -43,7 +45,8 @@ export interface BootClientOptions {
   // and the package ships the one shell it can mount — a branch written here would be a runtime one and
   // would put both shells in every bundle, including the phone's. A bundle genuinely served to both
   // frames hands over `shellForFrame(detectShellFrame())` and gets that runtime branch deliberately.
-  // The shell itself publishes the frame to the tree (`provideShellFrame`), so nothing else needs it.
+  // The shell itself publishes the frame to its tree; `frame` above also gives it to UI mounted before
+  // that tree exists (the key-store gate).
   loadShell(): Promise<Component>
   version: string
 }
@@ -66,7 +69,7 @@ export async function bootClient(options: BootClientOptions): Promise<BootedClie
   // Resolve the device identity from client-local storage (never the server VFS) and install it into
   // the signer before start(). Blocks on the unlock prompt when the device is locked, or on first-run
   // lock setup when it never has been and this build requires one.
-  const keystore = await resolveKeyStore({ requireLock: options.requireLock })
+  const keystore = await resolveKeyStore({ requireLock: options.requireLock, frame: options.frame })
   const keyring = await loadOrCreateKeyring(keystore)
   const signer = new MutableRequestSigner()
   signer.install(keyring)

@@ -1,3 +1,4 @@
+import { SHELL_FRAME_KEY, type ShellFrame } from '@arxhub/uikit/hooks'
 import { createApp } from 'vue'
 import { isDeviceLocked } from './device-lock'
 import { type KeyStore, LocalStorageKeyStore, type StorageLike } from './keystore'
@@ -5,6 +6,9 @@ import UnlockGate from './ui/UnlockGate.vue'
 
 export interface ResolveKeyStoreOptions {
   storage?: StorageLike
+  // The unlock gate mounts before the shell exists, so the composition root passes the SAME frame the
+  // eventual shell will use. Direct callers keep the historical desktop default.
+  frame?: ShellFrame
   // A shipped, user-facing build never boots with its secrets in the clear — see the `12-keystore`
   // decision to make the lock mandatory. Dev/e2e leave this unset on purpose: they seed a plaintext
   // identity directly into storage before the app ever runs (see e2e/tests/fixtures.ts) and must come
@@ -23,12 +27,13 @@ export interface ResolveKeyStoreOptions {
 // requires the lock.
 export async function resolveKeyStore(options: ResolveKeyStoreOptions = {}): Promise<KeyStore> {
   const inner = new LocalStorageKeyStore(options.storage)
-  if (await isDeviceLocked(inner)) return promptGate(inner, 'unlock')
-  if (options.requireLock) return promptGate(inner, 'setup')
+  const frame = options.frame ?? 'desktop'
+  if (await isDeviceLocked(inner)) return promptGate(inner, 'unlock', frame)
+  if (options.requireLock) return promptGate(inner, 'setup', frame)
   return inner
 }
 
-function promptGate(inner: KeyStore, mode: 'unlock' | 'setup'): Promise<KeyStore> {
+function promptGate(inner: KeyStore, mode: 'unlock' | 'setup', frame: ShellFrame): Promise<KeyStore> {
   return new Promise<KeyStore>((resolve) => {
     const host = document.createElement('div')
     document.body.appendChild(host)
@@ -42,6 +47,7 @@ function promptGate(inner: KeyStore, mode: 'unlock' | 'setup'): Promise<KeyStore
         resolve(store)
       },
     })
+    app.provide(SHELL_FRAME_KEY, frame)
     app.mount(host)
   })
 }

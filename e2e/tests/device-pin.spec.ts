@@ -45,10 +45,37 @@ test.describe('The device lock is a numeric keypad', () => {
     await waitForApp(app)
   })
 
-  test('deletes a digit from the pad and from the keyboard alike', async ({ app }) => {
+  test('deletes a digit from the pad and from the keyboard alike', async ({ app }, testInfo) => {
     await lockWithKeypad(app)
 
     const gate = app.getByTestId('unlock-code')
+
+    if (testInfo.project.name === 'mobile') {
+      const entry = app.getByTestId('mobile-pin-entry')
+      const input = entry.locator('input[type="password"]')
+      await expect(input).toHaveAttribute('inputmode', 'none')
+
+      const keyBox = await app.getByTestId('pin-key-1').boundingBox()
+      expect(keyBox).not.toBeNull()
+      expect(keyBox?.width).toBeCloseTo(72, 0)
+      expect(keyBox?.height).toBeCloseTo(72, 0)
+
+      await tap(app, '1234567')
+      const filled = entry.locator('.dot.filled')
+      await expect(entry.locator('.dot')).toHaveCount(7)
+      await expect(filled).toHaveCount(7)
+      await expect(entry.locator('.dots')).toHaveAttribute('aria-hidden', 'true')
+      await testInfo.attach('mobile-pin-keypad', { body: await app.screenshot(), contentType: 'image/png' })
+      // Seven digits stay in the gate until the user explicitly submits; entering a longer code is not
+      // an accidental unlock just because the minimum is six.
+      await expect(app.getByRole('heading', { name: 'Unlock ArxHub' })).toBeVisible()
+
+      const deleteKey = app.getByTestId('pin-key-delete')
+      await deleteKey.click()
+      await expect(filled).toHaveCount(6)
+      for (let i = 0; i < 6; i++) await deleteKey.click()
+    }
+
     await gate.click()
     await app.keyboard.type(`${PIN}7`)
     await app.keyboard.press('Backspace')

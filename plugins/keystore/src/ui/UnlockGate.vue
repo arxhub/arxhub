@@ -4,6 +4,7 @@ import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef } from 'vue'
 import { enableDeviceLock, isUnlockCodeValid, MIN_UNLOCK_CODE_LENGTH, resetDeviceKeyStore, unlockDeviceKeyStore } from '../device-lock'
 import type { KeyStore } from '../keystore'
 import PinEntry from './PinEntry.vue'
+import UnlockLayout from './UnlockLayout.vue'
 
 const props = defineProps<{
   inner: KeyStore
@@ -133,138 +134,121 @@ async function reset(): Promise<void> {
 </script>
 
 <template>
-  <div class="gate">
-    <!-- Deliberately not <main>: the app's own main landmark is what tells the rest of the suite (and
-         a screen reader) that the app itself has come up, and the gate must not answer to that. -->
-    <div class="card">
-      <template v-if="mode === 'setup'">
-        <h1 class="title">Set a lock code</h1>
-        <p class="hint">
-          This device's keys will be encrypted at rest with a code of {{ MIN_UNLOCK_CODE_LENGTH }} digits or more.
-          There is no way to recover it if you forget it; the recovery phrase in Security settings is the only way
-          back in.
-        </p>
+  <UnlockLayout>
+    <template #title>
+      <h1 class="title">{{ mode === 'setup' ? 'Set a lock code' : 'Unlock ArxHub' }}</h1>
+    </template>
+    <template #help>
+      <p v-if="mode === 'setup'" class="hint">
+        This device's keys will be encrypted at rest with a code of {{ MIN_UNLOCK_CODE_LENGTH }} digits or more.
+        There is no way to recover it if you forget it; the recovery phrase in Security settings is the only way
+        back in.
+      </p>
+      <!-- Said plainly because the gate is where it would be believed: the code makes a copy of this
+           profile useless to whoever picked it up, and buys hours — not safety — against someone who
+           came for this vault. See the scrypt note in @arxhub/crypto's kdf.ts. -->
+      <p v-else class="hint">
+        The code encrypts this device's keys: it stops someone who ends up with a copy of this profile, not someone
+        who came for your vault and can spend an afternoon on it.
+      </p>
+    </template>
 
-        <PinEntry
-          v-if="step === 'choose'"
-          v-model="code"
-          label="New lock code"
-          :placeholder="`New code, ${MIN_UNLOCK_CODE_LENGTH}+ digits`"
-          autocomplete="new-password"
-          autofocus
-          :disabled="busy"
-          test-id="setup-lock-code"
-          @submit="submit"
-        />
-        <PinEntry
-          v-else
-          v-model="confirmCode"
-          label="Confirm lock code"
-          placeholder="Enter it again"
-          autocomplete="new-password"
-          autofocus
-          :disabled="busy"
-          test-id="confirm-lock-code"
-          @submit="submit"
-        />
+    <template v-if="mode === 'setup'">
+      <PinEntry
+        v-if="step === 'choose'"
+        v-model="code"
+        label="New lock code"
+        :placeholder="`New code, ${MIN_UNLOCK_CODE_LENGTH}+ digits`"
+        autocomplete="new-password"
+        autofocus
+        :disabled="busy"
+        test-id="setup-lock-code"
+        @submit="submit"
+      />
+      <PinEntry
+        v-else
+        v-model="confirmCode"
+        label="Confirm lock code"
+        placeholder="Enter it again"
+        autocomplete="new-password"
+        autofocus
+        :disabled="busy"
+        test-id="confirm-lock-code"
+        @submit="submit"
+      />
 
-        <p v-if="error" class="error" role="alert">{{ error }}</p>
+      <p v-if="error" class="error" role="alert">{{ error }}</p>
+    </template>
 
-        <div class="row">
-          <button class="submit" type="button" :disabled="busy || !canSubmitSetup" @click="submit">
-            {{ busy ? 'Setting up…' : step === 'choose' ? 'Continue' : 'Set up device lock' }}
-          </button>
-          <button v-if="step === 'confirm'" class="link" type="button" :disabled="busy" @click="backToChoose">Back</button>
-        </div>
-      </template>
+    <template v-else>
+      <PinEntry
+        ref="entry"
+        v-model="code"
+        label="Unlock code"
+        placeholder="Unlock code"
+        autocomplete="current-password"
+        autofocus
+        :disabled="busy || backoffActive"
+        test-id="unlock-code"
+        @submit="submit"
+      />
+      <p v-if="error" class="error" role="alert">{{ error }}</p>
+    </template>
 
-      <template v-else>
-        <h1 class="title">Unlock ArxHub</h1>
-        <!-- Said plainly because the gate is where it would be believed: the code makes a copy of this
-             profile useless to whoever picked it up, and buys hours — not safety — against someone who
-             came for this vault. See the scrypt note in @arxhub/crypto's kdf.ts. -->
-        <p class="hint">
-          The code encrypts this device's keys: it stops someone who ends up with a copy of this profile, not someone
-          who came for your vault and can spend an afternoon on it.
-        </p>
+    <template #actions>
+      <div v-if="mode === 'setup'" class="row">
+        <button class="submit" type="button" :disabled="busy || !canSubmitSetup" @click="submit">
+          {{ busy ? 'Setting up…' : step === 'choose' ? 'Continue' : 'Set up device lock' }}
+        </button>
+        <button v-if="step === 'confirm'" class="link" type="button" :disabled="busy" @click="backToChoose">Back</button>
+      </div>
+      <div v-else class="row">
+        <!-- The click must not take focus off the field: the pad is only up while the entry holds it. -->
+        <button
+          class="submit"
+          type="button"
+          :disabled="busy || code.length === 0 || backoffActive"
+          @mousedown.prevent
+          @click="submit"
+        >
+          {{ backoffActive ? `Try again in ${backoffRemaining}s` : busy ? 'Unlocking…' : 'Unlock' }}
+        </button>
+      </div>
+    </template>
 
-        <PinEntry
-          ref="entry"
-          v-model="code"
-          label="Unlock code"
-          placeholder="Unlock code"
-          autocomplete="current-password"
-          autofocus
-          :disabled="busy || backoffActive"
-          test-id="unlock-code"
-          @submit="submit"
-        />
-        <p v-if="error" class="error" role="alert">{{ error }}</p>
-        <div class="row">
-          <!-- The click must not take focus off the field: the pad is only up while the entry holds it. -->
-          <button
-            class="submit"
-            type="button"
-            :disabled="busy || code.length === 0 || backoffActive"
-            @mousedown.prevent
-            @click="submit"
-          >
-            {{ backoffActive ? `Try again in ${backoffRemaining}s` : busy ? 'Unlocking…' : 'Unlock' }}
-          </button>
-        </div>
-
-        <div class="recover">
-          <button v-if="!confirmingReset" class="link" type="button" :disabled="busy" @click="confirmingReset = true">
-            I forgot my code
-          </button>
-          <template v-else>
-            <p class="warn">
-              There is no way to recover a forgotten code — the keys cannot be read without it. Resetting erases this
-              device's identity. Everything encrypted under it is lost unless you saved the recovery phrase, and this
-              device will start again as a new one.
-            </p>
-            <div class="row">
-              <button class="danger" type="button" :disabled="busy" @click="reset">Erase and start over</button>
-              <button class="link" type="button" :disabled="busy" @click="confirmingReset = false">Cancel</button>
-            </div>
-          </template>
-        </div>
-      </template>
-    </div>
-  </div>
+    <template v-if="mode === 'unlock'" #recovery>
+      <div class="recover">
+        <button v-if="!confirmingReset" class="link" type="button" :disabled="busy" @click="confirmingReset = true">
+          I forgot my code
+        </button>
+        <template v-else>
+          <p class="warn">
+            There is no way to recover a forgotten code — the keys cannot be read without it. Resetting erases this
+            device's identity. Everything encrypted under it is lost unless you saved the recovery phrase, and this
+            device will start again as a new one.
+          </p>
+          <div class="row">
+            <button class="danger" type="button" :disabled="busy" @click="reset">Erase and start over</button>
+            <button class="link" type="button" :disabled="busy" @click="confirmingReset = false">Cancel</button>
+          </div>
+        </template>
+      </div>
+    </template>
+  </UnlockLayout>
 </template>
 
 <style scoped>
-.gate {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background-color: var(--gray-1);
-  font-family: var(--font-sans);
-  overflow-y: auto;
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  max-width: 320px;
-}
-
 .title {
   margin: 0;
-  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-medium);
+  text-align: var(--unlock-copy-align, start);
   color: var(--gray-12);
 }
 
 .hint {
   margin: 0;
   font-size: var(--font-size-sm);
+  text-align: var(--unlock-copy-align, start);
   color: var(--gray-11);
 }
 
@@ -277,6 +261,7 @@ async function reset(): Promise<void> {
   color: var(--accent-contrast);
   font-family: var(--font-sans);
   font-size: var(--font-size-md);
+  width: var(--unlock-action-width, auto);
   cursor: pointer;
 }
 
@@ -294,6 +279,7 @@ async function reset(): Promise<void> {
 .error {
   margin: 0;
   font-size: var(--font-size-sm);
+  text-align: var(--unlock-copy-align, start);
   color: var(--danger-11);
 }
 
@@ -304,6 +290,7 @@ async function reset(): Promise<void> {
   margin-top: 8px;
   padding-top: 12px;
   border-top: 1px solid var(--gray-6);
+  text-align: var(--unlock-recovery-align, start);
 }
 
 .warn {
@@ -314,7 +301,8 @@ async function reset(): Promise<void> {
 
 .row {
   display: flex;
-  align-items: center;
+  flex-direction: var(--unlock-action-direction, row);
+  align-items: var(--unlock-action-align, center);
   gap: 8px;
 }
 
@@ -326,6 +314,7 @@ async function reset(): Promise<void> {
   color: var(--gray-11);
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
+  width: var(--unlock-action-width, auto);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -339,6 +328,7 @@ async function reset(): Promise<void> {
   color: var(--danger-11);
   font-family: var(--font-sans);
   font-size: var(--font-size-md);
+  width: var(--unlock-action-width, auto);
   cursor: pointer;
 }
 </style>

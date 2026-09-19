@@ -45,13 +45,16 @@ const themes: Theme[] = [
   { id: 'catppuccin-mocha', title: 'Catppuccin Mocha', base: 'dark' },
 ]
 
+const frame = detectShellFrame()
+
 await bootClient({
   version: __APP_VERSION__,
+  frame,
   // A shipped build never boots with its secrets in the clear.
   requireLock: true,
   // One browser build is served to phones and desktops alike, so this bundle cannot know its frame and
   // probes once, here, at boot. Nothing below the shell measures the window again.
-  loadShell: () => shellForFrame(detectShellFrame()),
+  loadShell: () => shellForFrame(frame),
 
   createVfs: ({ signer, logger }) => Promise.resolve(new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer }, logger)),
 
