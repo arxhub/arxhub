@@ -179,8 +179,9 @@ onMounted(loadSessions)
 }
 
 .log-panel.touch .chip {
-  height: var(--size-md);
+  height: var(--size-xl);
   padding: 0 12px;
+  font-size: var(--font-size-sm);
 }
 
 .chip.off {
@@ -214,8 +215,8 @@ onMounted(loadSessions)
 }
 
 .log-panel.touch .session {
-  height: var(--size-md);
-  font-size: var(--font-size-sm);
+  height: var(--size-xl);
+  font-size: var(--font-size-md);
 }
 
 .chip:focus-visible,
