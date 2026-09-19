@@ -35,7 +35,6 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/errors": "workspace:*",
     "@arxhub/path": "workspace:*",
-    "@arxhub/plugin-notes": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
     "@arxhub/sync": "workspace:*",

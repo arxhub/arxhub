@@ -54,4 +54,10 @@ describe('NodeFileSystem confinement', () => {
     await vfs.write('vault/a/b.txt', new TextEncoder().encode('ok'))
     expect(new TextDecoder().decode(await vfs.read('vault/a/../a/b.txt'))).toBe('ok')
   })
+
+  test('readRange and compareAndSwap on an escaping path are rejected like read/write', async () => {
+    const node = vfs as import('../index').NodeFileSystem
+    await expect(node.readRange('../escape.bin', 0, 1)).rejects.toSatisfy((e) => hasErrorCode(e, 'ScopeAccessDenied'))
+    await expect(node.compareAndSwap('../escape.bin', null, new Uint8Array([1]))).rejects.toSatisfy((e) => hasErrorCode(e, 'ScopeAccessDenied'))
+  })
 })

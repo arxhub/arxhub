@@ -47,12 +47,14 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
     keys: next.changedKeys,
     invalid: next.invalid,
     commit: async () => {
-      await search.config.write(SearchConfigSchema, next.values as Partial<SearchConfig>)
-      values.value = { ...next.values }
+      const snapshot = settings.changes.draftFor(SEARCH_SETTINGS_SECTION)
+      if (!snapshot) return
+      await search.config.write(SearchConfigSchema, snapshot as Partial<SearchConfig>)
+      values.value = { ...snapshot }
       draft.value = undefined
       // Every value takes effect from here on. Two of them decide what the index CONTAINS rather than how
       // it is read, and no query can recover rows the old rule kept out — so those rebuild it.
-      const rebuild = search.applySettings(toSearchSettings(next.values as SearchConfig))
+      const rebuild = search.applySettings(toSearchSettings(snapshot as SearchConfig))
       if (!rebuild) return
       toaster.create({
         title: 'Rebuilding the index',

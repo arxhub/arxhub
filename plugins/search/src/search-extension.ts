@@ -103,6 +103,14 @@ export class SearchExtension extends Extension {
     return rebuild
   }
 
+  // What the shell background line shows while the index opens or a walk runs — no owner, same wording as
+  // the Search rail and settings section (`useIndexStatus`).
+  busyWork(): { label: string } | null {
+    if (this.status.value === 'opening') return { label: 'Opening the index…' }
+    if (this.status.value === 'scanning') return { label: `Indexing… ${this.processed.value} processed` }
+    return null
+  }
+
   // Throws the index away and builds it again (FR-226). Starting it twice does not start two walks — the
   // second call joins the first.
   async reindex(): Promise<void> {

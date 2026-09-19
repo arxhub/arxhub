@@ -12,6 +12,7 @@ import { manifest } from './manifest'
 import { openWithRetry } from './open-index'
 import { SearchConfigSchema, toSearchSettings } from './search-config'
 import { SearchExtension } from './search-extension'
+import SearchIndexStatus from './ui/SearchIndexStatus.vue'
 import SearchLayout from './ui/SearchLayout.vue'
 import SearchSettingsPage from './ui/SearchSettingsPage.vue'
 import SqlConsolePanel from './ui/SqlConsolePanel.vue'
@@ -81,6 +82,16 @@ export class SearchPlugin extends Plugin {
       icon: 'lu:search',
       order: 12,
       component: markRaw(SearchSettingsPage),
+    })
+
+    const shell = ctx.extensions.get(ShellExtension)
+    // No owner: indexing belongs to the vault, not to an open object — the background line shows the label
+    // and does not pretend there is somewhere to lead (same contract as sync).
+    shell.status.register({
+      id: 'arxhub.search.index',
+      kind: 'status',
+      component: markRaw(SearchIndexStatus),
+      busy: () => search.busyWork(),
     })
   }
 
