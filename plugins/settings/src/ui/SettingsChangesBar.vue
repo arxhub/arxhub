@@ -123,6 +123,7 @@ useHotkeys(hotkeys, [
 }
 
 .bar.compact .headline {
+  font-size: var(--font-size-md);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -140,6 +141,10 @@ useHotkeys(hotkeys, [
 .blocked {
   font-size: var(--font-size-xs);
   color: var(--danger-11);
+}
+
+.bar.compact .blocked {
+  font-size: var(--font-size-sm);
 }
 
 .shortcut {
