@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DEFAULT_SEARCH_LIMIT, SEARCH_QUALIFIERS, type SearchSnippet, type SearchSort, snippetSegments } from '@arxhub/sql'
 import { IconButton, Input, Row, SectionLabel, Segmented, type SelectOption, StatusDot, Strip, Switch } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { SearchExtension } from '../search-extension'
 import { createSearchController } from './search-controller'
@@ -17,6 +17,7 @@ const workspace = useOpenDocument()
 const sqlConsole = useOpenConsole()
 // The same status line and the same rebuild control the settings section shows — one wording for both.
 const index = useIndexStatus()
+const touch = useShellFrame() === 'mobile'
 
 const query = ref('')
 const controller = createSearchController({
@@ -188,7 +189,7 @@ onMounted(focusInput)
 </script>
 
 <template>
-  <div class="search-rail">
+  <div class="search-rail" :class="{ touch }">
     <div ref="headEl" class="search-head">
       <Input
         v-model="query"
@@ -365,26 +366,30 @@ onMounted(focusInput)
   border-bottom: 1px solid var(--gray-4);
 }
 
-/* The qualifiers, spelled the way they are typed — mono, because they are syntax rather than prose. */
-
-.message {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-tight);
-}
-
-.message.danger {
-  color: var(--danger-11);
-}
-
-.message.warning {
-  color: var(--warning-11);
+.search-rail.touch .search-head {
+  gap: 12px;
+  padding: 12px;
 }
 
 .toggles {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.search-rail.touch .toggles {
+  gap: 4px;
+}
+
+.search-rail.touch .toggles :deep(.root) {
+  min-height: var(--size-xl);
+  width: 100%;
+  padding: 0 4px;
+  border-radius: var(--radius-xs);
+}
+
+.search-rail.touch .toggles :deep(.root:hover) {
+  background: var(--gray-4);
 }
 
 .sort {

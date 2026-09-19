@@ -102,10 +102,11 @@ useHotkeys(hotkeys, [
   font-family: var(--font-sans);
 }
 
-/* Phone: one line, no Mod hint, less padding — the type row already spends 48px below. */
+/* Phone: one line, no Mod hint — the type row already spends 48px below. Horizontal inset matches
+   PageLayout's mobile 16 so the bar and the page share one edge. */
 .bar.compact {
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 16px;
 }
 
 .summary {
