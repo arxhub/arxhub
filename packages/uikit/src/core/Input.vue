@@ -39,7 +39,8 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .input.touch {
-  height: var(--size-md);
+  height: var(--size-xl);
+  font-size: var(--font-size-md);
 }
 
 /* A single focus ring shared with every other control — no border tint stacked under an outline. */
