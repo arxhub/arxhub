@@ -169,6 +169,11 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   color: var(--gray-12);
 }
 
+.dialog-content.touch .dialog-body {
+  padding: 16px;
+  font-size: var(--font-size-md);
+}
+
 .dialog-footer {
   display: flex;
   justify-content: flex-end;

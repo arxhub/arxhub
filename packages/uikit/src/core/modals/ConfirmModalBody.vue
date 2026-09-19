@@ -71,6 +71,10 @@ function handleConfirm() {
   color: var(--gray-11);
 }
 
+.confirm-modal.touch .confirm-body {
+  font-size: var(--font-size-md);
+}
+
 .confirm-actions {
   display: flex;
   justify-content: flex-end;
