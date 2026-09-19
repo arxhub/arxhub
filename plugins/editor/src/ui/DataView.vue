@@ -8,6 +8,8 @@ import type { ArxDataItem, DataLayout } from '../data-sources'
 import { ArxEditorExtension } from '../editor-extension'
 import DataBoardDesktop from './DataBoardDesktop.vue'
 import DataBoardMobile from './DataBoardMobile.vue'
+import DataListDesktop from './DataListDesktop.vue'
+import DataListMobile from './DataListMobile.vue'
 
 const props = defineProps<ArxEditorControlProps>()
 const editor = useArxHub().extensions.get(ArxEditorExtension)
@@ -16,6 +18,7 @@ const source = computed(() => sources[String(props.node.attrs.source)])
 const layout = computed(() => String(props.node.attrs.layout) as DataLayout)
 const frame = useShellFrame()
 const board = frame === 'mobile' ? DataBoardMobile : DataBoardDesktop
+const list = frame === 'mobile' ? DataListMobile : DataListDesktop
 const touch = frame === 'mobile'
 const buttonSize = touch ? 'lg' : 'sm'
 const items = ref<ArxDataItem[]>([])
@@ -90,7 +93,7 @@ async function open(item: ArxDataItem) {
       <section v-for="group in groups" :key="group.title"><h3>{{ group.title }}</h3><Row v-for="item in group.items" :key="item.id" as="button" type="button" wrap @click="open(item)">{{ item.title }}</Row></section>
       <p v-if="!busy && !error && !groups.length">No dated items in this month.</p>
     </template>
-    <div v-else aria-label="Data list"><Row v-for="item in items" :key="item.id" as="button" type="button" wrap @click="open(item)">{{ item.title }}<small>{{ item.group }}</small></Row></div>
+    <component :is="list" v-else :items="items" @open="open" />
     <p v-if="!busy && !error && !items.length">No matching items.</p>
     <p v-if="truncated">Showing the first 200 items. Narrow the filter to see more.</p>
     <p class="data-help">Results open their source documents.</p><p v-if="layout === 'calendar' && node.attrs.source === 'documents'" class="data-help">Dates show when documents were last modified.</p>
@@ -101,7 +104,6 @@ async function open(item: ArxDataItem) {
 .data-view { padding: 12px; border: 1px solid var(--gray-6); border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 8px; }
 .data-options { display: flex; flex-wrap: wrap; gap: 8px; }
 p, h3 { margin: 0; font-size: var(--font-size-sm); color: var(--gray-11); }
-small, .data-help { font-size: var(--font-size-xs); color: var(--gray-11); }
-.data-view.touch small,
+.data-help { font-size: var(--font-size-xs); color: var(--gray-11); }
 .data-view.touch .data-help { font-size: var(--font-size-sm); }
 </style>

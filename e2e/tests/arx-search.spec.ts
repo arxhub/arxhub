@@ -1,4 +1,4 @@
-import { expect, openNavigation, test } from './fixtures'
+import { expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 test('document search replaces marked text, undoes and navigates headings in protected modes', async ({ app, vault }) => {
   const path = await vault.write(
@@ -31,9 +31,13 @@ test('document search replaces marked text, undoes and navigates headings in pro
   const find = app.getByRole('search', { name: 'Find in document' })
   await find.getByRole('textbox', { name: 'Find text', exact: true }).fill('cat')
   await expect(find).toContainText('1 of 2')
-  await find.getByText('Match case', { exact: true }).click()
+  const matchCase = (await isMobileFrame(app))
+    ? find.getByRole('button', { name: 'Match case', exact: true })
+    : find.getByText('Match case', { exact: true })
+  await matchCase.click()
   await expect(find).toContainText('1 of 1')
-  await find.getByText('Match case', { exact: true }).click()
+  await matchCase.click()
+  if (await isMobileFrame(app)) await find.getByRole('button', { name: 'Replace text', exact: true }).click()
   await find.getByRole('textbox', { name: 'Replace with' }).fill('dog')
   await find.getByRole('button', { name: 'Replace all', exact: true }).click()
   await expect(editor.locator('p')).toHaveText('dog dog')
