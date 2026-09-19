@@ -52,6 +52,7 @@ export class PreviewPlugin extends Plugin {
       title: 'PDF',
       extensions: ['.pdf'],
       component: PdfPanel,
+      readMode: 'range',
       order: 5,
     })
   }

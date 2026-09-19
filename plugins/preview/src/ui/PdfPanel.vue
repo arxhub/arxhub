@@ -1,17 +1,17 @@
 <script setup lang="ts">
+import { VfsExtension } from '@arxhub/plugin-vfs'
 import { useArxHub } from '@arxhub/uikit/hooks'
-import { VaultVfs } from '@arxhub/vfs'
 import {
   GlobalWorkerOptions,
   getDocument,
-  type PDFDocumentLoadingTask,
   type PDFDocumentProxy,
   RenderingCancelledException,
   type RenderTask,
 } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { copyBytes, formatBytes } from '../media'
+import { formatBytes } from '../media'
 import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, MAX_ZOOM, MIN_ZOOM, stepZoom } from '../pdf'
+import { createPdfRangeLoadingTask, type PdfRangeLoadingTask } from '../pdf-range'
 import PdfShell from './PdfShell.vue'
 
 // pdf.js parses off the main thread. Vite recognises `new URL(specifier, import.meta.url)` and resolves
@@ -27,7 +27,7 @@ GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.
 const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
-const vfs = arxhub.services.get(VaultVfs)
+const vfs = arxhub.extensions.get(VfsExtension)
 
 const loading = ref(false)
 const error = ref('')
@@ -50,7 +50,7 @@ const stageEl = ref<HTMLElement | null>(null)
 const canvasEls = new Map<number, HTMLCanvasElement>()
 const activeRenders = new Map<number, RenderTask>()
 
-let loadingTask: PDFDocumentLoadingTask | null = null
+let loadingTask: PdfRangeLoadingTask<PDFDocumentProxy> | null = null
 let doc: PDFDocumentProxy | null = null
 let ticket = 0
 let stageObserver: ResizeObserver | null = null
@@ -71,29 +71,59 @@ async function closeDoc() {
   if (closing != null) await closing.destroy()
 }
 
+function rangeFailure(current: number, task: PdfRangeLoadingTask<PDFDocumentProxy>, cause: unknown): void {
+  if (current !== ticket || loadingTask !== task) return
+  // Invalidate every getPage/render continuation before clearing the document. The failed task tears
+  // itself down too, but its worker may still reject operations on a later microtask.
+  ticket++
+  pageObserver?.disconnect()
+  for (const render of activeRenders.values()) render.cancel()
+  activeRenders.clear()
+  renderQueue.clear()
+  canvasEls.clear()
+  loadingTask = null
+  doc = null
+  baseSize.value = null
+  size.value = null
+  pages.length = 0
+  loading.value = false
+  arxhub.logger.error(`[preview] could not read ${props.path}: ${cause instanceof Error ? cause.message : String(cause)}`, cause)
+  error.value = cause instanceof Error ? cause.message : 'Could not read the PDF'
+  // Idempotent: the range helper starts this teardown as soon as the read rejects. Awaiting is not
+  // needed to show the error, and containing the promise keeps a cleanup failure out of the console.
+  void task.destroy().catch((cleanupCause: unknown) => arxhub.logger.error('[preview] could not close the failed PDF task', cleanupCause))
+}
+
 async function load() {
   const current = ++ticket
   await closeDoc()
+  if (current !== ticket) return
   error.value = ''
   size.value = null
   baseSize.value = null
   pages.length = 0
   loading.value = true
   try {
-    const [{ size: fileSize }, bytes] = await Promise.all([vfs.head(props.path), vfs.read(props.path)])
+    // One reader is one storage snapshot. Pending repository files may advance their manifest while a
+    // PDF is open; every range for this document must still come from the head whose size is below.
+    const reader = await vfs.openRangeReader(props.path)
     if (current !== ticket) return
-    // pdf.js refuses a Node Buffer outright (it transfers `data` to its worker and a Buffer's shared
-    // pool allocation is not safe to detach) — the node VFS backend's `read()` returns exactly that, so
-    // a copy into a plain Uint8Array is not optional here the way it would be for any other backend.
-    const task = getDocument({ data: copyBytes(bytes) })
+    const task = createPdfRangeLoadingTask(reader, (options) => getDocument(options))
     loadingTask = task
-    const opened = await task.promise
+    let openedRange = false
+    void task.failed.catch((cause: unknown) => {
+      // Before the document opens, task.promise carries the same failure into this load() catch. Once
+      // open, this is the only channel pdf.js offers for a later page's failed byte range.
+      if (openedRange) rangeFailure(current, task, cause)
+    })
+    const { document: opened, size: fileSize } = await task.promise
+    openedRange = true
     if (current !== ticket) {
-      await opened.destroy()
+      await task.destroy()
       return
     }
     doc = opened
-    const first = await opened.getPage(1)
+    const first = await task.waitFor(opened.getPage(1))
     if (current !== ticket) return
     const viewport = first.getViewport({ scale: 1 })
     baseSize.value = { width: viewport.width, height: viewport.height }
@@ -101,8 +131,16 @@ async function load() {
     size.value = fileSize
   } catch (cause) {
     if (current !== ticket) return
+    const failedTask = loadingTask
+    loadingTask = null
+    doc = null
     arxhub.logger.error(`[preview] could not load ${props.path}`, cause)
     error.value = cause instanceof Error ? cause.message : 'Could not open the PDF'
+    // Show the failure in this tick. Worker teardown may take longer and a new path may start while it
+    // runs; it must not let this old catch resume later and overwrite the new panel state.
+    void failedTask
+      ?.destroy()
+      .catch((cleanupCause: unknown) => arxhub.logger.error('[preview] could not close the failed PDF task', cleanupCause))
   } finally {
     if (current === ticket) loading.value = false
   }
@@ -141,10 +179,11 @@ function renderPage(index: number, canvas: HTMLCanvasElement): Promise<void> {
 }
 
 async function renderPageNow(index: number, canvas: HTMLCanvasElement) {
-  if (doc == null || pageSize.value == null) return
+  const rangeTask = loadingTask
+  if (doc == null || rangeTask == null || pageSize.value == null) return
   const current = ticket
   try {
-    const page = await doc.getPage(index)
+    const page = await rangeTask.waitFor(doc.getPage(index))
     if (current !== ticket || pageSize.value == null) return
     const viewport = page.getViewport({ scale: pageSize.value.scale })
     const pixel = canvasPixelSize(viewport.width, viewport.height, window.devicePixelRatio || 1)
@@ -152,7 +191,7 @@ async function renderPageNow(index: number, canvas: HTMLCanvasElement) {
     canvas.height = pixel.height
     const task = page.render({ canvas, viewport })
     activeRenders.set(index, task)
-    await task.promise
+    await rangeTask.waitFor(task.promise)
     if (activeRenders.get(index) === task) activeRenders.delete(index)
   } catch (cause) {
     if (current === ticket && !(cause instanceof RenderingCancelledException)) {
@@ -208,7 +247,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   ticket++
   stageObserver?.disconnect()
-  void closeDoc()
+  void closeDoc().catch((cause: unknown) => arxhub.logger.error('[preview] could not close the PDF task', cause))
 })
 </script>
 
