@@ -452,11 +452,12 @@ summary {
 }
 
 .link {
-  padding: 0;
+  min-height: var(--size-xl, 48px);
+  padding: 8px 4px;
   border: none;
   background: none;
   color: var(--gray-11, #666);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   text-decoration: underline;
   cursor: pointer;
 }
