@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Button, Dialog, Row } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { ref, watch } from 'vue'
 import type { ArxDocumentLinks, DocumentDestination } from '../document-links'
 
 const props = defineProps<{ links: ArxDocumentLinks; path: string }>()
 const emit = defineEmits<{ close: [] }>()
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const results = ref<DocumentDestination[]>([])
 const busy = ref(false)
 const error = ref('')
@@ -42,7 +44,7 @@ async function open(path: string) {
 <template>
   <Dialog open title="Backlinks" size="sm" @update:open="$event || emit('close')">
     <p v-if="busy" role="status">Loading backlinks…</p>
-    <p v-if="error" role="alert">{{ error }} <Button variant="secondary" @click="retry++">Retry backlinks</Button></p>
+    <p v-if="error" role="alert">{{ error }} <Button :size="buttonSize" variant="secondary" @click="retry++">Retry backlinks</Button></p>
     <nav v-else aria-label="Documents linking here">
       <Row v-for="document in results" :key="document.path" as="button" type="button" wrap @click="open(document.path)"><span>{{ document.title || document.path }}<small>{{ document.path }}</small></span></Row>
       <p v-if="!busy && !results.length">No indexed documents link here yet.</p>

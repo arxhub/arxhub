@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Button, Input, Row } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { EditorView } from 'prosemirror-view'
 import { ref, watch } from 'vue'
 import { type ArxDocumentLinks, type BlockDestination, type DocumentDestination, documentBlocks, documentHref } from '../document-links'
 
 const props = defineProps<{ links: ArxDocumentLinks; path: string; view: EditorView }>()
 const emit = defineEmits<{ choose: [href: string] }>()
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const query = ref('')
 const selected = ref<DocumentDestination | null>(null)
 const documents = ref<DocumentDestination[]>([])
@@ -63,7 +65,7 @@ async function choose(anchor?: BlockDestination['anchor']) {
 <template>
   <section class="document-picker" aria-label="Link destination">
     <template v-if="selected">
-      <Button variant="ghost" @click="selected = null">Back to documents</Button>
+      <Button :size="buttonSize" variant="ghost" @click="selected = null">Back to documents</Button>
       <p>{{ selected.title || selected.path }}</p>
       <Button variant="secondary" :disabled="busy" @click="choose()">Link whole document</Button>
       <p>Or choose a text block{{ selected.path === path ? '' : ' from the saved document' }}:</p>
