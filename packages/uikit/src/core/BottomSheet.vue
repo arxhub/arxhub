@@ -129,7 +129,7 @@ function onPointerUp(): void {
 .sheet-title {
   margin: 8px 0 0;
   text-align: center;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   color: var(--gray-11);
 }

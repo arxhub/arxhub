@@ -159,6 +159,7 @@ const touch = useShellFrame() === 'mobile'
 
 .root.touch .draft {
   height: var(--size-xl);
+  font-size: var(--font-size-md);
 }
 
 .draft::placeholder {
