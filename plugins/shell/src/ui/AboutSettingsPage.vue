@@ -89,8 +89,9 @@ async function checkForUpdates(): Promise<void> {
 }
 
 .update-row.touch .update-button {
-  height: var(--size-md);
+  height: var(--size-xl);
   padding: 0 16px;
+  font-size: var(--font-size-md);
 }
 
 .update-button:disabled {

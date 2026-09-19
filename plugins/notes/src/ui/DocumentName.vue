@@ -113,7 +113,7 @@ function commit(): void {
 }
 
 .document-name.touch .document-name-button {
-  height: var(--size-md);
+  height: var(--size-xl);
 }
 
 .document-name-button:hover {
