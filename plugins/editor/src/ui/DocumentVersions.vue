@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button, Dialog, Row } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Node } from 'prosemirror-model'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { type ArxHistoryStore, type ArxSavedVersion, versionText } from '../document-history'
@@ -17,6 +18,7 @@ const props = defineProps<{
   restore: (content: string, block?: string) => Promise<void>
 }>()
 const emit = defineEmits<{ close: [] }>()
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const versions = ref<ArxSavedVersion[]>([])
 const selected = ref<ArxSavedVersion | null>(null)
 const raw = ref('')
@@ -104,7 +106,7 @@ async function restore(block?: string) {
     </nav>
     <p v-if="!loading && !error && !versions.length">History starts when this document is saved.</p>
     <template v-if="selected">
-      <Button variant="ghost" @click="showRaw = !showRaw">{{ showRaw ? 'Show text preview' : 'Show raw .arx' }}</Button>
+      <Button :size="buttonSize" variant="ghost" @click="showRaw = !showRaw">{{ showRaw ? 'Show text preview' : 'Show raw .arx' }}</Button>
       <p v-if="reading" role="status">Loading preview…</p>
       <p v-if="previewError" role="alert">{{ previewError }}</p>
       <pre class="version-preview" aria-label="Version preview">{{ showRaw ? raw : preview }}</pre>
@@ -120,9 +122,9 @@ async function restore(block?: string) {
       <p v-else>Switch to Editable to restore a version.</p>
     </template>
     <template #footer>
-      <Button variant="ghost" :disabled="restoring" @click="refresh++">Refresh versions</Button>
-      <Button v-if="difference" variant="secondary" :disabled="restoring || reading || mode !== 'editable'" @click="restore(difference.key)">{{ difference.kind === 'added' ? 'Remove added block' : 'Restore selected block' }}</Button>
-      <Button variant="secondary" :disabled="restoring || reading || !raw || !!previewError || mode !== 'editable'" @click="restore()">{{ restoring ? 'Restoring…' : 'Restore this version' }}</Button>
+      <Button :size="buttonSize" variant="ghost" :disabled="restoring" @click="refresh++">Refresh versions</Button>
+      <Button v-if="difference" :size="buttonSize" variant="secondary" :disabled="restoring || reading || mode !== 'editable'" @click="restore(difference.key)">{{ difference.kind === 'added' ? 'Remove added block' : 'Restore selected block' }}</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="restoring || reading || !raw || !!previewError || mode !== 'editable'" @click="restore()">{{ restoring ? 'Restoring…' : 'Restore this version' }}</Button>
     </template>
   </Dialog>
 </template>
