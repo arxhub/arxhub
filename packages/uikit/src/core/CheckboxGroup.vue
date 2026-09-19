@@ -114,6 +114,10 @@ const touch = useShellFrame() === 'mobile'
   color: var(--gray-12);
 }
 
+.root.touch .label {
+  font-size: var(--font-size-md);
+}
+
 .item[data-disabled] .label {
   color: var(--gray-9);
 }
