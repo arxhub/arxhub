@@ -308,7 +308,7 @@ async function reset(): Promise<void> {
 
 .warn {
   margin: 0;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--gray-11);
 }
 
@@ -319,12 +319,13 @@ async function reset(): Promise<void> {
 }
 
 .link {
-  padding: 0;
+  min-height: var(--size-xl);
+  padding: 8px 0;
   border: none;
   background: none;
   color: var(--gray-11);
   font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   text-decoration: underline;
   cursor: pointer;
 }
