@@ -104,4 +104,8 @@ const touch = useShellFrame() === 'mobile'
   color: var(--gray-12);
   font-family: var(--font-sans);
 }
+
+.root.touch .label {
+  font-size: var(--font-size-md);
+}
 </style>

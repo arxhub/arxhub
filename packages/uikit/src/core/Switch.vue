@@ -118,4 +118,8 @@ const touch = useShellFrame() === 'mobile'
   font-family: var(--font-sans);
   cursor: pointer;
 }
+
+.root.touch .label {
+  font-size: var(--font-size-md);
+}
 </style>

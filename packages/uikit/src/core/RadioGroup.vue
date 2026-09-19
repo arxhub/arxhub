@@ -126,10 +126,18 @@ const touch = useShellFrame() === 'mobile'
   color: var(--gray-12);
 }
 
+.root.touch .label {
+  font-size: var(--font-size-md);
+}
+
 .hint {
   font-size: var(--font-size-xs);
   line-height: var(--line-height-normal);
   color: var(--gray-11);
+}
+
+.root.touch .hint {
+  font-size: var(--font-size-sm);
 }
 
 .item[data-disabled] .label,
