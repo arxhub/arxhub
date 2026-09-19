@@ -61,10 +61,10 @@ const touch = useShellFrame() === 'mobile'
   align-items: center;
 }
 
-/* Phone: a 32×16 track is hard to hit beside a 48px row; grow to --size-md × 24. */
+/* Phone: grow the track to a full thumb target; the row is already --size-xl tall. */
 .root.touch .control {
-  width: var(--size-md);
-  height: var(--size-xl-half);
+  width: var(--size-xl);
+  height: var(--size-md);
 }
 
 .control[data-state='checked'] {
@@ -96,10 +96,16 @@ const touch = useShellFrame() === 'mobile'
 .root.touch .thumb {
   width: var(--size-md-half);
   height: var(--size-md-half);
+  top: 10px;
+  left: 4px;
 }
 
 .control[data-state='checked'] .thumb {
   transform: translateX(16px);
+}
+
+.root.touch .control[data-state='checked'] .thumb {
+  transform: translateX(20px);
 }
 
 @media (prefers-reduced-motion: reduce) {
