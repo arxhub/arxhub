@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useShellFrame } from '../../hooks/useShellFrame'
 import Button from '../Button.vue'
 import { type ConfirmButtonProps, type ConfirmLabels, type ModalContent, modals } from './modals'
 
@@ -15,6 +16,9 @@ const props = defineProps<{
   onCancel?: () => void
 }>()
 
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
+
 function handleCancel() {
   props.onCancel?.()
   if (props.closeOnCancel !== false) modals.close(props.id)
@@ -27,7 +31,7 @@ function handleConfirm() {
 </script>
 
 <template>
-  <div class="confirm-modal">
+  <div class="confirm-modal" :class="{ touch }">
     <div v-if="body" class="confirm-body">
       <template v-if="typeof body === 'string'">{{ body }}</template>
       <component :is="body" v-else v-bind="bodyProps" />
@@ -36,7 +40,7 @@ function handleConfirm() {
     <div class="confirm-actions">
       <Button
         :variant="cancelProps?.variant ?? 'secondary'"
-        size="sm"
+        :size="buttonSize"
         :disabled="cancelProps?.disabled"
         @click="handleCancel"
       >
@@ -44,7 +48,7 @@ function handleConfirm() {
       </Button>
       <Button
         :variant="confirmProps?.danger ? 'danger' : (confirmProps?.variant ?? 'primary')"
-        size="sm"
+        :size="buttonSize"
         :disabled="confirmProps?.disabled"
         @click="handleConfirm"
       >
@@ -58,7 +62,7 @@ function handleConfirm() {
 .confirm-modal {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .confirm-body {
@@ -67,9 +71,22 @@ function handleConfirm() {
   color: var(--gray-11);
 }
 
+.confirm-modal.touch .confirm-body {
+  font-size: var(--font-size-md);
+}
+
 .confirm-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.confirm-modal.touch .confirm-actions {
+  flex-direction: column-reverse;
+  gap: 12px;
+}
+
+.confirm-modal.touch .confirm-actions :deep(.btn) {
+  width: 100%;
 }
 </style>

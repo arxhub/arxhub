@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { CodeEditor } from '@arxhub/plugin-codemirror/ui'
-import { Button, modals, Strip } from '@arxhub/uikit/core'
+import { modals, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { SearchExtension } from '../search-extension'
+import SqlConsoleActions from './SqlConsoleActions.vue'
 import SqlSchemaReference from './SqlSchemaReference.vue'
 import { createSqlConsoleController, formatCell, type SqlCell } from './sql-console-controller'
 import { SQL_CONSOLE_EXAMPLE, useConsoleQuery } from './sql-console-state'
@@ -69,12 +70,16 @@ const summary = computed(() => {
        header against a note's 40px. The limits stay in the strip — they are state a query is read
        against — and the description moved into the body, which is read once. -->
   <div class="sql-console" data-testid="sql-console">
-    <Strip title="SQL console">
+    <Strip title="SQL console" flush-actions>
       <template #actions>
-        <!-- Inert while a query runs: a second one over the first is refused rather than queued (FE 6). -->
-        <Button size="sm" :disabled="!canRun" @click="run">{{ controller.running.value ? 'Running…' : 'Run' }}</Button>
-        <Button size="sm" variant="secondary" @click="useExample">Example</Button>
-        <Button size="sm" variant="secondary" :active="schemaOpen" :aria-pressed="schemaOpen" @click="schemaOpen = !schemaOpen">Schema</Button>
+        <SqlConsoleActions
+          :can-run="canRun"
+          :running="controller.running.value"
+          :schema-open="schemaOpen"
+          :on-run="run"
+          :on-example="useExample"
+          :on-toggle-schema="() => (schemaOpen = !schemaOpen)"
+        />
       </template>
     </Strip>
 

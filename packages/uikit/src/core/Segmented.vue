@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { SegmentGroup } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 import type { SelectOption } from './options'
 
 defineProps<{
@@ -14,12 +15,13 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'update:modelValue', value: string) => void>()
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
   <SegmentGroup.Root
     class="root"
-    :class="{ stretch }"
+    :class="{ stretch, touch }"
     :model-value="modelValue"
     :disabled="disabled"
     :aria-label="ariaLabel"
@@ -76,6 +78,11 @@ defineEmits<(e: 'update:modelValue', value: string) => void>()
   font-size: var(--font-size-sm);
   cursor: pointer;
   user-select: none;
+}
+
+.root.touch .item {
+  height: var(--size-xl);
+  font-size: var(--font-size-md);
 }
 
 .item:last-of-type {

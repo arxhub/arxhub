@@ -26,7 +26,7 @@ const section = computed(() => settings.sections.value.find((s) => s.id === prop
 
 <style scoped>
 .settings-missing {
-  padding: 1rem;
+  padding: 16px;
   font-size: var(--font-size-sm);
   font-family: var(--font-sans);
   color: var(--gray-10);

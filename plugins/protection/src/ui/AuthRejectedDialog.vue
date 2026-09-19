@@ -2,13 +2,15 @@
 import { SETTINGS_TYPE_ID, SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { Button } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { authStatus, describeRejection } from '../auth-status'
 import { KeyringExtension } from '../keyring-extension'
 import { closeAuthRejectedDialog } from './auth-dialog'
 
 const arxhub = useArxHub()
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
 const shell = arxhub.extensions.get(ShellExtension)
 const settings = arxhub.extensions.get(SettingsExtension)
 const keyring = arxhub.extensions.get(KeyringExtension).keyring
@@ -24,7 +26,7 @@ function openSecurity(): void {
 </script>
 
 <template>
-  <div class="auth-rejected">
+  <div class="auth-rejected" :class="{ touch }">
     <p class="auth-detail">{{ copy.detail }}</p>
     <p v-if="copy.fix" class="auth-fix">{{ copy.fix }}</p>
 
@@ -46,8 +48,8 @@ function openSecurity(): void {
     </dl>
 
     <div class="auth-actions">
-      <Button variant="secondary" @click="closeAuthRejectedDialog()">Close</Button>
-      <Button v-if="copy.offerPhrase" variant="primary" @click="openSecurity">Recovery phrase…</Button>
+      <Button :size="buttonSize" variant="secondary" @click="closeAuthRejectedDialog()">Close</Button>
+      <Button v-if="copy.offerPhrase" :size="buttonSize" variant="primary" @click="openSecurity">Recovery phrase…</Button>
     </div>
   </div>
 </template>
@@ -61,6 +63,11 @@ function openSecurity(): void {
   font-size: var(--font-size-sm);
   line-height: 1.5;
   color: var(--gray-11);
+}
+
+.auth-rejected.touch .auth-detail,
+.auth-rejected.touch .auth-fix {
+  font-size: var(--font-size-md);
 }
 
 .auth-detail {
@@ -102,5 +109,14 @@ function openSecurity(): void {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 20px;
+}
+
+.auth-rejected.touch .auth-actions {
+  flex-direction: column-reverse;
+  gap: 12px;
+}
+
+.auth-rejected.touch .auth-actions :deep(.btn) {
+  width: 100%;
 }
 </style>

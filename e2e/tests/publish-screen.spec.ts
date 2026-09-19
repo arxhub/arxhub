@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { confirmPublish, expect, openNavigation, openType, publishTest as test } from './fixtures'
+import { confirmPublish, expect, openNavigation, openType, publicationAction, publishTest as test } from './fixtures'
 
 interface HistoryEntry {
   hash: string
@@ -68,7 +68,7 @@ test('the Publications type lists what is public, and a roll back serves the ear
   // Republish from the screen, not the tree.
   await openType(app, 'Publications', 'arxhub.publish')
   await dismissToasts(app)
-  await row.getByRole('button', { name: 'Republish' }).click()
+  await publicationAction(row, 'Republish')
   await expect(notifications.getByText('Published', { exact: true })).toBeVisible()
   await expect.poll(async () => (await app.request.get(publicUrl)).text()).toContain('Second edition.')
   await expect(history.getByRole('listitem').filter({ hasText: firstShort }).getByRole('button', { name: 'Roll back' })).toBeVisible()
@@ -85,7 +85,7 @@ test('the Publications type lists what is public, and a roll back serves the ear
   await expect(history.getByRole('listitem').first().getByRole('button', { name: 'Roll back' })).toHaveCount(0)
 
   await dismissToasts(app)
-  await row.getByRole('button', { name: 'Unpublish' }).click()
+  await publicationAction(row, 'Unpublish')
   await expect(notifications.getByText('Unpublished', { exact: true })).toBeVisible()
   await expect(publications.getByRole('listitem').filter({ hasText: path })).toHaveCount(0)
   await expect.poll(async () => (await app.request.get(publicUrl)).status()).toBe(404)
@@ -95,8 +95,13 @@ test('the Publications type lists what is public, and a roll back serves the ear
 test('the screen says so when publishing is off', async ({ app, vault }) => {
   await vault.writeData('storage/publish/config.toml', 'serverUrl = ""\n')
   await app.reload()
+  // openType waits for <main>; applyConfig still runs inside start() and may paint the previous
+  // URL for a tick when another publishTest left one on disk — poll the off flag, not a fixed sleep.
   await openType(app, 'Publications', 'arxhub.publish')
-  await expect(app.getByText('Publishing is off — set a server URL in Settings')).toBeVisible()
+  await expect(app.getByRole('heading', { name: 'Publications' })).toBeVisible()
+  const page = app.getByTestId('publications-page')
+  await expect(page).toHaveAttribute('data-publishing', 'off', { timeout: 15_000 })
+  await expect(page.getByText('Publishing is off — set a server URL in Settings')).toBeVisible()
   await expect(app.getByTestId('publications')).toHaveCount(0)
-  await expect(app.getByText('Turn publishing on to share a note or a folder by link.')).toBeVisible()
+  await expect(app.getByTestId('publishing-off-hint')).toHaveText('Turn publishing on to share a note or a folder by link.')
 })

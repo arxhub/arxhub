@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { Checkbox, CheckboxGroup } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import Icon from './Icon.vue'
 import type { SelectOption } from './options'
@@ -13,11 +14,13 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'update:modelValue', value: string[]) => void>()
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
   <CheckboxGroup
     class="root"
+    :class="{ touch }"
     role="group"
     :model-value="modelValue"
     :disabled="disabled"
@@ -33,7 +36,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
     >
       <Checkbox.Control class="control">
         <Checkbox.Indicator class="indicator">
-          <Icon name="lu:check" :size="12" />
+          <Icon name="lu:check" :size="touch ? 16 : 12" />
         </Checkbox.Indicator>
       </Checkbox.Control>
       <Checkbox.Label class="label">{{ option.label }}</Checkbox.Label>
@@ -60,6 +63,10 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   user-select: none;
 }
 
+.root.touch .item {
+  height: var(--size-xl);
+}
+
 .item[data-disabled] {
   cursor: not-allowed;
 }
@@ -73,6 +80,11 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   border: 1.5px solid var(--gray-7);
   border-radius: var(--radius-xs);
   background: var(--gray-1);
+}
+
+.root.touch .control {
+  width: var(--size-md);
+  height: var(--size-md);
 }
 
 .control[data-state='checked'] {
@@ -100,6 +112,10 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
   color: var(--gray-12);
+}
+
+.root.touch .label {
+  font-size: var(--font-size-md);
 }
 
 .item[data-disabled] .label {

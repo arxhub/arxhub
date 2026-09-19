@@ -10,7 +10,7 @@ defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
     icon?: string
-    size?: 'xs' | 'sm' | 'md' | 'lg'
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
     active?: boolean
     disabled?: boolean
     tooltip?: string
@@ -22,8 +22,9 @@ const props = withDefaults(
 )
 
 // One optical size across the set: a single-weight glyph at ~14px inside a larger hit box, so chrome
-// icons read as labels rather than as buttons of their own.
-const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20 })[props.size])
+// icons read as labels rather than as buttons of their own. `lg` fills a Strip (--size-md); `xl`
+// fills a touch status/dock band (--size-xl).
+const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20, xl: 20 })[props.size])
 </script>
 
 <template>
@@ -95,8 +96,8 @@ const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20 })[props.size]
 }
 
 .size-xs {
-  width: 20px;
-  height: 20px;
+  width: var(--size-md-half);
+  height: var(--size-md-half);
 }
 
 .size-sm {
@@ -105,12 +106,17 @@ const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20 })[props.size]
 }
 
 .size-md {
-  width: 28px;
+  width: var(--size-2xs);
   height: var(--size-2xs);
 }
 
 .size-lg {
   width: var(--size-md);
   height: var(--size-md);
+}
+
+.size-xl {
+  width: var(--size-xl);
+  height: var(--size-xl);
 }
 </style>

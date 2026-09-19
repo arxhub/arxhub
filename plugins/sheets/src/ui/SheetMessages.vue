@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Button } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { useSheet } from './use-sheet'
 
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const { document, calculationError, retryCalculation, saveError, save, reload } = useSheet()
 const { loading, error } = document
 </script>
@@ -10,15 +12,15 @@ const { loading, error } = document
   <div v-if="loading" class="sheet-message" role="status">Opening spreadsheet…</div>
   <div v-if="error" class="sheet-message" role="alert">
     Could not open spreadsheet: {{ error instanceof Error ? error.message : String(error) }}. Saving is disabled.
-    <Button variant="secondary" @click="reload">Retry</Button>
+    <Button :size="buttonSize" variant="secondary" @click="reload">Retry</Button>
   </div>
   <div v-if="calculationError" class="sheet-message" role="alert">
     {{ calculationError }}
-    <Button variant="secondary" @click="retryCalculation">Retry calculation</Button>
+    <Button :size="buttonSize" variant="secondary" @click="retryCalculation">Retry calculation</Button>
   </div>
   <div v-if="saveError" class="sheet-message" role="alert">
     {{ saveError }}
-    <Button variant="secondary" @click="save">Retry save</Button>
+    <Button :size="buttonSize" variant="secondary" @click="save">Retry save</Button>
   </div>
 </template>
 

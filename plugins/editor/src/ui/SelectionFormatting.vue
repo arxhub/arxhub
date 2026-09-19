@@ -79,7 +79,7 @@ const actions = computed(() => {
 
 <template>
   <div v-if="position" class="selection-formatting" :style="position">
-    <FormattingToolbar :actions="actions" />
+    <FormattingToolbar variant="bubble" :actions="actions" />
   </div>
   <LinkDialog v-if="linkOpen" :view="view" :links="links" :path="path" @close="linkOpen = false" />
 </template>
@@ -91,8 +91,8 @@ const actions = computed(() => {
   padding: 4px;
   box-sizing: border-box;
   border: 1px solid var(--gray-6);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--gray-2);
-  box-shadow: 0 4px 12px var(--black-a3);
+  box-shadow: var(--shadow-md);
 }
 </style>

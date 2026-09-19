@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { Slider } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 
 const props = defineProps<{
   modelValue?: number
@@ -13,6 +14,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<(e: 'update:modelValue', value: number) => void>()
+const touch = useShellFrame() === 'mobile'
 
 // Ark models every slider as a multi-thumb range; this wrapper only ever exposes the first thumb.
 function onValueChange(details: { value: number[] }): void {
@@ -24,6 +26,7 @@ function onValueChange(details: { value: number[] }): void {
 <template>
   <Slider.Root
     class="root"
+    :class="{ touch }"
     :model-value="props.modelValue == null ? undefined : [props.modelValue]"
     :min="min"
     :max="max"
@@ -57,8 +60,12 @@ function onValueChange(details: { value: number[] }): void {
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 16px;
+  height: var(--size-xs-half);
   cursor: pointer;
+}
+
+.root.touch .control {
+  height: var(--size-md);
 }
 
 .root[data-disabled] .control {
@@ -70,6 +77,10 @@ function onValueChange(details: { value: number[] }): void {
   height: 4px;
   border-radius: var(--radius-full);
   background: var(--gray-4);
+}
+
+.root.touch .track {
+  height: 6px;
 }
 
 .range {
@@ -91,6 +102,11 @@ function onValueChange(details: { value: number[] }): void {
   box-shadow: var(--shadow-xs);
 }
 
+.root.touch .thumb {
+  width: var(--size-md);
+  height: var(--size-md);
+}
+
 .thumb[data-focus-visible] {
   outline: 2px solid var(--accent-8);
   outline-offset: 2px;
@@ -101,16 +117,24 @@ function onValueChange(details: { value: number[] }): void {
 }
 
 .readout {
-  min-width: 24px;
+  min-width: var(--size-xl-half);
   text-align: right;
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
   color: var(--gray-12);
 }
 
+.root.touch .readout {
+  font-size: var(--font-size-md);
+}
+
 .unit {
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
   color: var(--gray-10);
+}
+
+.root.touch .unit {
+  font-size: var(--font-size-sm);
 }
 </style>

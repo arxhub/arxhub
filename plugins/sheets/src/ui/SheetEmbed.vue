@@ -4,7 +4,7 @@ import type { ArxEditorControlProps } from '@arxhub/plugin-editor/ui'
 import { NOTES_TYPE_ID } from '@arxhub/plugin-notes/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { Button, Dialog, IconButton, Input, Strip } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { computed, onMounted, onUnmounted, ref, shallowRef, useId, watch } from 'vue'
 import type { CalculationRequest } from '../calculation.worker'
@@ -15,6 +15,7 @@ import { address, columnName, MAX_FILE_BYTES, rangePoints, type Sheet } from '..
 import { parseWorkbook } from '../workbook'
 
 const props = defineProps<ArxEditorControlProps>()
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const hub = useArxHub(),
   vfs = hub.services.get(VaultVfs)
 const root = ref<HTMLElement>(),
@@ -157,11 +158,11 @@ onUnmounted(() => {
     <Strip>
       <span class="embed-title" :title="node.attrs.path">{{ node.attrs.path || 'Spreadsheet' }}</span>
       <template #actions>
-        <Button v-if="node.attrs.path" variant="secondary" @click="open">Open spreadsheet</Button>
-        <IconButton v-if="mode === 'editable'" icon="lu:settings-2" tooltip="Configure spreadsheet" @click="setup = true" />
+        <Button v-if="node.attrs.path" :size="buttonSize" variant="secondary" @click="open">Open spreadsheet</Button>
+        <IconButton v-if="mode === 'editable'" size="lg" icon="lu:settings-2" tooltip="Configure spreadsheet" @click="setup = true" />
       </template>
     </Strip>
-    <p v-if="error" role="alert">{{ error }} <Button variant="secondary" @click="load">Retry</Button></p>
+    <p v-if="error" role="alert">{{ error }} <Button :size="buttonSize" variant="secondary" @click="load">Retry</Button></p>
     <p v-else-if="!node.attrs.path">Choose a spreadsheet file and range to display.</p>
     <div v-else class="sheet-embed-scroll" :aria-busy="loading">
       <table aria-label="Embedded spreadsheet"><thead><tr><th scope="col">{{ node.attrs.sheet }}</th><th v-for="column in columns" :key="column" scope="col">{{ columnName(column) }}</th></tr></thead>
@@ -176,7 +177,7 @@ onUnmounted(() => {
         <p>Displays saved values. Open the spreadsheet to edit its source.</p>
         <p v-if="error" role="alert">{{ error }}</p>
       </form>
-      <template #footer><Button variant="secondary" type="submit" :form="id">Apply</Button></template>
+      <template #footer><Button :size="buttonSize" variant="secondary" type="submit" :form="id">Apply</Button></template>
     </Dialog>
   </div>
 </template>

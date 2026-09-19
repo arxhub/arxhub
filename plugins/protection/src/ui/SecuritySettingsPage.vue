@@ -13,7 +13,7 @@ import {
   PinEntry,
 } from '@arxhub/plugin-keystore/ui'
 import { Badge, Button, Card, modals, PageLayout } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { computed, markRaw, onMounted, ref } from 'vue'
 import { IDENTITY_MNEMONIC_KEY } from '../identity'
@@ -23,6 +23,8 @@ import { clearVaultWorkingTree, isVaultEmpty } from '../vault-reset'
 import OwnerHandoverDialog from './OwnerHandoverDialog.vue'
 
 const arxhub = useArxHub()
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
 const keystore = arxhub.extensions.get(KeyStoreExtension).keystore
 const keyrings = arxhub.extensions.get(KeyringExtension)
 const keyring = keyrings.keyring
@@ -274,7 +276,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
 
 <template>
   <PageLayout title="Security" description="Keys live on this device only. Nothing here is sent anywhere unless you set up sync.">
-    <div class="security">
+    <div class="security" :class="{ touch }">
     <section class="block">
       <h3 class="block-title">Device identity</h3>
       <p v-if="!keyring" class="hint">This device has no identity. Sync and publishing stay idle until one exists.</p>
@@ -284,7 +286,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
         </p>
         <div class="row">
           <code class="value" data-testid="public-key">{{ keyring.authPublicKey }}</code>
-          <Button size="sm" variant="secondary" @click="run(copy(keyring.authPublicKey, 'Public key'), 'Could not copy')">Copy</Button>
+          <Button :size="buttonSize" variant="secondary" @click="run(copy(keyring.authPublicKey, 'Public key'), 'Could not copy')">Copy</Button>
         </div>
       </template>
     </section>
@@ -317,7 +319,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
           @submit="submitEnableLock"
         />
         <div class="row">
-          <Button size="sm" variant="secondary" :disabled="!newCodeValid || lockBusy" @click="confirmEnableLock">
+          <Button :size="buttonSize" variant="secondary" :disabled="!newCodeValid || lockBusy" @click="confirmEnableLock">
             Lock this device
           </Button>
         </div>
@@ -340,10 +342,10 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
           @submit="submitChangeCode"
         />
         <div class="row">
-          <Button size="sm" variant="secondary" :disabled="!newCodeValid || currentCode.length === 0 || lockBusy" @click="submitChangeCode">
+          <Button :size="buttonSize" variant="secondary" :disabled="!newCodeValid || currentCode.length === 0 || lockBusy" @click="submitChangeCode">
             Change code
           </Button>
-          <Button size="sm" variant="danger" :disabled="currentCode.length === 0 || lockBusy" @click="confirmDisableLock">
+          <Button :size="buttonSize" variant="danger" :disabled="currentCode.length === 0 || lockBusy" @click="confirmDisableLock">
             Remove lock
           </Button>
         </div>
@@ -357,13 +359,13 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
         this one. Store them outside this device.
       </p>
       <div v-if="phrase == null" class="row">
-        <Button size="sm" variant="secondary" @click="confirmReveal">Show recovery phrase</Button>
+        <Button :size="buttonSize" variant="secondary" @click="confirmReveal">Show recovery phrase</Button>
       </div>
       <template v-else>
         <code class="value phrase" data-testid="recovery-phrase">{{ phrase }}</code>
         <div class="row">
-          <Button size="sm" variant="secondary" @click="run(copy(phrase, 'Recovery phrase'), 'Could not copy')">Copy</Button>
-          <Button size="sm" variant="ghost" @click="phrase = null">Hide</Button>
+          <Button :size="buttonSize" variant="secondary" @click="run(copy(phrase, 'Recovery phrase'), 'Could not copy')">Copy</Button>
+          <Button :size="buttonSize" variant="ghost" @click="phrase = null">Hide</Button>
         </div>
       </template>
     </section>
@@ -387,7 +389,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
       <p v-else-if="verdict" class="hint" data-testid="phrase-verdict">{{ verdict }}</p>
       <div class="row">
         <Button
-          size="sm"
+          :size="buttonSize"
           :variant="restoring ? 'primary' : 'danger'"
           :disabled="!canApply || replaceBusy"
           data-testid="replace-identity"
@@ -459,6 +461,11 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   overflow-wrap: anywhere;
 }
 
+.security.touch .value {
+  font-size: var(--font-size-sm);
+  min-height: var(--size-xl);
+}
+
 .phrase {
   line-height: 1.8;
   letter-spacing: 0.02em;
@@ -476,6 +483,12 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   resize: vertical;
 }
 
+.security.touch .entry {
+  font-size: var(--font-size-md);
+  min-height: var(--size-2xl);
+  padding: 12px 16px;
+}
+
 .entry:focus-visible {
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
@@ -486,5 +499,9 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--danger-11);
+}
+
+.security.touch .invalid {
+  font-size: var(--font-size-sm);
 }
 </style>

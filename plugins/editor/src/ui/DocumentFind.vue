@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button, Checkbox, IconButton, Input } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { EditorView } from 'prosemirror-view'
 import { computed, onMounted, ref, watch } from 'vue'
 import { documentSearchKey, replaceDocumentMatch, revealDocumentMatch } from '../document-search'
@@ -11,6 +12,9 @@ const root = ref<HTMLElement>()
 const query = ref(documentSearchKey.getState(props.view.state)?.query ?? '')
 const matchCase = ref(documentSearchKey.getState(props.view.state)?.matchCase ?? false)
 const replacement = ref('')
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const iconSize = useShellFrame() === 'mobile' ? 'xl' : 'lg'
+const touch = useShellFrame() === 'mobile'
 const search = computed(() => {
   void props.revision
   return documentSearchKey.getState(props.view.state)
@@ -32,26 +36,29 @@ function replace(all = false) {
 </script>
 
 <template>
-  <section ref="root" class="document-find" role="search" aria-label="Find in document" @keydown.esc.stop.prevent="emit('close')">
+  <section ref="root" class="document-find" :class="{ touch }" role="search" aria-label="Find in document" @keydown.esc.stop.prevent="emit('close')">
     <div class="find-row">
       <Input v-model="query" class="find-input" aria-label="Find text" placeholder="Find in document" @keydown.enter.prevent="revealDocumentMatch(view, $event.shiftKey ? -1 : 1)" />
       <span class="find-count" role="status">{{ search?.matches.length ? `${search.index + 1} of ${search.matches.length}` : 'No matches' }}</span>
-      <IconButton icon="lu:chevron-up" tooltip="Previous match" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, -1)" />
-      <IconButton icon="lu:chevron-down" tooltip="Next match" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, 1)" />
-      <IconButton icon="lu:x" tooltip="Close find" @click="emit('close')" />
+      <IconButton :size="iconSize" icon="lu:chevron-up" tooltip="Previous match" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, -1)" />
+      <IconButton :size="iconSize" icon="lu:chevron-down" tooltip="Next match" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, 1)" />
+      <IconButton :size="iconSize" icon="lu:x" tooltip="Close find" @click="emit('close')" />
     </div>
     <div class="find-row"><Checkbox v-model:checked="matchCase" label="Match case" /></div>
     <div v-if="mode === 'editable'" class="find-row">
       <Input v-model="replacement" class="find-input" aria-label="Replace with" placeholder="Replace with" @keydown.enter.prevent="replace()" />
-      <Button variant="secondary" :disabled="!search?.matches.length" @click="replace()">Replace</Button>
-      <Button variant="secondary" :disabled="!search?.matches.length" @click="replace(true)">Replace all</Button>
+      <Button variant="secondary" :size="buttonSize" :disabled="!search?.matches.length" @click="replace()">Replace</Button>
+      <Button variant="secondary" :size="buttonSize" :disabled="!search?.matches.length" @click="replace(true)">Replace all</Button>
     </div>
   </section>
 </template>
 
 <style scoped>
 .document-find { padding: 8px 12px; border-bottom: 1px solid var(--gray-6); background: var(--gray-2); }
+.document-find.touch { padding: 12px 16px; }
 .find-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block: 4px; }
+.document-find.touch .find-row { gap: 12px; margin-block: 6px; }
 .find-input { flex: 1; min-width: 140px; }
 .find-count { font-size: var(--font-size-xs); color: var(--gray-11); }
+.document-find.touch .find-count { font-size: var(--font-size-sm); }
 </style>

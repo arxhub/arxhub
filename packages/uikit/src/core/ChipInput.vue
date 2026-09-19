@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { TagsInput } from '@ark-ui/vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 import Icon from './Icon.vue'
 
 defineProps<{
@@ -11,11 +12,13 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'update:modelValue', value: string[]) => void>()
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
   <TagsInput.Root
     class="root"
+    :class="{ touch }"
     :model-value="modelValue"
     :disabled="disabled"
     @value-change="$emit('update:modelValue', $event.value)"
@@ -32,7 +35,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
           <TagsInput.ItemPreview class="chip-preview">
             <TagsInput.ItemText class="chip-text">{{ entry }}</TagsInput.ItemText>
             <TagsInput.ItemDeleteTrigger class="chip-remove" :aria-label="`Remove ${entry}`">
-              <Icon name="lu:x" :size="14" />
+              <Icon name="lu:x" :size="touch ? 16 : 14" />
             </TagsInput.ItemDeleteTrigger>
           </TagsInput.ItemPreview>
           <TagsInput.ItemInput class="chip-edit" />
@@ -61,6 +64,12 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   background: var(--gray-1);
 }
 
+.root.touch .control {
+  min-height: var(--size-xl);
+  gap: 8px;
+  padding: 8px;
+}
+
 .control:focus-within {
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
@@ -76,7 +85,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 24px;
+  height: var(--size-xl-half);
   padding: 0 4px 0 8px;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-xs);
@@ -84,6 +93,12 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   color: var(--gray-12);
+}
+
+.root.touch .chip-preview {
+  height: var(--size-xl);
+  padding: 0 4px 0 12px;
+  font-size: var(--font-size-sm);
 }
 
 .chip[data-highlighted] .chip-preview {
@@ -94,13 +109,18 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
 .chip-remove {
   display: grid;
   place-items: center;
-  width: 16px;
-  height: 16px;
+  width: var(--size-xs-half);
+  height: var(--size-xs-half);
   border: none;
   border-radius: var(--radius-xs);
   background: transparent;
   color: var(--gray-10);
   cursor: pointer;
+}
+
+.root.touch .chip-remove {
+  width: var(--size-xl);
+  height: var(--size-xl);
 }
 
 .chip-remove[data-hover] {
@@ -109,7 +129,7 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
 }
 
 .chip-edit {
-  height: 24px;
+  height: var(--size-xl-half);
   padding: 0 8px;
   border: 1px solid var(--accent-8);
   border-radius: var(--radius-xs);
@@ -120,10 +140,14 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   outline: none;
 }
 
+.root.touch .chip-edit {
+  height: var(--size-xl);
+}
+
 .draft {
   flex: 1;
   min-width: 96px;
-  height: 24px;
+  height: var(--size-xl-half);
   padding: 0 4px;
   border: none;
   background: transparent;
@@ -131,6 +155,11 @@ defineEmits<(e: 'update:modelValue', value: string[]) => void>()
   font-size: var(--font-size-sm);
   color: var(--gray-12);
   outline: none;
+}
+
+.root.touch .draft {
+  height: var(--size-xl);
+  font-size: var(--font-size-md);
 }
 
 .draft::placeholder {

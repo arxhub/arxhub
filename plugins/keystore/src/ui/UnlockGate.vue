@@ -264,19 +264,19 @@ async function reset(): Promise<void> {
 
 .hint {
   margin: 0;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--gray-11);
 }
 
 .submit {
-  height: var(--size-xs);
-  padding: 0 12px;
+  height: var(--size-xl);
+  padding: 0 16px;
   border: 1px solid transparent;
   border-radius: var(--radius-xs);
   background-color: var(--accent-9);
   color: var(--accent-contrast);
   font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   cursor: pointer;
 }
 
@@ -293,7 +293,7 @@ async function reset(): Promise<void> {
 
 .error {
   margin: 0;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--danger-11);
 }
 
@@ -308,7 +308,7 @@ async function reset(): Promise<void> {
 
 .warn {
   margin: 0;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--gray-11);
 }
 
@@ -319,25 +319,26 @@ async function reset(): Promise<void> {
 }
 
 .link {
-  padding: 0;
+  min-height: var(--size-xl);
+  padding: 8px 0;
   border: none;
   background: none;
   color: var(--gray-11);
   font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   text-decoration: underline;
   cursor: pointer;
 }
 
 .danger {
-  height: var(--size-xs);
-  padding: 0 12px;
+  height: var(--size-xl);
+  padding: 0 16px;
   border: 1px solid var(--danger-7);
   border-radius: var(--radius-xs);
   background-color: var(--gray-1);
   color: var(--danger-11);
   font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-md);
   cursor: pointer;
 }
 </style>

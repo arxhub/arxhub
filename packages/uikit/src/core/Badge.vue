@@ -21,7 +21,7 @@ defineProps<{
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 20px;
+  height: var(--size-md-half);
   padding: 0 8px;
   border-radius: var(--radius-md);
   font-family: var(--font-sans);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { StatusDot } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { SETTINGS_TYPE_ID } from '../contributions'
 import { SettingsExtension } from '../settings-extension'
@@ -9,6 +9,7 @@ import { SettingsExtension } from '../settings-extension'
 const arxhub = useArxHub()
 const settings = arxhub.extensions.get(SettingsExtension)
 const shell = arxhub.extensions.get(ShellExtension)
+const touch = useShellFrame() === 'mobile'
 
 const count = computed(() => settings.changes.fieldCount.value)
 
@@ -20,7 +21,7 @@ function openSettings(): void {
 </script>
 
 <template>
-  <button v-if="count > 0" type="button" class="pending" title="Unsaved settings changes" @click="openSettings">
+  <button v-if="count > 0" type="button" class="pending" :class="{ touch }" title="Unsaved settings changes" @click="openSettings">
     <StatusDot :tone="settings.changes.invalid.value ? 'danger' : 'warning'" />
     <span>{{ count }} unsaved setting{{ count === 1 ? '' : 's' }}</span>
   </button>
@@ -41,6 +42,11 @@ function openSettings(): void {
   font-size: var(--font-size-xs);
   color: var(--gray-11);
   white-space: nowrap;
+}
+
+.pending.touch {
+  height: var(--size-xl);
+  font-size: var(--font-size-sm);
 }
 
 .pending:hover {

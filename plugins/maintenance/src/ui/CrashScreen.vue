@@ -231,13 +231,13 @@ function copyReport(): void {
   gap: 8px;
   align-items: center;
   height: var(--size-2xs, 28px);
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
 }
 
 .ledger-state {
   margin-left: auto;
   color: var(--gray-11, #555);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
 }
 
 .ledger-row--waiting .ledger-name {
@@ -256,7 +256,7 @@ function copyReport(): void {
   inset: 0;
   z-index: 9999;
   overflow: auto;
-  padding: 2rem 1rem;
+  padding: 32px 16px;
   background: var(--gray-1, #fff);
   font-family: var(--font-sans, system-ui, sans-serif);
   color: var(--gray-12, #111);
@@ -265,21 +265,21 @@ function copyReport(): void {
 .card {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 24px;
   width: 100%;
-  max-width: 44rem;
+  max-width: 704px;
   margin: 0 auto;
 }
 
 .head {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .title {
   margin: 0;
-  font-size: var(--font-size-xl, 1.25rem);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-medium, 500);
 }
 
@@ -287,7 +287,7 @@ function copyReport(): void {
 .hint,
 .note {
   margin: 0;
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--gray-11, #666);
 }
 
@@ -298,20 +298,20 @@ function copyReport(): void {
 .block {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .block-title {
   margin: 0;
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium, 500);
 }
 
 .failure {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.625rem 0.75rem;
+  gap: 4px;
+  padding: 12px;
   border: 1px solid var(--danger-6, #fdd);
   border-radius: var(--radius-sm, 4px);
   background: var(--danger-2, #fff5f5);
@@ -320,40 +320,40 @@ function copyReport(): void {
 .failure-head {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 8px;
   margin: 0;
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
 }
 
 .phase {
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--gray-11, #666);
 }
 
 .failure-message {
   margin: 0;
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--danger-11, #c00);
   overflow-wrap: anywhere;
 }
 
 summary {
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--gray-11, #666);
   cursor: pointer;
 }
 
 .trace {
-  max-height: 14rem;
+  max-height: 224px;
   overflow: auto;
-  margin: 0.375rem 0 0;
-  padding: 0.5rem;
+  margin: 8px 0 0;
+  padding: 8px;
   border-radius: var(--radius-sm, 4px);
   background: var(--gray-3, #f4f4f5);
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -361,15 +361,20 @@ summary {
 .plugins {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .plugin {
-  padding: 0.375rem 0.5rem;
+  min-height: var(--size-xl, 48px);
+  padding: 8px;
   border-radius: var(--radius-sm, 4px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .plugin--blamed {
@@ -379,13 +384,16 @@ summary {
 .plugin-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: var(--font-size-sm, 0.875rem);
+  gap: 8px;
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
 .plugin-toggle {
   accent-color: var(--accent-9, #06f);
+  width: var(--size-md, 40px);
+  height: var(--size-md, 40px);
+  flex-shrink: 0;
 }
 
 .plugin-toggle:focus-visible {
@@ -398,16 +406,16 @@ summary {
 }
 
 .plugin-description {
-  margin: 0.125rem 0 0 1.5rem;
-  font-size: var(--font-size-xs, 0.75rem);
+  margin: 4px 0 0 24px;
+  font-size: var(--font-size-xs);
   color: var(--gray-11, #666);
 }
 
 .tag {
-  padding: 0 0.25rem;
+  padding: 0 4px;
   border: 1px solid var(--gray-6, #e4e4e7);
   border-radius: var(--radius-xs, 2px);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--gray-11, #666);
 }
 
@@ -420,16 +428,17 @@ summary {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  padding-top: 1rem;
+  gap: 8px;
+  padding-top: 16px;
   border-top: 1px solid var(--gray-6, #eee);
 }
 
 .primary,
 .secondary {
-  padding: 0.5rem 0.75rem;
+  min-height: var(--size-xl, 48px);
+  padding: 8px 12px;
   border-radius: var(--radius-sm, 4px);
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
@@ -446,11 +455,12 @@ summary {
 }
 
 .link {
-  padding: 0;
+  min-height: var(--size-xl, 48px);
+  padding: 8px 4px;
   border: none;
   background: none;
   color: var(--gray-11, #666);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-sm);
   text-decoration: underline;
   cursor: pointer;
 }

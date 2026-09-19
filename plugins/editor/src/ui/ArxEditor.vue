@@ -56,6 +56,8 @@ defineOptions({ name: 'ArxEditor' })
 const AUTOSAVE_DEBOUNCE_MS = 1500
 
 const props = defineProps<{ path: string; anchor?: BlockAnchor }>()
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
 
 const arxhub = useArxHub()
 const extension = arxhub.extensions.get(ArxEditorExtension)
@@ -520,7 +522,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="editor-panel" @keydown.capture="historyChord" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
+  <div class="editor-panel" :class="{ touch }" @keydown.capture="historyChord" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
     <!-- The name, and nothing else, at the very top (OR-02). The document's tools stay in the band at
          the bottom: on the phone that is where a hand reaches, and reading a document is passive while
          renaming one is rare — which is exactly what earns the name the top. -->
@@ -532,13 +534,13 @@ onUnmounted(() => {
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
     <DocumentVersions v-if="versionsOpen && extension.history && historyId && view" :store="extension.history" :current="view.state.doc" :document-id="historyId" :kit="kit" :mode="mode" :restore="restoreVersion" @close="versionsOpen = false" />
     <DocumentRecovery v-if="recovery" :kit="kit" :saved="recovery.saved" :draft="recovery.draft.content" :conflict="recovery.conflict" :busy="recoveryBusy" :error="recoveryError" @choose="resolveRecovery" />
-    <div v-if="draftError" class="editor-error" role="alert"><span>Draft backup unavailable: {{ draftError }}</span><Button variant="secondary" @click="backupDraft()">Retry draft backup</Button></div>
+    <div v-if="draftError" class="editor-error" role="alert"><span>Draft backup unavailable: {{ draftError }}</span><Button :size="buttonSize" variant="secondary" @click="backupDraft()">Retry draft backup</Button></div>
     <div v-if="loadError" class="editor-error">
       <span>{{ (loadError instanceof Error ? loadError.message : String(loadError)) || "Couldn't load this file." }} Saving is disabled.</span>
-      <Button size="sm" variant="secondary" @click="reload(path)">Retry</Button>
+      <Button :size="buttonSize" variant="secondary" @click="reload(path)">Retry</Button>
     </div>
     <div v-if="assets.error.value" class="editor-error" role="alert">
-      <span>{{ assets.error.value }}</span><Button variant="secondary" @click="assets.retry">Retry upload</Button><Button variant="ghost" @click="assets.dismiss">Dismiss</Button>
+      <span>{{ assets.error.value }}</span><Button :size="buttonSize" variant="secondary" @click="assets.retry">Retry upload</Button><Button :size="buttonSize" variant="ghost" @click="assets.dismiss">Dismiss</Button>
     </div>
     <div v-show="!loadError" ref="editorEl" class="editor-content" @scroll="dismissSlash" />
     <BlockHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :commands="kit.commands" />
@@ -549,7 +551,7 @@ onUnmounted(() => {
       <span role="status" aria-live="polite">{{ saveStatus }}</span>
       <span v-if="conflictCount" role="status">{{ conflictCount }} conflict{{ conflictCount === 1 ? '' : 's' }}</span>
       <span v-if="assets.pending.value" role="status">Uploading attachment…</span>
-      <Button v-if="saveError" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button>
+      <Button v-if="saveError" :size="buttonSize" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button>
       <span v-if="mode === 'readonly'">Read only · Select and copy text</span>
       <span v-else-if="mode === 'interactive'">Interactive · Change values; text stays protected</span>
     </div>
@@ -571,10 +573,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 16px;
-  padding: 4px 12px;
+  gap: 4px 8px;
+  flex-shrink: 0;
+  min-height: var(--size-md);
+  padding: 0 8px;
   color: var(--gray-11);
   font-size: var(--font-size-xs);
+  border-top: 1px solid var(--gray-6);
+  background: var(--gray-2);
+}
+.editor-panel.touch .editor-status {
+  min-height: var(--size-xl);
+  padding: 4px 12px;
+  gap: 8px;
 }
 .editor-content {
   min-height: 0;

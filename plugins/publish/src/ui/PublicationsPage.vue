@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { Badge, IconButton, PageLayout, Row } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { PublishExtension } from '../publish-extension'
 import type { PublicationKind, PublicationRecord } from '../publish-history'
+import PublicationActions from './PublicationActions.vue'
 
 const arxhub = useArxHub()
 const publish = arxhub.extensions.get(PublishExtension)
 const roots = publish.roots
 const history = publish.history
+const rowIconSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 
 const KIND_LABEL: Record<PublicationKind, string> = { publish: 'Published', unpublish: 'Unpublished', rollback: 'Rolled back' }
 
@@ -94,10 +96,13 @@ function counts(entry: PublicationRecord): string {
 </script>
 
 <template>
-  <PageLayout title="Publications" :meta="[meta]">
+  <!-- Attrs on a native root: PageLayout is a Vue SFC and does not declare these, and fallthrough
+       onto its root is easy to lose across the uikit entry — e2e needs a stable hook for "off". -->
+  <div class="publications" data-testid="publications-page" :data-publishing="enabled ? 'on' : 'off'">
+    <PageLayout title="Publications" :meta="[meta]">
     <section class="block">
       <h3 class="block-title">Published</h3>
-      <p v-if="roots.length === 0" class="hint">
+      <p v-if="roots.length === 0" class="hint" :data-testid="enabled ? 'publications-empty' : 'publishing-off-hint'">
         {{ enabled ? 'Nothing is published. Publish a note or a folder from the tree.' : 'Turn publishing on to share a note or a folder by link.' }}
       </p>
       <ul v-else class="list" data-testid="publications">
@@ -107,10 +112,13 @@ function counts(entry: PublicationRecord): string {
             <span class="meta mono">{{ publish.publicUrl(root) }}</span>
           </div>
           <div class="actions">
-            <IconButton icon="lu:link" size="sm" tooltip="Copy link" :disabled="busy" @click="copyLink(root)" />
-            <IconButton icon="lu:external-link" size="sm" tooltip="Open in browser" :disabled="busy" @click="openInBrowser(root)" />
-            <IconButton icon="lu:globe" size="sm" tooltip="Republish" :disabled="busy" @click="republish(root)" />
-            <IconButton icon="lu:eye-off" size="sm" tooltip="Unpublish" :disabled="busy" @click="unpublish(root)" />
+            <PublicationActions
+              :busy="busy"
+              :on-copy="() => copyLink(root)"
+              :on-open="() => openInBrowser(root)"
+              :on-republish="() => republish(root)"
+              :on-unpublish="() => unpublish(root)"
+            />
           </div>
         </Row>
       </ul>
@@ -127,15 +135,21 @@ function counts(entry: PublicationRecord): string {
           </div>
           <div class="actions">
             <Badge v-if="entry.hash === head">Current</Badge>
-            <IconButton v-else icon="lu:undo-2" size="sm" tooltip="Roll back" :disabled="busy" @click="rollback(entry)" />
+            <IconButton v-else :size="rowIconSize" icon="lu:undo-2" tooltip="Roll back" :disabled="busy" @click="rollback(entry)" />
           </div>
         </Row>
       </ul>
     </section>
-  </PageLayout>
+    </PageLayout>
+  </div>
 </template>
 
 <style scoped>
+.publications {
+  height: 100%;
+  min-height: 0;
+}
+
 .block + .block {
   margin-top: 24px;
 }
