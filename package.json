@@ -1,6 +1,6 @@
 {
   "name": "arxhub",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "ArxHub - A modular personal knowledge management system",
   "private": true,
   "type": "module",
