@@ -14,6 +14,7 @@
     "@arxhub/boot": "workspace:*",
     "@arxhub/core": "workspace:*",
     "@arxhub/errors": "workspace:*",
+    "@arxhub/plugin-budget": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-publish": "workspace:*",

@@ -4,6 +4,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { bootServer } from '@arxhub/boot/server'
 import type { ArxHub } from '@arxhub/core'
+import { BudgetServerPlugin, readFnsConfig } from '@arxhub/plugin-budget/server'
 import GatewayServerPlugin from '@arxhub/plugin-gateway/server'
 import { ProtectionServerPlugin } from '@arxhub/plugin-protection/server'
 import { PUBLIC_READ_PATH, PublishServerPlugin } from '@arxhub/plugin-publish/server'
@@ -70,6 +71,7 @@ export async function createArxHub({ version }: { version: string }): Promise<Ar
       hub.plugins.register(SyncServerPlugin, () => ({ vfs: new ScopedFileSystem(vfs, 'repo') }))
       // Published (plaintext, world-readable) content under public/.
       hub.plugins.register(PublishServerPlugin, () => ({ vfs: new ScopedFileSystem(vfs, 'public') }))
+      hub.plugins.register(BudgetServerPlugin, () => ({ fns: readFnsConfig(process.env) }))
     },
   })
 

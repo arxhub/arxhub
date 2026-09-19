@@ -39,6 +39,9 @@ catalogs:
     exceljs:
       specifier: ^4.4.0
       version: 4.4.0
+    jsqr:
+      specifier: ^1.4.0
+      version: 1.4.0
     lucide-vue-next:
       specifier: ^1.0.0
       version: 1.0.0
@@ -94,6 +97,9 @@ catalogs:
     elysia:
       specifier: ^1.4.28
       version: 1.4.28
+    saxes:
+      specifier: ^6.0.0
+      version: 6.0.0
   shared:
     '@electric-sql/pglite':
       specifier: ^0.5.4
@@ -153,6 +159,9 @@ catalogs:
     '@tauri-apps/plugin-fs':
       specifier: ^2.5.0
       version: 2.5.0
+    '@tauri-apps/plugin-geolocation':
+      specifier: ^2.3.2
+      version: 2.3.3
     '@tauri-apps/plugin-opener':
       specifier: ^2
       version: 2.5.3
@@ -297,6 +306,12 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@arxhub/plugin-budget':
+        specifier: workspace:*
+        version: link:../../plugins/budget
       '@arxhub/plugin-codemirror':
         specifier: workspace:*
         version: link:../../plugins/codemirror
@@ -390,6 +405,9 @@ importers:
       '@tauri-apps/plugin-fs':
         specifier: catalog:tauri
         version: 2.5.0
+      '@tauri-apps/plugin-geolocation':
+        specifier: catalog:tauri
+        version: 2.3.3
       '@tauri-apps/plugin-opener':
         specifier: catalog:tauri
         version: 2.5.3
@@ -488,6 +506,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/plugin-budget':
+        specifier: workspace:*
+        version: link:../../plugins/budget
       '@arxhub/plugin-codemirror':
         specifier: workspace:*
         version: link:../../plugins/codemirror
@@ -603,6 +624,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/plugin-budget':
+        specifier: workspace:*
+        version: link:../../plugins/budget
       '@arxhub/plugin-codemirror':
         specifier: workspace:*
         version: link:../../plugins/codemirror
@@ -730,6 +754,9 @@ importers:
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@arxhub/plugin-budget':
+        specifier: workspace:*
+        version: link:../../plugins/budget
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../../plugins/gateway
@@ -1337,6 +1364,85 @@ importers:
       '@types/node':
         specifier: catalog:toolchain
         version: 25.6.0
+
+  plugins/budget:
+    dependencies:
+      '@arxhub/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@arxhub/http':
+        specifier: workspace:*
+        version: link:../../packages/http
+      '@arxhub/plugin-gateway':
+        specifier: workspace:*
+        version: link:../gateway
+      '@arxhub/plugin-protection':
+        specifier: workspace:*
+        version: link:../protection
+      '@arxhub/plugin-repository':
+        specifier: workspace:*
+        version: link:../repository
+      '@arxhub/plugin-settings':
+        specifier: workspace:*
+        version: link:../settings
+      '@arxhub/plugin-shell':
+        specifier: workspace:*
+        version: link:../shell
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
+      elysia:
+        specifier: catalog:server
+        version: 1.4.28(@sinclair/typebox@0.34.48)(exact-mirror@0.2.7(@sinclair/typebox@0.34.48))(file-type@21.3.4)(openapi-types@12.1.3)(typescript@6.0.3)
+      jsqr:
+        specifier: catalog:client
+        version: 1.4.0
+      saxes:
+        specifier: catalog:server
+        version: 6.0.0
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/di':
+        specifier: workspace:*
+        version: link:../../packages/di
+      '@arxhub/events':
+        specifier: workspace:*
+        version: link:../../packages/events
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@arxhub/vfs-node':
+        specifier: workspace:*
+        version: link:../../packages/vfs-node
+      '@sinclair/typebox':
+        specifier: catalog:shared
+        version: 0.34.48
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+      vue-tsc:
+        specifier: catalog:toolchain
+        version: 3.2.7(typescript@6.0.3)
 
   plugins/codemirror:
     dependencies:
@@ -3287,6 +3393,9 @@ packages:
   '@tauri-apps/plugin-fs@2.5.0':
     resolution: {integrity: sha512-c83kbz61AK+rKjhS+je9+stIO27nXj7p9cqeg36TwkIUtxpCFTttlHHtqon6h6FN54cXjyAjlMPOJcW3mwE5XQ==}
 
+  '@tauri-apps/plugin-geolocation@2.3.3':
+    resolution: {integrity: sha512-8TDI9YS9I2eXj1IwUfeiFY4OLkhVan08vpgHSSTM1tl7p/fNA7APlS6QAgLX9j73zqVp5Pl9HrFHG2gJtIunqg==}
+
   '@tauri-apps/plugin-opener@2.5.3':
     resolution: {integrity: sha512-CCcUltXMOfUEArbf3db3kCE7Ggy1ExBEBl51Ko2ODJ6GDYHRp1nSNlQm5uNCFY5k7/ufaK5Ib3Du/Zir19IYQQ==}
 
@@ -4020,6 +4129,9 @@ packages:
   jsonfile@6.1.0:
     resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
 
+  jsqr@1.4.0:
+    resolution: {integrity: sha512-dxLob7q65Xg2DvstYkRpkYtmKm2sPJ9oFhrhmudT1dZvNFFTlroai3AWSpLey/w5vMcLBXRgOJsbXpdN9HzU/A==}
+
   jszip@3.10.2:
     resolution: {integrity: sha512-3l+rb15IOWtUhU0H5MFqES/T6Kh7abYwjosBey/vD6hDt8zoEffkSC5Ws5SGtgVw3gBx2NEbhTeSW1+kWkpyTQ==}
 
@@ -4535,6 +4647,10 @@ packages:
   saxes@5.0.1:
     resolution: {integrity: sha512-5LBh1Tls8c9xgGjw3QrMwETmTMVk0oFgvrFSvWx62llR2hcEInrKNZ2GZCCuuy2lvWrdl5jhbpeqc5hRYKFOcw==}
     engines: {node: '>=10'}
+
+  saxes@6.0.0:
+    resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
+    engines: {node: '>=v12.22.7'}
 
   semver@7.5.4:
     resolution: {integrity: sha512-1bCSESV6Pv+i21Hvpxp3Dx+pSD8lIPt8uVjRrxAUt/nbswYc+tK6Y2btiULjd4+fnq15PX+nqQDC7Oft7WkwcA==}
@@ -5854,6 +5970,10 @@ snapshots:
     dependencies:
       '@tauri-apps/api': 2.11.0
 
+  '@tauri-apps/plugin-geolocation@2.3.3':
+    dependencies:
+      '@tauri-apps/api': 2.11.0
+
   '@tauri-apps/plugin-opener@2.5.3':
     dependencies:
       '@tauri-apps/api': 2.11.0
@@ -6991,6 +7111,8 @@ snapshots:
       graceful-fs: 4.2.11
     optional: true
 
+  jsqr@1.4.0: {}
+
   jszip@3.10.2:
     dependencies:
       lie: 3.3.0
@@ -7673,6 +7795,10 @@ snapshots:
   safe-stable-stringify@2.5.0: {}
 
   saxes@5.0.1:
+    dependencies:
+      xmlchars: 2.2.0
+
+  saxes@6.0.0:
     dependencies:
       xmlchars: 2.2.0
 

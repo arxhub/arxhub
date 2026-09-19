@@ -10,6 +10,7 @@
   "dependencies": {
     "@arxhub/boot": "workspace:*",
     "@arxhub/core": "workspace:*",
+    "@arxhub/plugin-budget": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
     "@arxhub/plugin-config": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",

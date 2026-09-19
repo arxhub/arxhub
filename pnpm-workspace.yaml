@@ -31,6 +31,7 @@ catalogs:
     prosemirror-schema-basic: ^1.2.3
     prosemirror-schema-list: ^1.5.0
     lucide-vue-next: ^1.0.0
+    jsqr: ^1.4.0
     mdast-util-from-markdown: ^2.0.3
     mdast-util-gfm: ^3.1.0
     micromark-extension-gfm: ^3.0.0
@@ -42,6 +43,7 @@ catalogs:
     '@elysiajs/static': ^1.1.1
     elysia: ^1.4.28
     file-type: ^21.3.4
+    saxes: ^6.0.0
     esbuild: ^0.28.1
   shared:
     '@electric-sql/pglite': ^0.5.4
@@ -88,6 +90,7 @@ catalogs:
     '@tauri-apps/api': ^2.11.0
     '@tauri-apps/cli': ^2.11.0
     '@tauri-apps/plugin-fs': ^2.5.0
+    '@tauri-apps/plugin-geolocation': ^2.3.2
     '@tauri-apps/plugin-opener': ^2
     '@tauri-apps/plugin-os': ^2.3.2
 

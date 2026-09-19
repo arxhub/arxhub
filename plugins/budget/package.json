@@ -1,0 +1,72 @@
+{
+  "name": "@arxhub/plugin-budget",
+  "version": "0.1.0",
+  "description": "Accounts, income and expenses for ArxHub",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest.ts",
+    "./server": "./src/server.ts",
+    "./ui": "./src/ui.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vue-tsc --noEmit && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "elysia": "catalog:server",
+    "jsqr": "catalog:client",
+    "saxes": "catalog:server",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/di": "workspace:*",
+    "@arxhub/events": "workspace:*",
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@arxhub/vfs-node": "workspace:*",
+    "@sinclair/typebox": "catalog:shared",
+    "@types/node": "catalog:toolchain",
+    "vue-tsc": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/config": "workspace:*",
+    "@arxhub/core": "workspace:*",
+    "@arxhub/crypto": "workspace:*",
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/http": "workspace:*",
+    "@arxhub/plugin-gateway": "workspace:*",
+    "@arxhub/plugin-protection": "workspace:*",
+    "@arxhub/plugin-repository": "workspace:*",
+    "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/uikit": "workspace:*",
+    "@arxhub/vfs": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
+      },
+      "./server": {
+        "import": "./dist/server.js",
+        "types": "./dist/server.d.ts"
+      },
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      }
+    }
+  }
+}

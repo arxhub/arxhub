@@ -7,6 +7,7 @@ import '@arxhub/theme-catppuccin'
 
 import { bootClient, shellForFrame } from '@arxhub/boot/client'
 import { apiBaseUrl } from '@arxhub/core'
+import { BudgetPlugin } from '@arxhub/plugin-budget'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror'
 import { ConfigPlugin } from '@arxhub/plugin-config'
 import { ArxEditorPlugin } from '@arxhub/plugin-editor'
@@ -90,6 +91,7 @@ await bootClient({
     // version history and pending-file nodes must not go dark when sync (the optional remote exchange
     // layered over it) is switched off (A-50). Registered right before it for the same reason.
     arxhub.plugins.register(RepositoryPlugin)
+    arxhub.plugins.register(BudgetPlugin)
     arxhub.plugins.register(SyncPlugin)
     arxhub.plugins.register(PublishPlugin)
   },

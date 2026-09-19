@@ -11,6 +11,8 @@
   "dependencies": {
     "@arxhub/boot": "workspace:*",
     "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/plugin-budget": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
     "@arxhub/plugin-config": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",
@@ -42,6 +44,7 @@
     "@arxhub/vfs-tauri": "workspace:*",
     "@tauri-apps/api": "catalog:tauri",
     "@tauri-apps/plugin-fs": "catalog:tauri",
+    "@tauri-apps/plugin-geolocation": "catalog:tauri",
     "@tauri-apps/plugin-opener": "catalog:tauri",
     "@tauri-apps/plugin-os": "catalog:tauri",
     "lucide-vue-next": "catalog:client",

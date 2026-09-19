@@ -7,6 +7,7 @@ import '@arxhub/theme-catppuccin'
 
 import { bootClient } from '@arxhub/boot/client'
 import { apiBaseUrl } from '@arxhub/core'
+import { BudgetPlugin } from '@arxhub/plugin-budget'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror'
 import { ConfigPlugin } from '@arxhub/plugin-config'
 import { ArxEditorPlugin } from '@arxhub/plugin-editor'
@@ -31,6 +32,7 @@ import { type Theme, ThemePlugin } from '@arxhub/plugin-theme'
 import { VfsPlugin } from '@arxhub/plugin-vfs'
 import { isTauri } from '@tauri-apps/api/core'
 import { h, markRaw } from 'vue'
+import { appBudgetCapture } from './budget-capture'
 import WelcomePanel from './panels/WelcomePanel.vue'
 import VaultSettingsPage from './settings/VaultSettingsPage.vue'
 
@@ -108,6 +110,7 @@ await bootClient({
     // version history and pending-file nodes must not go dark when sync (the optional remote exchange
     // layered over it) is switched off (A-50). Registered right before it for the same reason.
     arxhub.plugins.register(RepositoryPlugin)
+    arxhub.plugins.register(BudgetPlugin, () => ({ capture: appBudgetCapture, receiptServerUrlRequired: isTauri() }))
     arxhub.plugins.register(SyncPlugin)
     arxhub.plugins.register(PublishPlugin)
   },
