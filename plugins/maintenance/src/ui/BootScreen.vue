@@ -89,14 +89,14 @@ const percent = computed(() => (props.ledger.total === 0 ? 0 : Math.round((props
 
 .title {
   margin: 0;
-  font-size: var(--font-size-xl, 1.25rem);
+  font-size: var(--font-size-xl);
   font-weight: 600;
 }
 
 .lede {
   margin: 0;
   color: var(--gray-11, #555);
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
 }
 
 .track {
@@ -134,7 +134,7 @@ const percent = computed(() => (props.ledger.total === 0 ? 0 : Math.round((props
   gap: 8px;
   align-items: center;
   height: var(--size-2xs, 28px);
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
 }
 
 .dot {
@@ -164,7 +164,7 @@ const percent = computed(() => (props.ledger.total === 0 ? 0 : Math.round((props
 .version,
 .state {
   color: var(--gray-11, #555);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
 }
 
 .version {

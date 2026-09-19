@@ -231,13 +231,13 @@ function copyReport(): void {
   gap: 8px;
   align-items: center;
   height: var(--size-2xs, 28px);
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
 }
 
 .ledger-state {
   margin-left: auto;
   color: var(--gray-11, #555);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
 }
 
 .ledger-row--waiting .ledger-name {
@@ -279,7 +279,7 @@ function copyReport(): void {
 
 .title {
   margin: 0;
-  font-size: var(--font-size-xl, 1.25rem);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-medium, 500);
 }
 
@@ -287,7 +287,7 @@ function copyReport(): void {
 .hint,
 .note {
   margin: 0;
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--gray-11, #666);
 }
 
@@ -303,7 +303,7 @@ function copyReport(): void {
 
 .block-title {
   margin: 0;
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium, 500);
 }
 
@@ -322,25 +322,25 @@ function copyReport(): void {
   align-items: baseline;
   gap: 8px;
   margin: 0;
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
 }
 
 .phase {
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--gray-11, #666);
 }
 
 .failure-message {
   margin: 0;
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--danger-11, #c00);
   overflow-wrap: anywhere;
 }
 
 summary {
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--gray-11, #666);
   cursor: pointer;
 }
@@ -353,7 +353,7 @@ summary {
   border-radius: var(--radius-sm, 4px);
   background: var(--gray-3, #f4f4f5);
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -385,7 +385,7 @@ summary {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
@@ -404,7 +404,7 @@ summary {
 
 .plugin-description {
   margin: 4px 0 0 24px;
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--gray-11, #666);
 }
 
@@ -412,7 +412,7 @@ summary {
   padding: 0 4px;
   border: 1px solid var(--gray-6, #e4e4e7);
   border-radius: var(--radius-xs, 2px);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--gray-11, #666);
 }
 
@@ -435,7 +435,7 @@ summary {
   min-height: var(--size-md, 40px);
   padding: 8px 12px;
   border-radius: var(--radius-sm, 4px);
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
@@ -456,7 +456,7 @@ summary {
   border: none;
   background: none;
   color: var(--gray-11, #666);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   text-decoration: underline;
   cursor: pointer;
 }
