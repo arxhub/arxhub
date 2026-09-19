@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { useShellFrame } from '../hooks/useShellFrame'
+
 defineProps<{
   title?: string
   description?: string
   // Mono facts about where the page comes from — a file name, a field count. Joined with a rule.
   meta?: string[]
 }>()
+
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
-  <div class="page">
+  <div class="page" :class="{ touch }">
     <header v-if="title || description || meta?.length || $slots.actions" class="header">
       <div class="title-row">
         <h1 v-if="title" class="title">{{ title }}</h1>
@@ -50,6 +54,10 @@ defineProps<{
 .header {
   flex-shrink: 0;
   padding: 24px 24px 20px;
+}
+
+.page.touch .header {
+  padding: 16px 16px 12px;
 }
 
 .title-row {
@@ -102,6 +110,10 @@ defineProps<{
   padding: 0 24px 32px;
 }
 
+.page.touch .body {
+  padding: 0 16px 24px;
+}
+
 /* Pinned, so a long page never hides its own actions below the fold. */
 .footer {
   display: flex;
@@ -111,5 +123,9 @@ defineProps<{
   padding: 12px 24px;
   border-top: 1px solid var(--gray-6);
   background: var(--gray-2);
+}
+
+.page.touch .footer {
+  padding: 12px 16px;
 }
 </style>
