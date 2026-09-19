@@ -6,7 +6,8 @@ import { CODE_LANGUAGES, MAX_HIGHLIGHT_LENGTH } from '../code-highlighting'
 import type { ArxEditorControlProps } from '../control-views'
 
 defineProps<ArxEditorControlProps>()
-const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
 const open = ref(false)
 const query = ref('')
 const choices = computed(() => CODE_LANGUAGES.filter((language) => language.toLowerCase().includes(query.value.toLowerCase())))
@@ -14,8 +15,8 @@ const choices = computed(() => CODE_LANGUAGES.filter((language) => language.toLo
 
 <template>
   <Button v-if="mode === 'editable'" :size="buttonSize" variant="ghost" aria-label="Code language" @click="open = true">{{ node.attrs.language || 'Plain text' }}</Button>
-  <span v-else class="language-label">{{ node.attrs.language || 'Plain text' }}</span>
-  <span v-if="node.content.size > MAX_HIGHLIGHT_LENGTH" class="language-label">Syntax highlighting paused for this large block.</span>
+  <span v-else class="language-label" :class="{ touch }">{{ node.attrs.language || 'Plain text' }}</span>
+  <span v-if="node.content.size > MAX_HIGHLIGHT_LENGTH" class="language-label" :class="{ touch }">Syntax highlighting paused for this large block.</span>
   <Dialog v-if="open && mode === 'editable'" open title="Code language" size="sm" @update:open="open = $event">
     <Input v-model="query" aria-label="Search code languages" placeholder="Search languages" />
     <nav aria-label="Code languages">
@@ -28,4 +29,5 @@ const choices = computed(() => CODE_LANGUAGES.filter((language) => language.toLo
 <style scoped>
 nav { margin-top: 8px; max-height: 280px; overflow: auto; }
 .language-label { font-size: var(--font-size-xs); color: var(--gray-11); padding: 8px; display: block; }
+.language-label.touch { font-size: var(--font-size-sm); }
 </style>

@@ -7,7 +7,8 @@ import type { ArxEditorControlProps } from '../control-views'
 import { versionText } from '../document-history'
 
 const props = defineProps<ArxEditorControlProps>()
-const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
 
 function side(name: 'local' | 'remote'): Node | null {
   let found: Node | null = null
@@ -40,7 +41,7 @@ function keep(pick: 'local' | 'remote' | 'both') {
 </script>
 
 <template>
-  <div class="conflict-block">
+  <div class="conflict-block" :class="{ touch }">
     <p class="conflict-header">Conflict · this device / other device</p>
     <div class="conflict-side">
       <span class="conflict-label">This device</span>
@@ -75,6 +76,9 @@ function keep(pick: 'local' | 'remote' | 'both') {
   font-size: var(--font-size-xs);
   color: var(--gray-11);
 }
+.conflict-block.touch .conflict-header {
+  font-size: var(--font-size-sm);
+}
 .conflict-side {
   display: flex;
   flex-direction: column;
@@ -83,6 +87,9 @@ function keep(pick: 'local' | 'remote' | 'both') {
 .conflict-label {
   font-size: var(--font-size-xs);
   color: var(--gray-10);
+}
+.conflict-block.touch .conflict-label {
+  font-size: var(--font-size-sm);
 }
 .conflict-side p {
   margin: 0;

@@ -37,7 +37,7 @@ defineProps<{
 .pdf-meta {
   color: var(--gray-11);
   font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   white-space: nowrap;
 }
 

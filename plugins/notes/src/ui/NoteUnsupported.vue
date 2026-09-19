@@ -10,7 +10,8 @@ const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
 const notes = arxhub.extensions.get(NotesExtension)
-const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
 const canOpen = computed(() => canOpenExternally(notes.vfs))
 
 async function openInSystemApp(): Promise<void> {
@@ -32,7 +33,7 @@ async function openInSystemApp(): Promise<void> {
     <Strip>
       <DocumentName :path="path" />
     </Strip>
-    <div class="note-unsupported">
+    <div class="note-unsupported" :class="{ touch }">
       <p class="headline">Nothing can open this file</p>
       <p class="path">{{ path }}</p>
       <p class="hint">No installed viewer claims this extension.</p>
@@ -81,9 +82,17 @@ async function openInSystemApp(): Promise<void> {
   overflow-wrap: anywhere;
 }
 
+.note-unsupported.touch .path {
+  font-size: var(--font-size-sm);
+}
+
 .hint {
   margin: 0;
   color: var(--gray-10);
   font-size: var(--font-size-sm);
+}
+
+.note-unsupported.touch .hint {
+  font-size: var(--font-size-md);
 }
 </style>

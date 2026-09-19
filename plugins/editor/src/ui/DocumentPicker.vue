@@ -7,7 +7,8 @@ import { type ArxDocumentLinks, type BlockDestination, type DocumentDestination,
 
 const props = defineProps<{ links: ArxDocumentLinks; path: string; view: EditorView }>()
 const emit = defineEmits<{ choose: [href: string] }>()
-const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
 const query = ref('')
 const selected = ref<DocumentDestination | null>(null)
 const documents = ref<DocumentDestination[]>([])
@@ -63,7 +64,7 @@ async function choose(anchor?: BlockDestination['anchor']) {
 </script>
 
 <template>
-  <section class="document-picker" aria-label="Link destination">
+  <section class="document-picker" :class="{ touch }" aria-label="Link destination">
     <template v-if="selected">
       <Button :size="buttonSize" variant="ghost" @click="selected = null">Back to documents</Button>
       <p>{{ selected.title || selected.path }}</p>
@@ -92,5 +93,6 @@ async function choose(anchor?: BlockDestination['anchor']) {
 .document-picker { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 .destination-list { max-height: 240px; overflow: auto; overflow-wrap: anywhere; }
 small { display: block; font-size: var(--font-size-xs); color: var(--gray-11); }
+.document-picker.touch small { font-size: var(--font-size-sm); }
 p { margin: 4px 0; }
 </style>

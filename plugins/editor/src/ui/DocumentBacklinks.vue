@@ -6,7 +6,8 @@ import type { ArxDocumentLinks, DocumentDestination } from '../document-links'
 
 const props = defineProps<{ links: ArxDocumentLinks; path: string }>()
 const emit = defineEmits<{ close: [] }>()
-const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
 const results = ref<DocumentDestination[]>([])
 const busy = ref(false)
 const error = ref('')
@@ -43,15 +44,18 @@ async function open(path: string) {
 
 <template>
   <Dialog open title="Backlinks" size="sm" @update:open="$event || emit('close')">
+    <div class="backlinks" :class="{ touch }">
     <p v-if="busy" role="status">Loading backlinks…</p>
     <p v-if="error" role="alert">{{ error }} <Button :size="buttonSize" variant="secondary" @click="retry++">Retry backlinks</Button></p>
     <nav v-else aria-label="Documents linking here">
       <Row v-for="document in results" :key="document.path" as="button" type="button" wrap @click="open(document.path)"><span>{{ document.title || document.path }}<small>{{ document.path }}</small></span></Row>
       <p v-if="!busy && !results.length">No indexed documents link here yet.</p>
     </nav>
+    </div>
   </Dialog>
 </template>
 
 <style scoped>
+.backlinks.touch small { font-size: var(--font-size-sm); }
 small { display: block; font-size: var(--font-size-xs); color: var(--gray-11); overflow-wrap: anywhere; }
 </style>
