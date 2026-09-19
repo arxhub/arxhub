@@ -2,13 +2,14 @@
 import { SETTINGS_TYPE_ID, SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { Button } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { authStatus, describeRejection } from '../auth-status'
 import { KeyringExtension } from '../keyring-extension'
 import { closeAuthRejectedDialog } from './auth-dialog'
 
 const arxhub = useArxHub()
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const shell = arxhub.extensions.get(ShellExtension)
 const settings = arxhub.extensions.get(SettingsExtension)
 const keyring = arxhub.extensions.get(KeyringExtension).keyring
@@ -46,8 +47,8 @@ function openSecurity(): void {
     </dl>
 
     <div class="auth-actions">
-      <Button variant="secondary" @click="closeAuthRejectedDialog()">Close</Button>
-      <Button v-if="copy.offerPhrase" variant="primary" @click="openSecurity">Recovery phrase…</Button>
+      <Button :size="buttonSize" variant="secondary" @click="closeAuthRejectedDialog()">Close</Button>
+      <Button v-if="copy.offerPhrase" :size="buttonSize" variant="primary" @click="openSecurity">Recovery phrase…</Button>
     </div>
   </div>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button, Icon, Strip } from '@arxhub/uikit/core'
-import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { canOpenExternally, openExternally } from '@arxhub/vfs'
 import { computed } from 'vue'
 import { NotesExtension } from '../notes-extension'
@@ -10,6 +10,7 @@ const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
 const notes = arxhub.extensions.get(NotesExtension)
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const canOpen = computed(() => canOpenExternally(notes.vfs))
 
 async function openInSystemApp(): Promise<void> {
@@ -37,7 +38,7 @@ async function openInSystemApp(): Promise<void> {
       <p class="hint">No installed viewer claims this extension.</p>
       <!-- Hidden rather than disabled where the backend cannot honour it (a browser) — nothing dead is
            ever drawn (see packages/vfs/src/capabilities/open-externally.ts). -->
-      <Button v-if="canOpen" variant="secondary" @click="openInSystemApp">
+      <Button v-if="canOpen" :size="buttonSize" variant="secondary" @click="openInSystemApp">
         <Icon name="lu:external-link" :size="14" />
         Open in system app
       </Button>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button, SectionLabel } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { TObject } from '@sinclair/typebox'
 import { computed, reactive, ref, watch } from 'vue'
 import ConfigField from './ConfigField.vue'
@@ -14,6 +15,7 @@ const props = defineProps<{
   draft?: Record<string, unknown>
 }>()
 
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 // The form does not save. It reports its draft and lets the host decide when to write — settings
 // edits are staged across sections and applied together, so a per-form Save would fight that.
 const emit = defineEmits<{

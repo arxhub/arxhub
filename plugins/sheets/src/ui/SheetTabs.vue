@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { actionMenu, Button, IconButton, Segmented, Strip } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { useSheet } from './use-sheet'
 
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const { book, sheetId, switchSheet, addSheet, editable, tool } = useSheet()
 const options = computed(() => book.value?.sheets.map(({ id, name }) => ({ value: id, label: name })) ?? [])
 function manage(event: MouseEvent) {
@@ -35,7 +37,7 @@ function manage(event: MouseEvent) {
     <IconButton size="lg" icon="lu:ellipsis" tooltip="Worksheet actions" :disabled="!editable" @click="manage" />
     <div class="sheet-tab-scroll"><Segmented :model-value="sheetId" :options="options" aria-label="Worksheets" :disabled="!editable" @update:model-value="switchSheet" /></div>
     <template #actions>
-      <Button variant="secondary" :disabled="!editable || (book?.sheets.length ?? 0) >= 16" @click="addSheet">Add sheet</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="!editable || (book?.sheets.length ?? 0) >= 16" @click="addSheet">Add sheet</Button>
     </template>
   </Strip>
 </template>

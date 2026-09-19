@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { actionMenu, Button, IconButton, Strip } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { useSheet } from './use-sheet'
 
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const session = useSheet()
 const { status, calculating, save, editable, undo, redo, canUndo, canRedo, selectingRange, selectionLabel } = session
 function tools(event: MouseEvent) {
@@ -143,7 +145,7 @@ function more(event: MouseEvent) {
     <IconButton size="lg" icon="lu:undo-2" tooltip="Undo" :disabled="!canUndo || !editable" @click="undo" />
     <IconButton size="lg" icon="lu:redo-2" tooltip="Redo" :disabled="!canRedo || !editable" @click="redo" />
     <IconButton size="lg" icon="lu:ellipsis" tooltip="Spreadsheet actions" :disabled="!editable" @click="more" />
-    <template #actions><Button variant="secondary" :disabled="!editable" @click="save">Save</Button></template>
+    <template #actions><Button :size="buttonSize" variant="secondary" :disabled="!editable" @click="save">Save</Button></template>
   </Strip>
 </template>
 
