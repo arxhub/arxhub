@@ -461,6 +461,11 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   overflow-wrap: anywhere;
 }
 
+.security.touch .value {
+  font-size: var(--font-size-sm);
+  min-height: var(--size-xl);
+}
+
 .phrase {
   line-height: 1.8;
   letter-spacing: 0.02em;
@@ -478,6 +483,12 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   resize: vertical;
 }
 
+.security.touch .entry {
+  font-size: var(--font-size-md);
+  min-height: var(--size-2xl);
+  padding: 12px 16px;
+}
+
 .entry:focus-visible {
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
@@ -488,5 +499,9 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--danger-11);
+}
+
+.security.touch .invalid {
+  font-size: var(--font-size-sm);
 }
 </style>
