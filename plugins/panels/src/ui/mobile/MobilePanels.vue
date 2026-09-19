@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { IconButton } from '@arxhub/uikit/core'
+import { dirname } from '@arxhub/path'
+import { Icon, IconButton, Strip } from '@arxhub/uikit/core'
+import { computed } from 'vue'
 import type { PanelStore } from '../../types'
 import PanelView from '../PanelView.vue'
 import { useOpenTabsList } from '../use-open-tabs'
@@ -18,6 +20,12 @@ const props = withDefaults(
 // untouched — every open instance is still there, so the same vault opened on a desktop still has the
 // arrangement it was given.
 const { openTabs, current, pathOf } = useOpenTabsList(props.store)
+const location = computed(() => {
+  const path = current.value ? pathOf(current.value.instance) : null
+  if (path == null) return null
+  const parent = dirname(path)
+  return parent === '.' || parent === '/' ? 'Vault' : parent
+})
 </script>
 
 <template>
@@ -37,21 +45,18 @@ const { openTabs, current, pathOf } = useOpenTabsList(props.store)
       </div>
     </div>
 
-    <!-- What a top app bar would have said, in the third of the screen a thumb reaches: which file
-         this is, where it came from, and the one control that closes it. A page switched from the rail
-         gets none of it — its own heading already names it, and closing it would leave nothing. -->
-    <div v-if="current && mode === 'tiled'" class="context-strip">
-      <span class="entry-text">
-        <span class="entry-name">{{ current.instance.title }}</span>
-        <span v-if="pathOf(current.instance)" class="entry-path">{{ pathOf(current.instance) }}</span>
-      </span>
+    <!-- The viewer owns the document name. This band keeps only its location and the thumb-reachable close. -->
+    <Strip v-if="current && mode === 'tiled'" class="context-strip" :bordered="false" flush-actions>
+      <span v-if="location" class="entry-path" :title="location"><Icon name="lu:folder" :size="16" /><span class="location">{{ location }}</span></span>
+      <template #actions>
       <IconButton
         icon="lu:x"
         size="xl"
         ariaLabel="Close document"
         @click="props.store.requestClosePanel(current.instance.instanceId, current.groupId)"
       />
-    </div>
+      </template>
+    </Strip>
   </div>
 </template>
 
@@ -81,40 +86,24 @@ const { openTabs, current, pathOf } = useOpenTabsList(props.store)
 }
 
 .context-strip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  min-height: var(--size-xl);
-  padding: 4px 8px 4px 16px;
   border-top: 1px solid var(--gray-4);
-  background: var(--gray-2);
 }
 
-/* The two lines of a document's identity — name over path — also used, verbatim, by OpenTabsList's own
-   Row entries; one block, so the two never drift apart the way a `Row`-owned copy and a hand-rolled one
-   already had (gap, weight). */
-.entry-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
+.location {
   min-width: 0;
-}
-
-.entry-name {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--font-size-md);
 }
 
 .entry-path {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--gray-10);
-  font-family: var(--font-mono);
+  color: var(--gray-11);
   font-size: var(--font-size-sm);
 }
 </style>

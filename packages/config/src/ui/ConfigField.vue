@@ -9,7 +9,9 @@ const emit = defineEmits<(e: 'update:modelValue', value: unknown) => void>()
 
 const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const touch = useShellFrame() === 'mobile'
-const inline = computed(() => isInline(props.field.kind))
+const inline = computed(() => isInline(props.field.kind) && (!touch || props.field.kind === 'switch'))
+// JSON Schema required means present; an empty string can intentionally disable an integration.
+const missingRequired = computed(() => props.field.required && props.modelValue == null)
 
 const asText = computed(() => (props.modelValue == null ? '' : String(props.modelValue)))
 const asNumber = computed(() => (typeof props.modelValue === 'number' ? props.modelValue : Number(props.modelValue ?? 0)))
@@ -41,7 +43,7 @@ async function copy(): Promise<void> {
       <div class="title-row">
         <span class="label">{{ field.label }}</span>
         <span v-if="field.disabled" class="tag">Unavailable</span>
-        <span v-else-if="field.required" class="tag required">Required</span>
+        <span v-else-if="missingRequired" class="tag required">Required</span>
       </div>
       <p v-if="field.deviceLocal" class="description">Only on this device</p>
       <p v-if="field.min != null || field.max != null" class="description">
@@ -188,7 +190,7 @@ async function copy(): Promise<void> {
 
 .field.inline {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   column-gap: 28px;
 }
@@ -216,6 +218,7 @@ async function copy(): Promise<void> {
 
 .title-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 8px;
 }
@@ -296,6 +299,8 @@ async function copy(): Promise<void> {
 }
 
 .readonly-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   color: var(--gray-11);

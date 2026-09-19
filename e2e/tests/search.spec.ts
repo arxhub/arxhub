@@ -11,6 +11,13 @@ import {
   waitForIndex,
 } from './fixtures'
 
+async function withFilters(app: Page, run: () => Promise<void>): Promise<void> {
+  const mobile = await isMobileFrame(app)
+  if (mobile) await app.getByRole('button', { name: 'Search filters', exact: true }).click()
+  await run()
+  if (mobile) await app.getByRole('button', { name: 'Done', exact: true }).click()
+}
+
 // UJ-24 «Поиск записи по слову из текста»: the owner remembers a word, not a file name. The path from that
 // word to the open note has to work from the keyboard alone, and it has to end in the workspace the notes
 // are already read in — not in a viewer of search's own.
@@ -147,7 +154,9 @@ test.describe('finding a note by a word in its text', () => {
 
     // Narrowing to titles drops a document the word is only in the body of. The switch's own input is
     // visually hidden, so the click goes to the control the owner presses.
-    await app.getByTestId('search-toggle-titles-only').click()
+    await withFilters(app, async () => {
+      await app.getByTestId('search-toggle-titles-only').click()
+    })
     await expect(
       results(app)
         .getByRole('option')
@@ -159,11 +168,17 @@ test.describe('finding a note by a word in its text', () => {
     // is a type of its own, so leaving it means going to another one.
     await openType(app, 'Notes')
     await openSearch(app)
-    await expect(app.getByRole('checkbox', { name: 'Titles only' })).toBeChecked()
+    await withFilters(app, async () => {
+      await expect(app.getByRole('checkbox', { name: 'Titles only' })).toBeChecked()
+    })
 
     // Left as found, so the next test starts from the defaults.
-    await app.getByTestId('search-toggle-titles-only').click()
-    await expect(app.getByRole('checkbox', { name: 'Titles only' })).not.toBeChecked()
+    await withFilters(app, async () => {
+      await app.getByTestId('search-toggle-titles-only').click()
+    })
+    await withFilters(app, async () => {
+      await expect(app.getByRole('checkbox', { name: 'Titles only' })).not.toBeChecked()
+    })
   })
 
   test('an expression that does not parse is said so, and the list stays', async ({ app, vault }) => {
@@ -173,14 +188,18 @@ test.describe('finding a note by a word in its text', () => {
     await openSearch(app)
     await searchFor(app, 'носорог', new RegExp(path))
 
-    await app.getByTestId('search-toggle-regex').click()
+    await withFilters(app, async () => {
+      await app.getByTestId('search-toggle-regex').click()
+    })
     await field(app).fill('(носорог')
 
     await expect(app.locator('.message.danger')).toContainText('not a valid regular expression')
     // The previous list is still there — an empty one would have read as "nothing matches".
     await expect(results(app).getByRole('option').first()).toBeVisible()
 
-    await app.getByTestId('search-toggle-regex').click()
+    await withFilters(app, async () => {
+      await app.getByTestId('search-toggle-regex').click()
+    })
     await expect(app.locator('.message.danger')).toHaveCount(0)
   })
 

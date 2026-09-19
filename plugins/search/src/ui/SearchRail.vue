@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { DEFAULT_SEARCH_LIMIT, SEARCH_QUALIFIERS, type SearchSnippet, type SearchSort, snippetSegments } from '@arxhub/sql'
-import { IconButton, Input, Row, SectionLabel, Segmented, type SelectOption, StatusDot, Strip, Switch } from '@arxhub/uikit/core'
+import { DEFAULT_SEARCH_LIMIT, SEARCH_QUALIFIERS, type SearchSnippet, snippetSegments } from '@arxhub/sql'
+import { IconButton, Input, Row, SectionLabel, StatusDot, Strip } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { SearchExtension } from '../search-extension'
+import SearchFilters from './SearchFilters.vue'
 import { createSearchController } from './search-controller'
 import { useSearchPreferences } from './search-preferences'
 import { useIndexStatus } from './use-index-status'
@@ -33,12 +34,6 @@ const controller = createSearchController({
   onError: (error) => arxhub.logger.error('[search] the search failed', error),
 })
 onUnmounted(controller.dispose)
-
-const SORT_OPTIONS: SelectOption[] = [
-  { value: 'relevance', label: 'Relevance' },
-  { value: 'title', label: 'Title' },
-  { value: 'modified', label: 'Modified' },
-]
 
 // What each qualifier narrows by. Driven off the parser's own list, so the hint cannot promise a filter
 // the parser does not understand — and a qualifier added there without a line here shows up unexplained
@@ -174,17 +169,6 @@ const countLabel = computed(() => {
   return total === 1 ? '1 document' : `${total} documents`
 })
 
-const sort = computed({
-  get: (): string => preferences.value.sort,
-  set: (value: string) => {
-    preferences.value = { ...preferences.value, sort: value as SearchSort }
-  },
-})
-
-function toggle(key: 'titlesOnly' | 'caseSensitive' | 'regex', value: boolean): void {
-  preferences.value = { ...preferences.value, [key]: value }
-}
-
 onMounted(focusInput)
 </script>
 
@@ -205,33 +189,7 @@ onMounted(focusInput)
       <p v-if="controller.queryError.value" class="message danger" role="alert">{{ controller.queryError.value }}</p>
       <p v-for="warning in controller.warnings.value" :key="warning" class="message warning">{{ warning }}</p>
 
-      <!-- Each switch carries a test id for the same reason the plugin switches do: the input a test would
-           click is visually hidden, and the control the owner presses is the label around it. -->
-      <div class="toggles">
-        <Switch
-          :model-value="preferences.titlesOnly"
-          label="Titles only"
-          data-testid="search-toggle-titles-only"
-          @update:model-value="toggle('titlesOnly', $event)"
-        />
-        <Switch
-          :model-value="preferences.caseSensitive"
-          label="Case sensitive"
-          data-testid="search-toggle-case-sensitive"
-          @update:model-value="toggle('caseSensitive', $event)"
-        />
-        <Switch
-          :model-value="preferences.regex"
-          label="Regular expression"
-          data-testid="search-toggle-regex"
-          @update:model-value="toggle('regex', $event)"
-        />
-      </div>
-
-      <div class="sort">
-        <SectionLabel>Order</SectionLabel>
-        <Segmented v-model="sort" :options="SORT_OPTIONS" aria-label="Order" stretch />
-      </div>
+      <SearchFilters v-model="preferences" />
     </div>
 
     <div class="summary">
@@ -383,32 +341,6 @@ onMounted(focusInput)
 
 .message.warning {
   color: var(--warning-11);
-}
-
-.toggles {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.search-rail.touch .toggles {
-  gap: 4px;
-}
-
-.search-rail.touch .toggles :deep(.root) {
-  width: 100%;
-  padding: 0 4px;
-  border-radius: var(--radius-xs);
-}
-
-.search-rail.touch .toggles :deep(.root:hover) {
-  background: var(--gray-4);
-}
-
-.sort {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .summary {

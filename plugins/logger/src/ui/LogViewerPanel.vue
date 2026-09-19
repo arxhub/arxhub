@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { LogRecord } from '@arxhub/logger'
-import { Button, IconButton, Input, Row, Strip } from '@arxhub/uikit/core'
+import { Button, IconButton, Input, Row } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import dayjs from 'dayjs'
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
 import { LoggerExtension } from '../logger-extension'
+import LogToolbar from './LogToolbar.vue'
 
 type LevelName = 'debug' | 'info' | 'warn' | 'error'
 const LEVELS: { name: LevelName; value: number }[] = [
@@ -108,34 +109,38 @@ onMounted(loadSessions)
 
 <template>
   <div class="log-panel" :class="{ touch }">
-    <Strip>
-      <div class="levels">
-        <button
+    <LogToolbar>
+      <template #levels>
+        <Button
           v-for="lvl in LEVELS"
           :key="lvl.name"
           type="button"
           class="chip"
-          :class="[lvl.name, { off: !enabled[lvl.name] }]"
+          variant="ghost"
+          :size="buttonSize"
+          :active="enabled[lvl.name]"
           :aria-pressed="enabled[lvl.name]"
           @click="toggle(lvl.name)"
         >
           {{ lvl.name }}
-        </button>
-      </div>
+        </Button>
+      </template>
       <template #actions>
-        <IconButton size="lg" icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
+        <IconButton :size="touch ? 'xl' : 'lg'" icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
         <Button variant="secondary" :size="buttonSize" :disabled="source !== ''" @click="ext.clear()">Clear</Button>
       </template>
-    </Strip>
-    <Strip>
+      <template #search>
       <div class="search">
         <Input v-model="search" placeholder="Filter logs…" aria-label="Filter logs" />
       </div>
+      </template>
+      <template #session>
       <select v-model="source" class="session" aria-label="Log session" @change="onSourceChange">
         <option value="">Live</option>
         <option v-for="s in sessions" :key="s" :value="s">{{ s.replace('logs/', '') }}</option>
       </select>
-    </Strip>
+      </template>
+    </LogToolbar>
 
     <div ref="scroller" class="rows" @scroll="onScroll">
       <div v-if="visible.length === 0" class="empty">No log entries.</div>
@@ -160,40 +165,14 @@ onMounted(loadSessions)
   color: var(--gray-12);
 }
 
-.levels {
-  display: flex;
-  gap: 4px;
-}
-
 .chip {
-  height: var(--size-xs);
-  padding: 0 8px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--gray-6);
-  background: var(--gray-3);
-  color: var(--gray-11);
-  font-size: var(--font-size-xs);
-  font-family: var(--font-sans);
   text-transform: uppercase;
-  cursor: pointer;
 }
 
 .log-panel.touch .chip {
-  height: var(--size-xl);
-  padding: 0 12px;
-  font-size: var(--font-size-sm);
+  flex: 1;
+  min-width: 0;
 }
-
-.chip.off {
-  background: var(--gray-2);
-  color: var(--gray-9);
-  border-color: var(--gray-6);
-}
-
-.chip.debug { border-color: var(--gray-7); color: var(--gray-11); }
-.chip.info { border-color: var(--accent-7); color: var(--accent-11); }
-.chip.warn { border-color: var(--warning-7); color: var(--warning-11); }
-.chip.error { border-color: var(--danger-7); color: var(--danger-11); }
 
 .search {
   flex: 1;
@@ -219,7 +198,6 @@ onMounted(loadSessions)
   font-size: var(--font-size-md);
 }
 
-.chip:focus-visible,
 .session:focus-visible {
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
