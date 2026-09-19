@@ -20,7 +20,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "exceljs": "4.4.0",
+    "exceljs": "catalog:client",
     "vue": "catalog:client"
   },
   "devDependencies": {

@@ -45,7 +45,7 @@ async function readBodyBounded(request: Request, maxBytes: number): Promise<Uint
   return out
 }
 
-// Builds the same RequestDescriptor the client signed (see @arxhub/http describeRequest): method, the
+// Builds the same RequestDescriptor the client signed (see @arxhub/crypto describeRequest): method, the
 // URL pathname and raw query string, and the raw request body. The body is read from a clone so the
 // original stream is left intact for the route handler. Returns null when the body exceeds
 // maxBodyBytes — rejected on the declared content-length first (cheap), then enforced while reading
@@ -84,6 +84,8 @@ export interface AuthGuardOptions {
 
 function isPublicRead(method: string, pathname: string, prefixes: string[]): boolean {
   if (method !== 'GET' && method !== 'HEAD') return false
+  // FR-43: liveness probes must not depend on each composition root remembering the prefix.
+  if (pathname === '/healthcheck') return true
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`))
 }
 

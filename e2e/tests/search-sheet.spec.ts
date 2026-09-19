@@ -42,10 +42,9 @@ test.describe('open or switch to', () => {
     await expect(app.locator('.cm-content')).toContainText('In the sheet')
   })
 
-  // The one behaviour F-10 rests on someone else's implementation detail for: CodeMirror's keymap calls
-  // preventDefault on a chord it handled but never stopPropagation, so a keydown taken by the editor
-  // still reaches the window listener. If that ever changes, the global key goes dead in exactly the
-  // place it is needed most — with the caret in a note — and nothing else in the suite would notice.
+  // ⌘K is declared in the app layer; the markdown editor layer does not claim it, so resolution reaches
+  // the one window listener even with the caret in CodeMirror. This test guards that stack behaviour —
+  // not bubble order — because a stage that is not visible cannot hold focus anyway (F-05).
   test('the global key reaches the sheet from inside the editor, and writes nothing into the note', async ({ app, vault }) => {
     const path = await vault.write('chord.md', 'plain\n')
     await openNote(app, path)

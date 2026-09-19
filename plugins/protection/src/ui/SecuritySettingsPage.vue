@@ -23,7 +23,9 @@ import { clearVaultWorkingTree, isVaultEmpty } from '../vault-reset'
 import OwnerHandoverDialog from './OwnerHandoverDialog.vue'
 
 const arxhub = useArxHub()
-const keystore = arxhub.extensions.get(KeyStoreExtension).keystore
+const keystoreExt = arxhub.extensions.get(KeyStoreExtension)
+const keystore = keystoreExt.keystore
+const deviceLockRequired = keystoreExt.deviceLockRequired
 const keyrings = arxhub.extensions.get(KeyringExtension)
 const keyring = keyrings.keyring
 
@@ -343,7 +345,13 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
           <Button size="sm" variant="secondary" :disabled="!newCodeValid || currentCode.length === 0 || lockBusy" @click="submitChangeCode">
             Change code
           </Button>
-          <Button size="sm" variant="danger" :disabled="currentCode.length === 0 || lockBusy" @click="confirmDisableLock">
+          <Button
+            v-if="!deviceLockRequired"
+            size="sm"
+            variant="danger"
+            :disabled="currentCode.length === 0 || lockBusy"
+            @click="confirmDisableLock"
+          >
             Remove lock
           </Button>
         </div>

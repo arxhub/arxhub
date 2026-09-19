@@ -43,7 +43,10 @@ function load(): void {
   touched.value = new Set(Object.keys(edited))
 }
 
-watch([() => props.values, () => props.draft], load, { immediate: true, deep: true })
+// Saved values may arrive asynchronously and need a deep compare; the staged draft is set once per
+// section open by the host — a deep watch would re-seed if anything mutated that object in place.
+watch(() => props.values, load, { immediate: true, deep: true })
+watch(() => props.draft, load)
 
 // Fields are rebuilt from the live values, not the saved ones — a boolean that gates other fields
 // has to disable them the moment it is switched, not after a save.

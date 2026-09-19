@@ -1,17 +1,9 @@
-import { Plugin, type PluginArgs, type PluginContext, type PluginManifest } from '@arxhub/core'
+import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { VaultWatcher } from '@arxhub/vfs'
+import manifest from './manifest'
 import { PanelStoreExtension } from './panel-store-extension'
 import { applyVaultChangeToPanels } from './vault-panel-sync'
-
-const manifest: PluginManifest = {
-  name: 'Panels',
-  version: '0.1.0',
-  author: 'arxhub',
-  description: 'Tiling panel layout system',
-  // Settings renders its pages into a panel store.
-  essential: true,
-}
 
 export class PanelsPlugin extends Plugin {
   private unwatchVault: (() => void) | null = null
@@ -29,8 +21,7 @@ export class PanelsPlugin extends Plugin {
   // MobilePanels, so reacting here — once, at the plugin level — covers both. VaultWatcher is bound by
   // VfsPlugin (also essential) during `setup()`, before any plugin's `start()` runs, so it is always
   // there to resolve by the time this does.
-  override async start(ctx: PluginContext): Promise<void> {
-    await super.start(ctx)
+  override start(ctx: PluginContext): Promise<void> {
     const { store } = ctx.extensions.get(PanelStoreExtension)
     this.unwatchVault = ctx.services.get(VaultWatcher).subscribe((change) => {
       const closed = applyVaultChangeToPanels(store, change)
@@ -38,6 +29,7 @@ export class PanelsPlugin extends Plugin {
       // panel just disappeared, and nothing else would tell the owner why.
       if (closed) toaster.create({ title: 'File deleted', description: change.pathname, type: 'info' })
     })
+    return super.start(ctx)
   }
 
   override async stop(ctx: PluginContext): Promise<void> {

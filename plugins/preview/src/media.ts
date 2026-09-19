@@ -55,6 +55,12 @@ export function mediaOf(path: string): { kind: MediaKind; mime: string } | null 
 // and a two-hour recording would take the tab down before it played a second.
 export const BLOB_LIMIT = 256 * 1024 * 1024
 
+// Node's VFS returns a view into Buffer's shared pool; pdf.js transfers `data` to its worker and Blob
+// must not span a larger backing store than the file — always hand both an owning copy.
+export function copyBytes(bytes: Uint8Array): Uint8Array {
+  return Uint8Array.from(bytes)
+}
+
 export type MediaSource =
   // The backend can be loaded from directly — seeking and all — without the bytes passing through JS.
   | { kind: 'url'; url: string; size: number }
@@ -68,7 +74,7 @@ export async function resolveMediaSource(vfs: VirtualFileSystem, path: string, m
   const url = await contentUrlOf(vfs, path)
   if (url != null) return { kind: 'url', url, size }
   if (size > limit) return { kind: 'too-large', size }
-  return { kind: 'bytes', bytes: await vfs.read(path), mime, size }
+  return { kind: 'bytes', bytes: copyBytes(await vfs.read(path)), mime, size }
 }
 
 export function formatBytes(size: number): string {

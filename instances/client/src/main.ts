@@ -19,6 +19,7 @@ import { NotesPlugin } from '@arxhub/plugin-notes/ui'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels/ui'
 import { PreviewPlugin } from '@arxhub/plugin-preview/ui'
 import { ProtectionPlugin } from '@arxhub/plugin-protection/ui'
+import { PublishPlugin } from '@arxhub/plugin-publish/ui'
 import { RepositoryPlugin } from '@arxhub/plugin-repository/ui'
 import { SearchPlugin } from '@arxhub/plugin-search/ui'
 import { SettingsExtension, SettingsPlugin } from '@arxhub/plugin-settings/ui'
@@ -77,7 +78,7 @@ await bootClient({
     // sync never walks it (FR-214). A headless server has no index at all (FR-218).
     arxhub.plugins.register(SearchPlugin, () => ({ dataDir: 'idb://arxhub-sql' }))
     arxhub.plugins.register(ThemePlugin, () => ({ themes }))
-    arxhub.plugins.register(KeyStorePlugin, () => ({ keystore }))
+    arxhub.plugins.register(KeyStorePlugin, () => ({ keystore, deviceLockRequired: true }))
     arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
     arxhub.plugins.register(MaintenancePlugin, () => ({ policy }))
     // The local repository (manifest chain, chunk store, checkout index, file history) is essential —
@@ -85,6 +86,7 @@ await bootClient({
     // layered over it) is switched off (A-50). Registered right before it for the same reason.
     arxhub.plugins.register(RepositoryPlugin)
     arxhub.plugins.register(SyncPlugin)
+    arxhub.plugins.register(PublishPlugin)
   },
 
   contribute: (arxhub) => {

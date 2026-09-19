@@ -23,4 +23,9 @@
   --size-lg-half: 22px;
   --size-xl-half: 24px;
   --size-2xl-half: 32px;
+
+  /* Icon optical sizes (DS-8) — tied to the row/control half-steps, not a parallel scale. */
+  --icon-size-row: var(--size-2xs-half);
+  --icon-size-touch: var(--size-xs-half);
+  --icon-size-standalone: var(--size-md-half);
 }

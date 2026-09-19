@@ -99,7 +99,7 @@ await bootClient({
     // sync never walks it (FR-214). A headless server has no index at all (FR-218).
     arxhub.plugins.register(SearchPlugin, () => ({ dataDir: 'idb://arxhub-sql' }))
     arxhub.plugins.register(ThemePlugin, () => ({ themes }))
-    arxhub.plugins.register(KeyStorePlugin, () => ({ keystore }))
+    arxhub.plugins.register(KeyStorePlugin, () => ({ keystore, deviceLockRequired: true }))
     arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
     arxhub.plugins.register(MaintenancePlugin, () => ({ policy }))
     // The local repository (manifest chain, chunk store, checkout index, file history) is essential —

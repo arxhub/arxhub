@@ -66,12 +66,12 @@ export class ExplorerPlugin extends Plugin {
     })
   }
 
-  override async start(ctx: PluginContext): Promise<void> {
-    await super.start(ctx)
+  override start(ctx: PluginContext): Promise<void> {
     // A write reaches the vault from more places than the tree — the name above an open document, the
     // md → arx conversion, a sync round — and each one used to leave the row it changed stale until a
     // reload. One subscription, in the one place that can dispose it.
     this.stopVaultWatch = ctx.extensions.get(ExplorerExtension).watchVault(ctx.services.get(VaultWatcher))
+    return super.start(ctx)
   }
 
   override async stop(ctx: PluginContext): Promise<void> {

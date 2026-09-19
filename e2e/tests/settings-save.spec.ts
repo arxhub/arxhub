@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { openSettingsSection, openType, SETTINGS_TYPE, test } from './fixtures'
+import { isMobileFrame, openSettingsSection, openType, SETTINGS_TYPE, test } from './fixtures'
 
 // A settings page reads its file over the API and rebinds the field when it lands, so an edit made
 // before that arrives does not survive it — and a section whose file does not exist yet legitimately
@@ -32,7 +32,7 @@ test.describe('applying settings', () => {
   // other one. Runs on both desktop and mobile again for the same reason: staging is frame-agnostic
   // (the same registry, bar and commit on both), and the one genuine frame difference (mobile files the
   // pending-changes chip into the search sheet's status block instead of a status bar) is asserted
-  // below per-project where it applies, and separately in search-sheet.spec.ts's own territory.
+  // below via isMobileFrame, and separately in search-sheet.spec.ts's own territory.
   test.describe.configure({ mode: 'serial' })
 
   test.beforeEach(async ({ app }) => {
@@ -58,7 +58,7 @@ test.describe('applying settings', () => {
     // mobile frame files every status widget behind the row's own immobile key, so only desktop shows
     // one here.
     await openType(app, 'Notes')
-    if (testInfo.project.name === 'desktop') {
+    if (!(await isMobileFrame(app))) {
       await expect(app.getByRole('button', { name: /unsaved setting/ })).toBeVisible()
     }
 
@@ -109,7 +109,7 @@ test.describe('applying settings', () => {
   // It is now a binding in the Settings type's LAYER, and a layer is on the stack only while its stage
   // is on screen — so the leak is unrepresentable rather than merely fixed. Lives in this file, and not
   // in one of its own, because it stages an edit in the same config the tests above write: this
-  // describe is serial and desktop-only, and a spec of its own would race them.
+  // describe is serial (shared config files within one project), and a spec of its own would race them.
   test('⌘S applies the staged set inside settings and does nothing at all outside it', async ({ app, vault }, testInfo) => {
     const staged = `https://chord-${testInfo.project.name}.example.com`
 

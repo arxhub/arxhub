@@ -44,7 +44,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
       <Dialog.Backdrop class="dialog-backdrop" />
       <Dialog.Positioner class="dialog-positioner" :class="{ centered }">
         <Dialog.Content class="dialog-content" :class="`size-${size}`">
-          <Strip v-if="title || $slots.header">
+          <Strip v-if="title || $slots.header" :bordered="false">
             <template v-if="title" #title>
               <Dialog.Title class="dialog-title">{{ title }}</Dialog.Title>
             </template>

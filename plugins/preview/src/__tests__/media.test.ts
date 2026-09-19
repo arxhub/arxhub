@@ -1,6 +1,6 @@
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { describe, expect, test } from 'vitest'
-import { BLOB_LIMIT, extensionsOf, formatBytes, mediaOf, resolveMediaSource } from '../media'
+import { BLOB_LIMIT, copyBytes, extensionsOf, formatBytes, mediaOf, resolveMediaSource } from '../media'
 
 describe('mediaOf', () => {
   test('recognises what a webview plays, case-insensitively', () => {
@@ -31,6 +31,17 @@ function fakeVfs(size: number, url: string | null, bytes = new Uint8Array([1, 2,
   }
   return vfs as unknown as VirtualFileSystem
 }
+
+describe('copyBytes', () => {
+  test('copies away from a subarray of a larger pool', () => {
+    const pool = new Uint8Array(20).fill(9)
+    const view = pool.subarray(2, 5)
+    const owned = copyBytes(view)
+    expect(owned).toEqual(new Uint8Array([9, 9, 9]))
+    expect(owned.buffer).not.toBe(pool.buffer)
+    expect(owned.byteLength).toBe(3)
+  })
+})
 
 describe('resolveMediaSource', () => {
   test('a backend with a URL is streamed, whatever the size', async () => {

@@ -23,7 +23,8 @@ const props = withDefaults(
 
 // One optical size across the set: a single-weight glyph at ~14px inside a larger hit box, so chrome
 // icons read as labels rather than as buttons of their own.
-const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20 })[props.size])
+// DS-8: 14 in a row/strip · 16 in a touch row · 20 standalone — the closed set, no fourth size at call sites.
+const iconSize = computed(() => ({ xs: 14, sm: 14, md: 16, lg: 20 })[props.size])
 </script>
 
 <template>
@@ -85,6 +86,7 @@ const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20 })[props.size]
 }
 
 .icon-button:disabled {
+  background-color: var(--gray-3);
   color: var(--gray-9);
   cursor: not-allowed;
 }
@@ -95,8 +97,8 @@ const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20 })[props.size]
 }
 
 .size-xs {
-  width: 20px;
-  height: 20px;
+  width: var(--size-md-half);
+  height: var(--size-md-half);
 }
 
 .size-sm {
@@ -105,7 +107,7 @@ const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20 })[props.size]
 }
 
 .size-md {
-  width: 28px;
+  width: var(--size-2xs);
   height: var(--size-2xs);
 }
 
