@@ -92,9 +92,9 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .control {
-  flex-basis: var(--size-xs);
-  width: var(--size-xs);
-  height: var(--size-xs);
+  flex-basis: var(--size-md);
+  width: var(--size-md);
+  height: var(--size-md);
   margin-top: 0;
 }
 
