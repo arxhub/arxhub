@@ -24,6 +24,7 @@ import OwnerHandoverDialog from './OwnerHandoverDialog.vue'
 
 const arxhub = useArxHub()
 const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
 const keystore = arxhub.extensions.get(KeyStoreExtension).keystore
 const keyrings = arxhub.extensions.get(KeyringExtension)
 const keyring = keyrings.keyring
@@ -275,7 +276,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
 
 <template>
   <PageLayout title="Security" description="Keys live on this device only. Nothing here is sent anywhere unless you set up sync.">
-    <div class="security">
+    <div class="security" :class="{ touch }">
     <section class="block">
       <h3 class="block-title">Device identity</h3>
       <p v-if="!keyring" class="hint">This device has no identity. Sync and publishing stay idle until one exists.</p>
