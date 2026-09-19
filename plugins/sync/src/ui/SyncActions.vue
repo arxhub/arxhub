@@ -2,7 +2,7 @@
 import { SETTINGS_TYPE_ID, SettingsExtension } from '@arxhub/plugin-settings/ui'
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { Icon } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { SyncExtension } from '../sync-extension'
 
@@ -10,6 +10,9 @@ const arxhub = useArxHub()
 const sync = arxhub.extensions.get(SyncExtension)
 const shell = arxhub.extensions.get(ShellExtension)
 const settings = arxhub.extensions.get(SettingsExtension)
+// The desktop bar is 40px tall; the phone's status card in the search sheet is not, so the same
+// controls can take the touch row height there without colliding with the bar's ceiling.
+const touch = useShellFrame() === 'mobile'
 
 const syncing = computed(() => sync.status.value === 'syncing')
 
@@ -20,7 +23,7 @@ function openSettings(): void {
 </script>
 
 <template>
-  <div class="sync-actions">
+  <div class="sync-actions" :class="{ touch }">
     <button
       type="button"
       class="fx-item"
@@ -29,11 +32,11 @@ function openSettings(): void {
       :disabled="syncing || !sync.engine"
       @click="sync.sync({ full: true })"
     >
-      <Icon name="lu:refresh-cw" :size="14" :class="{ spin: syncing }" />
+      <Icon name="lu:refresh-cw" :size="touch ? 16 : 14" :class="{ spin: syncing }" />
       Sync
     </button>
     <button type="button" class="fx-item" aria-label="Sync settings" title="Sync settings" @click="openSettings">
-      <Icon name="lu:settings" :size="14" />
+      <Icon name="lu:settings" :size="touch ? 16 : 14" />
     </button>
   </div>
 </template>
@@ -62,6 +65,13 @@ function openSettings(): void {
   color: var(--gray-11);
   white-space: nowrap;
   transition: color var(--duration-fast), background-color var(--duration-fast);
+}
+
+.sync-actions.touch .fx-item {
+  min-width: var(--size-xl);
+  height: var(--size-xl);
+  padding: 0 12px;
+  font-size: var(--font-size-sm);
 }
 
 .fx-item:hover:not(:disabled) {

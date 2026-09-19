@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PageLayout } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { ThemeExtension } from '../theme-extension'
 
@@ -9,6 +9,7 @@ const emit = defineEmits<{ select: [id: string] }>()
 const arxhub = useArxHub()
 const themes = arxhub.extensions.get(ThemeExtension)
 const active = computed(() => themes.activeId.value)
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
@@ -16,7 +17,7 @@ const active = computed(() => themes.activeId.value)
     title="Appearance"
     description="A theme is a whole unit — a dark theme is a different theme, not a switch on this one."
   >
-    <div class="grid" role="radiogroup" aria-label="Theme">
+    <div class="grid" :class="{ touch }" role="radiogroup" aria-label="Theme">
       <button
         v-for="theme in themes.themes.value"
         :key="theme.id"
@@ -64,6 +65,16 @@ const active = computed(() => themes.activeId.value)
   font-size: var(--font-size-sm);
   text-align: left;
   cursor: pointer;
+}
+
+.grid.touch .card {
+  padding: 16px;
+  gap: 12px;
+  font-size: var(--font-size-md);
+}
+
+.grid.touch .swatches {
+  height: var(--size-md);
 }
 
 .card:hover {

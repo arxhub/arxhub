@@ -30,7 +30,7 @@ async function createNote(): Promise<void> {
 </script>
 
 <template>
-  <div class="welcome-panel">
+  <div class="welcome-panel" :class="{ touch: mobile }">
     <div class="sheet">
       <h1>ArxHub</h1>
       <p class="lede">
@@ -66,6 +66,10 @@ async function createNote(): Promise<void> {
   height: 100%;
   padding: 24px;
   overflow-y: auto;
+}
+
+.welcome-panel.touch {
+  padding: 16px;
 }
 
 /* Left-aligned inside a centred block: the block is what sits in the middle of the panel, not each of

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ShellExtension } from '@arxhub/plugin-shell/ui'
 import { StatusDot } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { LOGS_TYPE_ID } from '../contributions'
 import { LoggerExtension } from '../logger-extension'
@@ -9,6 +9,7 @@ import { LoggerExtension } from '../logger-extension'
 const arxhub = useArxHub()
 const logger = arxhub.extensions.get(LoggerExtension)
 const shell = arxhub.extensions.get(ShellExtension)
+const touch = useShellFrame() === 'mobile'
 
 const counts = computed(() => {
   let warn = 0
@@ -40,7 +41,7 @@ function openLogs(): void {
 </script>
 
 <template>
-  <button type="button" class="fx-item" aria-label="Open logs" title="Open logs" @click="openLogs">
+  <button type="button" class="fx-item" :class="{ touch }" aria-label="Open logs" title="Open logs" @click="openLogs">
     <StatusDot :tone="tone" />
     <span>Logs</span>
     <span v-if="counts.warn > 0" class="count count--warn">{{ fmt(counts.warn) }}</span>
@@ -64,6 +65,11 @@ function openLogs(): void {
   color: var(--gray-11);
   white-space: nowrap;
   transition: color var(--duration-fast), background-color var(--duration-fast);
+}
+
+.fx-item.touch {
+  height: var(--size-xl);
+  font-size: var(--font-size-sm);
 }
 
 .fx-item:hover {

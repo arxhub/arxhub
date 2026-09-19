@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { authStatus, describeRejection } from '../auth-status'
 import { openAuthRejectedDialog } from './auth-dialog'
@@ -8,10 +9,11 @@ import { openAuthRejectedDialog } from './auth-dialog'
 // sheet is open.
 const rejection = computed(() => authStatus.rejection.value)
 const copy = computed(() => describeRejection(rejection.value?.reason ?? null))
+const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
-  <button v-if="rejection != null" class="auth-alert" type="button" :title="copy.title" @click="openAuthRejectedDialog()">
+  <button v-if="rejection != null" class="auth-alert" :class="{ touch }" type="button" :title="copy.title" @click="openAuthRejectedDialog()">
     {{ copy.label }}
   </button>
 </template>
@@ -28,6 +30,11 @@ const copy = computed(() => describeRejection(rejection.value?.reason ?? null))
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
+}
+
+.auth-alert.touch {
+  height: var(--size-xl);
+  font-size: var(--font-size-sm);
 }
 
 .auth-alert:hover {
