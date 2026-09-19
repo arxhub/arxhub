@@ -47,8 +47,8 @@ defineProps<{
   justify-content: flex-end;
   gap: 4px;
   flex-shrink: 0;
-  min-height: var(--size-md);
-  padding: 0 8px;
+  min-height: var(--size-xl);
+  padding: 4px 12px;
   border-top: 1px solid var(--gray-6);
   background: var(--gray-2);
 }
