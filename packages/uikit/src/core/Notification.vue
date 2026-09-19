@@ -11,11 +11,12 @@ defineProps<{
 }>()
 
 defineEmits<(e: 'close') => void>()
-const dismissSize = useShellFrame() === 'mobile' ? 'xl' : 'xs'
+const touch = useShellFrame() === 'mobile'
+const dismissSize = touch ? 'xl' : 'xs'
 </script>
 
 <template>
-  <div class="notification" :class="variant || 'info'">
+  <div class="notification" :class="[variant || 'info', { touch }]">
     <div class="content">
       <div class="icon-wrapper" v-if="icon">
         <Icon :name="icon" :size="20" />
@@ -42,6 +43,15 @@ const dismissSize = useShellFrame() === 'mobile' ? 'xl' : 'xs'
   justify-content: space-between;
   gap: 12px;
   font-family: var(--font-sans);
+}
+
+.notification.touch {
+  padding: 16px;
+  gap: 12px;
+}
+
+.notification.touch .title {
+  font-size: var(--font-size-md);
 }
 
 .notification.info .icon-wrapper {
