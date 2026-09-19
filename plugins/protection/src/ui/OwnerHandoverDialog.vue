@@ -11,6 +11,7 @@ const props = defineProps<{
   onTakeFromServer: () => void
 }>()
 const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const touch = useShellFrame() === 'mobile'
 
 function choose(branch: () => void): void {
   modals.close(props.modalId)
@@ -19,7 +20,7 @@ function choose(branch: () => void): void {
 </script>
 
 <template>
-  <div class="handover">
+  <div class="handover" :class="{ touch }">
     <p class="lead">
       This recovery phrase belongs to a different owner, and this device holds files. Whichever you choose cannot be
       undone from here.
@@ -87,5 +88,15 @@ function choose(branch: () => void): void {
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
+}
+
+.handover.touch .branch-action,
+.handover.touch .actions {
+  display: block;
+}
+
+.handover.touch .branch-action :deep(.btn),
+.handover.touch .actions :deep(.btn) {
+  width: 100%;
 }
 </style>
