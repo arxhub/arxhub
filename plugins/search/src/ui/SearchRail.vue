@@ -396,7 +396,6 @@ onMounted(focusInput)
 }
 
 .search-rail.touch .toggles :deep(.root) {
-  min-height: var(--size-xl);
   width: 100%;
   padding: 0 4px;
   border-radius: var(--radius-xs);
