@@ -38,8 +38,8 @@ async function createNote(): Promise<void> {
       </p>
 
       <div class="welcome-actions">
-        <Button @click="createNote">New note</Button>
-        <Button v-if="shell.types.has(SEARCH_TYPE_ID)" variant="secondary" @click="shell.workspace.activateType(SEARCH_TYPE_ID)">Find a note</Button>
+        <Button :size="mobile ? 'lg' : 'md'" @click="createNote">New note</Button>
+        <Button v-if="shell.types.has(SEARCH_TYPE_ID)" :size="mobile ? 'lg' : 'md'" variant="secondary" @click="shell.workspace.activateType(SEARCH_TYPE_ID)">Find a note</Button>
       </div>
       <p class="next">Use Vault to browse files, or Open or switch to to reach all your tools.</p>
 
