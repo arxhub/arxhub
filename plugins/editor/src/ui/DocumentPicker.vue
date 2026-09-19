@@ -67,7 +67,7 @@ async function choose(anchor?: BlockDestination['anchor']) {
     <template v-if="selected">
       <Button :size="buttonSize" variant="ghost" @click="selected = null">Back to documents</Button>
       <p>{{ selected.title || selected.path }}</p>
-      <Button variant="secondary" :disabled="busy" @click="choose()">Link whole document</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="busy" @click="choose()">Link whole document</Button>
       <p>Or choose a text block{{ selected.path === path ? '' : ' from the saved document' }}:</p>
       <div class="destination-list" aria-label="Document blocks">
         <Row v-for="(block, index) in blocks" :key="index" as="button" type="button" wrap :disabled="busy" @click="choose(block.anchor)">{{ block.label }}</Row>
@@ -84,7 +84,7 @@ async function choose(anchor?: BlockDestination['anchor']) {
       <p v-if="!busy && !error && !documents.length">No documents found.</p>
     </template>
     <p v-if="busy" role="status">Loading destinations…</p>
-    <p v-if="error" role="alert">{{ error }} <Button variant="secondary" @click="retry++">Retry destinations</Button></p>
+    <p v-if="error" role="alert">{{ error }} <Button :size="buttonSize" variant="secondary" @click="retry++">Retry destinations</Button></p>
   </section>
 </template>
 
