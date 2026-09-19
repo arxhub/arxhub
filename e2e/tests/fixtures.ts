@@ -390,6 +390,25 @@ export async function openDocumentList(page: Page): Promise<Locator> {
   return list
 }
 
+// Welcome is a utility panel on the Notes host — restored sessions often leave a document active
+// instead, which is intentional. Bring the panel forward before asserting its on-screen actions.
+export async function openWelcome(page: Page): Promise<void> {
+  await openType(page, 'Notes')
+  const find = page.getByRole('button', { name: 'Find a note', exact: true })
+  if (await find.isVisible()) return
+
+  if (await isMobileFrame(page)) {
+    const list = await openDocumentList(page)
+    await list.getByRole('menuitem', { name: 'Welcome', exact: true }).click()
+    await expect(list).toBeHidden()
+  } else {
+    // Accessible name is "Welcome Close" — the tab title plus its close control. Match exact so a
+    // document whose path merely contains "welcome" does not steal the click.
+    await page.getByRole('button', { name: 'Welcome Close', exact: true }).click()
+  }
+  await expect(find).toBeVisible()
+}
+
 export async function openSettingsSection(page: Page, section: string): Promise<void> {
   await openType(page, 'Settings', SETTINGS_TYPE)
   // The section list is the mini-app's own rail, which on the mobile frame has to be summoned. On

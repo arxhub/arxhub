@@ -5,6 +5,7 @@ import {
   openNote,
   openSearchApp,
   openType,
+  openWelcome,
   SETTINGS_TYPE,
   searchSheet,
   test,
@@ -14,6 +15,29 @@ import {
 
 const arx = (text: string) =>
   JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] } })
+
+// UI-05: Welcome's New note / Find a note must work on screen — including after a restore that left
+// another Notes tab active (Welcome is still reachable; it is not forced to the front on boot).
+test('Welcome Find a note and New note work after a restored document', async ({ app, vault }) => {
+  const path = await vault.write(`${test.info().project.name}-ui05-restore.md`, 'restored buffer\n')
+  await openNote(app, path)
+  await app.reload()
+  await expect(app.locator('.cm-content:visible')).toContainText('restored buffer')
+  await expect(app.getByRole('button', { name: 'Find a note', exact: true })).toBeHidden()
+
+  await openWelcome(app)
+  await app.getByRole('button', { name: 'Find a note', exact: true }).click()
+  await expect(typeKey(app, 'Search')).toHaveAttribute('aria-pressed', 'true')
+  await expect(app.getByRole('textbox', { name: 'Search', exact: true })).toBeVisible()
+
+  await openWelcome(app)
+  await app.getByRole('button', { name: 'New note', exact: true }).click()
+  // Notes.create runs the explorer creator — a real .arx document, not the markdown fallback.
+  const editor = app.locator('.ProseMirror:visible, .cm-content:visible')
+  await expect(editor).toBeVisible()
+  await expect(typeKey(app, 'Notes')).toHaveAttribute('aria-pressed', 'true')
+  await expect(editor).not.toContainText('restored buffer')
+})
 
 test('a search snippet selects its text on first and repeated opening', async ({ app, vault }) => {
   for (const extension of ['md', 'arx']) {
