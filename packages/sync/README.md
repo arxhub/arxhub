@@ -33,9 +33,11 @@ Sync replays each local checkpoint onto remote ancestry before recording the mer
 intermediate offline versions. Historical chunks are fetched through the encrypted remote on demand;
 a missing offline chunk is an explicit error, and both chunk and whole-file hashes are checked.
 
-The plugin exposes this through `SyncExtension.history`, initializes the local repo independently of
-server configuration, and keeps it under `state/sync/repo`. Unsynced history lives only on this device:
-include this directory in local backups. ArxEditor migrates its legacy JSON versions into this repo.
+The essential `RepositoryPlugin` exposes `RepositoryExtension.history` (ArxEditor wires it in
+`configure()`), initializes the local repo independently of server configuration, and keeps it under
+`state/Repository/repo` (migrated once from the old `state/sync/repo` path). Unsynced history lives
+only on this device: include this directory in local backups. ArxEditor migrates its legacy JSON
+versions into this repo.
 
 ## Getting Started
 
