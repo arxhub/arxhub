@@ -94,6 +94,11 @@ h1 {
   color: var(--gray-11);
 }
 
+.welcome-panel.touch .lede,
+.welcome-panel.touch .next {
+  font-size: var(--font-size-md);
+}
+
 .next {
   margin: 16px 0 0;
   font-size: var(--font-size-sm);

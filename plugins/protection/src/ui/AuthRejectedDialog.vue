@@ -65,6 +65,11 @@ function openSecurity(): void {
   color: var(--gray-11);
 }
 
+.auth-rejected.touch .auth-detail,
+.auth-rejected.touch .auth-fix {
+  font-size: var(--font-size-md);
+}
+
 .auth-detail {
   color: var(--gray-12);
 }
