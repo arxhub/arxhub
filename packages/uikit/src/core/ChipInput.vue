@@ -140,7 +140,7 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .chip-edit {
-  height: var(--size-xs);
+  height: var(--size-md);
 }
 
 .draft {
@@ -157,7 +157,7 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .draft {
-  height: var(--size-xs);
+  height: var(--size-md);
 }
 
 .draft::placeholder {
