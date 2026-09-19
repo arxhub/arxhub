@@ -118,6 +118,7 @@ function onValueChange(details: { valueAsNumber: number }): void {
 
 .root.touch .value {
   width: 80px;
+  font-size: var(--font-size-md);
 }
 
 .value:disabled {
@@ -132,5 +133,9 @@ function onValueChange(details: { valueAsNumber: number }): void {
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
   color: var(--gray-10);
+}
+
+.root.touch .unit {
+  font-size: var(--font-size-sm);
 }
 </style>
