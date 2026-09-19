@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Button, Checkbox, Dialog, Input, NumberInput, RadioGroup } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, useId, watch } from 'vue'
 import { defaultFormat, type NumberKind } from '../format'
 import { columnName, pointOf } from '../model'
 import { validSheetName } from '../workbook'
 import { useSheet } from './use-sheet'
 
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const session = useSheet()
 const {
   xlsxInput,
