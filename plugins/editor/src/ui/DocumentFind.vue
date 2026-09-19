@@ -60,4 +60,5 @@ function replace(all = false) {
 .document-find.touch .find-row { gap: 12px; margin-block: 6px; }
 .find-input { flex: 1; min-width: 140px; }
 .find-count { font-size: var(--font-size-xs); color: var(--gray-11); }
+.document-find.touch .find-count { font-size: var(--font-size-sm); }
 </style>

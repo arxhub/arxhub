@@ -113,6 +113,7 @@ function choose(entry: SheetEntry): void {
   margin: 0;
   padding: 0 8px 4px;
   color: var(--gray-10);
+  font-size: var(--font-size-sm);
 }
 
 .sheet-row-title {
