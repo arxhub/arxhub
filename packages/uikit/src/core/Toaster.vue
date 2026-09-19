@@ -36,6 +36,7 @@ const touch = useShellFrame() === 'mobile'
   align-items: flex-start;
   gap: 8px;
   width: 320px;
+  max-width: calc(100vw - 32px);
   padding: 12px;
   background: var(--gray-2);
   border: 1px solid var(--gray-6);
