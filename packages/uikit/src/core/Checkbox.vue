@@ -42,6 +42,10 @@ const touch = useShellFrame() === 'mobile'
   user-select: none;
 }
 
+.root.touch {
+  min-height: var(--size-xl);
+}
+
 .root[data-disabled] {
   cursor: not-allowed;
 }
