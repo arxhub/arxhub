@@ -64,6 +64,20 @@ describe('LazyContainer', () => {
     expect(c.get(Base).label).toBe('custom')
   })
 
+  it('caches a factory result even when it is undefined', () => {
+    const Sentinel = createKey<undefined>('Sentinel')
+    const c = new LazyContainer<object>('Service')
+    let calls = 0
+    c.bind(Sentinel, () => {
+      calls++
+      return undefined
+    })
+
+    expect(c.get(Sentinel)).toBeUndefined()
+    expect(c.get(Sentinel)).toBeUndefined()
+    expect(calls).toBe(1)
+  })
+
   it('binds a value Key to a factory and resolves it directly (no construction)', () => {
     const Config = createKey<{ url: string }>('Config')
     const c = new LazyContainer<object>('Service')

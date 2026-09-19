@@ -1,4 +1,5 @@
 import { API_PREFIX, type Logger } from '@arxhub/core'
+import { AppError } from '@arxhub/errors'
 import { node } from '@elysiajs/node'
 import Elysia, { type AnyElysia } from 'elysia'
 import type { Server } from 'elysia/universal'
@@ -38,14 +39,32 @@ export class Gateway {
     // — a single-process server never wanted SO_REUSEPORT. And the listen callback fires whether or not
     // the bind happened, so it cannot be the "we are up" signal either; only srvx's node handle knows.
     const server = await new Promise<Server | null>((resolve) => {
-      this.elysia.listen({ port, reusePort: false }, resolve)
-      setTimeout(() => resolve(null), 500)
+      let settled = false
+      this.elysia.listen({ port, reusePort: false }, (handle) => {
+        if (settled) return
+        settled = true
+        resolve(handle)
+      })
+      // The callback can lag the bind; resolving null early made a slow start look like ENOTSUP.
+      setTimeout(() => {
+        if (settled) return
+        settled = true
+        resolve(null)
+      }, 500)
     })
 
+    if (!isListening(server)) {
+      this.logger.error(`Could not bind port ${port} — the server did not come up`)
+      throw new AppError({
+        code: 'GatewayBindFailed',
+        statusCode: 500,
+        title: 'Gateway bind failed',
+        message: `Could not bind port ${port}`,
+      })
+    }
     this.disposable = server
     this.port = port
-    if (isListening(server)) this.logger.info(`Listening on port: ${port}`)
-    else this.logger.error(`Could not bind port ${port} — the server did not come up, the app will have no storage`)
+    this.logger.info(`Listening on port: ${port}`)
   }
 
   async stop(): Promise<void> {

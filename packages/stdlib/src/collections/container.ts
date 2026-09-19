@@ -10,13 +10,13 @@ export class Container<T> {
   }
 
   getOrNull(key: string): T | null {
-    return this.container.get(key) ?? null
+    if (!this.container.has(key)) return null
+    return this.container.get(key)!
   }
 
   get(key: string): T {
-    const value = this.container.get(key)
-    if (value == null) throw keyError(`${this.domain} '${key}' not found`)
-    return value
+    if (!this.container.has(key)) throw keyError(`${this.domain} '${key}' not found`)
+    return this.container.get(key)!
   }
 
   has(key: string): boolean {
