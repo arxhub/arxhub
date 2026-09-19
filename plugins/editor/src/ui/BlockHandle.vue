@@ -10,7 +10,7 @@ import type { BlockCommand } from '../slash-commands'
 import { openBlockMenu } from './block-menu'
 
 const props = defineProps<{ view: EditorView; scroller: HTMLElement; revision: number; commands: readonly BlockCommand[] }>()
-const iconSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const iconSize = useShellFrame() === 'mobile' ? 'xl' : 'sm'
 const layoutRevision = ref(0)
 const dragging = ref(false)
 const dragStyle = ref<{ top: string; left: string }>()

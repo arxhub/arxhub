@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { type ActionItem, Dropdown, IconButton, MenuItem } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Command } from 'prosemirror-state'
 import type { EditorView } from 'prosemirror-view'
 import { computed, nextTick } from 'vue'
@@ -21,6 +22,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ find: []; outline: []; backlinks: []; copyLink: []; versions: [] }>()
 const mode = defineModel<EditorMode>('mode', { default: 'editable' })
+const iconSize = useShellFrame() === 'mobile' ? 'xl' : 'lg'
 const modes: { value: EditorMode; label: string; description: string }[] = [
   { value: 'readonly', label: 'Read only', description: 'Read and copy; no changes' },
   { value: 'editable', label: 'Editable', description: 'Write, format and arrange blocks' },
@@ -48,7 +50,7 @@ function cmd(command: Command) {
 <template>
   <Dropdown placement="top-end">
     <template #trigger>
-      <IconButton size="lg" icon="lu:ellipsis" tooltip="Document tools" :title="`Editor mode: ${modeLabel}`" />
+      <IconButton :size="iconSize" icon="lu:ellipsis" tooltip="Document tools" :title="`Editor mode: ${modeLabel}`" />
     </template>
     <MenuItem v-for="item in modes" :key="item.value" :value="item.value" :disabled="busy" :title="item.description" :aria-current="mode === item.value ? 'true' : undefined" @select="selectMode(item.value)">{{ item.label }}</MenuItem>
     <MenuItem v-if="mode !== 'readonly'" value="save" :disabled="!canSave" @select="onSave?.()">Save</MenuItem>

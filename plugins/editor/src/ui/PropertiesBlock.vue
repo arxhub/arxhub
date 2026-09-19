@@ -6,7 +6,7 @@ import type { ArxEditorControlProps } from '../control-views'
 import { addField, type PropertiesAttrs, withField, withoutField } from '../properties'
 
 const props = defineProps<ArxEditorControlProps>()
-const iconSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const iconSize = useShellFrame() === 'mobile' ? 'xl' : 'sm'
 const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 
 // The node's own attrs are already validated by the schema (properties-block.ts), so this just gives

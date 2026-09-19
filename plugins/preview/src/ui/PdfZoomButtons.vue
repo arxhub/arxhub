@@ -10,6 +10,6 @@ defineProps<{
 </script>
 
 <template>
-  <IconButton size="lg" icon="lu:zoom-out" tooltip="Zoom out" :disabled="zoom <= MIN_ZOOM" @click="onZoomOut()" />
-  <IconButton size="lg" icon="lu:zoom-in" tooltip="Zoom in" :disabled="zoom >= MAX_ZOOM" @click="onZoomIn()" />
+  <IconButton size="xl" icon="lu:zoom-out" tooltip="Zoom out" :disabled="zoom <= MIN_ZOOM" @click="onZoomOut()" />
+  <IconButton size="xl" icon="lu:zoom-in" tooltip="Zoom in" :disabled="zoom >= MAX_ZOOM" @click="onZoomIn()" />
 </template>

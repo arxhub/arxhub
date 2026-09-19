@@ -13,6 +13,7 @@ const query = ref(documentSearchKey.getState(props.view.state)?.query ?? '')
 const matchCase = ref(documentSearchKey.getState(props.view.state)?.matchCase ?? false)
 const replacement = ref('')
 const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const iconSize = useShellFrame() === 'mobile' ? 'xl' : 'lg'
 const touch = useShellFrame() === 'mobile'
 const search = computed(() => {
   void props.revision
@@ -39,9 +40,9 @@ function replace(all = false) {
     <div class="find-row">
       <Input v-model="query" class="find-input" aria-label="Find text" placeholder="Find in document" @keydown.enter.prevent="revealDocumentMatch(view, $event.shiftKey ? -1 : 1)" />
       <span class="find-count" role="status">{{ search?.matches.length ? `${search.index + 1} of ${search.matches.length}` : 'No matches' }}</span>
-      <IconButton size="lg" icon="lu:chevron-up" tooltip="Previous match" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, -1)" />
-      <IconButton size="lg" icon="lu:chevron-down" tooltip="Next match" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, 1)" />
-      <IconButton size="lg" icon="lu:x" tooltip="Close find" @click="emit('close')" />
+      <IconButton :size="iconSize" icon="lu:chevron-up" tooltip="Previous match" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, -1)" />
+      <IconButton :size="iconSize" icon="lu:chevron-down" tooltip="Next match" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, 1)" />
+      <IconButton :size="iconSize" icon="lu:x" tooltip="Close find" @click="emit('close')" />
     </div>
     <div class="find-row"><Checkbox v-model:checked="matchCase" label="Match case" /></div>
     <div v-if="mode === 'editable'" class="find-row">
