@@ -178,6 +178,54 @@ describe('reading a slice of a file left in the cloud', () => {
     }
   })
 
+  test('a cached chunk whose byte length disagrees with the manifest is refused instead of zero-filling the result', async () => {
+    const target = chunks[1]
+    await a.readRange(path, target.start, Math.min(32, target.end - target.start))
+    await aRepo.getChunkFile(target.hash).write(new Uint8Array([1]))
+    remote.fetched.length = 0
+
+    await expect(a.readRange(path, target.start, Math.min(32, target.end - target.start))).rejects.toThrow('manifest declares')
+    expect(remote.fetched).toEqual([])
+  })
+
+  test('a legacy entry fetches and joins the whole file once per pinned reader without materialising it', async () => {
+    const snapshot = await aRepo.getHeadSnapshot()
+    const current = snapshot.files[path]
+    const legacy: Snapshot = {
+      ...snapshot,
+      files: {
+        ...snapshot.files,
+        [path]: {
+          ...current,
+          size: undefined,
+          chunks: current.chunks.map(({ hash }) => ({ hash })),
+        },
+      },
+    }
+    const reader = aRepo.openRangeReader(legacy, path, (hashes) => a.fetchChunkObjects(hashes))
+
+    expect(await reader.head()).toMatchObject({ size: content.byteLength })
+    expect(remote.fetched).toEqual(current.chunks.map(({ hash }) => hash))
+    remote.fetched.length = 0
+
+    await expect(reader.readRange(123, 45)).resolves.toEqual(content.slice(123, 168))
+    expect(remote.fetched).toEqual([])
+    expect(await aVfs.exists(path)).toBe(false)
+    expect(await aRepo.isPending(path)).toBe(true)
+  })
+
+  test('inconsistent sized metadata is refused before remote work', async () => {
+    const snapshot = await aRepo.getHeadSnapshot()
+    const current = snapshot.files[path]
+    const malformed: Snapshot = {
+      ...snapshot,
+      files: { ...snapshot.files, [path]: { ...current, size: (current.size ?? 0) + 1 } },
+    }
+
+    expect(() => aRepo.openRangeReader(malformed, path, (hashes) => a.fetchChunkObjects(hashes))).toThrow('total')
+    expect(remote.fetched).toEqual([])
+  })
+
   test('after materialize the file is on disk and no longer pending — readRange served the wait, the VFS serves the rest', async () => {
     await a.materialize(path)
 

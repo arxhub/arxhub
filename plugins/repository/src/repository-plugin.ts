@@ -3,6 +3,7 @@ import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { join } from '@arxhub/path'
 import { KeyringExtension } from '@arxhub/plugin-protection'
 import { SettingsExtension } from '@arxhub/plugin-settings'
+import { VfsExtension } from '@arxhub/plugin-vfs'
 import { Repo } from '@arxhub/sync'
 import { PluginVfs, RootVfs, VaultWatcher } from '@arxhub/vfs'
 import { type Static, Type } from '@sinclair/typebox'
@@ -50,6 +51,7 @@ export class RepositoryPlugin extends Plugin {
   private unwatch: (() => void) | null = null
   private unwatchConfig: (() => void) | null = null
   private unregisterTextMerger: (() => void) | null = null
+  private unregisterPendingRanges: (() => void) | null = null
   // Read by the text merger on every match, so a settings save changes what the NEXT round merges without
   // touching the registration. The default stands until the config has actually been read.
   private textExtensions: ReadonlySet<string> = toTextExtensions(undefined)
@@ -79,6 +81,9 @@ export class RepositoryPlugin extends Plugin {
     settings.register({ id: 'repository', title: 'Storage', schema: RepositoryConfigSchema, order: 9, config })
 
     const repository = ctx.extensions.get(RepositoryExtension)
+    this.unregisterPendingRanges = ctx.extensions.get(VfsExtension).registerPendingRangeSource({
+      openRangeReader: (path) => repository.openPendingRangeReader(path),
+    })
 
     // The one merger this plugin contributes itself: a format-agnostic line merge for whatever the owner
     // says is text. Formats with structure of their own (.arx, .arxs) register theirs from their own plugin.
@@ -136,6 +141,8 @@ export class RepositoryPlugin extends Plugin {
     this.unwatchConfig = null
     this.unregisterTextMerger?.()
     this.unregisterTextMerger = null
+    this.unregisterPendingRanges?.()
+    this.unregisterPendingRanges = null
     await super.stop(ctx)
   }
 }

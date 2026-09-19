@@ -38,6 +38,7 @@
     "@arxhub/path": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/plugin-vfs": "workspace:*",
     "@arxhub/sync": "workspace:*",
     "@arxhub/vfs": "workspace:*"
   },

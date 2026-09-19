@@ -73,7 +73,7 @@ describe('materializeIfPending', () => {
   test('delegates to the registered remote (repo-relative path) and refreshes pending afterwards', async () => {
     const repository = extension({ pending: new Set(['vault/x.md']) })
     const materialize = vi.fn(async () => {})
-    repository.setRemote({ fetchFile: async () => {}, materialize })
+    repository.setRemote({ fetchFile: async () => {}, fetchChunks: async () => {}, materialize })
 
     await repository.materializeIfPending('x.md')
 

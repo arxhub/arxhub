@@ -25,6 +25,7 @@
     "@arxhub/vfs-http": "workspace:*"
   },
   "devDependencies": {
+    "@arxhub/sync": "workspace:*",
     "@arxhub/di": "workspace:*",
     "@arxhub/events": "workspace:*",
     "@arxhub/logger": "workspace:*",
@@ -35,6 +36,7 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/vfs": "workspace:*"
   },
