@@ -32,7 +32,7 @@ async function checkForUpdates(): Promise<void> {
     title="About"
     description="Quote this version when reporting a problem — the session log records it too."
   >
-    <div class="about-row">
+    <div class="about-row" :class="{ touch }">
       <span class="label">Version</span>
       <code class="value" data-testid="app-version">{{ props.version }}</code>
     </div>
@@ -66,6 +66,10 @@ async function checkForUpdates(): Promise<void> {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   color: var(--gray-12);
+}
+
+.about-row.touch .value {
+  font-size: var(--font-size-sm);
 }
 
 .update-row {

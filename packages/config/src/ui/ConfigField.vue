@@ -256,6 +256,10 @@ async function copy(): Promise<void> {
   color: var(--gray-11);
 }
 
+.field.touch .description {
+  font-size: var(--font-size-sm);
+}
+
 .field.disabled .description {
   color: var(--gray-9);
 }
