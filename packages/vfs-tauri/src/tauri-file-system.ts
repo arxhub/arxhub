@@ -1,5 +1,5 @@
 import type { Logger } from '@arxhub/core'
-import { illegalState } from '@arxhub/errors'
+import { illegalState, internalServer } from '@arxhub/errors'
 import { normalizePath } from '@arxhub/path'
 import {
   type ContentUrlCapable,
@@ -81,11 +81,22 @@ export class TauriFileSystem
   }
 
   async read(pathname: string): Promise<Uint8Array> {
+    const path = this.fullPath(pathname)
+    const options = { baseDir: this.baseDir }
     try {
-      return await readFile(this.fullPath(pathname), { baseDir: this.baseDir })
+      return await readFile(path, options)
     } catch (e) {
       this.logger.warn(`read(${pathname}) failed:`, e)
-      throw fileNotFound(pathname)
+      // The Tauri API does not expose a stable error code. Ask its native exists primitive instead of
+      // parsing platform-specific messages; only confirmed absence may seed a default file.
+      let exists: boolean
+      try {
+        exists = await pathExists(path, options)
+      } catch (existsError) {
+        throw internalServer(existsError, `Could not check '${pathname}' after it failed to read`, 'File read failed')
+      }
+      if (!exists) throw fileNotFound(pathname)
+      throw internalServer(e, `Could not read '${pathname}'`, 'File read failed')
     }
   }
 

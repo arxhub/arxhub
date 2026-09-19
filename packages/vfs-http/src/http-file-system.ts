@@ -52,7 +52,9 @@ export class HttpFileSystem extends GenericVirtualFileSystem implements RangeCap
       return entries.map((entry) => (entry.kind === 'dir' ? this.dir(entry.pathname) : this.file(entry.pathname)))
     } catch (e) {
       this.logger.warn(`list(${prefix}) failed:`, e)
-      return []
+      // The route represents a missing prefix as a successful empty list. A rejected request is an
+      // unavailable or refused store, and callers must not mistake that for “no conflict files”.
+      throw e
     }
   }
 

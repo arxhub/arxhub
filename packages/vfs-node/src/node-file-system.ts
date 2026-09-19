@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import type { Logger } from '@arxhub/core'
-import { isNodeError } from '@arxhub/errors'
+import { internalServer, isNodeError } from '@arxhub/errors'
 import { normalizePath } from '@arxhub/path'
 import {
   type CompareAndSwapCapable,
@@ -63,11 +63,17 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
       entries = await fs.readdir(absDir, { withFileTypes: true })
     } catch (e) {
       this.logger.warn(`list(${prefix}) readdir failed:`, e)
+      if (isNodeError(e, 'ENOENT')) return result
+      // readdir on a file is ENOTDIR: keep the VFS contract that list('file') returns that file.
+      // Permission and I/O failures must stay visible; treating them as empty can hide user data.
+      if (!isNodeError(e, 'ENOTDIR')) throw internalServer(e, `Could not list '${prefix}'`, 'File listing failed')
       try {
         const stat = await fs.stat(absDir)
         if (stat.isFile() && norm) result.push(this.file(norm))
       } catch (e2) {
         this.logger.warn(`list(${prefix}) stat fallback failed:`, e2)
+        if (isNodeError(e2, 'ENOENT')) return result
+        throw internalServer(e2, `Could not inspect '${prefix}' while listing it`, 'File listing failed')
       }
       return result
     }
@@ -88,7 +94,10 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
       return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
     } catch (e) {
       this.logger.warn(`read(${pathname}) failed:`, e)
-      throw fileNotFound(pathname)
+      if (isNodeError(e, 'ENOENT')) throw fileNotFound(pathname)
+      // Callers use FileNotFound as permission to seed defaults; masking EACCES/EIO here can overwrite
+      // a file that still exists once the backend becomes healthy again.
+      throw internalServer(e, `Could not read '${pathname}'`, 'File read failed')
     }
   }
 

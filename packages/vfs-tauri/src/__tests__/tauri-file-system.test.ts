@@ -1,5 +1,5 @@
 import { renameEntry } from '@arxhub/vfs'
-import { readDir } from '@tauri-apps/plugin-fs'
+import { exists as pathExists, readDir, readFile } from '@tauri-apps/plugin-fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // An in-memory stand-in for @tauri-apps/plugin-fs, mocked because the real one only answers inside a
@@ -85,8 +85,37 @@ function makeFs(basePath = '') {
 
 describe('TauriFileSystem', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     dirs.clear()
     files.clear()
+  })
+
+  it('keeps a missing read compatible with VirtualFile default values', async () => {
+    await expect(makeFs().file('missing.json').readJSON({ fresh: true })).resolves.toEqual({ fresh: true })
+  })
+
+  it('keeps a refused read distinguishable from a missing file', async () => {
+    const fs = makeFs()
+    await fs.write('budget.jsonl', new Uint8Array([1]))
+    const cause = new Error('permission refused')
+    vi.mocked(readFile).mockRejectedValueOnce(cause)
+
+    await expect(fs.read('budget.jsonl')).rejects.toMatchObject({
+      body: { code: 'InternalServerError', statusCode: 500, message: "Could not read 'budget.jsonl'" },
+      originalError: cause,
+    })
+  })
+
+  it('surfaces an exists failure as an AppError instead of guessing that a failed read is missing', async () => {
+    const fs = makeFs()
+    vi.mocked(readFile).mockRejectedValueOnce(new Error('read failed'))
+    const cause = new Error('exists IPC failed')
+    vi.mocked(pathExists).mockRejectedValueOnce(cause)
+
+    await expect(fs.read('budget.jsonl')).rejects.toMatchObject({
+      body: { code: 'InternalServerError', statusCode: 500, message: "Could not check 'budget.jsonl' after it failed to read" },
+      originalError: cause,
+    })
   })
 
   it('walks an individual file and keeps its logical path under a native base directory', async () => {
