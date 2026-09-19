@@ -45,6 +45,9 @@ describe('a native watch feeds the SAME VfsWatcher the vault view already uses',
   it('reports a file written from outside the app, vault-relative', async () => {
     build()
     await plugin?.start(ctx)
+    // start() detaches the OS watch — wait until it has actually attached before writing, or the
+    // event is lost and the assertion times out (same race the stop test already worked around).
+    await new Promise((resolve) => setTimeout(resolve, 200))
 
     const watcher = services.get(VaultWatcher)
     const changes: VfsChange[] = []

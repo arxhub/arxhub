@@ -36,6 +36,9 @@ catalogs:
     codemirror:
       specifier: ^6.0.1
       version: 6.0.2
+    exceljs:
+      specifier: ^4.4.0
+      version: 4.4.0
     lucide-vue-next:
       specifier: ^1.0.0
       version: 1.0.0
@@ -521,6 +524,9 @@ importers:
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../../plugins/protection
+      '@arxhub/plugin-publish':
+        specifier: workspace:*
+        version: link:../../plugins/publish
       '@arxhub/plugin-repository':
         specifier: workspace:*
         version: link:../../plugins/repository
@@ -733,6 +739,12 @@ importers:
       '@arxhub/plugin-publish':
         specifier: workspace:*
         version: link:../../plugins/publish
+      '@arxhub/plugin-sync':
+        specifier: workspace:*
+        version: link:../../plugins/sync
+      '@arxhub/plugin-vfs':
+        specifier: workspace:*
+        version: link:../../plugins/vfs
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../../packages/stdlib
@@ -1083,9 +1095,6 @@ importers:
       '@arxhub/path':
         specifier: workspace:*
         version: link:../path
-      '@arxhub/plugin-gateway':
-        specifier: workspace:*
-        version: link:../../plugins/gateway
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
@@ -1223,9 +1232,6 @@ importers:
       '@arxhub/path':
         specifier: workspace:*
         version: link:../path
-      '@arxhub/plugin-gateway':
-        specifier: workspace:*
-        version: link:../../plugins/gateway
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../stdlib
@@ -1680,21 +1686,12 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@arxhub/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@arxhub/path':
-        specifier: workspace:*
-        version: link:../../packages/path
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
-      '@arxhub/vfs':
-        specifier: workspace:*
-        version: link:../../packages/vfs
       dayjs:
         specifier: catalog:shared
         version: 1.11.20
@@ -1702,12 +1699,21 @@ importers:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)
     devDependencies:
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@arxhub/path':
+        specifier: workspace:*
+        version: link:../../packages/path
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
       '@types/node':
         specifier: catalog:toolchain
         version: 25.6.0
@@ -1745,24 +1751,15 @@ importers:
       '@arxhub/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@arxhub/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@arxhub/path':
         specifier: workspace:*
         version: link:../../packages/path
-      '@arxhub/plugin-settings':
+      '@arxhub/plugin-repository':
         specifier: workspace:*
-        version: link:../settings
-      '@arxhub/plugin-shell':
-        specifier: workspace:*
-        version: link:../shell
+        version: link:../repository
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
-      '@arxhub/vfs':
-        specifier: workspace:*
-        version: link:../../packages/vfs
       '@sinclair/typebox':
         specifier: catalog:shared
         version: 0.34.48
@@ -1770,18 +1767,36 @@ importers:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)
     devDependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/di':
+        specifier: workspace:*
+        version: link:../../packages/di
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@arxhub/events':
+        specifier: workspace:*
+        version: link:../../packages/events
       '@arxhub/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@arxhub/plugin-settings':
+        specifier: workspace:*
+        version: link:../settings
+      '@arxhub/plugin-shell':
+        specifier: workspace:*
+        version: link:../shell
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
       '@types/node':
         specifier: catalog:toolchain
         version: 25.6.0
@@ -2044,9 +2059,6 @@ importers:
       '@arxhub/path':
         specifier: workspace:*
         version: link:../../packages/path
-      '@arxhub/plugin-notes':
-        specifier: workspace:*
-        version: link:../notes
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../protection
@@ -2231,7 +2243,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vfs
       exceljs:
-        specifier: 4.4.0
+        specifier: catalog:client
         version: 4.4.0
       vue:
         specifier: catalog:client
@@ -2292,6 +2304,9 @@ importers:
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@arxhub/plugin-gateway':
+        specifier: workspace:*
+        version: link:../gateway
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../protection
@@ -2323,6 +2338,9 @@ importers:
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
       '@sinclair/typebox':
         specifier: catalog:shared
         version: 0.34.48
@@ -2335,9 +2353,6 @@ importers:
       '@arxhub/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@arxhub/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@arxhub/plugin-settings':
         specifier: workspace:*
         version: link:../settings
@@ -2348,12 +2363,27 @@ importers:
         specifier: catalog:client
         version: 3.5.33(typescript@6.0.3)
     devDependencies:
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/di':
+        specifier: workspace:*
+        version: link:../../packages/di
+      '@arxhub/events':
+        specifier: workspace:*
+        version: link:../../packages/events
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig
       '@arxhub/toolchain-vite':
         specifier: workspace:*
         version: link:../../toolchains/vite
+      '@arxhub/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
       '@sinclair/typebox':
         specifier: catalog:shared
         version: 0.34.48
@@ -2366,9 +2396,15 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/plugin-gateway':
+        specifier: workspace:*
+        version: link:../gateway
       '@arxhub/vfs':
         specifier: workspace:*
         version: link:../../packages/vfs
+      '@arxhub/vfs-http':
+        specifier: workspace:*
+        version: link:../../packages/vfs-http
     devDependencies:
       '@arxhub/di':
         specifier: workspace:*

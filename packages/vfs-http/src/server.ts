@@ -1,6 +1,4 @@
-import { definePluginManifest, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { hasErrorCode, validation } from '@arxhub/errors'
-import { GatewayServerExtension } from '@arxhub/plugin-gateway/server'
 import { readRange, type VirtualFileSystem } from '@arxhub/vfs'
 import Elysia, { t } from 'elysia'
 import { matchesToken, parseExpectedToken } from './compare-and-swap-token'
@@ -203,31 +201,3 @@ export function vfsRoutes(vfs: VirtualFileSystem) {
 
 // The exported route-tree type the client infers from. `import type { VfsApp } from '@arxhub/vfs-http/server'`.
 export type VfsApp = ReturnType<typeof vfsRoutes>
-
-const manifest = definePluginManifest({
-  name: 'VfsHttpServer',
-  namespace: VFS_NAMESPACE,
-  version: '0.1.0',
-  author: 'arxhub',
-  description: 'Serves a VirtualFileSystem over HTTP for browser-mode clients',
-})
-
-type VfsHttpServerPluginArgs = PluginArgs & {
-  vfs: VirtualFileSystem
-}
-
-// Mounts vfsRoutes onto the gateway during configure(). Register alongside
-// GatewayServerPlugin in a server instance, injecting the backing filesystem.
-export class VfsHttpServerPlugin extends Plugin {
-  private readonly vfs: VirtualFileSystem
-
-  constructor(args: VfsHttpServerPluginArgs) {
-    super(args, manifest)
-    this.vfs = args.vfs
-  }
-
-  override configure(ctx: PluginContext): void {
-    super.configure(ctx)
-    ctx.extensions.get(GatewayServerExtension).forPlugin(this).use(vfsRoutes(this.vfs))
-  }
-}

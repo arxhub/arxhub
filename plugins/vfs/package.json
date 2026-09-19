@@ -10,7 +10,8 @@
   "author": "",
   "type": "module",
   "exports": {
-    "./ui": "./src/ui.ts"
+    "./ui": "./src/ui.ts",
+    "./server": "./src/server.ts"
   },
   "files": [
     "dist"
@@ -19,7 +20,9 @@
     "build": "tsc && vite build",
     "test": "vitest"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@arxhub/vfs-http": "workspace:*"
+  },
   "devDependencies": {
     "@arxhub/di": "workspace:*",
     "@arxhub/events": "workspace:*",
@@ -31,6 +34,7 @@
   },
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
+    "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/vfs": "workspace:*"
   },
   "publishConfig": {
@@ -38,6 +42,10 @@
       "./ui": {
         "import": "./dist/ui.js",
         "types": "./dist/ui.d.ts"
+      },
+      "./server": {
+        "import": "./dist/server.js",
+        "types": "./dist/server.d.ts"
       }
     }
   }

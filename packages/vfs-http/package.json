@@ -28,7 +28,6 @@
     "@arxhub/errors": "workspace:*",
     "@arxhub/http": "workspace:*",
     "@arxhub/path": "workspace:*",
-    "@arxhub/plugin-gateway": "workspace:*",
     "elysia": "catalog:server"
   },
   "devDependencies": {

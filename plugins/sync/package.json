@@ -10,7 +10,8 @@
   "author": "",
   "type": "module",
   "exports": {
-    "./ui": "./src/ui.ts"
+    "./ui": "./src/ui.ts",
+    "./server": "./src/server.ts"
   },
   "files": [
     "dist"
@@ -24,6 +25,7 @@
     "vue": "catalog:client"
   },
   "devDependencies": {
+    "@arxhub/vfs": "workspace:*",
     "@arxhub/logger": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/toolchain-vite": "workspace:*",
@@ -34,6 +36,7 @@
     "@arxhub/core": "workspace:*",
     "@arxhub/crypto": "workspace:*",
     "@arxhub/errors": "workspace:*",
+    "@arxhub/plugin-gateway": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-repository": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
@@ -46,6 +49,10 @@
       "./ui": {
         "import": "./dist/ui.js",
         "types": "./dist/ui.d.ts"
+      },
+      "./server": {
+        "import": "./dist/server.js",
+        "types": "./dist/server.d.ts"
       }
     }
   }
