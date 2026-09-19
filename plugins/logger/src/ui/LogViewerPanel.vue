@@ -33,7 +33,7 @@ function levelTone(level: number): 'neutral' | 'danger' | 'warning' {
 const arxhub = useArxHub()
 const ext = arxhub.extensions.get(LoggerExtension)
 const touch = useShellFrame() === 'mobile'
-const buttonSize = touch ? 'md' : 'sm'
+const buttonSize = touch ? 'lg' : 'sm'
 
 const enabled = ref<Record<LevelName, boolean>>({ debug: true, info: true, warn: true, error: true })
 const search = ref('')

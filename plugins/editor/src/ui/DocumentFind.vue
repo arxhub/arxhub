@@ -12,7 +12,7 @@ const root = ref<HTMLElement>()
 const query = ref(documentSearchKey.getState(props.view.state)?.query ?? '')
 const matchCase = ref(documentSearchKey.getState(props.view.state)?.matchCase ?? false)
 const replacement = ref('')
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const touch = useShellFrame() === 'mobile'
 const search = computed(() => {
   void props.revision

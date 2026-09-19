@@ -6,7 +6,7 @@ import type { ArxEditorControlProps } from '../control-views'
 import { reconfigureSelect, selectedLabel, selectOptions } from '../editor-mode'
 
 const props = defineProps<ArxEditorControlProps>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const configuring = ref(false)
 const label = ref('')
 const options = ref('')

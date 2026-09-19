@@ -23,7 +23,7 @@ import { clearVaultWorkingTree, isVaultEmpty } from '../vault-reset'
 import OwnerHandoverDialog from './OwnerHandoverDialog.vue'
 
 const arxhub = useArxHub()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const keystore = arxhub.extensions.get(KeyStoreExtension).keystore
 const keyrings = arxhub.extensions.get(KeyringExtension)
 const keyring = keyrings.keyring

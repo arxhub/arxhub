@@ -10,7 +10,7 @@ const props = defineProps<{
   onKeepLocalFiles: () => void
   onTakeFromServer: () => void
 }>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const touch = useShellFrame() === 'mobile'
 
 function choose(branch: () => void): void {

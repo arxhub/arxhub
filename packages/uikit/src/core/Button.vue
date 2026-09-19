@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineProps<{
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
   active?: boolean
   disabled?: boolean
   type?: 'button' | 'submit' | 'reset'
@@ -107,5 +107,11 @@ defineProps<{
   height: var(--size-xs);
   padding: 0 12px;
   font-size: var(--font-size-sm);
+}
+
+.btn-lg {
+  height: var(--size-xl);
+  padding: 0 16px;
+  font-size: var(--font-size-md);
 }
 </style>

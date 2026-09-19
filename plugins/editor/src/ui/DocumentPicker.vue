@@ -7,7 +7,7 @@ import { type ArxDocumentLinks, type BlockDestination, type DocumentDestination,
 
 const props = defineProps<{ links: ArxDocumentLinks; path: string; view: EditorView }>()
 const emit = defineEmits<{ choose: [href: string] }>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const query = ref('')
 const selected = ref<DocumentDestination | null>(null)
 const documents = ref<DocumentDestination[]>([])

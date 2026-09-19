@@ -7,7 +7,7 @@ import { columnName, pointOf } from '../model'
 import { validSheetName } from '../workbook'
 import { useSheet } from './use-sheet'
 
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const session = useSheet()
 const {
   xlsxInput,

@@ -8,7 +8,7 @@ import { deserialize } from '../editor-format'
 
 const props = defineProps<{ kit: ArxEditorKit; saved: string; draft: string; conflict: boolean; busy: boolean; error: string }>()
 const emit = defineEmits<{ choose: [action: 'draft' | 'saved' | 'both'] }>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 function preview(raw: string) {
   try {
     return versionText(deserialize(props.kit.schema, raw, props.kit.format))

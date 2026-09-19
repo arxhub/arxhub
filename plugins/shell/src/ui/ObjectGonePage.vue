@@ -4,7 +4,7 @@ import { useShellFrame } from '@arxhub/uikit/hooks'
 import { OBJECT_GONE_MESSAGE, OBJECT_GONE_TITLE, type ObjectGoneProps } from './object-gone'
 
 defineProps<ObjectGoneProps>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 </script>
 
 <template>

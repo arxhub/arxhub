@@ -9,7 +9,7 @@ import { KeyringExtension } from '../keyring-extension'
 import { closeAuthRejectedDialog } from './auth-dialog'
 
 const arxhub = useArxHub()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const touch = useShellFrame() === 'mobile'
 const shell = arxhub.extensions.get(ShellExtension)
 const settings = arxhub.extensions.get(SettingsExtension)

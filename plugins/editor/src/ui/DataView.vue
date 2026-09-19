@@ -15,7 +15,7 @@ const sources = editor.kit.dataSources
 const source = computed(() => sources[String(props.node.attrs.source)])
 const layout = computed(() => String(props.node.attrs.layout) as DataLayout)
 const board = useShellFrame() === 'mobile' ? DataBoardMobile : DataBoardDesktop
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const items = ref<ArxDataItem[]>([])
 const busy = ref(false)
 const error = ref('')

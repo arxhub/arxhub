@@ -28,6 +28,6 @@ function more(event: MouseEvent): void {
 
 <template>
   <!-- Run is the commit; Example/Schema are occasional — behind More on a narrow strip. -->
-  <Button size="md" :disabled="!canRun" @click="onRun()">{{ running ? 'Running…' : 'Run' }}</Button>
+  <Button size="lg" :disabled="!canRun" @click="onRun()">{{ running ? 'Running…' : 'Run' }}</Button>
   <IconButton size="lg" icon="lu:ellipsis" tooltip="More console actions" ariaLabel="More console actions" @click="more" />
 </template>

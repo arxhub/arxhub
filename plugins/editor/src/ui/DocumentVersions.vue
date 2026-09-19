@@ -18,7 +18,7 @@ const props = defineProps<{
   restore: (content: string, block?: string) => Promise<void>
 }>()
 const emit = defineEmits<{ close: [] }>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const versions = ref<ArxSavedVersion[]>([])
 const selected = ref<ArxSavedVersion | null>(null)
 const raw = ref('')

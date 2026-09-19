@@ -10,7 +10,7 @@ const props = defineProps<{ path: string }>()
 
 const arxhub = useArxHub()
 const notes = arxhub.extensions.get(NotesExtension)
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const canOpen = computed(() => canOpenExternally(notes.vfs))
 
 async function openInSystemApp(): Promise<void> {

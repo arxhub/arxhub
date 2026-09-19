@@ -9,7 +9,7 @@ import DocumentPicker from './DocumentPicker.vue'
 
 const props = defineProps<{ view: EditorView; links?: ArxDocumentLinks | null; path?: string }>()
 const emit = defineEmits<{ close: [] }>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const formId = useId()
 const existing = linkAtSelection(props.view.state)
 const href = ref(existing?.href ?? '')

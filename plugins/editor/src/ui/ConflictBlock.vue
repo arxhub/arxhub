@@ -7,7 +7,7 @@ import type { ArxEditorControlProps } from '../control-views'
 import { versionText } from '../document-history'
 
 const props = defineProps<ArxEditorControlProps>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 
 function side(name: 'local' | 'remote'): Node | null {
   let found: Node | null = null

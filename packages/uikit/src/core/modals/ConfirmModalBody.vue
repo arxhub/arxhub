@@ -16,7 +16,7 @@ const props = defineProps<{
   onCancel?: () => void
 }>()
 
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const touch = useShellFrame() === 'mobile'
 
 function handleCancel() {

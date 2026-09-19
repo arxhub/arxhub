@@ -7,7 +7,7 @@ import { type FieldModel, isInline } from './field-model'
 const props = defineProps<{ field: FieldModel; modelValue: unknown; error: string | null; technical?: boolean }>()
 const emit = defineEmits<(e: 'update:modelValue', value: unknown) => void>()
 
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const inline = computed(() => isInline(props.field.kind))
 
 const asText = computed(() => (props.modelValue == null ? '' : String(props.modelValue)))

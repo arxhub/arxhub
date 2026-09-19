@@ -13,7 +13,7 @@ const arxhub = useArxHub()
 const search = arxhub.extensions.get(SearchExtension)
 const settings = arxhub.extensions.get(SettingsExtension)
 const index = useIndexStatus()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const values = ref<Record<string, unknown>>({})
 const draft = ref<Record<string, unknown> | undefined>(undefined)
 const form = ref<{ revert: () => void } | null>(null)

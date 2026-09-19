@@ -3,7 +3,7 @@ import { Button } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { useSheet } from './use-sheet'
 
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const { document, calculationError, retryCalculation, saveError, save, reload } = useSheet()
 const { loading, error } = document
 </script>

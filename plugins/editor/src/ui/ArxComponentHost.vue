@@ -7,7 +7,7 @@ import DocumentControl from './DocumentControl.vue'
 
 const props = defineProps<{ control: ControlView }>()
 const arxhub = useArxHub()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const failed = ref(false)
 onErrorCaptured((error) => {
   failed.value = true

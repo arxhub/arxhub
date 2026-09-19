@@ -15,7 +15,7 @@ const props = defineProps<{
   draft?: Record<string, unknown>
 }>()
 
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 // The form does not save. It reports its draft and lets the host decide when to write — settings
 // edits are staged across sections and applied together, so a per-form Save would fight that.
 const emit = defineEmits<{

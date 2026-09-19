@@ -6,7 +6,7 @@ import { CODE_LANGUAGES, MAX_HIGHLIGHT_LENGTH } from '../code-highlighting'
 import type { ArxEditorControlProps } from '../control-views'
 
 defineProps<ArxEditorControlProps>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const open = ref(false)
 const query = ref('')
 const choices = computed(() => CODE_LANGUAGES.filter((language) => language.toLowerCase().includes(query.value.toLowerCase())))

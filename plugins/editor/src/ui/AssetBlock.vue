@@ -7,7 +7,7 @@ import { type ArxAsset, isImageAsset } from '../assets'
 import type { ArxEditorControlProps } from '../control-views'
 
 const props = defineProps<ArxEditorControlProps>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const session = useAssetSession()
 const image = computed(() => props.node.type.name === 'image_block')
 const fileInput = ref<HTMLInputElement>()

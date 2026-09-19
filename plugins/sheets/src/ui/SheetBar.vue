@@ -3,7 +3,7 @@ import { actionMenu, Button, IconButton, Strip } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { useSheet } from './use-sheet'
 
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const session = useSheet()
 const { status, calculating, save, editable, undo, redo, canUndo, canRedo, selectingRange, selectionLabel } = session
 function tools(event: MouseEvent) {

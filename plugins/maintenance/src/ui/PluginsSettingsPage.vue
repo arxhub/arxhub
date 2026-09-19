@@ -9,7 +9,7 @@ const arxhub = useArxHub()
 const policy = arxhub.extensions.get(MaintenanceExtension).policy
 const plugins = arxhub.catalog
 const mobile = useShellFrame() === 'mobile'
-const buttonSize = mobile ? 'md' : 'sm'
+const buttonSize = mobile ? 'lg' : 'sm'
 
 // The policy is plain storage, so the switches keep their own reactive mirror of it.
 const enabled = reactive<Record<string, boolean>>(Object.fromEntries(plugins.map((it) => [it.name, !policy.isDisabled(it.name)])))

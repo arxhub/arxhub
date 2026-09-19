@@ -11,7 +11,7 @@ const arxhub = useArxHub()
 const settings = arxhub.extensions.get(SettingsExtension)
 const changes = settings.changes
 const mobile = useShellFrame() === 'mobile'
-const buttonSize = mobile ? 'md' : 'sm'
+const buttonSize = mobile ? 'lg' : 'sm'
 
 const fields = computed(() => changes.fieldCount.value)
 const sections = computed(() => changes.sectionCount.value)

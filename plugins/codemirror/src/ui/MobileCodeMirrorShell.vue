@@ -24,12 +24,12 @@ defineProps<{
     </Strip>
     <div v-if="loadError" class="codemirror-error">
       <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
-      <Button size="md" variant="secondary" @click="onRetry()">Retry</Button>
+      <Button size="lg" variant="secondary" @click="onRetry()">Retry</Button>
     </div>
     <slot />
     <div v-if="!loadError" class="editor-status">
       <MarkdownToolbar v-if="note" :view="view" :revision="revision" />
-      <Button size="md" variant="secondary" :disabled="!canSave" @click="onSave()">Save</Button>
+      <Button size="lg" variant="secondary" :disabled="!canSave" @click="onSave()">Save</Button>
     </div>
   </div>
 </template>

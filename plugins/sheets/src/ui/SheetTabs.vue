@@ -4,7 +4,7 @@ import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { useSheet } from './use-sheet'
 
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const { book, sheetId, switchSheet, addSheet, editable, tool } = useSheet()
 const options = computed(() => book.value?.sheets.map(({ id, name }) => ({ value: id, label: name })) ?? [])
 function manage(event: MouseEvent) {

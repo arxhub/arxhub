@@ -3,7 +3,7 @@ import { Button, Strip } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { useFormulaAssist } from './use-formula-assist'
 
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const { formulaFocused, draft, composing, help, refs, colors, complete } = useFormulaAssist()
 </script>
 <template>

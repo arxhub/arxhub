@@ -15,7 +15,7 @@ import { address, columnName, MAX_FILE_BYTES, rangePoints, type Sheet } from '..
 import { parseWorkbook } from '../workbook'
 
 const props = defineProps<ArxEditorControlProps>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const hub = useArxHub(),
   vfs = hub.services.get(VaultVfs)
 const root = ref<HTMLElement>(),

@@ -6,7 +6,7 @@ import type { ArxDocumentLinks, DocumentDestination } from '../document-links'
 
 const props = defineProps<{ links: ArxDocumentLinks; path: string }>()
 const emit = defineEmits<{ close: [] }>()
-const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const results = ref<DocumentDestination[]>([])
 const busy = ref(false)
 const error = ref('')
