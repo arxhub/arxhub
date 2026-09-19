@@ -85,7 +85,8 @@ const { openTabs, current, pathOf } = useOpenTabsList(props.store)
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  padding: 8px 8px 8px 16px;
+  min-height: var(--size-xl);
+  padding: 4px 8px 4px 16px;
   border-top: 1px solid var(--gray-4);
   background: var(--gray-2);
 }
