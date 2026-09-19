@@ -169,6 +169,7 @@ export class SyncPlugin extends Plugin {
           // this from now on.
           repository.setRemote({
             fetchFile: (snapshot, path) => engine.fetchFile(snapshot, path),
+            fetchChunks: (hashes) => engine.fetchChunkObjects(hashes),
             materialize: (path) => engine.materialize(path),
           })
 

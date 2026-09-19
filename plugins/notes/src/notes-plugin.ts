@@ -74,8 +74,8 @@ export class NotesPlugin extends Plugin {
     // same key for the same path, which is what the de-duplication rests on.
     const open = async (ref: ObjectRef): Promise<OpenedObject> => {
       const path = String(ref.id)
-      await notes.prepare(path)
       const viewer = notes.viewerFor(path)
+      await notes.prepare(path, viewer)
       const anchor = blockAnchorOf(ref.at)
 
       // The note is already open — then the mounted editor's props cannot be changed and the place has
@@ -150,7 +150,11 @@ export class NotesPlugin extends Plugin {
     const repository = ctx.extensions.get(RepositoryExtension)
     // start() runs after every plugin's configure(), so RepositoryExtension is always there even though
     // Notes registers earlier — materialize belongs on the open path, not on repository→notes.
-    this.unregisterMaterialize = notes.registerPreparer((path) => repository.materializeIfPending(path))
+    this.unregisterMaterialize = notes.registerPreparer(async (path, viewer) => {
+      await repository.ready()
+      if (viewer?.readMode === 'range') return
+      await repository.materializeIfPending(path)
+    })
     // The vault subscription is free; the config read is not — on the browser client PluginConfig
     // goes through HttpFileSystem, so awaiting it here held first paint behind a network round-trip.
     // Default stays until the read lands (and config.watch in configure() covers later saves).

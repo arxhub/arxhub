@@ -3,7 +3,7 @@ import { illegalState } from '@arxhub/errors'
 import { join } from '@arxhub/path'
 import type { KeyringExtension } from '@arxhub/plugin-protection'
 import { FileHistory, type Repo, type Snapshot } from '@arxhub/sync'
-import type { VirtualFileSystem } from '@arxhub/vfs'
+import type { RangeReader, VirtualFileSystem } from '@arxhub/vfs'
 import { type ShallowRef, shallowRef } from 'vue'
 import { type ContentMergerRegistration, ContentMergerRegistry } from './content-mergers'
 import { migrateRepositoryStore, REPO_STORE_PATH } from './store-migration'
@@ -16,6 +16,7 @@ const VAULT_PREFIX = 'vault/'
 // is the one hole through which the remote reaches back in.
 export interface RepositoryRemote {
   fetchFile(snapshot: Snapshot, path: string): Promise<void>
+  fetchChunks(hashes: string[]): Promise<void>
   materialize(repoPath: string): Promise<void>
 }
 
@@ -91,6 +92,14 @@ export class RepositoryExtension extends Extension {
     if (!this.remote) throw illegalState('This file is on the server — turn sync on to open it.')
     await this.remote.materialize(join('vault', vaultPath))
     await this.refreshPending()
+  }
+
+  async openPendingRangeReader(vaultPath: string): Promise<RangeReader | null> {
+    await this.ready()
+    return this.repo.openPendingRangeReader(join('vault', vaultPath), async (hashes) => {
+      if (!this.remote) throw illegalState('This part of the file is not cached — turn sync on and retry.')
+      await this.remote.fetchChunks(hashes)
+    })
   }
 
   // The store migration, the previous-owner discard and the empty-snapshot seed — memoised, so every

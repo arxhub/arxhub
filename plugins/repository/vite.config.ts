@@ -11,6 +11,7 @@ export default defineConfig((env) =>
       '@arxhub/path',
       '@arxhub/plugin-protection',
       '@arxhub/plugin-settings',
+      '@arxhub/plugin-vfs',
       '@arxhub/sync',
       '@arxhub/vfs',
       'vue',

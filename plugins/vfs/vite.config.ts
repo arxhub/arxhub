@@ -6,6 +6,7 @@ export default defineConfig((env) =>
     entries: ['src/index.ts', 'src/manifest.ts', 'src/server.ts'],
     external: [
       '@arxhub/core',
+      '@arxhub/errors',
       '@arxhub/plugin-gateway/server',
       '@arxhub/vfs',
       '@arxhub/vfs-http',

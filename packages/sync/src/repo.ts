@@ -2,7 +2,7 @@ import { hasErrorCode, illegalState } from '@arxhub/errors'
 import { join } from '@arxhub/path'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { splitPathname } from '@arxhub/stdlib/fs/split-pathname'
-import { compareAndSwap, type VirtualFile, type VirtualFileSystem, type VirtualWalker } from '@arxhub/vfs'
+import { compareAndSwap, type RangeReader, type VirtualFile, type VirtualFileSystem, type VirtualWalker } from '@arxhub/vfs'
 import AsyncLock from 'async-lock'
 import dayjs from 'dayjs'
 import { Checkout } from './checkout'
@@ -10,6 +10,7 @@ import { Chunker } from './chunker'
 import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
 import { repoHeadMoved } from './errors'
 import { snapshotHash } from './snapshot-hash'
+import { type FetchMissingChunks, SnapshotRangeReader } from './snapshot-range-reader'
 import type { FileStatus, MergeResult, Snapshot, SnapshotFile, SnapshotFileChunk } from './types'
 
 // A lost head compare-and-swap is self-healing — the writer re-reads head, rebuilds on it and tries
@@ -99,6 +100,23 @@ export class Repo {
 
   pendingPaths(): Promise<string[]> {
     return this.checkout.pendingPaths()
+  }
+
+  openRangeReader(snapshot: Snapshot, pathname: string, fetchMissing?: FetchMissingChunks): RangeReader {
+    const file = snapshot.files[pathname]
+    if (file == null) throw illegalState(`${pathname} is not in snapshot ${snapshot.hash}`)
+    return new SnapshotRangeReader(this, snapshot, file, fetchMissing)
+  }
+
+  // Pins both the pending decision and the manifest entry under the repository lock. The returned
+  // reader keeps that snapshot even if a later sync advances repo/head.
+  openPendingRangeReader(pathname: string, fetchMissing?: FetchMissingChunks): Promise<RangeReader | null> {
+    return this.exclusive(async () => {
+      if (!(await this.checkout.isPending(pathname))) return null
+      const snapshot = await this.getHeadSnapshot()
+      if (snapshot.files[pathname] == null) return null
+      return this.openRangeReader(snapshot, pathname, fetchMissing)
+    })
   }
 
   // Put a pending file's content on disk. The chunks have to be in the local store already — the engine

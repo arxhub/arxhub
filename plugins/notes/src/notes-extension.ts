@@ -24,6 +24,9 @@ export interface NoteViewer {
   // Extensions with the dot, lower case: '.md', '.arx'.
   extensions: string[]
   component: Component
+  // A range-capable viewer reads the pending file through the repository instead of first asking
+  // sync to materialize the whole object. The default keeps the ordinary open path unchanged.
+  readMode?: 'range'
   // The tool bar of the active note. Not declared — no bar: an empty dock would take a band of the
   // screen for nothing. The component gets a single `path` prop.
   dock?: Component
@@ -40,9 +43,10 @@ export interface NoteViewer {
 }
 
 type Creator = () => Promise<string | null>
-// Runs before an object opens, with its path. What sync uses to bring a file this device left in the
-// cloud onto disk first — the viewer that mounts next reads from disk and knows nothing about clouds.
-type Preparer = (path: string) => Promise<void>
+// Runs before an object opens, with its path and selected viewer. What sync uses to bring a file this
+// device left in the cloud onto disk first — the viewer that mounts next reads from disk and knows
+// nothing about clouds, unless it explicitly declares a range read mode.
+type Preparer = (path: string, viewer?: NoteViewer) => Promise<void>
 
 export interface NotesExtensionArgs extends ExtensionArgs {
   vfs: VirtualFileSystem
@@ -134,8 +138,8 @@ export class NotesExtension extends Extension {
 
   // Every preparer, in registration order; a failure aborts the open, and the opener reports it —
   // a viewer over a file that is not there would report something less useful.
-  async prepare(path: string): Promise<void> {
-    for (const preparer of this.preparers) await preparer(path)
+  async prepare(path: string, viewer = this.viewerFor(path)): Promise<void> {
+    for (const preparer of this.preparers) await preparer(path, viewer)
   }
 
   // Create a note and return its path. Opening is the caller's business: opening belongs to the

@@ -6,7 +6,8 @@ const PIXEL = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBR
 
 // A hand-written, one-page PDF — no library, just the objects pdf.js needs: a Catalog, a Pages tree of
 // one Page, and an empty content stream. The xref offsets are computed rather than guessed so pdf.js
-// parses the table itself instead of falling back to its own document scan.
+// parses the table itself instead of falling back to its own document scan. An unreferenced stream
+// separates the page from the xref so the same smoke test proves that opening does not read it all.
 function minimalOnePagePdf(): Buffer {
   let pdf = '%PDF-1.4\n'
   const objects = [
@@ -14,6 +15,7 @@ function minimalOnePagePdf(): Buffer {
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
     '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 300] /Resources << >> /Contents 4 0 R >>',
     '<< /Length 0 >>\nstream\n\nendstream',
+    `<< /Length 524288 >>\nstream\n${' '.repeat(524288)}\nendstream`,
   ]
   const offsets: number[] = []
   objects.forEach((body, i) => {
@@ -54,7 +56,13 @@ test.describe('opening a file that is not a note', () => {
   })
 
   test('a PDF opens as pages, rendered by pdf.js', async ({ app, vault }) => {
-    const path = await vault.write('scan.pdf', minimalOnePagePdf())
+    const pdf = minimalOnePagePdf()
+    const path = await vault.write('scan.pdf', pdf)
+    const reads: URL[] = []
+    app.on('request', (request) => {
+      const url = new URL(request.url())
+      if (url.searchParams.get('path') === `vault/${path}` && /\/read(?:-range)?$/.test(url.pathname)) reads.push(url)
+    })
 
     await openFile(app, path)
 
@@ -62,5 +70,8 @@ test.describe('opening a file that is not a note', () => {
     const canvas = app.locator('.pdf-canvas')
     await expect(canvas).toBeVisible()
     await expect.poll(() => canvas.evaluate((el: HTMLCanvasElement) => el.getBoundingClientRect().width)).toBeGreaterThan(0)
+    expect(reads.length).toBeGreaterThan(0)
+    expect(reads.every((url) => url.pathname.endsWith('/read-range'))).toBe(true)
+    expect(reads.reduce((total, url) => total + Number(url.searchParams.get('length')), 0)).toBeLessThan(pdf.length)
   })
 })

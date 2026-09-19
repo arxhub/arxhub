@@ -1864,6 +1864,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@arxhub/path':
         specifier: workspace:*
         version: link:../../packages/path
@@ -1873,6 +1876,9 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
+      '@arxhub/plugin-vfs':
+        specifier: workspace:*
+        version: link:../vfs
       '@arxhub/uikit':
         specifier: workspace:*
         version: link:../../packages/uikit
@@ -2065,6 +2071,9 @@ importers:
       '@arxhub/plugin-settings':
         specifier: workspace:*
         version: link:../settings
+      '@arxhub/plugin-vfs':
+        specifier: workspace:*
+        version: link:../vfs
       '@arxhub/sync':
         specifier: workspace:*
         version: link:../../packages/sync
@@ -2396,6 +2405,9 @@ importers:
       '@arxhub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../gateway
@@ -2415,6 +2427,9 @@ importers:
       '@arxhub/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@arxhub/sync':
+        specifier: workspace:*
+        version: link:../../packages/sync
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../../toolchains/tsconfig

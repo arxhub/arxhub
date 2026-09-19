@@ -1,7 +1,6 @@
 import { Plugin, type PluginArgs, type PluginContext, type PluginHost } from '@arxhub/core'
 import {
   bindPluginVfs,
-  ObservedFileSystem,
   RootVfs,
   removeInfoSidecars,
   ScopedFileSystem,
@@ -13,6 +12,7 @@ import {
   watchTree,
 } from '@arxhub/vfs'
 import { manifest } from './manifest'
+import { PendingAwareVaultFileSystem, PendingRangeBroker, VfsExtension } from './range-reader'
 
 type VfsPluginArgs = PluginArgs & {
   // The instance-specific filesystem backend (HttpFileSystem / TauriFileSystem / NodeFileSystem).
@@ -21,6 +21,9 @@ type VfsPluginArgs = PluginArgs & {
 
 export class VfsPlugin extends Plugin {
   private readonly fs: VirtualFileSystem
+  private readonly pendingRanges = new PendingRangeBroker()
+  private localVault!: VirtualFileSystem
+  private vault!: VirtualFileSystem
   private watcher!: VfsWatcher
   private stopping = false
   // The native watch's own unsubscribe, once the detached start-up has one — null while it is still
@@ -44,10 +47,17 @@ export class VfsPlugin extends Plugin {
     // Only the vault view is observed, and observing it here covers every writer: an editor, the
     // explorer and sync all reach content through this one view, so none of them has to know that
     // anything (the search index) is keeping up with them.
-    host.services.bind(VaultVfs, () => ObservedFileSystem.wrap(new ScopedFileSystem(this.fs, 'vault'), this.watcher))
+    this.localVault = new ScopedFileSystem(this.fs, 'vault')
+    this.vault = new PendingAwareVaultFileSystem(this.localVault, this.watcher, this.pendingRanges)
+    host.services.bind(VaultVfs, () => this.vault)
     // RootVfs and the per-plugin buckets stay unwrapped: only content is indexed, and a repo store or a
     // cache file has no subscriber waiting for it.
     host.configureScope(bindPluginVfs)
+  }
+
+  override create(ctx: PluginContext): void {
+    super.create(ctx)
+    ctx.extensions.register(VfsExtension, () => ({ localVault: this.localVault, broker: this.pendingRanges }))
   }
 
   // Detached, like every bring-up that could hold the first paint: the sweep walks the whole root once

@@ -6,11 +6,13 @@ export default defineConfig((env) =>
     entries: ['src/index.ts', 'src/manifest.ts', 'src/ui.ts'],
     external: [
       '@arxhub/core',
+      '@arxhub/errors',
       '@arxhub/path',
       '@arxhub/plugin-notes',
       '@arxhub/plugin-notes/ui',
       '@arxhub/plugin-panels',
       '@arxhub/plugin-panels/ui',
+      '@arxhub/plugin-vfs',
       '@arxhub/uikit',
       '@arxhub/vfs',
       'pdfjs-dist',
