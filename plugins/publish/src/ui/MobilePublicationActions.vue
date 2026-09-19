@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { actionMenu, IconButton } from '@arxhub/uikit/core'
+import { type ActionItem, ActionMenuButton, IconButton } from '@arxhub/uikit/core'
 
 const props = defineProps<{
   busy: boolean
@@ -9,20 +9,17 @@ const props = defineProps<{
   onUnpublish: () => void
 }>()
 
-function more(event: MouseEvent): void {
-  actionMenu.open(
-    [
-      { id: 'open', label: 'Open in browser', icon: 'lu:external-link', disabled: props.busy, onSelect: props.onOpen },
-      { id: 'republish', label: 'Republish', icon: 'lu:globe', disabled: props.busy, onSelect: props.onRepublish },
-      { id: 'unpublish', label: 'Unpublish', icon: 'lu:eye-off', disabled: props.busy, onSelect: props.onUnpublish },
-    ],
-    { x: event.clientX, y: event.clientY, title: 'Publication' },
-  )
+function items(): ActionItem[] {
+  return [
+    { id: 'open', label: 'Open in browser', icon: 'lu:external-link', disabled: props.busy, onSelect: props.onOpen },
+    { id: 'republish', label: 'Republish', icon: 'lu:globe', disabled: props.busy, onSelect: props.onRepublish },
+    { id: 'unpublish', label: 'Unpublish', icon: 'lu:eye-off', disabled: props.busy, onSelect: props.onUnpublish },
+  ]
 }
 </script>
 
 <template>
   <!-- Frequent: Copy link. Occasional: behind More — four lg icons do not fit a 360 row. -->
-  <IconButton size="lg" icon="lu:link" tooltip="Copy link" :disabled="busy" @click="onCopy()" />
-  <IconButton size="lg" icon="lu:ellipsis" tooltip="More publication actions" ariaLabel="More publication actions" :disabled="busy" @click="more" />
+  <IconButton size="xl" icon="lu:link" tooltip="Copy link" :disabled="busy" @click="onCopy()" />
+  <ActionMenuButton label="More publication actions" title="Publication" :items="items" :disabled="busy" />
 </template>

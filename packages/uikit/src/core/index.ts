@@ -1,5 +1,6 @@
 import './default-icons'
 
+export { default as ActionMenuButton } from './ActionMenuButton.vue'
 export { default as Avatar } from './Avatar.vue'
 export * from './action-menu'
 export { default as Badge } from './Badge.vue'

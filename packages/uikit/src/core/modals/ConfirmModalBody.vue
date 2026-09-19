@@ -82,8 +82,7 @@ function handleConfirm() {
 }
 
 .confirm-modal.touch .confirm-actions {
-  flex-direction: column-reverse;
-  gap: 12px;
+  flex-direction: column;
 }
 
 .confirm-modal.touch .confirm-actions :deep(.btn) {

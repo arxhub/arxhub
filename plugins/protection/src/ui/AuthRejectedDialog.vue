@@ -112,8 +112,7 @@ function openSecurity(): void {
 }
 
 .auth-rejected.touch .auth-actions {
-  flex-direction: column-reverse;
-  gap: 12px;
+  flex-direction: column;
 }
 
 .auth-rejected.touch .auth-actions :deep(.btn) {

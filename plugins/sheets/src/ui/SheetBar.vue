@@ -3,7 +3,9 @@ import { actionMenu, Button, IconButton, Strip } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { useSheet } from './use-sheet'
 
-const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
+const iconSize = touch ? 'xl' : 'lg'
 const session = useSheet()
 const { status, calculating, save, editable, undo, redo, canUndo, canRedo, selectingRange, selectionLabel } = session
 function tools(event: MouseEvent) {
@@ -142,9 +144,9 @@ function more(event: MouseEvent) {
          the bottom band and the name has its own strip above the grid. -->
     <span class="sheet-lead"><slot /></span>
     <span class="sheet-status" role="status" :title="selectionLabel">{{ selectingRange ? selectionLabel : status }}{{ calculating ? ' · Calculating…' : '' }}</span>
-    <IconButton size="lg" icon="lu:undo-2" tooltip="Undo" :disabled="!canUndo || !editable" @click="undo" />
-    <IconButton size="lg" icon="lu:redo-2" tooltip="Redo" :disabled="!canRedo || !editable" @click="redo" />
-    <IconButton size="lg" icon="lu:ellipsis" tooltip="Spreadsheet actions" :disabled="!editable" @click="more" />
+    <IconButton :size="iconSize" icon="lu:undo-2" tooltip="Undo" :disabled="!canUndo || !editable" @click="undo" />
+    <IconButton :size="iconSize" icon="lu:redo-2" tooltip="Redo" :disabled="!canRedo || !editable" @click="redo" />
+    <IconButton :size="iconSize" icon="lu:ellipsis" tooltip="Spreadsheet actions" :disabled="!editable" @click="more" />
     <template #actions><Button :size="buttonSize" variant="secondary" :disabled="!editable" @click="save">Save</Button></template>
   </Strip>
 </template>

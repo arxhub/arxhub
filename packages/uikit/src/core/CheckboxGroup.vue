@@ -83,8 +83,8 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .control {
-  width: var(--size-md);
-  height: var(--size-md);
+  width: var(--size-xl-half);
+  height: var(--size-xl-half);
 }
 
 .control[data-state='checked'] {

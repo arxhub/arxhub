@@ -4,7 +4,9 @@ import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { useSheet } from './use-sheet'
 
-const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
+const iconSize = touch ? 'xl' : 'lg'
 const { book, sheetId, switchSheet, addSheet, editable, tool } = useSheet()
 const options = computed(() => book.value?.sheets.map(({ id, name }) => ({ value: id, label: name })) ?? [])
 function manage(event: MouseEvent) {
@@ -34,7 +36,7 @@ function manage(event: MouseEvent) {
 </script>
 <template>
   <Strip class="sheet-tabs">
-    <IconButton size="lg" icon="lu:ellipsis" tooltip="Worksheet actions" :disabled="!editable" @click="manage" />
+    <IconButton :size="iconSize" icon="lu:ellipsis" tooltip="Worksheet actions" :disabled="!editable" @click="manage" />
     <div class="sheet-tab-scroll"><Segmented :model-value="sheetId" :options="options" aria-label="Worksheets" :disabled="!editable" @update:model-value="switchSheet" /></div>
     <template #actions>
       <Button :size="buttonSize" variant="secondary" :disabled="!editable || (book?.sheets.length ?? 0) >= 16" @click="addSheet">Add sheet</Button>
@@ -42,5 +44,5 @@ function manage(event: MouseEvent) {
   </Strip>
 </template>
 <style scoped>
-.sheet-tab-scroll { flex: 1; min-width: 0; overflow: auto; }
+.sheet-tab-scroll { display: flex; flex: 1; min-width: 0; overflow: auto; }
 </style>

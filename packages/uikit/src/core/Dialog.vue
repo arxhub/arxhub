@@ -2,6 +2,7 @@
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { Dialog } from '@ark-ui/vue'
 import { watch } from 'vue'
+import { useKeyboardInset } from '../hooks/useKeyboardInset'
 import { useShellFrame } from '../hooks/useShellFrame'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import Icon from './Icon.vue'
@@ -21,6 +22,7 @@ const props = withDefaults(
 )
 
 const touch = useShellFrame() === 'mobile'
+const keyboardInset = useKeyboardInset()
 
 let opener: HTMLElement | null = null
 watch(
@@ -45,9 +47,9 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   >
     <Teleport to="body">
       <Dialog.Backdrop class="dialog-backdrop" />
-      <Dialog.Positioner class="dialog-positioner" :class="{ centered }">
+      <Dialog.Positioner class="dialog-positioner" :class="{ centered, touch }" :style="touch ? { bottom: `${keyboardInset}px` } : undefined">
         <Dialog.Content class="dialog-content" :class="[`size-${size}`, { touch }]">
-          <Strip v-if="title || $slots.header" :bordered="false">
+          <Strip v-if="title || $slots.header" :bordered="false" flush-actions>
             <template v-if="title" #title>
               <Dialog.Title class="dialog-title">{{ title }}</Dialog.Title>
             </template>
@@ -88,6 +90,11 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   z-index: var(--z-index-modal);
 }
 
+.dialog-positioner.touch {
+  box-sizing: border-box;
+  padding: 16px;
+}
+
 .dialog-positioner.centered {
   align-items: center;
   padding: 16px;
@@ -106,11 +113,16 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   flex-direction: column;
   width: 100%;
   max-height: 85vh;
+  font-family: var(--font-sans);
   overflow: hidden;
   background: var(--gray-2);
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-xl);
+}
+
+.dialog-content.touch {
+  max-height: 100%;
 }
 
 .size-sm {
@@ -146,8 +158,8 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 }
 
 .dialog-content.touch .dialog-close {
-  width: var(--size-md);
-  height: var(--size-md);
+  width: var(--size-xl);
+  height: var(--size-xl);
 }
 
 .dialog-close:hover {
@@ -161,6 +173,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 }
 
 .dialog-body {
+  min-height: 0;
   padding: 16px;
   overflow-y: auto;
   font-size: var(--font-size-sm);
@@ -184,8 +197,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
 }
 
 .dialog-content.touch .dialog-footer {
-  flex-direction: column-reverse;
-  gap: 12px;
+  flex-direction: column;
 }
 
 .dialog-content.touch .dialog-footer :deep(.btn) {

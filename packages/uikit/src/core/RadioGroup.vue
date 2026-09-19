@@ -61,7 +61,7 @@ const touch = useShellFrame() === 'mobile'
 .root.touch .item {
   min-height: var(--size-xl);
   align-items: center;
-  padding: 12px;
+  padding: 8px 12px;
 }
 
 .item[data-hover]:not([data-disabled]) {
@@ -92,9 +92,9 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .control {
-  flex-basis: var(--size-md);
-  width: var(--size-md);
-  height: var(--size-md);
+  flex-basis: var(--size-xl-half);
+  width: var(--size-xl-half);
+  height: var(--size-xl-half);
   margin-top: 0;
 }
 
@@ -103,10 +103,6 @@ const touch = useShellFrame() === 'mobile'
 .control[data-state='checked'] {
   border-color: var(--accent-9);
   box-shadow: inset 0 0 0 4px var(--accent-9);
-}
-
-.root.touch .control[data-state='checked'] {
-  box-shadow: inset 0 0 0 8px var(--accent-9);
 }
 
 .item[data-disabled] .control {

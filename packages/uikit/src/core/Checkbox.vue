@@ -43,6 +43,7 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch {
+  min-width: var(--size-xl);
   min-height: var(--size-xl);
 }
 
@@ -68,8 +69,8 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .control {
-  width: var(--size-md);
-  height: var(--size-md);
+  width: var(--size-xl-half);
+  height: var(--size-xl-half);
 }
 
 /* Done is a filled box, not a tinted one — a checked row has to be readable at a glance down a list. */

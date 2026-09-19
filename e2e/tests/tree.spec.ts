@@ -1,4 +1,4 @@
-import { expect, openNavigation, test } from './fixtures'
+import { expect, openNavigation, openTreeActions, test } from './fixtures'
 
 // A half-written file is not a failure, it is "not yet" — the poll that waits for the seed needs it to
 // answer that way rather than throwing out of the poll callback, which expect.poll does not retry.
@@ -35,7 +35,7 @@ test.describe('keeping the tree in order', () => {
     await app.reload()
     await openNavigation(app)
 
-    await app.getByRole('treeitem', { name: path }).click({ button: 'right' })
+    await openTreeActions(app, app.getByRole('treeitem', { name: path }))
     await app.getByRole('menuitem', { name: 'Rename' }).click()
 
     const renamed = `${path.replace('.md', '')}-after.md`
@@ -56,7 +56,7 @@ test.describe('keeping the tree in order', () => {
     await app.reload()
     await openNavigation(app)
 
-    await app.getByRole('treeitem', { name: path }).click({ button: 'right' })
+    await openTreeActions(app, app.getByRole('treeitem', { name: path }))
     await app.getByRole('menuitem', { name: 'Delete' }).click()
 
     // Cancel first: an irreversible action must take a deliberate yes (FR-81).
@@ -64,7 +64,7 @@ test.describe('keeping the tree in order', () => {
     expect(await vault.read(path)).toBe('bye\n')
 
     await openNavigation(app)
-    await app.getByRole('treeitem', { name: path }).click({ button: 'right' })
+    await openTreeActions(app, app.getByRole('treeitem', { name: path }))
     await app.getByRole('menuitem', { name: 'Delete' }).click()
     await app.getByRole('button', { name: 'Delete', exact: true }).last().click()
 

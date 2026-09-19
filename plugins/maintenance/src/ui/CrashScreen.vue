@@ -382,6 +382,7 @@ summary {
 }
 
 .plugin-label {
+  min-height: var(--size-xl, 48px);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -391,8 +392,8 @@ summary {
 
 .plugin-toggle {
   accent-color: var(--accent-9, #06f);
-  width: var(--size-md, 40px);
-  height: var(--size-md, 40px);
+  width: var(--size-xl-half, 24px);
+  height: var(--size-xl-half, 24px);
   flex-shrink: 0;
 }
 

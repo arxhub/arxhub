@@ -475,3 +475,9 @@ export function storedMnemonic(page: Page): Promise<string | null> {
 }
 
 export { expect }
+
+// Touch actions have their own visible trigger; right-click remains the desktop route.
+export async function openTreeActions(page: Page, row: Locator): Promise<void> {
+  if (await isMobileFrame(page)) await row.getByRole('button', { name: /^Actions for / }).click()
+  else await row.click({ button: 'right' })
+}

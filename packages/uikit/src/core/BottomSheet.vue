@@ -92,6 +92,7 @@ function onPointerUp(): void {
 
 .sheet {
   width: 100%;
+  min-width: 0;
   max-height: 80%;
   outline: none;
   display: flex;
@@ -111,6 +112,8 @@ function onPointerUp(): void {
   min-height: var(--size-xl);
   padding: 12px 16px;
   display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   cursor: grab;
@@ -119,6 +122,7 @@ function onPointerUp(): void {
 }
 
 .grabber {
+  flex-shrink: 0;
   width: var(--size-md);
   height: 4px;
   margin: 0;
@@ -127,6 +131,10 @@ function onPointerUp(): void {
 }
 
 .sheet-title {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   margin: 8px 0 0;
   text-align: center;
   font-size: var(--font-size-md);
@@ -135,6 +143,7 @@ function onPointerUp(): void {
 }
 
 .sheet-body {
+  min-height: 0;
   overflow-y: auto;
   padding: 0 0 max(8px, env(safe-area-inset-bottom));
 }

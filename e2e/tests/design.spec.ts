@@ -13,6 +13,7 @@ import {
   openDocumentList,
   openNavigation,
   openSettingsSection,
+  openTreeActions,
   openType,
   SHEET_LABEL,
   searchSheet,
@@ -37,7 +38,7 @@ test.describe('the visual language holds on screen', () => {
   test('every strip renders at the strip role height', async ({ app, vault }) => {
     const note = await vault.write('strip.md', '# Strip\n\nbody\n')
     await app.reload()
-    const expected = await token(app, '--size-md')
+    const expected = await token(app, (await isMobileFrame(app)) ? '--size-xl' : '--size-md')
 
     // Enough surfaces to be worth measuring: the shell chrome plus a note, which brings the panel tab bar
     // and the editor strip with it.
@@ -66,7 +67,7 @@ test.describe('the visual language holds on screen', () => {
     // desktop frame and a bottom sheet on the mobile one. Two presentations, one density — the sheet used
     // to be 56px on the argument that it holds the largest targets in the app, which is how the mobile
     // frame ended up with two touch densities at once.
-    await app.getByRole('treeitem', { name: note }).click({ button: 'right' })
+    await openTreeActions(app, app.getByRole('treeitem', { name: note }))
     await expect(app.getByRole('menuitem', { name: 'Rename' })).toBeVisible()
     const actions = await heights(app, '[role="menuitem"]')
     expect(actions.length).toBeGreaterThan(0)

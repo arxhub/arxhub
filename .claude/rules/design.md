@@ -25,7 +25,7 @@ A deviation names the rule and the reason in one line, in the code, at the point
 Every value below comes from a token. A literal in place of one of these is a violation of DS-1.
 
 - **Strip** — a horizontal band above content: a header, a tab bar, a formatting row, a filter row. `var(--size-md)`
-  (40px), text `var(--font-size-sm)`. One element with an optional title slot — a strip with a title and a strip with
+  (40px) on desktop, `var(--size-xl)` (48px) on mobile to contain touch controls, text `var(--font-size-sm)`. One element with an optional title slot — a strip with a title and a strip with
   only controls are the same role, not two. Its two zones have one job each and are never swapped: the content zone
   (the `title` slot or the default slot) is an identifying label — a static name (`title="Vault"`) or a live one
   (a `StatusDot` plus text, as content) — paired with icon-only `IconButton`s for the strip's frequent, self-evident
@@ -132,3 +132,10 @@ A rule nobody checks is a wish. Both levels run; each catches what the other can
 - The two frames are separate component trees, not one tree reacting to a media query: `AGENTS.md` → "Two frames, one
   decision". A surface that genuinely differs ships two realizations behind a one-line dispatcher.
 </Reference>
+
+## Shared UI ownership
+
+A general-purpose UI component used by more than two workspace packages (three or more) belongs
+in `@arxhub/uikit/core`; migrate its consumers to that shared implementation. Feature components
+remain with their domain owner even when widely embedded (for example the editor or Notes
+DocumentName, which owns rename behaviour). The uikit must not depend on feature plugins.

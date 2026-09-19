@@ -58,13 +58,14 @@ const touch = useShellFrame() === 'mobile'
   border: none;
   padding: 0;
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
 }
 
-/* Phone: grow the track to a full thumb target; the row is already --size-xl tall. */
+/* The label owns the 48px hit area; the visible track stays proportional to its thumb. */
 .root.touch .control {
   width: var(--size-xl);
-  height: var(--size-md);
+  height: var(--size-2xs);
 }
 
 .control[data-state='checked'] {
@@ -96,7 +97,7 @@ const touch = useShellFrame() === 'mobile'
 .root.touch .thumb {
   width: var(--size-md-half);
   height: var(--size-md-half);
-  top: 10px;
+  top: 4px;
   left: 4px;
 }
 
@@ -105,7 +106,7 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .root.touch .control[data-state='checked'] .thumb {
-  transform: translateX(20px);
+  transform: translateX(var(--size-md-half));
 }
 
 @media (prefers-reduced-motion: reduce) {

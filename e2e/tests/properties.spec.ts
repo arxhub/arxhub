@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect, isMobileFrame, openNavigation, openSearchApp, test } from './fixtures'
+import { expect, isMobileFrame, openNavigation, openSearchApp, openTreeActions, test } from './fixtures'
 
 // A tooltip-wrapped trigger's hover/focus machinery does not treat a plain Playwright `.click()`
 // (or a synthetic 'click' Event) as a real pointer interaction on the mobile project's touch-emulated
@@ -98,7 +98,7 @@ test.describe('properties (A-48)', () => {
     await expect(app.getByRole('treeitem', { name: path, exact: true }).getByLabel('Has properties')).toBeVisible()
 
     // Reopening "Properties…" on the subject opens the SAME card rather than overwriting it.
-    await app.getByRole('treeitem', { name: path, exact: true }).click({ button: 'right' })
+    await openTreeActions(app, app.getByRole('treeitem', { name: path, exact: true }))
     await app.getByRole('menuitem', { name: 'Properties…' }).click()
     await expect(app.getByRole('textbox', { name: 'Tags' })).toBeVisible()
     await expect(app.locator('.chip-text', { hasText: 'family' })).toBeVisible()
@@ -123,7 +123,7 @@ test.describe('properties (A-48)', () => {
     await app.reload()
     await openNavigation(app)
 
-    await app.getByRole('treeitem', { name: path, exact: true }).click({ button: 'right' })
+    await openTreeActions(app, app.getByRole('treeitem', { name: path, exact: true }))
     await expect(app.getByRole('menuitem', { name: 'Rename' })).toBeVisible()
     await expect(app.getByRole('menuitem', { name: 'Properties…' })).toHaveCount(0)
   })

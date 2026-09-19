@@ -4,6 +4,7 @@ import { actionMenu, Icon, Input, Row } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, watch } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
+import FileRowActions from './FileRowActions.vue'
 import { useFileActions } from './use-file-actions'
 import { treeRowId } from './use-tree-navigation'
 
@@ -143,7 +144,7 @@ function handleFocus() {
     @contextmenu.prevent.stop="onContextMenu"
     @focus="handleFocus"
     @keydown.f2.prevent.stop="actions.startRename(node)"
-    @keydown.enter.prevent="handleEnter"
+    @keydown.enter.self.prevent="handleEnter"
   >
     <span class="chevron">
       <Icon v-if="node.entry.kind === 'dir'" :name="node.expanded ? 'lu:chevron-down' : 'lu:chevron-right'" :size="iconSize" />
@@ -167,6 +168,7 @@ function handleFocus() {
          separate one (pairCards) — this glyph is the only sign of it, and the row's own "Properties…"
          action opens the card that already exists here. -->
     <Icon v-if="!renaming && node.propertiesCardPath" name="lu:tags" :size="14" aria-label="Has properties" class="properties-glyph" />
+    <FileRowActions v-if="!renaming" :title="basename(node.entry.pathname)" :items="() => actions.getNodeActions(node)" />
   </Row>
 
   <template v-if="node.expanded && node.children">
@@ -210,6 +212,8 @@ function handleFocus() {
 }
 
 .name {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }

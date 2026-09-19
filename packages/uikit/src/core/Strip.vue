@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useShellFrame } from '../hooks/useShellFrame'
+
+const touch = useShellFrame() === 'mobile'
+
 // The one band above content: a header, a tab bar, a formatting row, a filter row. Geometry lives here
 // and nowhere else (DS-1) — a consumer passes content, never a height, a padding, a surface or a border.
 // A strip with a title and a strip with only controls are the SAME role (DS-2 in .claude/rules/design.md),
@@ -20,7 +24,7 @@ withDefaults(
 </script>
 
 <template>
-  <div class="strip" :class="{ bordered, 'flush-actions': flushActions }">
+  <div class="strip" :class="{ touch, bordered, 'flush-actions': flushActions }">
     <span v-if="title || $slots.title" class="strip-title">
       <slot name="title">{{ title }}</slot>
     </span>
@@ -45,8 +49,14 @@ withDefaults(
   font-size: var(--font-size-sm);
 }
 
+/* Touch controls need their full target inside the band, not above and below it. */
+.strip.touch {
+  height: var(--size-xl);
+}
+
 .strip.bordered {
-  border-bottom: 1px solid var(--gray-6);
+  /* Draw the divider inside the token height without stealing a pixel from its controls. */
+  box-shadow: inset 0 -1px 0 var(--gray-6);
 }
 
 .strip.flush-actions {

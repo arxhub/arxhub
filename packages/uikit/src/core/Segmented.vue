@@ -44,7 +44,8 @@ const touch = useShellFrame() === 'mobile'
 <style scoped>
 .root {
   display: inline-flex;
-  border: 1px solid var(--gray-7);
+  /* The items own the control height; an inset border keeps the outer box on that same token. */
+  box-shadow: inset 0 0 0 1px var(--gray-7);
   border-radius: var(--radius-xs);
   background: var(--gray-1);
   overflow: hidden;
@@ -52,7 +53,7 @@ const touch = useShellFrame() === 'mobile'
 
 .root[data-disabled] {
   background: var(--gray-3);
-  border-color: var(--gray-6);
+  box-shadow: inset 0 0 0 1px var(--gray-6);
 }
 
 .root.stretch {
