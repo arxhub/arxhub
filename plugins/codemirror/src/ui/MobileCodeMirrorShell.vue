@@ -29,7 +29,7 @@ defineProps<{
     <slot />
     <div v-if="!loadError" class="editor-status">
       <MarkdownToolbar v-if="note" :view="view" :revision="revision" />
-      <Button variant="secondary" :disabled="!canSave" @click="onSave()">Save</Button>
+      <Button size="md" variant="secondary" :disabled="!canSave" @click="onSave()">Save</Button>
     </div>
   </div>
 </template>

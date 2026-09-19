@@ -22,7 +22,7 @@ defineProps<{
       <DocumentName :path="path" />
       <MarkdownToolbar v-if="note && !loadError" :view="view" :revision="revision" />
       <template #actions>
-        <Button variant="secondary" :disabled="!canSave" @click="onSave()">Save</Button>
+        <Button size="sm" variant="secondary" :disabled="!canSave" @click="onSave()">Save</Button>
       </template>
     </Strip>
     <div v-if="loadError" class="codemirror-error">

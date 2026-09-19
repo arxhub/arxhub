@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button, Checkbox, IconButton, Input } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { EditorView } from 'prosemirror-view'
 import { computed, onMounted, ref, watch } from 'vue'
 import { documentSearchKey, replaceDocumentMatch, revealDocumentMatch } from '../document-search'
@@ -11,6 +12,7 @@ const root = ref<HTMLElement>()
 const query = ref(documentSearchKey.getState(props.view.state)?.query ?? '')
 const matchCase = ref(documentSearchKey.getState(props.view.state)?.matchCase ?? false)
 const replacement = ref('')
+const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
 const search = computed(() => {
   void props.revision
   return documentSearchKey.getState(props.view.state)
@@ -43,8 +45,8 @@ function replace(all = false) {
     <div class="find-row"><Checkbox v-model:checked="matchCase" label="Match case" /></div>
     <div v-if="mode === 'editable'" class="find-row">
       <Input v-model="replacement" class="find-input" aria-label="Replace with" placeholder="Replace with" @keydown.enter.prevent="replace()" />
-      <Button variant="secondary" :disabled="!search?.matches.length" @click="replace()">Replace</Button>
-      <Button variant="secondary" :disabled="!search?.matches.length" @click="replace(true)">Replace all</Button>
+      <Button variant="secondary" :size="buttonSize" :disabled="!search?.matches.length" @click="replace()">Replace</Button>
+      <Button variant="secondary" :size="buttonSize" :disabled="!search?.matches.length" @click="replace(true)">Replace all</Button>
     </div>
   </section>
 </template>
