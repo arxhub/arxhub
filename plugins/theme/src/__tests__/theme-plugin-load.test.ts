@@ -32,7 +32,7 @@ function registerPluginConfig(services: LazyContainer<object>, config: PluginCon
     class extends PluginConfig {
       constructor() {
         super({} as VirtualFileSystem, silentLogger())
-        return config
+        Object.assign(this, config)
       }
     },
   )
