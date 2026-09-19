@@ -65,7 +65,7 @@ function goToOwner(): void {
 }
 
 .background-bar.tappable {
-  height: var(--size-lg);
+  height: var(--size-xl);
   cursor: pointer;
 }
 
