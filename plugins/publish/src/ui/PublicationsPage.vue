@@ -96,10 +96,15 @@ function counts(entry: PublicationRecord): string {
 </script>
 
 <template>
-  <PageLayout title="Publications" :meta="[meta]">
+  <PageLayout
+    title="Publications"
+    :meta="[meta]"
+    data-testid="publications-page"
+    :data-publishing="enabled ? 'on' : 'off'"
+  >
     <section class="block">
       <h3 class="block-title">Published</h3>
-      <p v-if="roots.length === 0" class="hint">
+      <p v-if="roots.length === 0" class="hint" :data-testid="enabled ? 'publications-empty' : 'publishing-off-hint'">
         {{ enabled ? 'Nothing is published. Publish a note or a folder from the tree.' : 'Turn publishing on to share a note or a folder by link.' }}
       </p>
       <ul v-else class="list" data-testid="publications">
