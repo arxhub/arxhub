@@ -96,12 +96,10 @@ function counts(entry: PublicationRecord): string {
 </script>
 
 <template>
-  <PageLayout
-    title="Publications"
-    :meta="[meta]"
-    data-testid="publications-page"
-    :data-publishing="enabled ? 'on' : 'off'"
-  >
+  <!-- Attrs on a native root: PageLayout is a Vue SFC and does not declare these, and fallthrough
+       onto its root is easy to lose across the uikit entry — e2e needs a stable hook for "off". -->
+  <div class="publications" data-testid="publications-page" :data-publishing="enabled ? 'on' : 'off'">
+    <PageLayout title="Publications" :meta="[meta]">
     <section class="block">
       <h3 class="block-title">Published</h3>
       <p v-if="roots.length === 0" class="hint" :data-testid="enabled ? 'publications-empty' : 'publishing-off-hint'">
@@ -142,10 +140,16 @@ function counts(entry: PublicationRecord): string {
         </Row>
       </ul>
     </section>
-  </PageLayout>
+    </PageLayout>
+  </div>
 </template>
 
 <style scoped>
+.publications {
+  height: 100%;
+  min-height: 0;
+}
+
 .block + .block {
   margin-top: 24px;
 }
