@@ -10,6 +10,7 @@ import { closeAuthRejectedDialog } from './auth-dialog'
 
 const arxhub = useArxHub()
 const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const touch = useShellFrame() === 'mobile'
 const shell = arxhub.extensions.get(ShellExtension)
 const settings = arxhub.extensions.get(SettingsExtension)
 const keyring = arxhub.extensions.get(KeyringExtension).keyring
@@ -25,7 +26,7 @@ function openSecurity(): void {
 </script>
 
 <template>
-  <div class="auth-rejected">
+  <div class="auth-rejected" :class="{ touch }">
     <p class="auth-detail">{{ copy.detail }}</p>
     <p v-if="copy.fix" class="auth-fix">{{ copy.fix }}</p>
 
@@ -103,5 +104,14 @@ function openSecurity(): void {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 20px;
+}
+
+.auth-rejected.touch .auth-actions {
+  flex-direction: column-reverse;
+  gap: 12px;
+}
+
+.auth-rejected.touch .auth-actions :deep(.btn) {
+  width: 100%;
 }
 </style>
