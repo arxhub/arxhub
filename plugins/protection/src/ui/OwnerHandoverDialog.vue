@@ -79,6 +79,11 @@ function choose(branch: () => void): void {
   color: var(--gray-11);
 }
 
+.handover.touch .lead,
+.handover.touch .branch {
+  font-size: var(--font-size-md);
+}
+
 .branch-action {
   display: flex;
   margin-top: 4px;

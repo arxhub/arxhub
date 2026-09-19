@@ -53,6 +53,7 @@ function reset(): void {
 
 <template>
   <PageLayout title="Plugins" description="Which plugins this device loads. A switch takes effect on the next start.">
+    <div class="plugins-body" :class="{ touch: mobile }">
     <section v-if="arxhub.maintenance" class="banner">
       <div>
         <p class="banner-title">Maintenance mode is on</p>
@@ -115,6 +116,7 @@ function reset(): void {
         </Button>
       </div>
     </section>
+    </div>
   </PageLayout>
 </template>
 
@@ -141,6 +143,14 @@ function reset(): void {
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--gray-11);
+}
+
+.plugins-page.touch .hint {
+  font-size: var(--font-size-sm);
+}
+
+.plugins-page.touch .block-title {
+  font-size: var(--font-size-md);
 }
 
 .banner {
