@@ -75,6 +75,8 @@ test('slow plugin bring-up does not hold the first paint', async ({ app }) => {
     // Paint is useful, not decorative: the app-layer chord and its registered surfaces already work.
     await app.keyboard.press('ControlOrMeta+k')
     await expect(searchSheet(app)).toBeVisible()
+    // Ark installs the dialog's Escape listener on the next animation frame after it becomes visible.
+    await app.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())))
     await app.keyboard.press('Escape')
     await expect(searchSheet(app)).toBeHidden()
   } finally {
