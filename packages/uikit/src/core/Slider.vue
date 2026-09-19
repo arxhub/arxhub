@@ -124,9 +124,17 @@ function onValueChange(details: { value: number[] }): void {
   color: var(--gray-12);
 }
 
+.root.touch .readout {
+  font-size: var(--font-size-md);
+}
+
 .unit {
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
   color: var(--gray-10);
+}
+
+.root.touch .unit {
+  font-size: var(--font-size-sm);
 }
 </style>
