@@ -98,6 +98,7 @@ const touch = useShellFrame() === 'mobile'
 .root.touch .chip-preview {
   height: var(--size-xl);
   padding: 0 4px 0 12px;
+  font-size: var(--font-size-sm);
 }
 
 .chip[data-highlighted] .chip-preview {
