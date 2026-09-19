@@ -508,12 +508,20 @@ onMounted(focusInput)
   font-size: var(--font-size-xs);
 }
 
+.search-rail.touch .doc-path {
+  font-size: var(--font-size-sm);
+}
+
 /* Quoted note content, not a label: a step down the ramp and a step down the greys, so the titles stay
    the structure of the list. Only while the row is not the selected one — selection owns its colour. */
 .snippet-text {
   min-width: 0;
   font-size: var(--font-size-xs);
   line-height: var(--line-height-relaxed);
+}
+
+.search-rail.touch .snippet-text {
+  font-size: var(--font-size-sm);
 }
 
 .snippet:not(.selected) .snippet-text {
