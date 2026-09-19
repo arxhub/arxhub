@@ -107,7 +107,12 @@ function onPointerUp(): void {
 }
 
 .grabber-area {
-  padding: 8px 16px;
+  /* Tall enough to grab with a thumb; the visible handle stays a hairline. */
+  min-height: var(--size-md);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: grab;
   /* Only the handle owns the vertical gesture; the body must stay scrollable. */
   touch-action: none;
@@ -116,7 +121,7 @@ function onPointerUp(): void {
 .grabber {
   width: 36px;
   height: 4px;
-  margin: 0 auto;
+  margin: 0;
   border-radius: var(--radius-xs);
   background: var(--gray-7);
 }
