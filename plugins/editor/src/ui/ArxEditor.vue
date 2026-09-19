@@ -57,6 +57,7 @@ const AUTOSAVE_DEBOUNCE_MS = 1500
 
 const props = defineProps<{ path: string; anchor?: BlockAnchor }>()
 const buttonSize = useShellFrame() === 'mobile' ? 'md' : 'sm'
+const touch = useShellFrame() === 'mobile'
 
 const arxhub = useArxHub()
 const extension = arxhub.extensions.get(ArxEditorExtension)
@@ -521,7 +522,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="editor-panel" @keydown.capture="historyChord" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
+  <div class="editor-panel" :class="{ touch }" @keydown.capture="historyChord" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
     <!-- The name, and nothing else, at the very top (OR-02). The document's tools stay in the band at
          the bottom: on the phone that is where a hand reaches, and reading a document is passive while
          renaming one is rare — which is exactly what earns the name the top. -->
@@ -580,6 +581,11 @@ onUnmounted(() => {
   font-size: var(--font-size-xs);
   border-top: 1px solid var(--gray-6);
   background: var(--gray-2);
+}
+.editor-panel.touch .editor-status {
+  min-height: var(--size-xl);
+  padding: 4px 12px;
+  gap: 8px;
 }
 .editor-content {
   min-height: 0;
