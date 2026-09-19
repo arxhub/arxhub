@@ -64,7 +64,7 @@ function onValueChange(details: { valueAsNumber: number }): void {
 }
 
 .root.touch .control {
-  height: var(--size-md);
+  height: var(--size-xl);
 }
 
 .control:focus-within {
@@ -89,7 +89,7 @@ function onValueChange(details: { valueAsNumber: number }): void {
 }
 
 .root.touch .nudge {
-  width: var(--size-md);
+  width: var(--size-xl);
 }
 
 .nudge:first-child { border-right: 1px solid var(--gray-4); }
