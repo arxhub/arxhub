@@ -145,11 +145,11 @@ function reset(): void {
   color: var(--gray-11);
 }
 
-.plugins-page.touch .hint {
+.plugins-body.touch .hint {
   font-size: var(--font-size-sm);
 }
 
-.plugins-page.touch .block-title {
+.plugins-body.touch .block-title {
   font-size: var(--font-size-md);
 }
 
