@@ -391,6 +391,9 @@ summary {
 
 .plugin-toggle {
   accent-color: var(--accent-9, #06f);
+  width: var(--size-md, 40px);
+  height: var(--size-md, 40px);
+  flex-shrink: 0;
 }
 
 .plugin-toggle:focus-visible {
