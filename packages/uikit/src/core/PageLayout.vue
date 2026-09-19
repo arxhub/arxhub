@@ -89,6 +89,10 @@ const touch = useShellFrame() === 'mobile'
   color: var(--gray-11);
 }
 
+.page.touch .description {
+  font-size: var(--font-size-md);
+}
+
 .meta {
   display: flex;
   align-items: center;
