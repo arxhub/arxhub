@@ -1,10 +1,15 @@
 <script setup lang="ts" generic="T">
+import { DragDropProvider } from '@dnd-kit/vue'
 import { computed, ref, useId } from 'vue'
 import { useShellFrame } from '../hooks/useShellFrame'
+import { useTreeDragDrop } from '../hooks/useTreeDragDrop'
 import { useTreeNavigation } from '../hooks/useTreeNavigation'
 import Icon from './Icon.vue'
 import Row from './Row.vue'
-import type { TreeViewNode } from './tree-view'
+import TreeDragTarget from './TreeDragTarget.vue'
+import type { TreeDragDropOptions, TreeViewNode } from './tree-view'
+
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
   defineProps<{
@@ -12,6 +17,7 @@ const props = withDefaults(
     label: string
     selectedId?: string | null
     expandedIds?: readonly string[]
+    dragDrop?: TreeDragDropOptions<T>
   }>(),
   { selectedId: null, expandedIds: () => [] },
 )
@@ -20,11 +26,19 @@ const emit = defineEmits<{
   toggle: [node: TreeViewNode<T>, expanded: boolean]
   nodeContextmenu: [node: TreeViewNode<T>, event: MouseEvent]
   nodeKeydown: [node: TreeViewNode<T>, event: KeyboardEvent]
+  nodeDrop: [source: TreeViewNode<T>, target: TreeViewNode<T> | null]
 }>()
 const root = ref<HTMLElement | null>(null)
 const prefix = useId()
-const rowId = (id: string) => `${prefix}:${id}`
+const rowId = (id: string) => `${prefix}:node:${id}`
 const iconSize = useShellFrame() === 'mobile' ? 16 : 14
+const dnd = useTreeDragDrop({
+  nodes: () => props.nodes,
+  expandedIds: () => props.expandedIds,
+  config: () => props.dragDrop,
+  expand: (node) => emit('toggle', node, true),
+  drop: (source, target) => emit('nodeDrop', source, target),
+})
 
 function activate(node: TreeViewNode<T>) {
   if (node.disabled) return
@@ -53,7 +67,7 @@ function isControl(event: MouseEvent) {
 }
 
 function click(node: TreeViewNode<T>, event: MouseEvent) {
-  if (!isControl(event)) activate(node)
+  if (!dnd.suppressClick() && !isControl(event)) activate(node)
 }
 
 function contextmenu(node: TreeViewNode<T>, event: MouseEvent) {
@@ -68,48 +82,81 @@ function keydown(node: TreeViewNode<T>, event: KeyboardEvent) {
 </script>
 
 <template>
-  <div ref="root" class="tree-view" role="tree" :aria-label="label">
-    <Row
-      v-for="row in rows"
-      :id="rowId(row.node.id)"
-      :key="row.node.id"
-      class="tree-view-node"
-      role="treeitem"
-      :depth="row.depth"
-      :selected="row.node.id === selectedId"
-      :disabled="row.node.disabled"
-      :aria-label="row.node.ariaLabel ?? row.node.label"
-      :aria-description="row.node.description"
-      :title="row.node.description"
-      :aria-level="row.depth + 1"
-      :aria-posinset="row.position"
-      :aria-setsize="row.siblings"
-      :aria-selected="row.node.id === selectedId"
-      :aria-expanded="row.branch ? row.expanded : undefined"
-      :aria-disabled="row.node.disabled || undefined"
-      :tabindex="row.node.id === focusedId ? 0 : -1"
-      @focus="focusedId = row.node.id"
-      @click="click(row.node, $event)"
-      @contextmenu="contextmenu(row.node, $event)"
-      @keydown.self="keydown(row.node, $event)"
-    >
-      <span v-if="hasBranches" class="glyph" aria-hidden="true">
-        <Icon v-if="row.branch" :name="row.expanded ? 'lu:chevron-down' : 'lu:chevron-right'" :size="iconSize" />
-      </span>
-      <span v-if="row.node.icon" class="glyph" aria-hidden="true"><Icon :name="row.node.icon" :size="iconSize" /></span>
-      <span class="tree-view-label"><slot name="label" :node="row.node">{{ row.node.label }}</slot></span>
-      <slot name="actions" :node="row.node" />
-    </Row>
-    <slot v-if="!rows.length" name="empty" />
-  </div>
+  <DragDropProvider :sensors="dnd.sensors" :plugins="dnd.plugins"
+    @before-drag-start="dnd.onBeforeDragStart" @drag-start="dnd.onDragStart"
+    @drag-over="dnd.onDragOver" @drag-end="dnd.onDragEnd">
+    <div ref="root" v-bind="$attrs" class="tree-view" role="tree" :aria-label="label">
+      <TreeDragTarget v-for="row in rows" :key="row.node.id" :id="rowId(row.node.id)" :node-id="row.node.id"
+        :draggable="dnd.canDrag(row.node)" :droppable="dnd.canDrop(row.node)" v-slot="{ setElement }">
+        <Row
+          :ref="setElement"
+          :id="rowId(row.node.id)"
+          class="tree-view-node"
+          :class="{ 'drop-target': dnd.target.value?.id === row.node.id, 'drag-source': dnd.source.value?.id === row.node.id }"
+          role="treeitem"
+          :depth="row.depth"
+          :selected="row.node.id === selectedId"
+          :disabled="row.node.disabled"
+          :aria-label="row.node.ariaLabel ?? row.node.label"
+          :aria-description="row.node.description"
+          :title="row.node.description"
+          :aria-level="row.depth + 1"
+          :aria-posinset="row.position"
+          :aria-setsize="row.siblings"
+          :aria-selected="row.node.id === selectedId"
+          :aria-expanded="row.branch ? row.expanded : undefined"
+          :aria-disabled="row.node.disabled || undefined"
+          :tabindex="row.node.id === focusedId ? 0 : -1"
+          @focus="focusedId = row.node.id"
+          @click="click(row.node, $event)"
+          @contextmenu="contextmenu(row.node, $event)"
+          @keydown.self="keydown(row.node, $event)"
+        >
+          <span v-if="hasBranches" class="glyph" aria-hidden="true">
+            <Icon v-if="row.branch" :name="row.expanded ? 'lu:chevron-down' : 'lu:chevron-right'" :size="iconSize" />
+          </span>
+          <span v-if="row.node.icon" class="glyph" aria-hidden="true"><Icon :name="row.node.icon" :size="iconSize" /></span>
+          <span class="tree-view-label"><slot name="label" :node="row.node">{{ row.node.label }}</slot></span>
+          <slot name="actions" :node="row.node" />
+        </Row>
+      </TreeDragTarget>
+      <slot v-if="!rows.length" name="empty" />
+      <TreeDragTarget v-if="dragDrop?.rootLabel" :id="`${prefix}:root`" :node-id="null"
+        :draggable="false" :droppable="dnd.canDrop(null)" v-slot="{ setElement }">
+        <div :ref="setElement" class="tree-root-drop" :class="{ 'drop-target': dnd.target.value === null }" role="presentation">
+          <span v-if="dnd.canDrop(null)">{{ dragDrop.rootLabel }}</span>
+        </div>
+      </TreeDragTarget>
+    </div>
+  </DragDropProvider>
 </template>
 
 <style scoped>
 .tree-view {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   font-family: var(--font-sans);
+}
+
+.tree-root-drop {
+  flex: 1;
+  min-height: var(--size-xl);
+  padding: 8px;
+  color: var(--gray-11);
+  font-size: var(--font-size-sm);
+}
+
+.tree-view .drop-target {
+  background: var(--gray-4);
+  outline: 2px solid var(--gray-8);
+  outline-offset: -2px;
+}
+
+.drag-source {
+  background: var(--gray-3);
 }
 
 .row.tree-view-node {

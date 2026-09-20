@@ -13,4 +13,5 @@ export {
   useShellFrame,
 } from './useShellFrame'
 export { toaster } from './useToast'
+export { type UseTreeDragDropOptions, useTreeDragDrop } from './useTreeDragDrop'
 export { type TreeNavigationOptions, useTreeNavigation } from './useTreeNavigation'

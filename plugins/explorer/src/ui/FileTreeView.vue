@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { basename, dirname } from '@arxhub/path'
+import { basename, dirname, posix } from '@arxhub/path'
 import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
 import { ShellExtension } from '@arxhub/plugin-shell'
-import { actionMenu, Icon, TreeView, type TreeViewNode } from '@arxhub/uikit/core'
-import { useArxHub } from '@arxhub/uikit/hooks'
-import { computed, onMounted, watch } from 'vue'
+import { actionMenu, Icon, type TreeDragDropOptions, TreeView, type TreeViewNode } from '@arxhub/uikit/core'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
 import FileRowActions from './FileRowActions.vue'
 import FileTreeLabel from './FileTreeLabel.vue'
@@ -30,6 +30,31 @@ function mapNode(node: TreeNode): TreeViewNode<TreeNode> {
 }
 const nodes = computed(() => explorer.tree.value.map(mapNode))
 const expandedIds = computed(() => explorer.expandedPaths())
+const moving = ref(false)
+const dragDrop: TreeDragDropOptions<TreeNode> | undefined =
+  useShellFrame() === 'desktop'
+    ? {
+        rootLabel: 'Move to vault root',
+        canDrag: ({ data }) => !moving.value && !explorer.renamingPath.value && !data.pending,
+        canDrop: ({ data: source }, target) => explorer.canMoveEntry(source.entry.pathname, target?.data.entry.pathname ?? explorer.root),
+      }
+    : undefined
+
+function move(source: TreeViewNode<TreeNode>, target: TreeViewNode<TreeNode> | null) {
+  const folder = target?.id ?? explorer.root
+  moving.value = true
+  actions.runAction(
+    (async () => {
+      try {
+        await explorer.moveEntry(source.id, posix.join(folder, posix.basename(source.id)))
+        explorer.selectedPath.value = folder
+      } finally {
+        moving.value = false
+      }
+    })(),
+    `move ${source.ariaLabel ?? source.label}`,
+  )
+}
 
 function activate({ data: node }: TreeViewNode<TreeNode>) {
   if (explorer.renamingPath.value === node.entry.pathname) return
@@ -96,6 +121,8 @@ function onRootContextMenu(event: MouseEvent) {
       label="Files"
       :selected-id="explorer.selectedPath.value"
       :expanded-ids="expandedIds"
+      :drag-drop="dragDrop"
+      @node-drop="move"
       @activate="activate"
       @toggle="toggle"
       @node-contextmenu="contextmenu"

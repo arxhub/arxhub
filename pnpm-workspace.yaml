@@ -8,6 +8,9 @@ packages:
 
 catalogs:
   client:
+    '@dnd-kit/vue': ^0.5.0
+    '@dnd-kit/dom': ^0.5.0
+    '@dnd-kit/collision': ^0.5.0
     prosemirror-tables: ^1.8.5
     '@ark-ui/vue': ^5.36.2
     '@atlaskit/pragmatic-drag-and-drop': ^1.4.0

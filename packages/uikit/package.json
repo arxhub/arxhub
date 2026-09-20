@@ -27,9 +27,12 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@ark-ui/vue": "catalog:client",
     "@arxhub/core": "workspace:*",
     "@arxhub/errors": "workspace:*",
-    "@ark-ui/vue": "catalog:client",
+    "@dnd-kit/collision": "catalog:client",
+    "@dnd-kit/dom": "catalog:client",
+    "@dnd-kit/vue": "catalog:client",
     "lucide-vue-next": "catalog:client",
     "vue": "catalog:client"
   },
@@ -40,7 +43,6 @@
     "@types/node": "catalog:toolchain",
     "type-fest": "catalog:toolchain"
   },
-  "peerDependencies": {},
   "publishConfig": {
     "exports": {
       "./core": {

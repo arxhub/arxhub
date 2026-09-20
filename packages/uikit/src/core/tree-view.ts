@@ -20,3 +20,10 @@ export interface TreeViewRow<T = unknown> {
   position: number
   siblings: number
 }
+
+export interface TreeDragDropOptions<T = unknown> {
+  /** Null is the tree root, represented by the free space below the rows. */
+  rootLabel?: string
+  canDrag?: (node: TreeViewNode<T>) => boolean
+  canDrop?: (source: TreeViewNode<T>, target: TreeViewNode<T> | null) => boolean
+}

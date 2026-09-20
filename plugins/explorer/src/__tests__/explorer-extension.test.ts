@@ -172,3 +172,39 @@ describe('watching the vault', () => {
     expect(vfs.listed).toEqual([])
   })
 })
+
+describe('moving entries', () => {
+  test('refuses cycles and unchanged parents before accessing storage', async () => {
+    const explorer = extension()
+    await expect(explorer.moveEntry('folder', 'folder/child/folder')).rejects.toThrow('cannot be moved')
+    await expect(explorer.moveEntry('folder/file.txt', 'folder/file.txt')).rejects.toThrow('cannot be moved')
+    expect(explorer.canMoveEntry('folder', 'folder-two')).toBe(true)
+    expect(explorer.canMoveEntry('folder', '../outside')).toBe(false)
+  })
+
+  test('serializes collisions and leaves the first destination untouched', async () => {
+    const destinations = new Set<string>()
+    const rename = vi.fn(async (_src: string, dest: string) => {
+      destinations.add(dest)
+    })
+    const vfs = { ...unusedVfs(), exists: async (path: string) => destinations.has(path), rename }
+    const explorer = new ExplorerExtension({ logger: new ConsoleLogger(), vfs, root: '/' })
+    vi.spyOn(explorer, 'refreshDir').mockResolvedValue()
+    const first = explorer.moveEntry('one/note.txt', 'target/note.txt')
+    const second = explorer.moveEntry('two/note.txt', 'target/note.txt')
+    await first
+    await expect(second).rejects.toThrow('already exists')
+    expect(rename).toHaveBeenCalledTimes(1)
+    expect(rename).toHaveBeenCalledWith('one/note.txt', 'target/note.txt')
+  })
+
+  test('does not move only the downloaded part of a folder or overwrite a cloud file', async () => {
+    const { shallowRef } = await import('vue')
+    const explorer = new ExplorerExtension({ logger: new ConsoleLogger(), vfs: { ...unusedVfs(), exists: async () => false }, root: '/' })
+    const stop = explorer.setPendingSource({ pending: shallowRef(new Set(['folder/cloud.txt', 'target/note.txt'])) })
+    expect(explorer.canMoveEntry('folder', 'target')).toBe(false)
+    await expect(explorer.moveEntry('folder', 'target/folder')).rejects.toThrow('cannot be moved')
+    await expect(explorer.moveEntry('source/note.txt', 'target/note.txt')).rejects.toThrow('already exists')
+    stop()
+  })
+})

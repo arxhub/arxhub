@@ -1,6 +1,6 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { aggregate } from '@arxhub/errors'
-import { basename, dirname, extname, join } from '@arxhub/path'
+import { aggregate, illegalState } from '@arxhub/errors'
+import { basename, dirname, extname, join, posix } from '@arxhub/path'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { type VfsChange, type VfsChangeSource, type VirtualEntry, type VirtualFileSystem, renameEntry as vfsRenameEntry } from '@arxhub/vfs'
 import { ref, type ShallowRef, type WatchStopHandle, watch } from 'vue'
@@ -499,9 +499,27 @@ export class ExplorerExtension extends Extension {
   }
 
   async moveEntry(srcPath: string, destPath: string): Promise<void> {
-    await vfsRenameEntry(this.vfs, srcPath, destPath)
+    await this.serializeCreation(async () => {
+      if (!this.canMoveEntry(srcPath, posix.dirname(destPath))) throw illegalState('This item cannot be moved to that folder')
+      const dest = dirKey(posix.normalize(destPath))
+      if ((await this.vfs.exists(destPath)) || [...this.currentPending()].some((path) => path === dest || path.startsWith(`${dest}/`))) {
+        throw illegalState(`"${posix.basename(destPath)}" already exists in the destination folder`)
+      }
+      await vfsRenameEntry(this.vfs, srcPath, destPath)
+    })
     await this.refreshDir(dirname(srcPath))
     await this.refreshDir(dirname(destPath))
+  }
+
+  /** Used both by drag feedback and by the write boundary; pending subtrees cannot be moved partially. */
+  canMoveEntry(srcPath: string, targetDir: string): boolean {
+    const src = dirKey(posix.normalize(srcPath))
+    const target = dirKey(posix.normalize(targetDir))
+    const root = dirKey(posix.normalize(this.root))
+    const inside = (path: string) => path !== '..' && !path.startsWith('../') && (!root || path === root || path.startsWith(`${root}/`))
+    if (!inside(src) || !inside(target) || src === root || src === target || target.startsWith(`${src}/`)) return false
+    if (dirKey(posix.dirname(src)) === target) return false
+    return ![...this.currentPending()].some((path) => path === src || path.startsWith(`${src}/`))
   }
 
   // Public because a write reaches the tree by two roads: the tree's own actions refresh the directory
