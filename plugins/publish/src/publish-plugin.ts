@@ -77,7 +77,7 @@ export class PublishPlugin extends Plugin {
 
     const config = ctx.services.get(PluginConfig)
     const settings = ctx.extensions.get(SettingsExtension)
-    settings.register({ id: 'publish', title: 'Publishing', schema: PublishConfigSchema, order: 11, config })
+    settings.register({ id: 'publish', title: 'Publishing', icon: 'lu:globe', schema: PublishConfigSchema, order: 11, config })
 
     // A-33 first said no type here: publishing is something done TO a note that belongs to another type,
     // and a key opening an empty panel is worse than no key. The premise changed with the history (F-12): a

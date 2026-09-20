@@ -91,9 +91,14 @@ export class BudgetPlugin extends Plugin {
 
   override configure(ctx: PluginContext): void {
     super.configure(ctx)
-    ctx.extensions
-      .get(SettingsExtension)
-      .register({ id: 'budget', title: 'Budget receipts', schema: BudgetConfigSchema, order: 12, config: ctx.services.get(PluginConfig) })
+    ctx.extensions.get(SettingsExtension).register({
+      id: 'budget',
+      title: 'Budget receipts',
+      icon: 'lu:receipt-text',
+      schema: BudgetConfigSchema,
+      order: 12,
+      config: ctx.services.get(PluginConfig),
+    })
     ctx.extensions.get(ShellExtension).types.register({
       id: BUDGET_TYPE_ID,
       title: 'Budget',

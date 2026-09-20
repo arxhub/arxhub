@@ -101,6 +101,7 @@ await bootClient({
     arxhub.extensions.get(SettingsExtension).register({
       id: 'about',
       title: 'About',
+      icon: 'lu:info',
       order: 900,
       component: markRaw({ render: () => h(AboutSettingsPage, { version: __APP_VERSION__ }) }),
     })

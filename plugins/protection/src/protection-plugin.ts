@@ -55,7 +55,7 @@ export class ProtectionPlugin extends Plugin {
     super.configure(ctx)
 
     const settings = ctx.extensions.get(SettingsExtension)
-    settings.register({ id: 'security', title: 'Security', order: 1, component: markRaw(SecuritySettingsPage) })
+    settings.register({ id: 'security', title: 'Security', icon: 'lu:shield', order: 1, component: markRaw(SecuritySettingsPage) })
 
     // A server refusing this device is a standing, whole-app condition — the same class as maintenance
     // mode. The click opens the explanation; it does not clear anything, because neither fix is

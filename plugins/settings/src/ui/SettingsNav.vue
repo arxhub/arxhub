@@ -12,7 +12,7 @@ const settings = arxhub.extensions.get(SettingsExtension)
 const nodes = computed(() =>
   [...settings.sections.value]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-    .map((section) => ({ id: section.id, label: section.title, data: section })),
+    .map((section) => ({ id: section.id, label: section.title, icon: section.icon ?? 'lu:settings', data: section })),
 )
 
 function activate(node: TreeViewNode<SettingsSection>) {

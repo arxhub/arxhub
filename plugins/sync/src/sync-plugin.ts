@@ -59,7 +59,7 @@ export class SyncPlugin extends Plugin {
 
     const config = ctx.services.get(PluginConfig)
     const settings = ctx.extensions.get(SettingsExtension)
-    settings.register({ id: 'sync', title: 'Sync', schema: SyncConfigSchema, order: 10, config })
+    settings.register({ id: 'sync', title: 'Sync', icon: 'lu:refresh-cw', schema: SyncConfigSchema, order: 10, config })
 
     // The server address and the auto-sync cadence both apply without a restart: every write of this
     // section is routed through the same applyConfig() startSync uses on boot.

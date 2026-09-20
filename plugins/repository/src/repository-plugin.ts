@@ -78,7 +78,7 @@ export class RepositoryPlugin extends Plugin {
 
     const config = ctx.services.get(PluginConfig)
     const settings = ctx.extensions.get(SettingsExtension)
-    settings.register({ id: 'repository', title: 'Storage', schema: RepositoryConfigSchema, order: 9, config })
+    settings.register({ id: 'repository', title: 'Storage', icon: 'lu:hard-drive', schema: RepositoryConfigSchema, order: 9, config })
 
     const repository = ctx.extensions.get(RepositoryExtension)
     this.unregisterPendingRanges = ctx.extensions.get(VfsExtension).registerPendingRangeSource({

@@ -121,12 +121,14 @@ await bootClient({
     arxhub.extensions.get(SettingsExtension).register({
       id: 'about',
       title: 'About',
+      icon: 'lu:info',
       order: 900,
       component: markRaw({ render: () => h(AboutSettingsPage, { version: __APP_VERSION__ }) }),
     })
     arxhub.extensions.get(SettingsExtension).register({
       id: 'vault',
       title: 'Vault',
+      icon: 'lu:folder',
       order: 20,
       component: markRaw(VaultSettingsPage),
     })

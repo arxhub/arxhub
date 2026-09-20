@@ -34,6 +34,7 @@ export class MaintenancePlugin extends Plugin {
     ctx.extensions.get(SettingsExtension).register({
       id: 'plugins',
       title: 'Plugins',
+      icon: 'lu:puzzle',
       order: 850,
       component: markRaw(PluginsSettingsPage),
     })

@@ -43,6 +43,7 @@ export class ThemePlugin extends Plugin {
     ctx.extensions.get(SettingsExtension).register({
       id: 'appearance',
       title: 'Appearance',
+      icon: 'lu:palette',
       order: 5,
       component: markRaw({
         render: () =>
