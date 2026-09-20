@@ -96,8 +96,8 @@ function onClick() {
 </template>
 
 <style scoped>
-/* One constant hairline, always on — which pane is active is already stated by its own tab's accent
-   fill, so the border carries no state and needs no second, stronger colour for it. */
+/* The tab bar starts at the frame's top edge, level with navigation. A top border would push it down
+   a pixel; split panes already have a resize handle separating them. */
 .panel-group-view {
   display: flex;
   flex-direction: column;
@@ -105,6 +105,7 @@ function onClick() {
   height: 100%;
   overflow: hidden;
   border: 1px solid var(--gray-6);
+  border-top: 0;
 }
 
 .panel-content {

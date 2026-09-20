@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
 import { ShellExtension } from '@arxhub/plugin-shell'
-import { actionMenu, Strip } from '@arxhub/uikit/core'
+import { actionMenu } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted, watch } from 'vue'
 import { ExplorerExtension } from '../explorer-extension'
 import FileTreeNode from './FileTreeNode.vue'
 import { useFileActions } from './use-file-actions'
 import { useTreeNavigation } from './use-tree-navigation'
-import VaultStripActions from './VaultStripActions.vue'
+import VaultStrip from './VaultStrip.vue'
 
 const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
@@ -47,13 +47,7 @@ function onRootContextMenu(event: MouseEvent) {
 
 <template>
   <div class="file-tree-wrap">
-    <!-- "Vault" is the one VFS root there is today — a stand-in for a name that becomes per-root once
-         more than one can be connected at once (see ExplorerExtension for the rest of that note). -->
-    <Strip title="Vault" flush-actions>
-      <template #actions>
-        <VaultStripActions />
-      </template>
-    </Strip>
+    <VaultStrip />
 
     <div class="file-tree" role="tree" aria-label="Files" @contextmenu.prevent="onRootContextMenu" @keydown="onKeydown">
       <FileTreeNode

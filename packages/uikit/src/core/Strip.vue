@@ -18,13 +18,15 @@ withDefaults(
     // text and smaller icons then just eats into it instead of framing it. Set this when the strip
     // ends in one, so the icon reaches the edge on purpose instead of overflowing into it by accident.
     flushActions?: boolean
+    // Full-height controls provide their own hit area; text insets would leave empty cells beside them.
+    flush?: boolean
   }>(),
   { bordered: true },
 )
 </script>
 
 <template>
-  <div class="strip" :class="{ touch, bordered, 'flush-actions': flushActions }">
+  <div class="strip" :class="{ touch, bordered, flush, 'flush-actions': flushActions }">
     <span v-if="title || $slots.title" class="strip-title">
       <slot name="title">{{ title }}</slot>
     </span>
@@ -61,6 +63,16 @@ withDefaults(
 
 .strip.flush-actions {
   padding-right: 0;
+}
+
+.strip.flush {
+  padding: 0;
+  gap: 0;
+}
+
+.strip.flush > .strip-content,
+.strip.flush > .strip-actions {
+  gap: 0;
 }
 
 /* 8px more than the strip's own inset, so a title reads as a label of the region rather than as the

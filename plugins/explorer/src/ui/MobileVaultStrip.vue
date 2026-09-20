@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useNavHost } from '@arxhub/plugin-shell/ui'
-import { actionMenu, IconButton } from '@arxhub/uikit/core'
+import { actionMenu, IconButton, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { ExplorerExtension } from '../explorer-extension'
 import { useFileActions } from './use-file-actions'
@@ -39,15 +39,19 @@ function more(event: MouseEvent): void {
 </script>
 
 <template>
-  <!-- Frequent: New file. Occasional: behind More. Frame close stays edge-reachable. -->
-  <IconButton size="lg" icon="lu:file-plus" tooltip="New file" @click="newFile" />
-  <IconButton size="lg" icon="lu:ellipsis" tooltip="More vault actions" ariaLabel="More vault actions" @click="more" />
-  <IconButton
-    v-if="navHost != null"
-    size="lg"
-    :icon="navHost.icon"
-    data-testid="nav-toggle"
-    :tooltip="navHost.label"
-    @click="navHost.dismiss()"
-  />
+  <Strip title="Vault" flush-actions>
+    <template #actions>
+      <!-- Frequent: New file. Occasional: behind More. Frame close stays edge-reachable. -->
+      <IconButton size="lg" icon="lu:file-plus" tooltip="New file" @click="newFile" />
+      <IconButton size="lg" icon="lu:ellipsis" tooltip="More vault actions" ariaLabel="More vault actions" @click="more" />
+      <IconButton
+        v-if="navHost != null"
+        size="lg"
+        :icon="navHost.icon"
+        data-testid="nav-toggle"
+        :tooltip="navHost.label"
+        @click="navHost.dismiss()"
+      />
+    </template>
+  </Strip>
 </template>

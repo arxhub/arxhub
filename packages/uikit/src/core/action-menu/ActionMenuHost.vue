@@ -88,7 +88,8 @@ watch(
     placement.value = { x: state.value.x, y: state.value.y, placed: false }
     nextTick(() => {
       place()
-      focusItem(0)
+      // Placement removes visibility:hidden on the next render; a hidden item cannot receive focus.
+      nextTick(() => focusItem(0))
       // One frame, not a delay: a scroll the opening click caused is delivered in the frame the menu
       // opened in, and every scroll after that one is the user moving away from it.
       requestAnimationFrame(() => {
@@ -208,6 +209,8 @@ onBeforeUnmount(() => {
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
+  /* Teleport places the menu outside the shell that sets the application's font. */
+  font-family: var(--font-sans);
 }
 
 .action-label {
