@@ -100,4 +100,14 @@ describe('AiSessionStore', () => {
     expect(await root.file('vault/note.md').readText()).toBe('overlay\n')
     expect(await root.file('vault/_ai-workspace/x/staged.md').exists()).toBe(false)
   })
+
+  test('delete removes a directory tree on accept', async () => {
+    await root.file('vault/empty/.keep').writeText('')
+    await root.file('vault/empty/nested/.keep').writeText('')
+    const session = await store.createSession()
+    await store.deletePath(session.sessionId, 'empty')
+    expect(await root.file('vault/empty/.keep').exists()).toBe(true)
+    await store.accept(session.sessionId)
+    expect(await root.exists('vault/empty')).toBe(false)
+  })
 })

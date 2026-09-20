@@ -91,8 +91,9 @@ export class AiWorkspacePlugin extends Plugin {
             await notes.vfs.file(pathname).writeText(content)
           },
           deleteVault: async (pathname) => {
-            const file = notes.vfs.file(pathname)
-            if (await file.exists()) await file.delete()
+            if (await notes.vfs.exists(pathname)) {
+              await notes.vfs.delete(pathname, { recursive: true, force: true })
+            }
           },
           mergeContent: (pathname, base, local, remote) => repository.mergeContent(pathname, base, local, remote),
           archive: async () => {

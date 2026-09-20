@@ -109,3 +109,6 @@ playwright-report
 
 # Harness worktrees for delegated agents
 .claude/worktrees/
+
+# Local Cursor MCP config (carries the AiWorkspace channel bearer — never commit)
+.cursor/mcp.json

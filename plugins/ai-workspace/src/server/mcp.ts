@@ -142,7 +142,7 @@ export function createAiWorkspaceMcpServer(store: AiSessionStore): McpServer {
   server.registerTool(
     'delete',
     {
-      description: 'Delete a path in the session overlay.',
+      description: 'Delete a file or directory (recursive) in the session overlay.',
       inputSchema: {
         sessionId: z.string().min(1),
         pathname: z.string().min(1),

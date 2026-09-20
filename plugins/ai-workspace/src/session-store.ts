@@ -196,6 +196,7 @@ export class AiSessionStore {
   async readFile(sessionId: string, pathname: string): Promise<string> {
     await this.requireOpen(sessionId)
     const path = pathname.replace(/^\/+/, '')
+    if (await this.isDeletedInSession(sessionId, path)) throw notFound(`File not found: ${path}`)
     const over = this.root.file(overlayPath(sessionId, path))
     if (await over.exists()) {
       const text = await over.readText()
@@ -250,11 +251,24 @@ export class AiSessionStore {
   async deletePath(sessionId: string, pathname: string): Promise<void> {
     await this.requireOpen(sessionId)
     const path = pathname.replace(/^\/+/, '')
-    const over = this.root.file(overlayPath(sessionId, path))
-    if (await over.exists()) await over.delete()
+    const overPath = overlayPath(sessionId, path)
+    // Overlay may hold a file or a directory tree (mkdir leaves dirs + .keep); plain file.delete() hits EISDIR.
+    if (await this.root.exists(overPath)) {
+      await this.root.delete(overPath, { recursive: true, force: true })
+    }
     await this.root.file(overlayPath(sessionId, `${path}.__deleted__`)).writeText('1')
     await this.upsertChange(sessionId, { pathname: path, kind: 'deleted' })
     await this.appendAction(sessionId, { tool: 'delete', pathname: path, ok: true })
+  }
+
+  private async isDeletedInSession(sessionId: string, path: string): Promise<boolean> {
+    const parts = path.replace(/^\/+/, '').split('/').filter(Boolean)
+    let prefix = ''
+    for (const part of parts) {
+      prefix = prefix ? `${prefix}/${part}` : part
+      if (await this.root.file(overlayPath(sessionId, `${prefix}.__deleted__`)).exists()) return true
+    }
+    return false
   }
 
   private async readContentForMutation(sessionId: string, path: string): Promise<string> {
@@ -274,9 +288,8 @@ export class AiSessionStore {
       const rel = file.pathname.replace(/^vault\/?/, '')
       if (!rel || rel.includes('/.')) continue
       try {
+        if (await this.isDeletedInSession(sessionId, rel)) continue
         const over = this.root.file(overlayPath(sessionId, rel))
-        const deleted = this.root.file(overlayPath(sessionId, `${rel}.__deleted__`))
-        if (await deleted.exists()) continue
         const text = (await over.exists()) ? await over.readText() : await file.readText()
         if (text.toLowerCase().includes(q)) {
           const idx = text.toLowerCase().indexOf(q)
@@ -318,8 +331,7 @@ export class AiSessionStore {
       return file.readText()
     }
     if (side === 'overlay') {
-      const deleted = this.root.file(overlayPath(sessionId, `${path}.__deleted__`))
-      if (await deleted.exists()) return ''
+      if (await this.isDeletedInSession(sessionId, path)) return ''
       const over = this.root.file(overlayPath(sessionId, path))
       if (!(await over.exists())) return ''
       return over.readText()
@@ -369,8 +381,10 @@ export class AiSessionStore {
     const changes = (await this.readChanges(sessionId)).filter((c) => !isStagingPath(c.pathname))
     for (const change of changes) {
       if (change.kind === 'deleted') {
-        const vault = this.root.file(vaultPath(change.pathname))
-        if (await vault.exists()) await vault.delete()
+        const vault = vaultPath(change.pathname)
+        if (await this.root.exists(vault)) {
+          await this.root.delete(vault, { recursive: true, force: true })
+        }
         continue
       }
       if (change.kind === 'renamed' && change.fromPath && change.toPath) {
