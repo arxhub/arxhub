@@ -6,6 +6,7 @@ import { liftListItem, sinkListItem, splitListItem } from 'prosemirror-schema-li
 import { type Command, TextSelection } from 'prosemirror-state'
 import { goToNextCell } from 'prosemirror-tables'
 import type { EditorView } from 'prosemirror-view'
+import { continueAfterBlock, exitBlockDown } from './block-navigation'
 import { editorMode } from './editor-mode'
 
 // `baseKeymap` binds neither Home nor End on either platform (`prosemirror-commands` leaves line
@@ -58,6 +59,8 @@ export function buildKeymap(schema: Schema): Record<string, Command> {
   keys['Shift-Home'] = lineBoundary(-1, true)
   keys.End = lineBoundary(1, false)
   keys['Shift-End'] = lineBoundary(1, true)
+  keys['Mod-Enter'] = continueAfterBlock
+  keys.ArrowDown = exitBlockDown
 
   const hardBreak = schema.nodes.hard_break
   if (hardBreak) {

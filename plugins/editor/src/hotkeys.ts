@@ -13,6 +13,7 @@ export const PROSEMIRROR_LAYER = 'editor:arxhub.editor'
 // learning about the caret.
 export const PROSEMIRROR_BINDINGS: HotkeyBinding[] = [
   { id: 'editor.find', chord: 'Mod-f', layer: PROSEMIRROR_LAYER, title: 'Find in document' },
+  { id: 'editor.continue-after-block', chord: 'Mod-Enter', layer: PROSEMIRROR_LAYER, title: 'Continue after block' },
   { id: 'editor.bold', chord: 'Mod-b', layer: PROSEMIRROR_LAYER, title: 'Bold' },
   { id: 'editor.italic', chord: 'Mod-i', layer: PROSEMIRROR_LAYER, title: 'Italic' },
   { id: 'editor.code', chord: 'Mod-`', layer: PROSEMIRROR_LAYER, title: 'Inline code' },
