@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "arxhub-ai-workspace": {
+      "url": "http://127.0.0.1:3001/api/ai-workspace/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:ARXHUB_AI_WORKSPACE_MCP_TOKEN}"
+      }
+    }
+  }
+}

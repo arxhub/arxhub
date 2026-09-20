@@ -1,0 +1,8 @@
+{
+  "id": "APP-02-08",
+  "stage": "done",
+  "attempts": 1,
+  "worktree": null,
+  "qaFindings": [],
+  "learnings": "test-design 2026-09-20: QA specs written; e2e ai-workspace.spec.ts fails on missing POST /api/ai-workspace/sessions (expected solo TDD).\nexecute 2026-09-20: @arxhub/plugin-ai-workspace on dev — overlay session store, signed /api/ai-workspace routes, AI workspace type UI; e2e UJ-27..29 green desktop+mobile.\nqa 2026-09-20: unit+e2e UJ-27..29 desktop/mobile green; DiffModule/compare/open-staging/three-way accept present.\n"
+}

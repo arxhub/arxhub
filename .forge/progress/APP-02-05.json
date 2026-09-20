@@ -1,0 +1,8 @@
+{
+  "id": "APP-02-05",
+  "stage": "done",
+  "attempts": 1,
+  "worktree": null,
+  "qaFindings": [],
+  "learnings": "DiffModule lives in plugin-editor (diffTexts/diffNodes + DiffView); AI workspace compare is POST /sessions/:id/files/compare returning labeled sides, UI wraps DiffView in data-testid=ai-workspace-diff.\nqa 2026-09-20: unit+e2e UJ-27..29 desktop/mobile green; DiffModule/compare/open-staging/three-way accept present.\n"
+}

@@ -3,11 +3,12 @@ import { Button, Dialog, Row } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Node } from 'prosemirror-model'
 import { computed, ref, shallowRef, watch } from 'vue'
+import { type DiffResult, diffNodes } from '../diff-module'
 import { type ArxHistoryStore, type ArxSavedVersion, versionText } from '../document-history'
 import type { ArxEditorKit } from '../editor-extension'
 import { deserialize } from '../editor-format'
 import type { EditorMode } from '../editor-mode'
-import { versionDifferences } from '../version-diff'
+import DiffView from './DiffView.vue'
 
 const props = defineProps<{
   store: ArxHistoryStore
@@ -24,7 +25,16 @@ const selected = ref<ArxSavedVersion | null>(null)
 const raw = ref('')
 const previous = shallowRef<Node | null>(null)
 const selectedBlock = ref<string | null>(null)
-const differences = computed(() => (previous.value ? versionDifferences(props.current, previous.value) : []))
+const diffResult = computed((): DiffResult | null => {
+  if (!previous.value) return null
+  return diffNodes({
+    left: previous.value,
+    right: props.current,
+    leftLabel: 'Saved version',
+    rightLabel: 'Current',
+  })
+})
+const differences = computed(() => diffResult.value?.blocks ?? [])
 const difference = computed(() => differences.value.find((item) => item.key === selectedBlock.value))
 const preview = ref('')
 const showRaw = ref(false)
@@ -110,13 +120,13 @@ async function restore(block?: string) {
       <p v-if="reading" role="status">Loading preview…</p>
       <p v-if="previewError" role="alert">{{ previewError }}</p>
       <pre class="version-preview" aria-label="Version preview">{{ showRaw ? raw : preview }}</pre>
+      <DiffView v-if="diffResult && !reading && !previewError" :result="diffResult" />
       <nav aria-label="Changes from saved version" class="version-list">
-        <Row v-for="change in differences" :key="change.key" as="button" type="button" :selected="selectedBlock === change.key" :disabled="restoring" @click="selectedBlock = change.key">{{ change.kind }} · {{ (change.after ?? change.before)?.textContent || (change.after ?? change.before)?.type.name }}</Row>
+        <Row v-for="change in differences" :key="change.key" as="button" type="button" :selected="selectedBlock === change.key" :disabled="restoring" @click="selectedBlock = change.key">{{ change.summary }}</Row>
       </nav>
-      <p v-if="!reading && previous && !differences.length">No block changes from this version.</p>
       <template v-if="difference">
-        <p>Saved block</p><pre class="version-preview" aria-label="Saved block preview">{{ difference.before ? versionText(difference.before) || difference.before.textContent : 'Not present in this version' }}</pre>
-        <p>Current block</p><pre class="version-preview" aria-label="Current block preview">{{ difference.after ? versionText(difference.after) || difference.after.textContent : 'Removed from the document' }}</pre>
+        <p>{{ diffResult?.leftLabel ?? 'Saved version' }}</p><pre class="version-preview" aria-label="Saved block preview">{{ difference.beforeText ?? 'Not present in this version' }}</pre>
+        <p>{{ diffResult?.rightLabel ?? 'Current' }}</p><pre class="version-preview" aria-label="Current block preview">{{ difference.afterText ?? 'Removed from the document' }}</pre>
       </template>
       <p v-if="mode === 'editable'">Your current draft will be saved before restoring this version.</p>
       <p v-else>Switch to Editable to restore a version.</p>

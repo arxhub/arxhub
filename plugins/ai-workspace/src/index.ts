@@ -1,0 +1,6 @@
+export { AiWorkspacePlugin } from './ai-workspace-plugin'
+export { AiWorkspaceExtension } from './ai-workspace-extension'
+export { AI_WORKSPACE_TYPE_ID } from './contributions'
+export { manifest, AI_WORKSPACE_NAMESPACE } from './manifest'
+export { AiSessionStore } from './session-store'
+export { applyAcceptWithMerge, acceptBlocked, mergerPathname } from './accept-with-merge'

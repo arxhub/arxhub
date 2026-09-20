@@ -1,0 +1,8 @@
+{
+  "id": "APP-02-11",
+  "stage": "done",
+  "attempts": 1,
+  "worktree": null,
+  "qaFindings": [],
+  "learnings": "Client-driven accept: beforeClose + RepositoryExtension.mergeContent three-way, then POST accept {clientApplied:true} archive-only. Server accept remains for non-client callers. applyAcceptWithMerge unit-tested.\nqa 2026-09-20: unit+e2e UJ-27..29 desktop/mobile green; DiffModule/compare/open-staging/three-way accept present.\n"
+}

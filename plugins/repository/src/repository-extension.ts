@@ -81,6 +81,11 @@ export class RepositoryExtension extends Extension {
     return this.mergers.register(registration)
   }
 
+  // Public face for callers that need a three-way merge outside a sync round (e.g. AI workspace accept).
+  mergeContent(pathname: string, base: Uint8Array | null, local: Uint8Array, remote: Uint8Array): Promise<Uint8Array | null> {
+    return this.mergers.merge(pathname, base, local, remote).then((result) => result?.merged ?? null)
+  }
+
   refreshStorage(): void {
     this.storageRevision.value++
   }

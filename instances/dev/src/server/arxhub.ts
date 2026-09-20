@@ -2,6 +2,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { bootServer } from '@arxhub/boot/server'
 import type { ArxHub } from '@arxhub/core'
+import { AiWorkspaceServerPlugin, ensureMcpChannelToken } from '@arxhub/plugin-ai-workspace/server'
 import { BudgetServerPlugin, readFnsConfig } from '@arxhub/plugin-budget/server'
 import GatewayServerPlugin from '@arxhub/plugin-gateway/server'
 import { ProtectionServerPlugin } from '@arxhub/plugin-protection/server'
@@ -44,6 +45,12 @@ export async function createArxHub(port: number, version: string): Promise<ArxHu
         pinnedPublicKey,
         publicGetPrefixes: [PUBLIC_READ_PATH],
         corsOrigins,
+        bearerAuth: [
+          {
+            pathPrefix: '/api/ai-workspace/mcp',
+            resolveToken: () => ensureMcpChannelToken(vfs, process.env.ARXHUB_AI_WORKSPACE_MCP_TOKEN),
+          },
+        ],
         onPair: (key: string) => {
           pinnedFile.writeText(key).catch((error) => logger.error('Failed to persist pinned client key', error))
         },
@@ -54,6 +61,8 @@ export async function createArxHub(port: number, version: string): Promise<ArxHu
       // Published (plaintext, world-readable) content under public/.
       hub.plugins.register(PublishServerPlugin, () => ({ vfs: new ScopedFileSystem(vfs, 'public') }))
       hub.plugins.register(BudgetServerPlugin, () => ({ fns: readFnsConfig(process.env) }))
+      // Agent channel only where the vault is decrypted — desktop/dev stand, not headless-only server.
+      hub.plugins.register(AiWorkspaceServerPlugin, () => ({ vfs }))
     },
   })
 

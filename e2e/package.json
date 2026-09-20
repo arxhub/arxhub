@@ -16,7 +16,10 @@
     "@arxhub/plugin-editor": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/uikit": "workspace:*",
+    "@noble/hashes": "catalog:shared",
     "@playwright/test": "catalog:toolchain",
+    "@scure/bip32": "catalog:shared",
+    "@scure/bip39": "catalog:shared",
     "@types/node": "catalog:toolchain",
     "typescript": "catalog:toolchain",
     "vue": "catalog:client"

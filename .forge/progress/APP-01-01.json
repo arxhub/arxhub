@@ -1,0 +1,9 @@
+{
+  "id": "APP-01-01",
+  "stage": "done",
+  "attempts": 1,
+  "worktree": null,
+  "qaFindings": [],
+  "learnings": "Engine in packages/sql (openSqlIndex/migrate/readOnly/query/transaction, SCHEMA_TABLES, splitStatements); lifecycle in plugins/search (SearchPlugin + SearchExtension), registered in dev/client/app with dataDir 'idb://arxhub-sql', never in instances/server. Known PGlite 0.5.4 limitation: statement_timeout is armed and readable but never fires — no timer signals in the WASM build, and the query holds the single thread so a JS deadline cannot fire either; see the note in packages/sql/src/pglite-index.ts.",
+  "qaNotes": "PASS при повторной проверке, 10 из 10 критериев. Все три находки прошлого круга закрыты: (1) и (2) — решением A-30, требование сужено до того, что действительно обеспечено, и проверено, что ни один документ больше не обещает прерывания; замер повторён — предел 100 мс, выполнение 11 396 мс; (3) task добавлен в подпись block.type. Переход SQL_SCHEMA_VERSION 2 → 3 проверен вживую: индекс с версией 1, 2 или 4 сбрасывается и пересобирается в обе стороны, scan_cursor выметается, открытие не бросает; журнал версий в 01-initial-search-index.md описывает это честно. Живые проверки: отказ записи с 25006 при целых данных, успешный запрос после отказа, maxRows с truncated, отказ нескольким стейтментам, ошибка на закрытом индексе. 191/191 и 86/86, типизация чиста, e2e 119 из 119 в обеих рамах. Низкая находка по консистентности discrepancies.md устранена оркестратором. ОТДЕЛЬНО, воспроизводится второй прогон подряд: стенд один-два раза на ~40 загрузок пишет «Could not open the search index» — конкуренция за IndexedDB между воркерами Playwright; сессия, потерявшая открытие, остаётся failed до перезагрузки, повтора нет. Спека повтора не требует, поэтому не находка, но заслуживает отдельной фичи, если начнёт стоить тестов."
+}

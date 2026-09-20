@@ -7,6 +7,7 @@ import '@arxhub/theme-catppuccin'
 
 import { bootClient, shellForFrame } from '@arxhub/boot/client'
 import { apiBaseUrl } from '@arxhub/core'
+import { AiWorkspacePlugin } from '@arxhub/plugin-ai-workspace'
 import { BudgetPlugin } from '@arxhub/plugin-budget'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror'
 import { ConfigPlugin } from '@arxhub/plugin-config'
@@ -92,6 +93,7 @@ await bootClient({
     // layered over it) is switched off (A-50). Registered right before it for the same reason.
     arxhub.plugins.register(RepositoryPlugin)
     arxhub.plugins.register(BudgetPlugin)
+    arxhub.plugins.register(AiWorkspacePlugin)
     arxhub.plugins.register(SyncPlugin)
     arxhub.plugins.register(PublishPlugin)
   },

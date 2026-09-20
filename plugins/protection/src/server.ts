@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto'
 import { type Logger, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { AUTH_HEADERS, type RequestDescriptor, type SignedRequestHeaders } from '@arxhub/crypto'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway'
@@ -81,6 +82,34 @@ export interface AuthGuardOptions {
   // Safe to open wide because auth is a per-request signature, NOT an ambient credential (cookie): a
   // hostile page still cannot forge a signature. Default undefined = no CORS headers (same-origin only).
   corsOrigins?: string[] | '*'
+  // Loopback channel secret (AD-02): paths that accept Authorization: Bearer in place of a device
+  // signature. resolveToken is called per request so the token can live in device-local state.
+  bearerAuth?: {
+    pathPrefix: string
+    resolveToken: () => string | null | Promise<string | null>
+  }[]
+}
+
+function bearerMatches(expected: string, provided: string): boolean {
+  const a = Buffer.from(expected)
+  const b = Buffer.from(provided)
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
+}
+
+async function acceptBearer(request: Request, pathname: string, options: AuthGuardOptions['bearerAuth']): Promise<boolean> {
+  if (!options?.length) return false
+  const header = request.headers.get('authorization')
+  if (!header?.startsWith('Bearer ')) return false
+  const provided = header.slice('Bearer '.length).trim()
+  if (!provided) return false
+  for (const entry of options) {
+    const prefix = entry.pathPrefix.endsWith('/') ? entry.pathPrefix.slice(0, -1) : entry.pathPrefix
+    if (pathname !== prefix && !pathname.startsWith(`${prefix}/`)) continue
+    const token = await entry.resolveToken()
+    if (token && bearerMatches(token, provided)) return true
+  }
+  return false
 }
 
 function isPublicRead(method: string, pathname: string, prefixes: string[]): boolean {
@@ -92,9 +121,17 @@ function isPublicRead(method: string, pathname: string, prefixes: string[]): boo
 
 // Headers the signed-request client attaches; the browser must be told they're allowed on cross-origin
 // requests or the preflight fails. content-type covers the octet-stream/json bodies.
-const CORS_ALLOWED_HEADERS = [AUTH_HEADERS.timestamp, AUTH_HEADERS.nonce, AUTH_HEADERS.signature, AUTH_HEADERS.publicKey, 'content-type'].join(
-  ', ',
-)
+const CORS_ALLOWED_HEADERS = [
+  AUTH_HEADERS.timestamp,
+  AUTH_HEADERS.nonce,
+  AUTH_HEADERS.signature,
+  AUTH_HEADERS.publicKey,
+  'content-type',
+  'authorization',
+  'mcp-session-id',
+  'mcp-protocol-version',
+  'last-event-id',
+].join(', ')
 
 // Resolve the Access-Control-Allow-Origin value for this request, or null when CORS is off or the
 // request's Origin isn't allowed (→ no CORS headers, browser blocks it).
@@ -112,6 +149,7 @@ export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Lo
   const publicGetPrefixes = options.publicGetPrefixes ?? []
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES
   const corsOrigins = options.corsOrigins
+  const bearerAuth = options.bearerAuth
   return new Elysia({ name: 'protection-guard' }).onRequest(async ({ request, set }) => {
     const url = new URL(request.url)
 
@@ -123,7 +161,7 @@ export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Lo
       if (allowOrigin !== '*') set.headers.vary = 'Origin'
       // Without this the reason header below is invisible to a cross-origin client: browsers hide every
       // non-safelisted response header from JS unless it is named here.
-      set.headers['access-control-expose-headers'] = AUTH_HEADERS.reason
+      set.headers['access-control-expose-headers'] = [AUTH_HEADERS.reason, 'mcp-session-id', 'mcp-protocol-version'].join(', ')
     }
     // Preflight: answer BEFORE auth. An OPTIONS carries no signature (the browser sends it on its own
     // to negotiate the custom x-arx-* headers), so authenticating it would 401 every cross-origin
@@ -143,6 +181,7 @@ export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Lo
     }
 
     if (isPublicRead(request.method.toUpperCase(), url.pathname, publicGetPrefixes)) return
+    if (await acceptBearer(request, url.pathname, bearerAuth)) return
     const desc = await describe(request, maxBodyBytes)
     if (desc == null) {
       logger?.warn(`Rejected oversized request body to ${url.pathname}`)
@@ -174,12 +213,14 @@ export class ProtectionServerPlugin extends Plugin {
   private readonly publicGetPrefixes?: string[]
   private readonly maxBodyBytes?: number
   private readonly corsOrigins?: string[] | '*'
+  private readonly bearerAuth?: AuthGuardOptions['bearerAuth']
 
   constructor(args: ProtectionServerPluginArgs) {
     super(args, serverManifest)
     this.publicGetPrefixes = args.publicGetPrefixes
     this.maxBodyBytes = args.maxBodyBytes
     this.corsOrigins = args.corsOrigins
+    this.bearerAuth = args.bearerAuth
     this.authenticator = new RequestAuthenticator({
       pinnedPublicKey: args.pinnedPublicKey,
       toleranceSeconds: args.toleranceSeconds,
@@ -202,6 +243,7 @@ export class ProtectionServerPlugin extends Plugin {
         publicGetPrefixes: this.publicGetPrefixes,
         maxBodyBytes: this.maxBodyBytes,
         corsOrigins: this.corsOrigins,
+        bearerAuth: this.bearerAuth,
       }),
     )
   }

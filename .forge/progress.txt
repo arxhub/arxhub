@@ -1,0 +1,635 @@
+# Forge run log — 20-search
+
+## Codebase Patterns
+
+- **Engine package, plugin shell.** Testable logic (schema, migrations, query parsing) lives in a
+  `packages/*` engine with a `test` script; the `plugins/*` package owns only lifecycle, UI and
+  settings. `@arxhub/sql` + `plugins/search` follow `@arxhub/sync` + `plugins/sync`.
+- **A browser-and-Node package uses `createNodeConfig`** in its `vite.config.ts` (like `@arxhub/vfs`):
+  the browser bundle imports the package from `src/`, so the package's own vite config never touches
+  the app build, and `createBrowserConfig` has no `lib` entry.
+- **A plugin's public surface is `src/ui.ts`** (`exports: { "./ui": "./src/ui.ts" }`), re-exports only;
+  instances import `@arxhub/plugin-<name>/ui`.
+- **Instance registration is per instance**: `instances/{dev,client,app}/src/main.ts` each list plugins
+  themselves and each `package.json` must name the workspace dep. `instances/server` is a separate
+  decision every time — a client-only plugin does not go there.
+- **PGlite needs `optimizeDeps: { exclude: ['@electric-sql/pglite'] }`** in an instance's vite config:
+  it resolves its `.wasm` / `.tar.gz` payload with `new URL(...)`, which esbuild's pre-bundling breaks.
+- **An engine package never imports vue.** Observable state in `packages/*` is a snapshot getter plus
+  `subscribe(listener): () => void`; the plugin subscribes once and mirrors it into `ref`s. The engine
+  stays testable under plain vitest and the reactivity stays in the layer that renders.
+- **PGlite returns `bigint` columns as strings** (`size`, `mtime`). Cast in the query — `size::float8 AS
+  size` — rather than coercing in TS: ms timestamps and file sizes are far inside what a double holds
+  exactly, and a `Number(row.size)` sprinkled at each call site is the bug that comes back.
+- **`type`-only imports are free across the layer line.** `packages/sql` takes `import type { Logger }
+  from '@arxhub/logger'` — erased at build, so pino never reaches the browser through it.
+- **`pnpm --filter <pkg> build` is broken repo-wide for `createNodeConfig` packages** (`@arxhub/sync`,
+  `@arxhub/sql`): `rollup-plugin-node-externals@9` throws `undefined is not a function` under vite 8's
+  rolldown. Pre-existing and unrelated to any feature here — verify a package with `tsc --noEmit` +
+  `vitest`, and verify the bundle through an instance build (which imports workspace `src/`).
+
+---
+
+## 2026-07-26 - APP-01-01
+
+- Built the local SQL index engine and the plugin that owns its lifecycle.
+  - `packages/sql` (`@arxhub/sql`): `openSqlIndex` over PGlite (contribs `pg_trgm` + `unaccent`
+    always installed), the whole five-table schema with its GIN/trgm indexes and generated tsvector
+    columns, versioned `migrate` that discards any schema version other than its own, `readOnly` for
+    user queries (single statement, `SET TRANSACTION READ ONLY`, row + time limit, `ROLLBACK` after a
+    failure), `query`/`exec`/`transaction` for internal callers, `SCHEMA_TABLES` for the console.
+  - `plugins/search` (`@arxhub/plugin-search`): `SearchPlugin` takes `dataDir` from the instance,
+    registers `SearchExtension` in `create()`, opens the index in `start()` and closes it in `stop()`.
+    A failed open is logged, sets `status = 'failed'` and does not reject — the boot carries on.
+  - Registered in `instances/dev`, `instances/client`, `instances/app` with `idb://arxhub-sql`; not in
+    `instances/server`.
+- Files changed:
+  - new: `packages/sql/{package.json,tsconfig.json,vite.config.ts}`,
+    `packages/sql/src/{index,types,schema,statements,migrate,errors,pglite-index}.ts`,
+    `packages/sql/src/__tests__/{statements,sql-index}.test.ts`
+  - new: `plugins/search/{package.json,tsconfig.json,vite.config.ts}`,
+    `plugins/search/src/{ui,manifest,errors,search-extension,search-plugin}.ts`
+  - edited: `instances/{dev,client,app}/{package.json,src/main.ts,vite.config.ts}`, `pnpm-lock.yaml`
+- Checks: `pnpm --filter @arxhub/sql test` → 40 passed. `tsc --noEmit` clean for `@arxhub/sql` and
+  `@arxhub/plugin-search`; `vue-tsc --noEmit` clean for `app` and `client`; `@arxhub/client build`
+  succeeds and emits the PGlite wasm/data/contrib assets. Biome clean on every touched path.
+- **Learnings for future iterations:**
+  - **`statement_timeout` does not work in PGlite 0.5.4.** It is applied and readable
+    (`current_setting` returns the requested value) but never fires: Postgres arms it with
+    `setitimer`/`SIGALRM` and the WASM build receives no signals. A JS-side deadline is no help
+    either — the query holds the single thread, so no timer callback runs until it finishes (verified:
+    a 200 ms `setTimeout` racing `pg_sleep(2)` never fired). The only real containment would be
+    running PGlite in a worker and terminating it, which is a different architecture. The engine sets
+    the limit anyway so it starts working the day PGlite delivers the interrupt; `durationMs` is what
+    reports the cost today. The QA doc's check 9 and acceptance criterion 5 cannot pass as written.
+  - **A failed statement must be followed by `ROLLBACK`** or the next query dies with 25P02. Verified.
+    `SET TRANSACTION READ ONLY` genuinely refuses DELETE/UPDATE/DDL with 25006.
+  - **`SET` takes no bind parameters**, so the timeout goes through
+    `SELECT set_config('statement_timeout', $1, true)` — nothing is pasted into SQL text.
+  - **PGlite gives only the column OID**, not a type name. The index reads `pg_type` once at open and
+    resolves names from that map; resolving lazily would mean a query inside the READ ONLY
+    transaction needing a query of its own.
+  - **A cold PGlite costs ~1 s.** Tests share one index per file and clean the tables between cases;
+    a per-test `openSqlIndex` makes the suite minutes long. `dataDir: 'memory://'` for tests.
+  - **`start()` awaits the open**, which adds roughly a second of boot before first paint. That is the
+    literal reading of the spec (and what makes `status = 'failed'` observable right after boot), but
+    APP-01-05 should revisit it if boot feels slow — the `opening` status only earns its keep once
+    something renders it.
+  - `migrate` also clears the non-version `index_meta` rows when it discards the content tables: a
+    `scan_cursor` left from a dropped index would make the next walk resume past documents that are
+    no longer there. APP-01-02 owns the cursor and can rely on that.
+  - The engine's `readOnly` reports a rejected query as a **value** (`{ ok: false, message, code,
+    position, durationMs }`), never a throw; `query` throws. `SearchExtension` keeps that split:
+    `query` throws `searchIndexUnavailable()` when there is no index (an empty result would read as
+    "nothing matches"), `readOnly` returns a failure with code `index_unavailable`.
+  - Not verified in a real browser yet (no e2e run in this task): that `idb://arxhub-sql` opens under
+    Chromium. The client build emits every PGlite asset, and PGlite needs no COOP/COEP (it is
+    single-threaded), so this is expected to work — but it is the one claim resting on the build
+    rather than on a run.
+---
+
+## 2026-07-26 - APP-01-02
+
+- Taught the engine to read a file and taught the walk to keep the index level with the store.
+  - `parseDocument(pathname, bytes, stat?)` is pure — bytes in, rows out — so every parsing rule is a
+    unit test rather than a database round trip. Kind from the extension (`.md`/`.markdown` markdown,
+    `.arx` arx, `.txt`/`.text`/no extension text, everything else binary); title from the metadata,
+    else the first heading, else the file name, and never empty; `title_fold`/`name_fold` lower-cased
+    with the diacritics folded (NFD, drop `\p{M}`) so they match Postgres' `unaccent`.
+  - Markdown is read line by line rather than with a markdown library: the index needs the text a
+    reader sees and its rough shape, and a parser dependency would have to run in the browser too.
+    Blocks are `heading` (with `level`), `paragraph`, `list-item` (one per item), `code`, `quote`;
+    markup is stripped everywhere except in `code`. `.arx` is walked as the tree it is, opening the
+    containers (`bullet_list` → one `list-item` per item) and reading `link` marks as refs; a file that
+    is not a readable tree comes back as `text` with one paragraph, so it is still findable by name.
+  - Tags are read from the *stripped* text (a URL fragment `](page#section)` is then not a tag) and refs
+    from the *raw* text (a link is only a link while its brackets are there) — never from a `code` block.
+    A link with a URL scheme, a `//` host or a bare `#anchor` is not an intra-vault ref.
+  - `indexDocument` is one transaction per document: upsert the row, delete its blocks/tags/refs, insert
+    the new ones. `ref.target_path` is resolved against `document` — next to the source first, then from
+    the root, each with and without a document extension — and a target that is not indexed stays null.
+  - `createIndexer(index, vfs, options).scan()` resumes from `index_meta.scan_cursor`, skips a file whose
+    `size` and `mtime` match its row, falls back to the content hash (a touched file that says the same
+    thing only gets its stat fields updated), sweeps rows whose file is gone, checkpoints the cursor and
+    yields every `batchSize` documents, and joins rather than duplicates a walk already running.
+  - `plugins/search`: `start()` fires `indexer.scan()` **without awaiting it** (FR-223) and `stop()`
+    cancels then awaits `indexer.running` before closing the index. `SearchExtension` gained `indexer`,
+    `processed` and `reindex()`; `status` reads `scanning` while the walk runs.
+- Files changed:
+  - new: `packages/sql/src/{document,frontmatter,markup,markdown,arx,parse-document,index-document,path-filter,indexer}.ts`
+  - new: `packages/sql/src/__tests__/{parse-document,path-filter,index-document,indexer}.test.ts`
+  - edited: `packages/sql/src/index.ts`, `packages/sql/package.json`
+  - edited: `plugins/search/src/{search-plugin,search-extension}.ts`, `plugins/search/{package.json,vite.config.ts}`
+  - edited: `AGENTS.md`, `pnpm-lock.yaml`
+- Checks: `pnpm --filter @arxhub/sql test` → **101 passed** (APP-01-01's 40 plus 61 new). `tsc --noEmit`
+  clean for `@arxhub/sql` and `@arxhub/plugin-search`; `vue-tsc --noEmit` clean for `app` and `client`;
+  `@arxhub/client build` succeeds. Biome clean on `packages/sql` and `plugins/search`. E2E not run (the
+  orchestrator owns it) — and the QA doc's E2E needs the Search mini-app, which is APP-01-04/05.
+- **Learnings for future iterations:**
+  - **The sweep cannot be "delete everything the walk did not see."** A resumed walk only sees the tail
+    of the store, so that rule would empty the index on the first interrupted boot. It is `exists()` on
+    the rows the walk did not visit instead — bounded, because on a complete walk that set is exactly
+    the stale rows.
+  - **A cursor checkpoint reprocesses at most `batchSize` files.** `walker.cursor()` is the state *after*
+    the file it just returned, so resuming skips what was already written; the files handled since the
+    last checkpoint are simply done again, which is idempotent.
+  - **`reindex()` cannot just join a running scan** (it must actually rebuild) and cannot ignore it
+    (the walk holds transactions over tables it is about to empty). It cancels, awaits, clears, then
+    scans — and `runScan()` resets the cancel flag so the stop does not carry into the new walk.
+  - **A same-size, same-mtime write is real** — two writes inside one millisecond, or an edit that
+    replaced text with text of the same length. `indexPath()` therefore forces a re-read and only the
+    walk takes the stat shortcut; a test proves it by rewriting `# Первое` as `# Второе` (same bytes
+    long) with the timestamp pinned.
+  - **A parse failure is injected with a `ScopedFileSystem` subclass whose `read()` throws**, over the
+    real `NodeFileSystem`. `chmod 000` was rejected — it does nothing when the suite runs as root.
+  - **`.arxmeta` is already filtered by the Node and Tauri backends' `list()`**, so a walk test cannot
+    observe the engine's own skip. That rule is covered by a unit test on `isIndexablePath` instead; the
+    engine keeps the check because the HTTP and in-memory backends make no such promise.
+  - **No YAML dependency was added.** Frontmatter is read by a small subset parser (`key: scalar`,
+    `key: [a, b]`, a block sequence) because the index reads `title` and `tags` and hands the rest to
+    `jsonb`; a shape it does not understand comes back as the raw string rather than being lost. If a
+    later feature needs real YAML, that is a catalog entry and a decision, not a quiet import.
+  - **A forward ref stays `target_path = null`.** Resolution happens when the *source* is written, so a
+    link to a note the walk indexes later is only resolved the next time the source is reindexed. The
+    spec asks for exactly this (BE 3.4) and nothing more, but APP-01-04 must not read the `ref` table as
+    a complete backlink graph — resolve at query time, or accept the staleness knowingly.
+  - **`exclude`, `maxFileSize` and `batchSize` are still defaults, not config.** The engine exports
+    `DEFAULT_MAX_FILE_SIZE` (2 MiB) and `DEFAULT_BATCH_SIZE` (32) and the plugin passes neither.
+    APP-01-06 owns the settings section and should route them through the plugin's config schema —
+    tunables do not belong in module constants once there is a page to put them on.
+---
+
+## 2026-07-26 - APP-01-03
+
+- Taught the vault view to say what changed, and the search plugin to keep up with it.
+  - `@arxhub/vfs`: `VfsWatcher` (`subscribe(listener) => unsubscribe`, `notify(change)`), `VfsChange`
+    (`kind: 'written' | 'deleted' | 'renamed'`, `pathname`, `from?`), `VfsChangeSource` (the read-only
+    face of a watcher — what the DI key hands out, because a plugin observes changes and never announces
+    one), `ObservedFileSystem`, and `VaultWatcher` alongside `RootVfs`/`VaultVfs` in `vfs-scope.ts`.
+  - `ObservedFileSystem` performs the operation on the inner fs and reports it: `written` **after** a
+    write resolves, `written` when a `writable()` stream **closes** (not when it opens, and never on
+    abort), `deleted`, and `renamed` with both paths. `.arxmeta` is filtered out, because the write
+    machinery writes one sidecar per content write and reporting it would double every change and ask for
+    a reindex of a file that is not a document. Everything else — reads, listings, `lock`/`acquireLock`,
+    paths — delegates untouched.
+  - `plugins/vfs`: `setup()` builds one watcher, binds it to `VaultWatcher`, and binds `VaultVfs` to
+    `ObservedFileSystem.wrap(new ScopedFileSystem(fs, 'vault'), watcher)`. `RootVfs` and the per-plugin
+    buckets stay unwrapped.
+  - `plugins/search/src/index-queue.ts`: two Sets of paths (reindex / remove), the timer restarted on
+    every change, one drain at a time exposed as `queue.running`. `SearchPlugin.start()` subscribes
+    before firing the walk; `stop()` unsubscribes, disposes the queue, awaits a drain in flight, then
+    cancels the walk and closes the index.
+- Files changed:
+  - new: `packages/vfs/src/{vfs-watcher,observed-file-system}.ts`
+  - new: `packages/vfs/src/__tests__/{memory-file-system.ts,vfs-contract.ts,observed-file-system.test.ts,vfs-watcher.test.ts}`
+  - new: `plugins/search/src/index-queue.ts`,
+    `plugins/search/src/__tests__/{fake-indexer.ts,index-queue.test.ts,vault-freshness.test.ts}`
+  - edited: `packages/vfs/src/{index,vfs-scope}.ts`, `plugins/vfs/src/vfs-plugin.ts`,
+    `plugins/search/src/{search-plugin,ui}.ts`, `plugins/search/{package.json,vite.config.ts}`,
+    `AGENTS.md`, `pnpm-lock.yaml`
+- Checks: `@arxhub/vfs test` → **80 passed** (was 25), `@arxhub/plugin-search test` → **15 passed** (new
+  suite). `tsc --noEmit` clean for `@arxhub/vfs`, `@arxhub/plugin-vfs`, `@arxhub/plugin-search`;
+  `vue-tsc --noEmit` clean for `app` and `client`; `@arxhub/client build` succeeds. `@arxhub/vfs-node`,
+  `@arxhub/sync`, `@arxhub/plugin-publish`, `@arxhub/plugin-protection` suites still pass. Biome clean on
+  every touched path. `@arxhub/sql test` deliberately not run (a concurrent worker owned that package).
+  Two pre-existing failures confirmed unrelated by stashing this work: `@arxhub/dev exec tsc` (TS6305)
+  and `@arxhub/vfs-node exec tsc` (an `ArticleInfo` constraint in an old test).
+- **Learnings for future iterations:**
+  - **There was no VFS contract suite to reuse.** `packages/vfs/src/__tests__/interface.test.ts` is
+    cursor serialization only, and two test files each carried their own throwaway `MemoryFileSystem`.
+    So acceptance criterion 9 is now a real one: `vfs-contract.ts` exports
+    `describeFileSystemContract(label, create)` — 14 checks covering read/write, streams, list/walk,
+    `file()` helpers, the hash sidecar, delete-with-force, `lock`/`acquireLock`, `appendEntry` and
+    `renameEntry` — and `observed-file-system.test.ts` runs it three times: bare backend, decorator over
+    it, decorator over a rename-capable backend. A decorator that changes any of them fails there.
+    The two older duplicate fakes were left alone (out of scope); a later task can fold them in.
+  - **`ObservedFileSystem.wrap()`, not `new ObservedFileSystem()`.** `isRenameCapable()` asks by looking
+    for the method, so a decorator that always has `rename` claims a capability its backend may not
+    have. `wrap()` returns a private rename-capable subclass only over a backend that renames natively.
+    In production this means the vault view is **not** rename-capable — `ScopedFileSystem` has no
+    `rename` — so the explorer's rename is `renameEntry`'s copy + delete *through* the decorator, and
+    arrives as `written`(new) + `deleted`(old). Both shapes are covered by tests.
+  - **The decorator wraps the OUTSIDE of the scope**, so subscribers get vault-relative paths
+    (`notes/a.md`, not `vault/notes/a.md`) — the same coordinates `document.path` stores. That is not
+    incidental: swapping the order would silently index every path with a `vault/` prefix.
+  - **A listener runs synchronously inside the operation that notified it**, usually while that path's
+    lock is still held (`VirtualFileImpl.write` notifies from inside `vfs.lock`). It may only record and
+    return; anything slower deadlocks or stalls the writer. `VfsWatcher` also catches a listener that
+    throws (reporting it through `onError`, which `VfsPlugin` routes to its logger) — a broken subscriber
+    must never fail a write that already succeeded.
+  - **`plugins/search` had no test setup**; it now has `"test": "vitest"` and two suites.
+    `vault-freshness.test.ts` composes the real production stack minus the database — `NodeFileSystem` +
+    `ScopedFileSystem('vault')` + `ObservedFileSystem` + the real queue over a fake `Indexer` — which is
+    what catches wiring mistakes (paths, sidecars, lock re-entrancy) without importing `@arxhub/sql` at
+    runtime. Deliberate: the engine was being edited concurrently, and the queue's contract with it is
+    only `indexPath` / `removePath`.
+  - **`@arxhub/logger` is now a peer dep of `plugins/search`** (`import type { Logger }` in the queue) and
+    `@arxhub/vfs-node` a dev dep (the freshness suite). The vite `external` list had to grow to match.
+  - **`debounceMs` is a plugin arg** (`SearchPluginArgs.debounceMs`, default `DEFAULT_DEBOUNCE_MS = 400`),
+    not config yet — the same debt as `exclude`/`maxFileSize`/`batchSize`. APP-01-06 owns the settings
+    section and should route all four through the config schema.
+  - **A directory rename or delete leaves stale rows.** One change is reported on the directory path, and
+    `removePath()` on a directory removes no document rows, so the documents under it survive in the
+    index until the next full scan. Handling it properly needs a delete-by-prefix in the engine
+    (`packages/sql`), which was another worker's file during this task — recorded rather than guessed at.
+  - **For APP-01-05:** the freshness path is invisible in `SearchExtension.status` on purpose. `status`
+    reads `scanning` only while `indexer.scan()` runs; a debounced single-path reindex leaves it `ready`,
+    because a flicker to `scanning` on every keystroke would be noise and would disable the search box.
+    What *does* move is `documentCount` (the queue refreshes it through the indexer's own status
+    snapshot), so a new note appears in the count without any status change. If the UI wants "saving…"
+    feedback it needs a signal of its own, not a reading of `status`.
+---
+
+## 2026-07-26 - APP-01-04
+
+- Taught the engine to read a search string and to answer it. All of it in `packages/sql`; no plugin,
+  instance or VFS file touched (APP-01-03 owned those in the same tree).
+  - `search-query.ts`: `parseSearchQuery(input)` splits the string into lexemes — a quoted run may hold
+    whitespace, which is what makes both `"two words"` and `title:"two words"` one lexeme — and sorts
+    them into `clauses` (each has to match; one term = a word or phrase, several terms = an `OR` group),
+    `exclusions`, `qualifiers`, `freeText` (the input minus the qualifier spans) and `prefixLast`. Never
+    throws: an unclosed quote becomes a phrase to end of string, a valueless qualifier and a dangling
+    `OR` are dropped with a `warnings` entry, and an empty query comes back `empty: true`.
+  - `buildTsQuery(parsed, { fold })` folds every word to letters/digits/underscore, so the assembled
+    expression cannot contain a tsquery operator the user wrote and string concatenation is safe there.
+    Words join with `&`, a phrase with `<->`, an exclusion with `!` (parenthesised when it is a phrase),
+    an `OR` group with `|` in parentheses, and the last word of the last clause takes `:*` when
+    `prefixLast`.
+  - `search.ts`: `searchDocuments(index, parsed, options)` — qualifier filters, the three match modes,
+    `scope`, `sort`, `limit`+1 probing for `hasMore`, a separate count, and one follow-up query for
+    block snippets through `ts_headline`. Every user value is a bind parameter; a `Params` collector
+    hands out `$n` so the two queries that share a WHERE clause can each build their own numbering.
+  - `snippet.ts`: `SNIPPET_MATCH_START`/`END` are U+0002/U+0003 and `snippetSegments(text)` splits a
+    snippet into `{ text, match }` — the UI renders segments as text and never inserts document content
+    as markup (FR-233).
+  - `errors.ts`: `searchRegexInvalid(pattern, cause)` → `SearchRegexInvalidError` (400).
+- Files changed:
+  - new: `packages/sql/src/{search-query,search,snippet}.ts`
+  - new: `packages/sql/src/__tests__/{search-query,search,search-performance}.test.ts`
+  - edited: `packages/sql/src/{index,errors}.ts`
+- Checks: `pnpm --filter @arxhub/sql test` → **162 passed** (APP-01-01/02's 101 plus 61 new).
+  `tsc --noEmit` clean for `@arxhub/sql`. Biome clean on `packages/sql`. E2E not run (the orchestrator
+  owns it, and the QA doc's E2E needs the Search mini-app — APP-01-05).
+  **Measured search latency on 5000 documents: 27–34 ms** for `limit: 50` (page query + count query +
+  snippets), 24 ms for the prefix form. Budget is 300 ms.
+- **Learnings for future iterations:**
+  - **The `'simple'` configuration does not unaccent**, and `document.tsv` stores the title as written,
+    so full-text matching is case-insensitive but *not* diacritic-insensitive. Searching `cafe` finds a
+    note titled `Café` only through the fuzzy title branch (`similarity(title_fold, freeText)`), which is
+    why that branch is kept in the `titles` scope too. For the `titles` scope the full-text side matches
+    `to_tsvector(title_fold)` against `buildTsQuery(parsed, { fold: true })` — the folded query against
+    the folded column — so narrowing to titles does not silently lose the diacritic case.
+  - **A `!` inside the tsquery is not enough to exclude.** A document found through
+    `similarity(title_fold, …)`, or through a qualifier alone, never touches the tsquery, so `-word`
+    is a top-level `NOT (d.tsv @@ …)` as well. Under `caseSensitive` it is a `strpos` exclusion instead,
+    to match the matcher the positive side uses.
+  - **`similarity(title_fold, $1) >= $2` is a sequential scan and that is fine here**: 5000 documents
+    cost 16 ms. The index-assisted alternative is the `%` operator, but `%` reads its threshold from
+    `pg_trgm.similarity_threshold` rather than from a parameter, so honouring `fuzzyThreshold` would
+    mean a `set_config` round trip per search. Verified both plans with EXPLAIN; both seq-scan the OR.
+    Revisit only if the base grows an order of magnitude.
+  - **`ts_headline` takes its option string as a bind parameter**, and raw control characters survive it
+    unquoted — `StartSel=<U+0002>, StopSel=<U+0003>` works. `MaxFragments=0` gives one window per block,
+    which is what a block is for. `MinWords` must be strictly less than `MaxWords` or Postgres refuses.
+  - **`ts_headline` with a query that does not match returns the first `MinWords` words, not `MaxWords`.**
+    The "found by title" fallback therefore does not use it at all: it reads `block.content` of the
+    opening block (`DISTINCT ON (doc_path) … ORDER BY doc_path, ordinal`) and cuts it to `snippetWords`
+    in TypeScript, so an unhighlighted snippet is guaranteed to carry no marks.
+  - **A title taken from the first heading is also a block**, so a document "found only by its title"
+    normally still has a matching block. The fallback path is only reachable when the title came from
+    frontmatter (or from the file name) — which is what the test for it uses.
+  - **`to_tsquery('simple', '')` is a notice, not an error**, and yields an empty tsquery that matches
+    nothing. The searcher still skips the branch when the built expression is empty, so a query of
+    qualifiers only never asks the DBMS for a match at all.
+  - **`= ANY($n::text[])` takes a JavaScript array straight through PGlite**; no per-path placeholder
+    list is needed for the snippet queries.
+  - `strpos(column, $n) > 0`, not `LIKE '%' || $n || '%'`: a qualifier value holding `%` or `_` is a
+    value, not a wildcard. There is a test that `title:%` finds nothing and that
+    `title:"'; DROP TABLE document; --"` leaves the three seeded rows in place.
+  - **`limit`, `offset`, `snippetsPerDocument`, `snippetWords` and `fuzzyThreshold` are exported
+    defaults** (`DEFAULT_SEARCH_LIMIT` = 50, `DEFAULT_SNIPPETS_PER_DOCUMENT` = 3,
+    `DEFAULT_SNIPPET_WORDS` = 24, `DEFAULT_FUZZY_THRESHOLD` = 0.3). APP-01-06 owns the settings section
+    and should route them through the plugin's config schema.
+  - **APP-01-05 calls `parseSearchQuery` then `searchDocuments`** — the engine deliberately has no
+    `search(queryString)` convenience, because the plugin needs the parsed structure anyway (it renders
+    `warnings` next to the input). An invalid regular expression *throws* `SearchRegexInvalidError`
+    rather than answering with an empty result: an empty result would clear the list, and FE 9 asks for
+    the previous list to stay while a message appears at the input.
+  - `ref` is still not a backlink graph and this feature never reads it: search touches `document`,
+    `block` and `tag` only.
+---
+
+## 2026-07-26 - APP-01-05
+
+- Gave the index a face: a Search mini-app in both frames, and closed the stale-rows hole APP-01-03 found.
+  - `plugins/search/src/ui/`: `SearchLayout.vue` is the explorer's shape exactly — `MiniAppShell`
+    (`rail-title="Search"`, `rail-icon="lu:search"`) with `SearchRail` in `#rail` and `<PanelsLayout
+    tab="Notes" />` as content, on the **global** panel store, so a result opens the same instance the
+    explorer would have opened.
+  - `SearchRail.vue` is the field, the four controls, the results and the index status. The results are one
+    **flat** listbox (`role="listbox"` + `aria-activedescendant`, container `tabindex="0"`, rows
+    `<button role="option" tabindex="-1">`): a document row, then a row per snippet under it. Grouping is
+    what the rows look like; the arrow keys walk one list. Down from the field enters it, up from the first
+    row goes back to the field, Enter opens, Escape clears and returns the cursor.
+  - `ui/search-controller.ts` holds everything that could be wrong invisibly, with no DOM: the 200 ms
+    debounce, request numbering (only a strictly newer answer may write to the list), `offset: 0` on every
+    change, and the two error channels — a bad regular expression goes to the input and the list stays,
+    anything else goes to the results area.
+  - `ui/search-preferences.ts` persists the four controls per device (`arxhub.search.preferences` in
+    `localStorage`) as a module-level shared ref with a **detached** `effectScope` watcher — `useRailWidth`'s
+    pattern, for `useRailWidth`'s reason.
+  - `ui/use-open-document.ts`: an instance already holding the path is activated (and promoted out of
+    preview); otherwise `store.getPanelsForFile(extname(path))` and `openPanel(..., { path, blockId })`;
+    nothing claims the extension → a toast that says so. Copied from the explorer, never imported.
+  - `SearchExtension.search(input, options)` composes `parseSearchQuery` + `searchDocuments` and throws
+    `searchIndexUnavailable()` when there is no index.
+  - `packages/sql`: `removeDocumentsUnder(index, prefix)` deletes by path prefix, and `indexer.removePath()`
+    now calls it next to `removeDocument`. That is FR-225's directory case closed.
+  - `packages/uikit`: `Segmented` gained an optional `stretch` prop (full width, even segments).
+- Files changed:
+  - new: `plugins/search/src/ui/{SearchLayout.vue,SearchRail.vue,search-controller.ts,search-preferences.ts,use-open-document.ts}`,
+    `plugins/search/src/env.d.ts`
+  - new: `plugins/search/src/__tests__/{search-controller,search-preferences}.test.ts`, `e2e/tests/search.spec.ts`
+  - edited: `plugins/search/src/{search-plugin,search-extension,ui}.ts`, `plugins/search/{package.json,vite.config.ts}`,
+    `plugins/search/src/__tests__/vault-freshness.test.ts`
+  - edited: `packages/sql/src/{index-document,indexer,index}.ts`,
+    `packages/sql/src/__tests__/{index-document,indexer}.test.ts`
+  - edited: `packages/uikit/src/core/Segmented.vue`, `pnpm-lock.yaml`
+- Checks: `@arxhub/sql test` → **169 passed** (162 + 7 for the prefix delete), `@arxhub/plugin-search test` →
+  **31 passed** (15 + 16), `@arxhub/vfs test` → 80 passed. `tsc --noEmit` clean for `@arxhub/sql` and
+  `@arxhub/plugin-search`; `vue-tsc --noEmit` clean for `app` and `client` (checked that vue-tsc really reads
+  the plugin's SFCs by breaking one on purpose first); `tsc --noEmit` clean in `e2e`. Biome clean on every
+  touched path bar the known SFC "unused" noise. **E2E not run** (the orchestrator owns it).
+- **Browser verification** — the dev stand on :3200 against a scratch `ARXHUB_DATA_DIR` with five seeded
+  notes, driven with Playwright in both frames (Desktop Chrome and Pixel 7). Observed: the mini-app opens
+  from the desktop rail and from the mobile bottom-bar key (`aria-label` "Search", no badge); typing
+  `носорог` gives 2–3 documents with the match wrapped in `.match` spans and a "N documents" summary;
+  ArrowDown/ArrowDown/Enter opens `rhino.md` in the workspace (`aria-activedescendant` moved to
+  `arxhub-search-result-1`); clicking the same result again leaves the tab count unchanged; Escape clears the
+  field and focus returns to it; "Titles only" narrows 3 documents to 1 and comes back checked after a trip
+  through Explorer, with `{"titlesOnly":true,…}` in `localStorage`; the order control re-asks and persists
+  `"sort":"modified"`; an unclosed group with regex on shows *"(носорог is not a valid regular expression:
+  … Unterminated group"* at the field with all five rows still listed; a `.text` note produces the "Nothing
+  can open this file" toast; the empty state reads "Nothing matches птеродактиль-которого-нет"; Reindex goes
+  inert and the status reads "Indexing… 3 processed" then "4 in index · scanned 6:40:37 PM"; and with
+  `window.indexedDB` removed the rail reads "Search is unavailable: Could not open the search index at
+  idb://arxhub-sql" with the field and Reindex both disabled.
+- **Learnings for future iterations:**
+  - **The mobile tab comes free from the sidebar registration.** `MobileShell`'s `miniAppTabs` turns every
+    non-hidden, non-`bottom` sidebar item into a bottom-bar key with no badge, so a second
+    `shell.tabs.register` with the same id would render the key twice (and warn on the duplicate Vue key).
+    One registration is also what FE 1 asks for. The one visible oddity: the frame's rail key takes the
+    mini-app's `rail-title`, so a phone shows two keys labelled "Search" — the panel opener and the mini-app.
+    That is the spec's own naming (FE 3), not a bug to fix here, but a test must not select either by name.
+  - **The mobile rail panel closes on any click that hits a `button`** (`MobileFilesPanel.onActivate`), which
+    is right for a file tree and wrong for a search form — flipping a toggle would have dismissed the panel.
+    The head and the status strip therefore carry `@click.stop`, and the result rows are deliberately real
+    `<button>`s so that the one click that IS navigation still gets the panel out of the way. Verified both.
+  - **A note's markup never reaches a snippet, for two independent reasons.** `stripInlineMarkup` removes it
+    from prose blocks at index time, and for a `code` block (where the index keeps it verbatim — confirmed:
+    `parseDocument` stores `<b>жираф</b>`) Postgres' `ts_headline` drops the tag tokens itself. So QA check 13
+    cannot be written as "the snippet still shows `<b>`"; what is checkable is that the rail contains no
+    element from the note and no U+0002/U+0003 leaks into the text.
+  - **`removePath` composes both deletes; the queue cannot.** By the time a change arrives the path is gone,
+    so nothing can ask whether it was a file or a folder, and guessing from the extension is wrong in both
+    directions (`notes/README` is a document, `my.dir` is not). `removeDocument` + `removeDocumentsUnder` in
+    the indexer costs one extra statement on a file delete and is always right.
+  - **`starts_with(path, prefix || '/')`, not `LIKE`.** A folder named `100%` is a name; and the trailing
+    separator is what keeps `notes/archive` from taking `notes/archived.md` with it. Both are tests.
+  - **The controller takes `query` and `preferences` as refs from the caller** rather than owning them: the
+    preferences ref is the shared persisted one, and a test can drive plain refs with fake timers. Note that
+    it only reacts to *changes* — creating it with a query already set searches nothing until the next edit,
+    which is right for the app (the field starts empty) and a trap for a test.
+  - **A template ref on `<Input>` gives the component, not the `<input>`.** Focusing the field is
+    `headEl.value?.querySelector('input')?.focus()` — properly typed, no cast; reaching through `$el` would
+    have needed one, and `as any` is banned.
+  - **`Switch` in this repo is `modelValue`, not `checked`** (the uikit wrapper's prop, whatever Ark UI's
+    internals take), and its real input is visually hidden: a test clicks the label. The three toggles carry
+    `data-testid`s for exactly the reason the plugin switches do; state is read as
+    `getByRole('checkbox', { name })`, and `Segmented` presents itself as `role="radiogroup"`.
+  - **`Segmented` is `inline-flex` at its labels' intrinsic width**, which overflows a 240 px rail with three
+    of them. The new `stretch` prop is opt-in, so nothing else changes.
+  - **`status` never reads `scanning` for a single-path reindex** (APP-01-03's note), so the rail's status
+    line does not flicker while notes are saved — but it also means there is no "saving…" feedback. What does
+    move is `documentCount`, which is what the idle line shows.
+  - **For APP-01-06:** the SQL console control was left OUT of the rail rather than shipped dead (FE 14 has no
+    target yet). Hang the console on `SearchExtension.readOnly` + `SearchExtension.schema` and put its control
+    in `SearchRail`'s `.index-status` strip next to Reindex, or as a panel opened from a settings section. The
+    tunables still in module constants and now visibly passed at call sites: `DEFAULT_SEARCH_DEBOUNCE_MS`
+    (200, `search-controller.ts`), `DEFAULT_SEARCH_LIMIT` (passed explicitly from `SearchRail`), and
+    APP-01-02/04's `exclude` / `maxFileSize` / `batchSize` / `debounceMs` / `snippetsPerDocument` /
+    `snippetWords` / `fuzzyThreshold`. All of them belong in the plugin's config schema.
+---
+
+## 2026-07-26 - APP-01-06
+
+- Gave the index a console to be asked in SQL, a settings page to be tuned from, and a plugin path that
+  reports rather than shrugs. Every tunable APP-01-02/04/05 left in a module constant now comes from config.
+  - `plugins/search/src/search-config.ts`: the eight settings as one flat TypeBox object with **dotted
+    keys** — `sql.maxRows`, `sql.timeoutMs`, `search.snippetsPerDocument`, `search.snippetWords`,
+    `search.fuzzyThreshold`, `index.debounceMs`, `index.maxFileSize`, `index.exclude` — grouped
+    (`SQL console` / `Search` / `Index`) with `unit` annotations, so the generated form reads as three
+    sections and every control shows its own key. `toSearchSettings()` sanitises **per field** (a bad entry
+    costs that entry, not the other seven), `DEFAULT_SEARCH_SETTINGS` is derived from the schema with
+    `Value.Default` so the two cannot drift, and `reindexRequired(before, after)` is the one rule that says
+    whether a saved change alters what the index *contains*.
+  - `SearchExtension` gained `settings` (the sanitised values), `config` (the plugin's scoped
+    `PluginConfig`), `applySettings()` (sets them, answers whether a rebuild is due) and a **readiness
+    gate**: `query()`/`readOnly()` await the open attempt, so a plugin asking during boot is not told
+    "unavailable" merely because it was early (BE 2.1). `query` is now `async` — a rejection, not a
+    synchronous throw — and `search`/`readOnly` take their snippet shape and their limits from `settings`.
+  - `plugins/search/src/ui/SqlConsolePanel.vue`: the console, on the **workspace** panel store
+    (`arxhub.search.console`), opened from a new control in `SearchRail`'s status strip. Editor, Run (inert
+    while one runs), Example (confirmed over typed text), Schema, a result table with field names and types,
+    NULL drawn apart from an empty string, `rowCount · durationMs` and a truncation notice in a pinned
+    footer, and the DBMS message with its position under the editor while the query text stays put.
+    `ui/sql-console-controller.ts` holds all of that behaviour with no DOM; `ui/sql-console-state.ts`
+    persists the query text per device.
+  - `plugins/codemirror/src/ui/CodeEditor.vue`: a generic v-model code editor with a lazily loaded
+    language, exported from `@arxhub/plugin-codemirror/ui`. The console uses it rather than hand-rolling an
+    editor, and the file-backed `CodeMirrorEditor` next to it keeps owning a document's lifecycle.
+  - `plugins/search/src/ui/SearchSettingsPage.vue`: the «Search» section — the index status plus an
+    immediate Reindex, then `ConfigForm` over the schema, staged into the shared pending changes with no
+    Save of its own. A commit that changed `index.exclude` or `index.maxFileSize` rebuilds the index.
+  - `ui/use-index-status.ts` is the one status line and one rebuild control the rail and the section share.
+  - `packages/sql`: `Indexer.configure({ exclude, maxFileSize, batchSize })` — each key applied only when
+    given — so a saved exclude list goes live without a restart. `IndexQueue.debounceMs` is settable for the
+    same reason. `SearchPluginArgs.debounceMs` is gone: it is config now.
+- Files changed:
+  - new: `plugins/search/src/{contributions,search-config}.ts`,
+    `plugins/search/src/ui/{SqlConsolePanel.vue,SearchSettingsPage.vue,sql-console-controller.ts,sql-console-state.ts,use-index-status.ts,use-open-console.ts}`,
+    `plugins/search/src/__tests__/{search-config,search-extension,sql-console-controller,sql-console-state}.test.ts`
+  - new: `plugins/codemirror/src/ui/CodeEditor.vue`, `e2e/tests/sql-console.spec.ts`
+  - edited: `plugins/search/src/{search-plugin,search-extension,index-queue,ui}.ts`,
+    `plugins/search/src/ui/SearchRail.vue`, `plugins/search/src/__tests__/fake-indexer.ts`,
+    `plugins/search/{package.json,vite.config.ts}`
+  - edited: `packages/sql/src/{indexer,index}.ts`, `packages/sql/src/__tests__/indexer.test.ts`
+  - edited: `plugins/codemirror/src/ui.ts`, `e2e/tests/{fixtures,search.spec}.ts`, `AGENTS.md`,
+    `pnpm-lock.yaml`
+- Checks: `@arxhub/sql test` → **174 passed** (169 + 5 for `configure`), `@arxhub/plugin-search test` →
+  **76 passed** (31 + 45), `@arxhub/config test` → 21, `@arxhub/vfs test` → 80. `tsc --noEmit` clean for
+  `@arxhub/sql`, `@arxhub/plugin-search`, `@arxhub/plugin-codemirror` and `e2e`; `vue-tsc --noEmit` clean for
+  `app` and `client` (confirmed it really reads the new SFCs by breaking one on purpose first);
+  `@arxhub/client build` succeeds and emits `sql-*.js` as its own chunk. Biome clean on every touched path
+  bar the known SFC "unused" noise — no findings at all in the `.ts` files or in `e2e/`. **E2E not run** (the
+  orchestrator owns it).
+- **Browser verification** — the dev stand on :3200 against a scratch `ARXHUB_DATA_DIR` with 17 seeded
+  notes, driven with Playwright in both frames (Desktop Chrome and Pixel 7). Observed:
+  - `SELECT path, title FROM document ORDER BY path` → a table headed `path text` / `title text`, 17 rows,
+    footer "17 rows · 95 ms"; SQL keywords highlighted and the editor offering column completions.
+  - `DELETE FROM document` → *"cannot execute DELETE in a read-only transaction"* with `25006` under the
+    editor, no table beneath it, the query text still in the editor; the same for `UPDATE` and for
+    `DROP TABLE`. Re-running the SELECT straight after gave **17 rows again** — the rollback works, nothing
+    was lost, and the console did not go dead.
+  - `SELECT path FROM documnet` → *"relation "documnet" does not exist"* with `42P01` and **at character 18**;
+    `SELECT 1; SELECT 2` → *"A query must be a single statement — this one has 2."*; a query matching nothing
+    → the empty state ("The query ran and matched nothing"), visibly not a refusal.
+  - a row of `path, frontmatter, hash, '' AS blank, NULL AS nothing` drew the jsonb as
+    `{"tags":["a","b"],"title":"Из метаданных"}`, the empty string as `(empty)` and the NULL as `null` — one
+    cell each, told apart.
+  - Schema → the five tables `document, block, ref, tag, index_meta` with every column and its type
+    (`path text`, `frontmatter jsonb`, `tsv tsvector`, …), capped at 320px so the answer stays on screen.
+  - Example over typed text asked *"Replace the query?"* and "Keep mine" left `SELECT 1` alone;
+    Ctrl+Enter ran the query and added no blank line.
+  - the query text came back verbatim after a full page reload.
+  - the settings section: three group headers, all eight fields, signature lines
+    `sql.maxRows · integer · min: 1`, `search.snippetWords · integer · 4–100 · unit: words`, …; two steppers,
+    three sliders, one chip input. Moving a slider staged "1 unsaved setting"; **Save & apply** wrote
+    `storage/search/config.toml` as `"sql.maxRows" = 10` … `"index.exclude" = [ "notes/bulk-*" ]`.
+  - `sql.maxRows` = 10 reached the console: its meta line read `10 row limit` and the same select came back
+    with **10 rows and "cut at 10 rows — the query matched more"**.
+  - saving `index.exclude = notes/bulk-*` raised the "Rebuilding the index" toast, the status went to
+    `5 in index`, and the console confirmed `count(*) = 5` with `notes/bulk-*` gone.
+  - the section's own Reindex ran (the scan timestamp advanced) — with only five small files left it was too
+    quick to catch the control disabled, so *that* half is unverified; the rail's Reindex was already covered
+    by APP-01-05's e2e.
+  - the mobile frame: the rail key opens the console **and dismisses the rail panel** (the one control there
+    that deliberately does not stop propagation), the query returned 5 rows with the footer summary, the
+    DELETE was refused the same way, the schema listed all five tables and the section rendered all eight
+    fields. No page errors in either frame; the only 404s are other plugins' absent config files.
+- **Learnings for future iterations:**
+  - **Dotted keys, not nested tables.** `packages/config`'s field model reads *top-level* properties, so
+    `Type.Object({ sql: Type.Object({...}) })` would render one useless text control. A literal
+    `'sql.maxRows'` property is what TOML writes as `"sql.maxRows" = 500` and parses straight back —
+    verified against smol-toml before committing to it. It also makes the signature line under each control
+    say where the value lives.
+  - **A required field that may legitimately be empty makes a section unsaveable.** `ConfigForm` computes
+    `invalid` over *every* field but only *shows* an error once a field has been edited, so
+    `index.exclude: []` had "Save & apply" disabled from the moment the page opened, with nothing on screen
+    explaining why. `Type.Optional` fixes it here (and is the honest modelling), but **the same is true of
+    Sync's `serverUrl` on a fresh install** — a real defect in `packages/config/src/ui/ConfigForm.vue`,
+    left alone as out of scope.
+  - **The rebuild cannot go through the UI's own Reindex control.** That control is inert while a walk runs,
+    which is right for a button and wrong for a rebuild the settings demand — the engine's `reindex()`
+    already cancels the walk in flight, clears the tables and starts over. And it must not be awaited inside
+    `commit()`: `saveAll()` is sequential, so a minutes-long walk would hold the whole apply open.
+  - **`flush: 'sync'` on the settings watcher is load-bearing.** The section applies the values and then
+    rebuilds; with the default (pre) flush the `Indexer.configure()` call would land *after* the rebuild had
+    already started, and the walk would run under the old exclude list.
+  - **`basicSetup` owns Mod-Enter.** It binds it to `insertBlankLine`, and an extension added later in the
+    array does not win — the run chord needs `Prec.highest`. Found by driving the browser; a unit test would
+    not have seen it, and neither would a reading of the code.
+  - **SQL highlighting cost no dependency.** `LanguageDescription.matchLanguageName(languages, 'sql')` over
+    `@codemirror/language-data` (already a dep of `plugins/codemirror`) loads `@codemirror/lang-sql` lazily,
+    and the client build splits it into `sql-*.js`.
+  - **`CodeMirrorEditor` was not reusable** — it takes a `path` and reads the vault. `CodeEditor.vue` is the
+    generic control that should have existed, exported from the codemirror plugin's `./ui` the same way
+    shell's and panels' components are; the console imports the component, not the plugin's lifecycle, so a
+    device with CodeMirror switched off still resolves the module.
+  - **A panel id belongs in its own module.** `SearchRail` opens the console panel and `SearchPlugin` imports
+    `SearchRail`, so a constant on the plugin closes an import cycle. `contributions.ts` holds the three ids.
+  - **The mobile rail dismisses on a click that reaches it**, so `@click.stop` is now per control rather than
+    on the whole strip: Reindex stops (it is an action, the owner has not navigated), the console control
+    does not (it puts a panel behind the rail panel, which therefore has to get out of the way).
+  - **`openSettingsSection` was ambiguous the moment a section shared a mini-app's name.** Both the Search
+    rail key and the Search settings section are called "Search", so the helper now scopes to
+    `.settings-nav`. Any later section named after its plugin would have hit the same wall.
+  - **`statement_timeout` is still inert in PGlite 0.5.4** (APP-01-01's finding, unchanged). `sql.timeoutMs`
+    is read from config, reaches `set_config` and is shown in the console's meta line, but no query is
+    actually cut short — QA check 5 and the timeout half of acceptance criterion 3 cannot pass as written,
+    and nothing here fakes a cancellation. `durationMs` is what reports the cost.
+  - **Three tunables are deliberately still constants**: `batchSize` (how often the walk checkpoints — a
+    responsiveness knob, not a user setting, and absent from the BE doc's schema list),
+    `DEFAULT_SEARCH_DEBOUNCE_MS` (200, the search field's own keystroke debounce) and
+    `DEFAULT_SEARCH_LIMIT` (50, the result page size). If a later feature wants them on the page, they are
+    two more schema entries and one more `toSearchSettings` line.
+  - **No Vue component test framework was added.** There is none in this repo, and inventing one for this
+    feature would have been a bigger decision than the feature. Everything that could be wrong invisibly is
+    in `sql-console-controller.ts`, `search-config.ts` and `search-extension.ts` under plain vitest; the rest
+    was verified in a real browser and is covered by `e2e/tests/sql-console.spec.ts`.
+---
+
+## 2026-07-26 - APP-01-06 (fix: boot-blocking start)
+
+- Regression from the full e2e run (95 passed / 1 failed): `mobile.spec.ts` died in the shared `app`
+  fixture on `expect(page.getByRole('main')).toBeVisible()` at 5 s, only under parallel load. Cause was
+  `SearchPlugin.start()` awaiting the config read and then `openSqlIndex` — `ArxHub.start()` awaits every
+  plugin's `start()`, so nothing painted until PGlite had fetched and booted its WASM.
+- **The rule, and it is reusable: a plugin's `start()` must not hold the first paint.** Written up in the
+  root `AGENTS.md` next to "Boot recovery", because it is a property of the lifecycle rather than of search.
+  A slow bring-up sets a pending status, runs **detached**, and everything that needs the resource awaits a
+  readiness promise instead of assuming it is there.
+  - `SearchPlugin.start()` now sets `status = 'opening'` and returns; `bringUpIndex()` does the config read →
+    `openSqlIndex` → `readIndexState` → indexer + queue + settings watch → background `scan()`. The config
+    read stayed first inside it, because `exclude`/`maxFileSize` decide what the very first walk covers.
+  - `start()` is **deliberately not `async`**: its whole body runs in the caller's tick, so a `stop()` in the
+    same tick always finds `bringUp` assigned. With `await super.start(ctx)` first the two interleave — and
+    worse, the resumed `start()` reset `stopping` back to false after the stop had set it, so the bring-up
+    went on to open an index nothing was left to close. Verified: restoring the `async` form crashes the
+    vitest worker with a leaked PGlite instance.
+  - `stop()` sets `stopping`, then **awaits the bring-up** before tearing anything down; `bringUpIndex()`
+    re-checks `stopping` after every await and closes the index itself if the stop landed mid-open.
+  - `SearchExtension.search` and `reindex` join `query`/`readOnly` in awaiting readiness, so a word typed one
+    second into the boot is answered rather than told the index is not open. `schema` needs no gate — it is a
+    constant of the engine, right before the index opens and after one has failed to.
+  - `useIndexStatus` gained an `opening` state ("Opening the index…", pulsing dot, Reindex inert). Without it
+    the rail read "0 in index" during the bring-up, which is a claim about the vault rather than about a
+    database that has not answered yet.
+- Files changed: `plugins/search/src/{search-plugin,search-extension}.ts`,
+  `plugins/search/src/ui/use-index-status.ts`, new
+  `plugins/search/src/__tests__/plugin-lifecycle.test.ts`, `plugins/search/package.json` (dev deps
+  `@arxhub/di`, `@arxhub/events`, `eventemitter3` — the test builds a real `PluginContext`), `AGENTS.md`.
+- Checks: `@arxhub/plugin-search test` → **85 passed** (76 + 9 lifecycle), `@arxhub/sql test` → 174,
+  `@arxhub/config test` → 21, `@arxhub/vfs test` → 80. `tsc --noEmit` clean for `@arxhub/sql`,
+  `@arxhub/plugin-search`, `@arxhub/plugin-codemirror`, `e2e`; `vue-tsc --noEmit` clean for `app` and
+  `client`. Biome clean on every touched path bar the known SFC noise. E2E not run.
+- **Browser verification** — four Playwright contexts booting the stand at once (what the parallel suite does
+  to it): `<main>` visible after **1625/1629/1635/1659 ms**, and the rail read "Opening the index…" for the
+  first moment after that, then "5 in index · scanned …". A `count(*)` in the console returned 5. With
+  `window.indexedDB` removed the app painted in **455 ms** — the failed open no longer delays anything — and
+  still reported "Search is unavailable: Could not open the search index at idb://arxhub-sql", with the field
+  and Reindex disabled, the console answering `index_unavailable` as a value, and the Schema control still
+  listing all five tables.
+- **Learnings for future iterations:**
+  - **`ref()` deep-proxies an object, so identity comparisons against the initial value never match.** The
+    first cut guarded "did the settings section already save while the config read was in flight?" with
+    `settings.value === DEFAULT_SEARCH_SETTINGS`, which was silently always false — the config file was then
+    never applied, and a test caught it. `settings` is now a `shallowRef` (right on its own merits: the object
+    is replaced whole, never mutated) and the guard is an explicit `settingsApplied` boolean, which no later
+    reactivity choice can break.
+  - **A race test needs a gate, not a sleep.** The sleep-based version ("nothing subscribed 3 s after a
+    start/stop race") passes even with `stop()`'s await removed, because the bring-up's own `stopping`
+    checkpoints catch that path. What has teeth is a `ScopedFileSystem` subclass that parks the config read:
+    the bring-up suspends at a known point, `stop()` is called, and the assertion is that it has **not**
+    resolved. Confirmed to fail the moment the await is dropped. Both tests are kept — they cover different
+    halves.
+  - **The plugin is testable without `ArxHub`.** `new ExtensionContainer({ logger })` + a
+    `LazyContainer<object>` with `VaultVfs`/`VaultWatcher` bound + an `EventEmitter<EventMap>` is a usable
+    `PluginContext`; `create()` and then setting `search.config` by hand stands in for `configure()`, which
+    would otherwise drag in the shell, panels and settings extensions the test says nothing about.
+  - **"Typed at boot, answered with 0 documents" is not a regression** — it is pre-existing and unchanged.
+    The readiness promise resolves when the index *opens*, not when the walk has filled it, and the search
+    controller only re-runs on a *change* to the query or the toggles. So a word typed in the first second
+    answers over an empty index and the list then sits stale until the next keystroke. The e2e handles it by
+    retyping (`searchFor` polls). Refreshing the list when a walk finishes would be a change to APP-01-05's
+    controller contract; recorded rather than smuggled in here.
+---
+
+## Codebase Patterns
+- AiWorkspace: VirtualDir has no exists(); use root.exists(path). Playwright signed agent calls: e2e/tests/signed-request.ts (catalog @noble/@scure), not @arxhub/crypto (tsconfig extends fails in Playwright loader).
+
+## Codebase Patterns (APP-02 remaining)
+- **DiffModule in plugin-editor:** `diffTexts` / `diffNodes` + `DiffView`; AI workspace and DocumentVersions both consume labels from the module (Saved version/Current; Base/Worktree/Main from compare).
+- **AI compare route:** POST `/sessions/:id/files/compare` `{pathname, mode: agent|apply}` → labeled left/right text; client `compare` + DiffView behind `ai-workspace-diff`.
+- **Worktree edit:** stage at `_ai-workspace/<sessionId>/<path>`, open via Notes; VaultWatcher → tools/write; accept skips staging prefix.
+- **Three-way accept:** client `applyAcceptWithMerge` + `RepositoryExtension.mergeContent` then archive-only `{clientApplied:true}`; server accept kept as fallback.
