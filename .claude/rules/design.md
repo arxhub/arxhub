@@ -42,6 +42,8 @@ Every value below comes from a token. A literal in place of one of these is a vi
   28px on the desktop frame, `var(--size-xl)` (48px) on the mobile frame. The frame chooses, read through
   `useShellFrame()`; the consumer gets no density prop. A single-line row lands exactly on the value; a row that
   legitimately wraps grows down from it.
+  Navigation lists have no outer padding: the first row follows the strip directly, and rows fill the navigation
+  width. The row itself owns the text inset, so selection fills the available width as it does in Explorer.
 - **Control** — an interactive element: button, input, switch, stepper, segmented control. `var(--size-xs)` (32px).
 - **Status bar** — `var(--size-md)` (40px) on the desktop frame, matching the type rail's own `size="lg"`
   `NavItem` — it spans the whole window under the rail, and a shorter bar left a jog where the two met instead of

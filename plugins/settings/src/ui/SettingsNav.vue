@@ -47,6 +47,5 @@ const sorted = computed(() => [...settings.sections.value].sort((a, b) => (a.ord
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding: 16px 8px;
 }
 </style>
