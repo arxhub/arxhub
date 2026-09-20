@@ -1,12 +1,13 @@
 import type { Locator, Page } from '@playwright/test'
+import { closeSettings, openProperties } from './arx-inspector-helpers'
 import { expect, isMobileFrame, openNavigation, openSearchApp, openTreeActions, test } from './fixtures'
 
 // A tooltip-wrapped trigger's hover/focus machinery does not treat a plain Playwright `.click()`
 // (or a synthetic 'click' Event) as a real pointer interaction on the mobile project's touch-emulated
 // page — a genuine touch sequence is what CDP's own touch events give it, the same trick
 // arx-blocks.spec.ts's drag helper uses for the same reason.
-async function tapOrClick(page: Page, locator: Locator): Promise<void> {
-  if (!(await isMobileFrame(page))) {
+async function tapOrClick(page: Page, locator: Locator, mobile: boolean): Promise<void> {
+  if (!mobile) {
     await locator.click()
     return
   }
@@ -55,6 +56,8 @@ test.describe('properties (A-48)', () => {
     await app.getByRole('menuitem', { name: 'Properties…' }).click()
 
     const cardPath = `${path}.arx`
+    const mobile = await isMobileFrame(app)
+    await openProperties(app)
     const tags = app.getByRole('textbox', { name: 'Tags' })
     await expect(tags).toBeVisible()
 
@@ -68,10 +71,11 @@ test.describe('properties (A-48)', () => {
     // longer sit on the button by the time it lands.
     await expect
       .poll(async () => {
-        await tapOrClick(app, favorite)
+        await tapOrClick(app, favorite, mobile)
         return favorite.getAttribute('aria-pressed')
       })
       .toBe('true')
+    await closeSettings(app)
     await save(app)
 
     // Polled on the actual tag, not merely on "a properties block exists": the card is written the
@@ -100,9 +104,11 @@ test.describe('properties (A-48)', () => {
     // Reopening "Properties…" on the subject opens the SAME card rather than overwriting it.
     await openTreeActions(app, app.getByRole('treeitem', { name: path, exact: true }))
     await app.getByRole('menuitem', { name: 'Properties…' }).click()
+    await openProperties(app)
     await expect(app.getByRole('textbox', { name: 'Tags' })).toBeVisible()
     await expect(app.locator('.chip-text', { hasText: 'family' })).toBeVisible()
 
+    await closeSettings(app)
     await openSearchApp(app)
     await expect
       .poll(

@@ -64,8 +64,8 @@ function normalizeAttrs(attrs: Record<string, unknown>): PropertiesAttrs {
 }
 
 // Inserts a `properties` block at the very top of the document when it does not already have one there
-// — the slash command and the explorer's card creation share this rule so a freshly created card and a
-// live insertion agree on what "ensured" means. Existing content is never reordered or dropped.
+// for the explorer's sidecar creation. The editor projects this stored first node into page metadata;
+// it is edited in the inspector, not inserted through slash commands. Existing content is never dropped.
 export function ensureProperties(doc: ArxJsonNode, subject?: PropertiesSubject): ArxJsonNode {
   if (hasProperties(doc)) return doc
   const content = Array.isArray(doc.content) ? doc.content : []

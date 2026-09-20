@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { closeSettings, openBlockSettings } from './arx-inspector-helpers'
 import { expect, openNavigation, test } from './fixtures'
 
 const document = (content: unknown[]) => JSON.stringify({ version: 1, doc: { type: 'doc', content } })
@@ -54,11 +55,13 @@ test('sections collapse while reading and code language persists with highlighte
     ]),
   )
   const editor = await open(app, path)
-  await editor.getByRole('textbox', { name: 'Section title' }).fill('Saved section')
-  await editor.getByRole('button', { name: 'Code language' }).click()
-  const language = app.getByRole('dialog', { name: 'Code language' })
+  const section = await openBlockSettings(app, editor.locator('.section-content p'), 'Section')
+  await section.getByRole('textbox', { name: 'Section title' }).fill('Saved section')
+  await closeSettings(app)
+  const language = await openBlockSettings(app, editor.locator('pre code'), 'Code')
   await language.getByRole('textbox', { name: 'Search code languages' }).fill('JavaScript')
   await language.getByRole('button', { name: 'JavaScript', exact: true }).click()
+  await closeSettings(app)
   await expect(editor.locator('.tok-keyword')).toHaveText('const')
   await editor.locator('pre code').click()
   await app.keyboard.press('End')
@@ -67,7 +70,7 @@ test('sections collapse while reading and code language persists with highlighte
   await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('42 + 1')
   await open(app, path)
-  await expect(editor.getByRole('textbox', { name: 'Section title' })).toHaveValue('Saved section')
+  await expect(editor.locator('summary')).toContainText('Saved section')
   await expect(editor.locator('.tok-keyword')).toHaveText('const')
   await app.getByRole('button', { name: 'Document tools', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()

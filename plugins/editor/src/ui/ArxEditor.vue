@@ -20,6 +20,7 @@ import { createAssetStore } from '../assets'
 import { blockIdentityPlugin, identifyBlocks } from '../block-identity'
 import { blockMarqueePlugin } from '../block-marquee'
 import { blockSelectionPlugin } from '../block-selection'
+import { inspect, inspectorPlugin } from '../block-settings'
 import { codeHighlighting } from '../code-highlighting'
 import { columnsView } from '../columns-view'
 import { createControlViews } from '../control-views'
@@ -40,6 +41,7 @@ import { slashCommands, slashKey } from '../slash-commands'
 import { restoreVersionBlock } from '../version-diff'
 import ArxComponentHost from './ArxComponentHost.vue'
 import BlockHandle from './BlockHandle.vue'
+import BlockSettingsHandle from './BlockSettingsHandle.vue'
 import DocumentAppearance from './DocumentAppearance.vue'
 import DocumentBacklinks from './DocumentBacklinks.vue'
 import DocumentChrome from './DocumentChrome.vue'
@@ -49,6 +51,7 @@ import DocumentPageHeader from './DocumentPageHeader.vue'
 import DocumentRecovery from './DocumentRecovery.vue'
 import DocumentTools from './DocumentTools.vue'
 import DocumentVersions from './DocumentVersions.vue'
+import EditorInspector from './EditorInspector.vue'
 import SelectionFormatting from './SelectionFormatting.vue'
 import SlashMenu from './SlashMenu.vue'
 import 'prosemirror-view/style/prosemirror.css'
@@ -155,7 +158,8 @@ function buildPlugins() {
     insertHint(),
     history(),
     blockIdentityPlugin(),
-    blockMarqueePlugin(),
+    inspectorPlugin(),
+    blockMarqueePlugin(() => editorEl.value),
     blockSelectionPlugin(),
     assets.plugin,
     codeHighlighting(),
@@ -530,6 +534,7 @@ const appearance = computed(() => {
   void revision.value
   return view.value ? documentAppearance(view.value.state.doc) : { icon: null, cover: null }
 })
+
 watch(
   [() => props.path, appearance],
   ([path, value]) => {
@@ -578,6 +583,7 @@ const chromeTarget = usePanelChrome(() => ({
     <div v-if="saveError" class="editor-error" role="alert"><span>Save failed. Your changes are still in this editor.</span><Button :size="buttonSize" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button></div>
     <div v-if="conflictCount" class="editor-warning" role="status">{{ conflictCount }} unresolved conflict{{ conflictCount === 1 ? '' : 's' }}</div>
     <DocumentAppearance v-if="appearanceOpen" :appearance="appearance" @apply="applyAppearance" @close="appearanceOpen = false" />
+    <div class="editor-body">
     <div v-show="!loadError" ref="editorEl" class="editor-content" @scroll="dismissSlash">
       <DocumentPageHeader :path="path" :appearance="appearance" :disabled="!canSave || mode !== 'editable'" />
       <div ref="editorMount" />
@@ -585,8 +591,11 @@ const chromeTarget = usePanelChrome(() => ({
     <BlockHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :commands="kit.commands" />
     <SelectionFormatting v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :links="extension.links" :path="path" />
     <SlashMenu v-if="view && slashMenu && !loadError" :view="view" :menu="slashMenu" :menu-id="slashMenuId" :commands="kit.commands" />
+    <BlockSettingsHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :components="kit.components" />
+    <EditorInspector v-if="view && canSave" :view="view" :revision="revision" :kit="kit" :mode="mode" :path="path" />
+    </div>
     <DocumentChrome :target="chromeTarget" :status="assets.pending.value ? 'Uploading attachment…' : saveStatus" :mode="mode">
-      <DocumentTools v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" :on-appearance="() => appearanceOpen = true" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
+      <DocumentTools v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" :on-appearance="() => appearanceOpen = true" @properties="view && inspect(view, { kind: 'page' })" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
     </DocumentChrome>
     <Teleport v-for="control in controls.values()" :key="control.id" :to="control.host">
       <ArxComponentHost :control="control" />
@@ -603,7 +612,10 @@ const chromeTarget = usePanelChrome(() => ({
   overflow: hidden;
 }
 .editor-warning { padding: 8px 12px; color: var(--warning-11); background: var(--warning-2); font-size: var(--font-size-sm); }
+.editor-panel.touch .editor-content { padding-inline: 56px; }
+.editor-body { position: relative; display: flex; flex: 1; min-height: 0; min-width: 0; container-type: inline-size; }
 .editor-content {
+  min-width: 0;
   min-height: 0;
   overscroll-behavior: contain;
   flex: 1;

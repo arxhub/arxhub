@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { closeSettings, openBlockSettings } from './arx-inspector-helpers'
 import { expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aR1sAAAAASUVORK5CYII=', 'base64')
@@ -23,12 +24,12 @@ test('images upload, resize, retain captions and download after reopening', asyn
   await editor.getByLabel('Choose image file').setInputFiles({ name: 'pixel.png', mimeType: 'image/png', buffer: png })
   const image = editor.getByRole('img', { name: 'pixel.png' })
   await expect.poll(() => image.evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBe(1)
-  await editor.getByRole('button', { name: 'Image width', exact: true }).click()
+  const settings = await openBlockSettings(app, editor.locator('[data-type=image_block]'), 'Image')
+  await settings.getByRole('button', { name: 'Image width', exact: true }).click()
   await app.getByRole('menuitem', { name: '50%', exact: true }).click()
-  await editor.getByRole('button', { name: 'Edit caption', exact: true }).click()
-  await editor.getByRole('textbox', { name: 'Attachment caption', exact: true }).fill('A saved image')
-  await editor.getByRole('textbox', { name: 'Image alternative text', exact: true }).fill('A sample pixel')
-  await editor.getByRole('button', { name: 'Apply caption', exact: true }).click()
+  await settings.getByRole('textbox', { name: 'Attachment caption', exact: true }).fill('A saved image')
+  await settings.getByRole('textbox', { name: 'Image alternative text', exact: true }).fill('A sample pixel')
+  await closeSettings(app)
   await app.getByRole('button', { name: 'Document tools', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('A saved image')

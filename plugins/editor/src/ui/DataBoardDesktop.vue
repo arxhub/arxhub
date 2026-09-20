@@ -6,7 +6,7 @@ defineProps<{ groups: { title: string; items: ArxDataItem[] }[] }>()
 const emit = defineEmits<{ open: [item: ArxDataItem] }>()
 </script>
 <template>
-  <div class="data-board" aria-label="Data board"><section v-for="group in groups" :key="group.title"><h3>{{ group.title }} · {{ group.items.length }}</h3><Row v-for="item in group.items" :key="item.id" as="button" type="button" wrap @click="emit('open', item)">{{ item.title }}</Row></section></div>
+  <div class="data-board" aria-label="Grouped results"><section v-for="group in groups" :key="group.title"><h3>{{ group.title }} · {{ group.items.length }}</h3><Row v-for="item in group.items" :key="item.id" as="button" type="button" wrap @click="emit('open', item)">{{ item.title }}</Row></section></div>
 </template>
 <style scoped>
 .data-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: 16px; overflow-x: auto; }

@@ -1,6 +1,7 @@
 import { Mark, type Node } from 'prosemirror-model'
 import { type EditorState, Plugin, PluginKey } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
+import { isRecord } from './document-migrations'
 import { isSelectOptionList, selectedLabel as labelOf, newSelectOptionId, type SelectOption } from './select-options'
 
 export type EditorMode = 'readonly' | 'editable' | 'interactive'
@@ -27,6 +28,25 @@ export function onlyControlValuesChanged(before: Node, after: Node, policies = D
   const policy = policies[before.type.name]
   for (const key of new Set([...Object.keys(before.attrs), ...Object.keys(after.attrs)])) {
     if (JSON.stringify(before.attrs[key]) === JSON.stringify(after.attrs[key])) continue
+    if (before.type === before.type.schema.topNodeType && key === 'arxEnvelope') {
+      const a = before.attrs[key]
+      const b = after.attrs[key]
+      if (isRecord(a) && isRecord(b) && isRecord(a.properties) && isRecord(b.properties)) {
+        const { properties: previous, ...restA } = a
+        const { properties: next, ...restB } = b
+        try {
+          if (
+            previous.type === 'properties' &&
+            next.type === 'properties' &&
+            JSON.stringify(restA) === JSON.stringify(restB) &&
+            onlyControlValuesChanged(before.type.schema.nodeFromJSON(previous), before.type.schema.nodeFromJSON(next), policies)
+          )
+            continue
+        } catch {
+          return false
+        }
+      }
+    }
     if (!policy || !Object.hasOwn(policy, key) || !policy[key](after.attrs[key], before)) return false
   }
   for (let i = 0; i < before.childCount; i++) {

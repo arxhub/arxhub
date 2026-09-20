@@ -116,6 +116,7 @@ export const transformBlocks =
     }
     const content = Fragment.from(nodes)
     if (content.eq(range.content)) return false
+    if (!range.parent.canReplace(range.index, range.endIndex, content)) return false
     if (dispatch) {
       const tr = state.tr.replaceWith(range.from, range.to, content)
       tr.setSelection(BlockSelection.create(tr.doc, range.from, range.from + content.size))

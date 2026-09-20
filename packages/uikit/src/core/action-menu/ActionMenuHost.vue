@@ -125,7 +125,8 @@ function onGlobalKeydown(event: KeyboardEvent) {
 // flashes and vanishes reads as a control that does nothing.
 let anchored = false
 
-function onCloseIfAnchored() {
+function onCloseIfAnchored(event: Event) {
+  if (event.type === 'scroll' && event.target instanceof Node && menuEl.value?.contains(event.target)) return
   if (!isMobile && anchored) actionMenu.close()
 }
 
@@ -204,6 +205,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   min-width: 168px;
+  max-height: calc(100dvh - 8px);
+  overflow-y: auto;
   padding: 4px;
   background: var(--gray-2);
   border: 1px solid var(--gray-6);

@@ -41,8 +41,9 @@ onUnmounted(() => {
 const position = computed(() => {
   void props.revision
   void layoutRevision.value
-  const { $from } = props.view.state.selection
-  const pos = $from.depth ? $from.before(1) : $from.pos
+  const range = selectedBlocks(props.view.state)
+  if (!range) return null
+  const pos = range.from
   const node = props.view.nodeDOM(pos)
   const panel = props.scroller.parentElement
   if (!(node instanceof HTMLElement) || !panel) return null
@@ -51,7 +52,7 @@ const position = computed(() => {
   const parent = panel.getBoundingClientRect()
   if (block.bottom <= scroll.top || block.top >= scroll.bottom) return null
   const top = Math.max(scroll.top, Math.min(block.top, scroll.bottom - 64))
-  return { top: `${top - parent.top}px`, left: `${block.left - parent.left - 36}px` }
+  return { top: `${top - parent.top}px`, left: `${block.left - parent.left - (iconSize === 'xl' ? 52 : 36)}px` }
 })
 function open(element: HTMLElement) {
   const rect = element.getBoundingClientRect()
@@ -100,10 +101,15 @@ function locate() {
   const editor = props.view.dom.getBoundingClientRect()
   const viewport = props.scroller.getBoundingClientRect()
   if (!panel) return
-  let target = props.view.state.doc.content.size
+  const range = selectedBlocks(props.view.state)
+  if (!range) return
+  const source = props.view.nodeDOM(range.from)
+  const bounds = source instanceof HTMLElement ? source.getBoundingClientRect() : editor
+  let target = range.start + range.parent.content.size
   let top = editor.top
   let found = false
-  props.view.state.doc.forEach((_node, pos) => {
+  range.parent.forEach((_node, offset) => {
+    const pos = range.start + offset
     if (found) return
     const dom = props.view.nodeDOM(pos)
     if (!(dom instanceof HTMLElement)) return
@@ -120,8 +126,8 @@ function locate() {
       ? undefined
       : {
           top: `${top - panel.top}px`,
-          left: `${editor.left - panel.left}px`,
-          width: `${editor.width}px`,
+          left: `${bounds.left - panel.left}px`,
+          width: `${bounds.width}px`,
         }
 }
 
@@ -178,7 +184,7 @@ function cancel() {
     @pointerdown.prevent="start" @pointermove="move" @pointerup="finish" @pointercancel="cancel" @lostpointercapture="cancel">
     <IconButton :size="iconSize" icon="lu:grip-vertical" tooltip="Block actions" @click="$event.detail === 0 && open($event.currentTarget as HTMLElement)" />
   </div>
-  <div v-if="position && !dragging" class="block-insert" :style="position" @mousedown.prevent>
+  <div v-if="position && !dragging" class="block-insert" :style="[position, { marginTop: iconSize === 'xl' ? 'var(--size-xl)' : 'var(--size-xs)' }]" @mousedown.prevent>
     <IconButton :size="iconSize" icon="lu:plus" tooltip="Insert block" @click="insert($event.currentTarget as HTMLElement)" />
   </div>
   <div v-if="dropLine" class="block-drop-line" :style="dropLine" aria-hidden="true" />
@@ -186,6 +192,6 @@ function cancel() {
 
 <style scoped>
 .block-handle { position: absolute; touch-action: none; cursor: grab; }
-.block-insert { position: absolute; margin-top: 32px; }
+.block-insert { position: absolute; }
 .block-drop-line { position: absolute; height: 2px; background: var(--accent-8); pointer-events: none; }
 </style>

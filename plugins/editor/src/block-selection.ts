@@ -1,6 +1,6 @@
 import { validation } from '@arxhub/errors'
 import { Fragment, type Node, Slice } from 'prosemirror-model'
-import { type Command, type EditorState, Plugin, Selection, type SelectionBookmark, SelectionRange } from 'prosemirror-state'
+import { type Command, type EditorState, NodeSelection, Plugin, Selection, type SelectionBookmark, SelectionRange } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { editorMode } from './editor-mode'
 
@@ -9,12 +9,28 @@ type Mapping = Parameters<Selection['map']>[1]
 export function selectedBlocks(state: Pick<EditorState, 'doc' | 'selection'>) {
   const { doc, selection } = state
   const { $from, $to } = selection
-  const index = $from.index(0)
-  const node = doc.maybeChild(index)
-  if (!node) return null
-  const from = $from.depth ? $from.before(1) : $from.pos
-  const to = selection.empty ? from + node.nodeSize : $to.depth ? $to.after(1) : $to.pos
-  const endIndex = doc.resolve(to).index(0)
+  let depth = 0
+  let from = selection.from
+  let to = selection.to
+  if (selection instanceof BlockSelection || (selection instanceof NodeSelection && selection.node.isBlock)) {
+    depth = $from.depth
+  } else {
+    const shared = $from.sharedDepth(to)
+    let blockDepth = Math.min($from.depth, shared + 1)
+    for (; blockDepth > 0; blockDepth--) {
+      const node = $from.node(blockDepth)
+      const parent = $from.node(blockDepth - 1)
+      if (node.type.isInGroup('block') && !['list_item', 'task_item'].includes(parent.type.name)) break
+    }
+    depth = Math.max(0, blockDepth - 1)
+    from = $from.depth > depth ? $from.before(depth + 1) : $from.pos
+    to = selection.empty ? from + (doc.nodeAt(from)?.nodeSize ?? 0) : $to.depth > depth ? $to.after(depth + 1) : $to.pos
+  }
+  if (!validSpan(doc, from, to)) return null
+  const parent = doc.resolve(from).parent
+  const start = doc.resolve(from).start(depth)
+  const index = doc.resolve(from).index(depth)
+  const endIndex = doc.resolve(to).index(depth)
   const spans =
     selection instanceof BlockSelection ? selection.ranges.map((range) => ({ from: range.$from.pos, to: range.$to.pos })) : [{ from, to }]
   return {
@@ -22,10 +38,20 @@ export function selectedBlocks(state: Pick<EditorState, 'doc' | 'selection'>) {
     to,
     index,
     endIndex,
+    parent,
+    depth,
+    start,
     spans,
-    count: spans.reduce((count, span) => count + doc.resolve(span.to).index(0) - doc.resolve(span.from).index(0), 0),
-    content: selection instanceof BlockSelection ? selection.content().content : doc.content.cut(from, to),
+    count: spans.reduce((count, span) => count + doc.resolve(span.to).index(depth) - doc.resolve(span.from).index(depth), 0),
+    content: selection instanceof BlockSelection ? selection.content().content : doc.slice(from, to).content,
   }
+}
+
+function validSpan(doc: Node, from: number, to: number): boolean {
+  if (from < 0 || from >= to || to > doc.content.size) return false
+  const a = doc.resolve(from)
+  const b = doc.resolve(to)
+  return a.sameParent(b) && !a.textOffset && !b.textOffset && !!a.nodeAfter?.isBlock && !a.parent.isTextblock
 }
 
 export class BlockSelection extends Selection {
@@ -38,8 +64,8 @@ export class BlockSelection extends Selection {
   static fromSpans(doc: Node, spans: readonly { from: number; to: number }[]): BlockSelection {
     const merged: { from: number; to: number }[] = []
     for (const span of [...spans].sort((a, b) => a.from - b.from)) {
-      if (span.from >= span.to || doc.resolve(span.from).depth || doc.resolve(span.to).depth)
-        throw validation('Block selection must cover whole blocks')
+      if (!validSpan(doc, span.from, span.to) || (merged.length && !doc.resolve(merged[0].from).sameParent(doc.resolve(span.from))))
+        throw validation('Block selection must cover sibling blocks')
       const last = merged[merged.length - 1]
       if (last && span.from <= last.to) last.to = Math.max(last.to, span.to)
       else merged.push({ ...span })
@@ -54,14 +80,14 @@ export class BlockSelection extends Selection {
 
   override content(): Slice {
     let content = Fragment.empty
-    for (const range of this.ranges) content = content.append(range.$from.doc.content.cut(range.$from.pos, range.$to.pos))
+    for (const range of this.ranges) content = content.append(range.$from.doc.slice(range.$from.pos, range.$to.pos).content)
     return new Slice(content, 0, 0)
   }
 
   static create(doc: Node, from: number, to: number): BlockSelection {
     const $from = doc.resolve(from)
     const $to = doc.resolve(to)
-    if ($from.depth || $to.depth || from >= to) throw validation('Block selection must cover complete document blocks')
+    if (!validSpan(doc, from, to)) throw validation('Block selection must cover sibling blocks')
     return new BlockSelection($from, $to)
   }
 
@@ -102,15 +128,11 @@ class BlockBookmark implements SelectionBookmark {
   }
   resolve(doc: Node): Selection {
     const spans = this.spans.filter(
-      (span) =>
-        span.from >= 0 &&
-        span.from < span.to &&
-        span.to <= doc.content.size &&
-        doc.resolve(span.from).depth === 0 &&
-        doc.resolve(span.to).depth === 0,
+      (span) => span.from >= 0 && span.from < span.to && span.to <= doc.content.size && validSpan(doc, span.from, span.to),
     )
-    return spans.length
-      ? BlockSelection.fromSpans(doc, spans)
+    const siblings = spans.filter((span) => doc.resolve(spans[0].from).sameParent(doc.resolve(span.from)))
+    return siblings.length
+      ? BlockSelection.fromSpans(doc, siblings)
       : Selection.near(doc.resolve(Math.max(0, Math.min(this.spans[0]?.from ?? 0, doc.content.size))))
   }
 }
@@ -118,19 +140,26 @@ class BlockBookmark implements SelectionBookmark {
 Selection.jsonID('arx-blocks', BlockSelection)
 
 export const selectBlocks =
-  (extend: 'current' | 'next' | 'previous' | 'all'): Command =>
+  (extend: 'current' | 'next' | 'previous' | 'all' | 'parent'): Command =>
   (state, dispatch) => {
     if (editorMode(state) !== 'editable') return false
     const range = selectedBlocks(state)
     if (!range) return false
     let { from, to } = range
     if (extend === 'next') {
-      const next = state.doc.maybeChild(range.endIndex)
+      const next = range.parent.maybeChild(range.endIndex)
       if (!next) return false
       to += next.nodeSize
     } else if (extend === 'previous') {
       if (!range.index) return false
-      from -= state.doc.child(range.index - 1).nodeSize
+      from -= range.parent.child(range.index - 1).nodeSize
+    } else if (extend === 'parent') {
+      const pos = state.doc.resolve(from)
+      let depth = range.depth
+      while (depth > 0 && !pos.node(depth).type.isInGroup('block')) depth--
+      if (!depth) return false
+      from = pos.before(depth)
+      to = pos.after(depth)
     } else if (extend === 'all') {
       from = 0
       to = state.doc.content.size
@@ -150,14 +179,17 @@ export function blockSelectionPlugin(): Plugin {
           const hit = view.posAtCoords({ left: event.clientX, top: event.clientY })
           if (!hit) return false
           const resolved = view.state.doc.resolve(hit.pos)
-          const from = resolved.depth ? resolved.before(1) : resolved.pos
+          const selected = selectedBlocks({ doc: view.state.doc, selection: Selection.near(resolved) })
+          if (!selected) return false
+          const from = selected.from
           const node = view.state.doc.nodeAt(from)
           if (!node) return false
           const spans: { from: number; to: number }[] = []
           let included = false
-          if (view.state.selection instanceof BlockSelection) {
+          if (view.state.selection instanceof BlockSelection && view.state.selection.$from.sameParent(view.state.doc.resolve(from))) {
             for (const range of view.state.selection.ranges)
               view.state.doc.nodesBetween(range.$from.pos, range.$to.pos, (block, pos) => {
+                if (pos < range.$from.pos) return true
                 if (pos === from) included = true
                 else spans.push({ from: pos, to: pos + block.nodeSize })
                 return false
@@ -175,6 +207,7 @@ export function blockSelectionPlugin(): Plugin {
         const decorations: Decoration[] = []
         for (const range of state.selection.ranges)
           state.doc.nodesBetween(range.$from.pos, range.$to.pos, (node, pos) => {
+            if (pos < range.$from.pos) return true
             decorations.push(Decoration.node(pos, pos + node.nodeSize, { class: 'arx-block-selected' }))
             return false
           })

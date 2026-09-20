@@ -20,6 +20,9 @@ export function serialize(doc: Node, config?: ArxFormatConfig): string {
     Object.defineProperty(versions, owner.id, { value: Math.max(stored, owner.version), enumerable: true, configurable: true, writable: true })
   }
   const raw = expandJSON(doc.toJSON() as Record<string, unknown>)
+  // Page properties stay outside the editable body, but retain their on-disk representation so the
+  // index, sidecar cards and older clients see the same metadata rather than a second copy.
+  if (isRecord(metadata.properties)) raw.content = [expandJSON(metadata.properties), ...((raw.content as unknown[]) ?? [])]
   delete raw.attrs
   const output = {
     ...envelope,
@@ -50,12 +53,14 @@ export function deserialize(schema: Schema, raw: string, config?: ArxFormatConfi
   if (arx.doc.type !== schema.topNodeType.name || !Array.isArray(arx.doc.content)) throw validation('The file must contain an .arx document')
   const migrated = migrateDocument(arx.doc, arx.plugins, config, { nodes: Object.keys(schema.nodes), marks: Object.keys(schema.marks) })
   const content: Node[] = []
-  for (const value of migrated.doc.content as unknown[]) {
+  let properties: Record<string, unknown> | undefined
+  for (const [index, value] of (migrated.doc.content as unknown[]).entries()) {
     if (!isRecord(value)) throw validation('Invalid document content')
     if (supportedJSON(schema, value, migrated.future)) {
       const node = schema.nodeFromJSON(value)
       node.check()
-      content.push(node)
+      if (index === 0 && node.type.name === 'properties') properties = node.toJSON()
+      else content.push(node)
     } else {
       if (!schema.nodes.unknown_block) throw validation(`Unsupported document block: ${String(value.type)}`)
       content.push(
@@ -70,8 +75,12 @@ export function deserialize(schema: Schema, raw: string, config?: ArxFormatConfi
   const { doc: _doc, version: _version, ...envelope } = arx
   const { type: _type, content: _content, ...root } = arx.doc
   if (Object.keys(migrated.versions).length) envelope.plugins = migrated.versions
-  const hasMetadata = Object.keys(envelope).length > 0 || Object.keys(root).length > 0
-  const doc = schema.topNodeType.create(hasMetadata ? { arxEnvelope: { envelope, root } } : null, content)
+  const hasMetadata = properties || Object.keys(envelope).length > 0 || Object.keys(root).length > 0
+  if (properties && !content.length) content.push(schema.nodes.paragraph.create())
+  const doc = schema.topNodeType.create(
+    hasMetadata ? { arxEnvelope: { envelope, root, ...(properties ? { properties } : {}) } } : null,
+    content,
+  )
   doc.check()
   return doc
 }

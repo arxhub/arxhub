@@ -1,3 +1,4 @@
+import { openBlockSettings } from './arx-inspector-helpers'
 import { expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 async function open(page: Parameters<typeof openNavigation>[0], name: string) {
@@ -19,7 +20,8 @@ test('columns retain content and use the frame layout after saving', async ({ ap
   const editor = app.locator('.ProseMirror:visible')
   await editor.locator('p').first().click()
   await open(app, 'Select all blocks')
-  await open(app, '2 columns')
+  await open(app, 'Turn into')
+  await app.getByRole('menuitem', { name: 'Columns', exact: true }).click()
   const columns = editor.locator('[data-arx-column]')
   await expect(columns).toHaveText(['Left', 'Right'])
   const left = await columns.first().boundingBox()
@@ -33,7 +35,8 @@ test('columns retain content and use the frame layout after saving', async ({ ap
   await app.reload()
   await expect(columns).toHaveText(['Left', 'Right'])
   await columns.first().locator('p').click()
-  await open(app, 'Stack columns')
+  const settings = await openBlockSettings(app, columns.first().locator('p'), 'Columns')
+  await settings.getByRole('button', { name: 'Stack columns', exact: true }).click()
   await expect(editor.locator(':scope > p')).toHaveText(['Left', 'Right'])
 })
 

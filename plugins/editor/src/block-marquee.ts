@@ -15,14 +15,14 @@ type Gesture = {
   active: boolean
 }
 
-export function blockMarqueePlugin(): Plugin {
+export function blockMarqueePlugin(getScroller?: () => HTMLElement | undefined): Plugin {
   let cancel = () => false
   return new Plugin({
     props: {
       handleKeyDown: (_view, event) => event.key === 'Escape' && cancel(),
     },
     view(view) {
-      const scroller = view.dom.parentElement
+      const scroller = getScroller?.() ?? view.dom.parentElement
       if (!scroller) return {}
       const overlay = document.createElement('div')
       overlay.className = 'arx-block-marquee'

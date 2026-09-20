@@ -1,7 +1,7 @@
 import { type ActionItem, actionMenu } from '@arxhub/uikit/core'
 import { isInTable } from 'prosemirror-tables'
 import type { EditorView } from 'prosemirror-view'
-import { changeBlock } from '../block-actions'
+import { changeBlock, insertParagraphBeside } from '../block-actions'
 import { continueAfterBlock } from '../block-navigation'
 import { selectBlocks, selectedBlocks } from '../block-selection'
 import { BLOCK_TRANSFORMS, transformBlocks } from '../block-transforms'
@@ -19,10 +19,12 @@ export function openBlockMenu(view: EditorView, x: number, y: number): void {
   actionMenu.open(
     [
       ...[
-        { id: 'paragraph-after', label: 'Add paragraph after block', icon: 'lu:arrow-down-to-line', run: continueAfterBlock },
+        { id: 'paragraph-before', label: 'Add paragraph before block', icon: 'lu:arrow-up-to-line', run: insertParagraphBeside('before') },
+        { id: 'paragraph-after', label: 'Add paragraph after block', icon: 'lu:arrow-down-to-line', run: insertParagraphBeside('after') },
+        { id: 'continue', label: 'Continue outside container', icon: 'lu:corner-down-right', run: continueAfterBlock },
         { id: 'indent', label: 'Indent list item', icon: 'lu:list-indent-increase', run: buildKeymap(view.state.schema).Tab },
         { id: 'outdent', label: 'Outdent list item', icon: 'lu:list-indent-decrease', run: buildKeymap(view.state.schema)['Shift-Tab'] },
-        ...(isInTable(view.state) ? TABLE_ACTIONS : []),
+        ...(isInTable(view.state) ? TABLE_ACTIONS.filter((action) => action.id !== 'header') : []),
       ].map((action) => ({
         id: action.id,
         label: action.label,
@@ -46,20 +48,11 @@ export function openBlockMenu(view: EditorView, x: number, y: number): void {
           },
         }),
       ),
-      ...([1, 2, 3] as const).map((count) => ({
-        id: `columns-${count}`,
-        label: count === 1 ? 'Stack columns' : `${count} columns`,
-        icon: 'lu:columns-2',
-        disabled: !arrangeColumns(count)(view.state),
-        onSelect: () => {
-          arrangeColumns(count)(view.state, view.dispatch)
-          view.focus()
-        },
-      })),
       { id: 'transform', label: 'Turn into', icon: 'lu:repeat-2', onSelect: () => openTransformMenu(view, x, y) },
       ...(
         [
           { id: 'current', label: 'Select block', icon: 'lu:square-dashed' },
+          { id: 'parent', label: 'Select parent block', icon: 'lu:corner-left-up' },
           { id: 'next', label: 'Select next block too', icon: 'lu:arrow-down-to-line' },
           { id: 'previous', label: 'Select previous block too', icon: 'lu:arrow-up-to-line' },
           { id: 'all', label: 'Select all blocks', icon: 'lu:layers' },
@@ -81,15 +74,29 @@ export function openBlockMenu(view: EditorView, x: number, y: number): void {
 function openTransformMenu(view: EditorView, x: number, y: number): void {
   if (view.isDestroyed) return
   actionMenu.open(
-    BLOCK_TRANSFORMS.map((item) => ({
-      ...item,
-      disabled: !transformBlocks(item.id)(view.state),
-      onSelect: () => {
-        if (view.isDestroyed) return
-        transformBlocks(item.id)(view.state, view.dispatch)
-        view.focus()
+    [
+      ...BLOCK_TRANSFORMS.map((item) => ({
+        ...item,
+        disabled: !transformBlocks(item.id)(view.state),
+        onSelect: () => {
+          if (view.isDestroyed) return
+          transformBlocks(item.id)(view.state, view.dispatch)
+          view.focus()
+        },
+      })),
+      {
+        id: 'columns',
+        label: 'Columns',
+        icon: 'lu:columns-2',
+        disabled: !arrangeColumns(2)(view.state),
+        onSelect: () => {
+          if (!view.isDestroyed) {
+            arrangeColumns(2)(view.state, view.dispatch)
+            view.focus()
+          }
+        },
       },
-    })),
+    ],
     { title: 'Turn into', x, y },
   )
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Dropdown, Icon, Input, MenuItem } from '@arxhub/uikit/core'
+import { Button, Icon } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useAssetSession } from '../asset-session'
@@ -14,9 +14,6 @@ const fileInput = ref<HTMLInputElement>()
 const url = ref('')
 const loadError = ref('')
 const loading = ref(false)
-const configuring = ref(false)
-const caption = ref('')
-const alt = ref('')
 let ticket = 0
 
 function release() {
@@ -77,18 +74,6 @@ async function choose(event: Event) {
   await session.upload(file, (asset) => props.change({ ...asset })).catch(() => {})
 }
 
-function configure() {
-  caption.value = props.node.attrs.caption
-  alt.value = props.node.attrs.alt ?? ''
-  configuring.value = true
-}
-
-function apply() {
-  if (props.mode !== 'editable') return
-  props.change({ caption: caption.value, ...(image.value ? { alt: alt.value } : {}) })
-  configuring.value = false
-}
-
 async function download() {
   if (!url.value) await load()
   if (!url.value) return
@@ -111,14 +96,7 @@ async function download() {
       <figcaption v-if="node.attrs.caption">{{ node.attrs.caption }}</figcaption>
       <div class="asset-actions">
         <Button :size="buttonSize" variant="ghost" :disabled="loading" @click="download">Download</Button>
-        <template v-if="mode === 'editable'">
-          <Button :size="buttonSize" variant="ghost" :disabled="session.pending.value > 0" @click="fileInput?.click()">Replace file</Button>
-          <Button :size="buttonSize" variant="ghost" @click="configure">Edit caption</Button>
-          <Dropdown v-if="image">
-            <template #trigger><Button :size="buttonSize" variant="ghost" aria-label="Image width">{{ node.attrs.width }}%</Button></template>
-            <MenuItem v-for="width in [25, 50, 75, 100]" :key="width" :value="String(width)" @select="change({ width })">{{ width }}%</MenuItem>
-          </Dropdown>
-        </template>
+
       </div>
     </template>
     <div v-else class="asset-empty">
@@ -127,11 +105,7 @@ async function download() {
       <span v-else>{{ image ? 'No image selected' : 'No file selected' }}</span>
       <span v-if="loadError" role="alert">{{ loadError }}</span>
     </div>
-    <form v-if="configuring && mode === 'editable'" class="asset-config" @submit.prevent="apply" @keydown.stop>
-      <label>Caption<Input v-model="caption" aria-label="Attachment caption" /></label>
-      <label v-if="image">Alternative text<Input v-model="alt" aria-label="Image alternative text" /></label>
-      <div class="asset-actions"><Button :size="buttonSize" type="submit" variant="secondary">Apply caption</Button><Button :size="buttonSize" variant="ghost" @click="configuring = false">Cancel</Button></div>
-    </form>
+
   </figure>
 </template>
 
@@ -141,6 +115,4 @@ async function download() {
 .asset-block figcaption, .asset-meta { color: var(--gray-11); font-size: var(--font-size-sm); }
 .asset-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .asset-empty { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; border: 1px dashed var(--gray-6); border-radius: var(--radius-sm); }
-.asset-config { display: flex; flex-direction: column; gap: 8px; padding-block: 8px; }
-.asset-config label { display: flex; flex-direction: column; gap: 4px; font-size: var(--font-size-sm); }
 </style>

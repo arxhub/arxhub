@@ -20,6 +20,9 @@ import { type BlockCommand, buildBlockCommands } from './slash-commands'
 
 export interface ArxEditorComponent {
   component: Component
+  // Optional inspector UI, receiving the same node/mode/change/replace contract as the block.
+  settings?: Component
+  settingsLabel?: string
   tag?: 'div' | 'li'
   content?: boolean
 }

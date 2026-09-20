@@ -1,7 +1,7 @@
 import { closeHistory } from 'prosemirror-history'
 import { Fragment, type NodeSpec } from 'prosemirror-model'
 import { type Command, Selection } from 'prosemirror-state'
-import { selectedBlocks } from './block-selection'
+import { BlockSelection, selectedBlocks } from './block-selection'
 import { editorMode } from './editor-mode'
 
 export const columnNodes: Record<string, NodeSpec> = {
@@ -25,7 +25,15 @@ export const arrangeColumns =
   (count: 1 | 2 | 3): Command =>
   (state, dispatch) => {
     if (editorMode(state) !== 'editable') return false
-    const range = selectedBlocks(state)
+    let range = selectedBlocks(state)
+    if (!(state.selection instanceof BlockSelection)) {
+      const { $from } = state.selection
+      for (let depth = $from.depth; depth > 0; depth--) {
+        if ($from.node(depth).type.name !== 'columns') continue
+        range = selectedBlocks({ doc: state.doc, selection: BlockSelection.create(state.doc, $from.before(depth), $from.after(depth)) })
+        break
+      }
+    }
     if (!range) return false
     const blocks = range.content.content.flatMap((node) =>
       node.type.name === 'columns' ? node.children.flatMap((column) => column.children) : [node],
@@ -36,7 +44,7 @@ export const arrangeColumns =
         ? Fragment.from(blocks)
         : Fragment.from(
             state.schema.nodes.columns.create(
-              null,
+              range.count === 1 && range.content.firstChild?.type.name === 'columns' ? range.content.firstChild.attrs : null,
               Array.from({ length: count }, (_, index) => {
                 const start = Math.ceil((blocks.length * index) / count)
                 const end = Math.ceil((blocks.length * (index + 1)) / count)
@@ -44,6 +52,7 @@ export const arrangeColumns =
               }),
             ),
           )
+    if (!range.parent.canReplace(range.index, state.doc.resolve(range.spans[0].to).index(range.depth), content)) return false
     if (dispatch) {
       const tr = state.tr
       for (const span of range.spans.slice(1).reverse()) tr.delete(span.from, span.to)

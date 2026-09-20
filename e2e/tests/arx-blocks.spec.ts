@@ -70,3 +70,40 @@ test('block groups transform, duplicate and drag with one-step undo in both fram
   await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
   await expect.poll(() => vault.read(path)).toContain('"type": "task_list"')
 })
+
+test('nested paragraphs share the same menu and drag scope, with explicit parent selection', async ({ app, vault }) => {
+  const p = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
+  const path = await vault.write(
+    'nested-block-scope.arx',
+    JSON.stringify({
+      version: 1,
+      doc: { type: 'doc', content: [p('Before'), { type: 'blockquote', content: [p('One'), p('Two'), p('Three')] }, p('After')] },
+    }),
+  )
+  await app.reload()
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click()
+  const editor = app.locator('.ProseMirror:visible')
+  const paragraphs = editor.locator('blockquote p')
+  await paragraphs.nth(1).click()
+  await blockAction(app, 'Duplicate block')
+  await expect(paragraphs).toHaveText(['One', 'Two', 'Two', 'Three'])
+  await expect(editor.locator('blockquote')).toHaveCount(1)
+  await undo(app)
+  await blockAction(app, 'Select block')
+  await expect(editor.locator('blockquote.arx-block-selected')).toHaveCount(0)
+  await expect(editor.locator('blockquote p.arx-block-selected')).toHaveText('Two')
+  await dragBlock(app, paragraphs.last())
+  await expect(paragraphs).toHaveText(['One', 'Three', 'Two'])
+  await undo(app)
+  await blockAction(app, 'Turn into')
+  await app.getByRole('menuitem', { name: 'Heading 2', exact: true }).click()
+  await expect(editor.locator('blockquote h2')).toHaveText('Two')
+  await expect(editor.locator(':scope > p')).toHaveText(['Before', 'After'])
+  await blockAction(app, 'Select parent block')
+  await expect(editor.locator('blockquote.arx-block-selected')).toHaveCount(1)
+  await blockAction(app, 'Duplicate block')
+  await expect(editor.locator('blockquote')).toHaveCount(2)
+  await undo(app)
+  await expect(editor.locator('blockquote')).toHaveCount(1)
+})

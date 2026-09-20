@@ -62,7 +62,7 @@ const { attrs, editable, canFavorite, setTags, onFavoriteToggle, updateField, ad
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px;
+
   background: var(--gray-2);
   border-radius: var(--radius-sm);
 }

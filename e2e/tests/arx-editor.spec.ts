@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { closeSettings, openBlockSettings } from './arx-inspector-helpers'
 import { expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 const document = (content: unknown[]) => JSON.stringify({ version: 1, doc: { type: 'doc', content } })
@@ -118,10 +119,11 @@ test('slash builds tasks and a configurable dropdown with keyboard and pointer',
   await expect(editor.getByRole('checkbox')).toHaveCount(2)
   await app.keyboard.insertText('/drop')
   await app.getByRole('option', { name: 'Dropdown', exact: true }).click()
-  await editor.getByRole('button', { name: 'Configure', exact: true }).click()
+  await openBlockSettings(app, editor.locator('[data-type=select]'), 'Dropdown')
   await app.getByRole('textbox', { name: 'Dropdown label', exact: true }).fill('Stage')
   await app.getByRole('textbox', { name: 'Dropdown options', exact: true }).fill('Draft\nReview\nPublished')
   await app.getByRole('button', { name: 'Apply', exact: true }).click()
+  await closeSettings(app)
   await mode(app, 'Interactive')
   await editor.getByRole('button', { name: 'Stage', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Review', exact: true }).click()
