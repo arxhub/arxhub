@@ -222,10 +222,6 @@ export class ExplorerExtension extends Extension {
   readonly selectedPath = ref<string | null>(null)
   // Path of the node currently being inline-renamed (shared so only one renames at a time).
   readonly renamingPath = ref<string | null>(null)
-  // Path of the row holding the tree's roving tabindex — the ARIA treeview keyboard model's one Tab
-  // stop. Lives here rather than in a component because the recursive FileTreeNode tree has no other
-  // shared channel between a row and its siblings elsewhere in the structure.
-  readonly focusedPath = ref<string | null>(null)
   private creation: Promise<unknown> = Promise.resolve()
   private readonly nodeActionContributors: NodeActionContributor[] = []
   readonly fileTemplates = ref<FileTemplate[]>([])

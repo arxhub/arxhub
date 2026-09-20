@@ -31,8 +31,8 @@ test.describe('hiding a known extension in the tree', () => {
 
     // The accessible name stays the full name either way (aria-label carries it untouched) — only the
     // visible label hides the tail, so a screen reader is never told less than the tree actually holds.
-    await expect(app.getByRole('treeitem', { name: known }).locator('.name')).toHaveText(withoutExtension(known, '.arx'))
-    await expect(app.getByRole('treeitem', { name: unknown }).locator('.name')).toHaveText(unknown)
+    await expect(app.getByRole('treeitem', { name: known }).locator('.tree-view-label')).toHaveText(withoutExtension(known, '.arx'))
+    await expect(app.getByRole('treeitem', { name: unknown }).locator('.tree-view-label')).toHaveText(unknown)
   })
 
   // The half this rule was moved for: the tree hid the extension while the strip above the open
@@ -44,7 +44,7 @@ test.describe('hiding a known extension in the tree', () => {
 
     await expect(app.getByTestId('document-name')).toHaveText(withoutExtension(path, '.arx'))
     await openNavigation(app)
-    await expect(app.getByRole('treeitem', { name: path }).locator('.name')).toHaveText(withoutExtension(path, '.arx'))
+    await expect(app.getByRole('treeitem', { name: path }).locator('.tree-view-label')).toHaveText(withoutExtension(path, '.arx'))
   })
 
   // The subtle part (OR-03): the rename field holds the visible stem only, so committing it must not
@@ -77,7 +77,7 @@ test.describe('the Notes settings section', () => {
     const path = await vault.write('brief.arx', 'irrelevant\n')
     await app.reload()
     await openNavigation(app)
-    await expect(app.getByRole('treeitem', { name: path }).locator('.name')).toHaveText(withoutExtension(path, '.arx'))
+    await expect(app.getByRole('treeitem', { name: path }).locator('.tree-view-label')).toHaveText(withoutExtension(path, '.arx'))
 
     await openSettingsSection(app, 'Notes')
     const toggle = app.getByRole('checkbox', { name: 'Hide known extensions' })
@@ -94,7 +94,7 @@ test.describe('the Notes settings section', () => {
     // reload, and the row updates where it already is.
     await openType(app, 'Notes')
     await openNavigation(app)
-    await expect(app.getByRole('treeitem', { name: path }).locator('.name')).toHaveText(path)
+    await expect(app.getByRole('treeitem', { name: path }).locator('.tree-view-label')).toHaveText(path)
 
     // Left as found (search.spec.ts's own rule for a device-wide toggle): this setting is SYNCED, so it
     // outlives this test in the one stand the whole project shares, and a later test's "defaults to
@@ -115,7 +115,7 @@ test.describe('the known set is never a snapshot', () => {
     const path = await vault.write('scan.png', 'not really a png — the tree never opens it here\n')
     await app.reload()
     await openNavigation(app)
-    await expect(app.getByRole('treeitem', { name: path }).locator('.name')).toHaveText(withoutExtension(path, '.png'))
+    await expect(app.getByRole('treeitem', { name: path }).locator('.tree-view-label')).toHaveText(withoutExtension(path, '.png'))
 
     await openSettingsSection(app, 'Plugins')
     await app.getByTestId('plugin-switch-Preview').click()
@@ -123,6 +123,6 @@ test.describe('the known set is never a snapshot', () => {
 
     await openType(app, 'Notes')
     await openNavigation(app)
-    await expect(app.getByRole('treeitem', { name: path }).locator('.name')).toHaveText(path)
+    await expect(app.getByRole('treeitem', { name: path }).locator('.tree-view-label')).toHaveText(path)
   })
 })

@@ -417,7 +417,7 @@ export async function openSettingsSection(page: Page, section: string): Promise<
   // Scoped to the section list: a section shares its name with the type of the same plugin (Search's
   // settings section and the Search type are both called "Search"), and an unscoped lookup would match
   // that type's key in the row as well once it is open.
-  await page.locator('.settings-nav').getByRole('button', { name: section, exact: true }).click()
+  await page.locator('.settings-nav').getByRole('treeitem', { name: section, exact: true }).click()
 }
 
 // The first publish of a path asks before its content leaves encryption (FR-167, Q-05); a republish does

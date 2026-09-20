@@ -59,7 +59,7 @@ test.describe('the visual language holds on screen', () => {
 
     await openNavigation(app)
     await expect(app.getByRole('treeitem', { name: note })).toBeVisible()
-    const tree = await heights(app, '.tree-node')
+    const tree = await heights(app, '.file-tree .tree-view-node')
     expect(tree.length).toBeGreaterThan(0)
     for (const height of tree) expect(height).toBe(expected)
 

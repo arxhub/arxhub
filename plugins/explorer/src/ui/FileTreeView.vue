@@ -1,19 +1,60 @@
 <script setup lang="ts">
+import { basename, dirname } from '@arxhub/path'
 import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
 import { ShellExtension } from '@arxhub/plugin-shell'
-import { actionMenu } from '@arxhub/uikit/core'
+import { actionMenu, Icon, TreeView, type TreeViewNode } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
-import { onMounted, watch } from 'vue'
-import { ExplorerExtension } from '../explorer-extension'
-import FileTreeNode from './FileTreeNode.vue'
+import { computed, onMounted, watch } from 'vue'
+import { ExplorerExtension, type TreeNode } from '../explorer-extension'
+import FileRowActions from './FileRowActions.vue'
+import FileTreeLabel from './FileTreeLabel.vue'
+import { fileIcon } from './file-icon'
 import { useFileActions } from './use-file-actions'
-import { useTreeNavigation } from './use-tree-navigation'
 import VaultStrip from './VaultStrip.vue'
 
 const arxhub = useArxHub()
 const explorer = arxhub.extensions.get(ExplorerExtension)
 const actions = useFileActions()
-const { onKeydown } = useTreeNavigation(explorer.tree, explorer)
+
+function mapNode(node: TreeNode): TreeViewNode<TreeNode> {
+  return {
+    id: node.entry.pathname,
+    label: explorer.displayName(node).text,
+    ariaLabel: basename(node.entry.pathname),
+    description: node.pending ? 'On the server — opens on demand' : undefined,
+    icon: fileIcon(node),
+    branch: node.entry.kind === 'dir',
+    children: node.children?.map(mapNode),
+    data: node,
+  }
+}
+const nodes = computed(() => explorer.tree.value.map(mapNode))
+const expandedIds = computed(() => explorer.expandedPaths())
+
+function activate({ data: node }: TreeViewNode<TreeNode>) {
+  if (explorer.renamingPath.value === node.entry.pathname) return
+  explorer.selectedPath.value = node.entry.kind === 'dir' ? node.entry.pathname : dirname(node.entry.pathname)
+  if (node.entry.kind === 'file') actions.openFile(node)
+}
+
+function toggle({ data: node }: TreeViewNode<TreeNode>, expanded: boolean) {
+  if (explorer.renamingPath.value === node.entry.pathname) return
+  if (expanded) actions.runAction(explorer.expand(node), 'expand the folder')
+  else explorer.collapse(node)
+}
+
+function contextmenu({ data: node }: TreeViewNode<TreeNode>, event: MouseEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+  actionMenu.open(actions.getNodeActions(node), { x: event.clientX, y: event.clientY, title: basename(node.entry.pathname) })
+}
+
+function keydown({ data: node }: TreeViewNode<TreeNode>, event: KeyboardEvent) {
+  if (event.key !== 'F2') return
+  event.preventDefault()
+  event.stopPropagation()
+  actions.startRename(node)
+}
 
 const storage = arxhub.extensions.get(ShellExtension).workspaceStorage
 const saved = storage.navOf(NOTES_TYPE_ID)
@@ -49,13 +90,24 @@ function onRootContextMenu(event: MouseEvent) {
   <div class="file-tree-wrap">
     <VaultStrip />
 
-    <div class="file-tree" role="tree" aria-label="Files" @contextmenu.prevent="onRootContextMenu" @keydown="onKeydown">
-      <FileTreeNode
-        v-for="node in explorer.tree.value"
-        :key="node.entry.pathname"
-        :node="node"
-      />
-    </div>
+    <TreeView
+      class="file-tree"
+      :nodes="nodes"
+      label="Files"
+      :selected-id="explorer.selectedPath.value"
+      :expanded-ids="expandedIds"
+      @activate="activate"
+      @toggle="toggle"
+      @node-contextmenu="contextmenu"
+      @node-keydown="keydown"
+      @contextmenu.prevent="onRootContextMenu"
+    >
+      <template #label="{ node }"><FileTreeLabel :node="node.data" /></template>
+      <template #actions="{ node }">
+        <Icon v-if="node.data.propertiesCardPath" name="lu:tags" :size="14" aria-label="Has properties" class="properties-glyph" />
+        <FileRowActions v-if="explorer.renamingPath.value !== node.id" :title="node.ariaLabel ?? node.label" :items="() => actions.getNodeActions(node.data)" />
+      </template>
+    </TreeView>
   </div>
 </template>
 
@@ -67,8 +119,8 @@ function onRootContextMenu(event: MouseEvent) {
   overflow: hidden;
 }
 
-.file-tree {
-  overflow-y: auto;
-  flex: 1;
+.properties-glyph {
+  flex-shrink: 0;
+  color: var(--gray-10);
 }
 </style>

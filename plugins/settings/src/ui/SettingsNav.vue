@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { useNavHost } from '@arxhub/plugin-shell/ui'
-import { IconButton, Row, Strip } from '@arxhub/uikit/core'
+import { IconButton, Strip, TreeView, type TreeViewNode } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
-import { SettingsExtension } from '../settings-extension'
+import { SettingsExtension, type SettingsSection } from '../settings-extension'
 
 const arxhub = useArxHub()
 const navHost = useNavHost()
 const settings = arxhub.extensions.get(SettingsExtension)
 
-const sorted = computed(() => [...settings.sections.value].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)))
+const nodes = computed(() =>
+  [...settings.sections.value]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((section) => ({ id: section.id, label: section.title, data: section })),
+)
+
+function activate(node: TreeViewNode<SettingsSection>) {
+  settings.open(node.id)
+  navHost?.navigated?.()
+}
 </script>
 
 <template>
@@ -19,17 +28,7 @@ const sorted = computed(() => [...settings.sections.value].sort((a, b) => (a.ord
         <IconButton v-if="navHost" size="lg" :icon="navHost.icon" :tooltip="navHost.label" @click="navHost.dismiss()" />
       </template>
     </Strip>
-    <nav class="settings-nav">
-      <Row
-        v-for="section in sorted"
-        as="button"
-        :key="section.id"
-        :selected="section.id === settings.activeId.value"
-        @click="settings.open(section.id); navHost?.navigated?.()"
-      >
-        {{ section.title }}
-      </Row>
-    </nav>
+    <TreeView class="settings-nav" :nodes="nodes" label="Settings sections" :selected-id="settings.activeId.value" @activate="activate" />
   </div>
 </template>
 
@@ -39,13 +38,5 @@ const sorted = computed(() => [...settings.sections.value].sort((a, b) => (a.ord
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-}
-
-.settings-nav {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
 }
 </style>
