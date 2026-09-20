@@ -22,7 +22,7 @@ function mapNode(node: TreeNode): TreeViewNode<TreeNode> {
     label: explorer.displayName(node).text,
     ariaLabel: basename(node.entry.pathname),
     description: node.pending ? 'On the server — opens on demand' : undefined,
-    icon: fileIcon(node),
+    icon: explorer.iconFor(node) ?? fileIcon(node),
     branch: node.entry.kind === 'dir',
     children: node.children?.map(mapNode),
     data: node,

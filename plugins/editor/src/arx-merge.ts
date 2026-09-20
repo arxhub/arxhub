@@ -1,5 +1,7 @@
+import { validation } from '@arxhub/errors'
 import { type Node, Schema } from 'prosemirror-model'
 import { identityNodes } from './block-identity'
+import { isRecord } from './document-migrations'
 import { deserialize, serialize } from './editor-format'
 import { schema as baseSchema } from './editor-schema'
 import { BASE_FORMAT } from './select-options'
@@ -140,7 +142,7 @@ export function mergeArx(base: string | null, local: string, remote: string): { 
   insertNew(localBlocks, predecessors(localBlocks))
   insertNew(remoteBlocks, predecessors(remoteBlocks))
 
-  const attrs = baseDoc?.attrs ?? localDoc.attrs
+  const attrs = mergeMetadata(baseDoc?.attrs, localDoc.attrs, remoteDoc.attrs) as Record<string, unknown>
   // `doc`'s content is `block+` — both sides removing every block (rare: it means nothing survived
   // anywhere) would otherwise build a doc `.check()` refuses the moment it is saved or re-opened.
   const content = order.length ? order.map((id) => resolved.get(id)!) : [mergeSchema.nodes.paragraph.create()]
@@ -150,4 +152,24 @@ export function mergeArx(base: string | null, local: string, remote: string): { 
 
 function comparableEq(a: Node, b: Node): boolean {
   return comparable(a) === comparable(b)
+}
+
+// Page decoration and unknown envelope fields must survive independent body edits. A collision
+// between two values cannot be represented by a body conflict block: let the repository keep both
+// complete files through its existing conflict-copy fallback instead of silently choosing one.
+function mergeMetadata(base: unknown, local: unknown, remote: unknown): unknown {
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
+  if (same(local, remote)) return local
+  if (same(local, base)) return remote
+  if (same(remote, base)) return local
+  if (isRecord(local) && isRecord(remote)) {
+    const previous = isRecord(base) ? base : {}
+    return Object.fromEntries(
+      [...new Set([...Object.keys(previous), ...Object.keys(local), ...Object.keys(remote)])].map((key) => [
+        key,
+        mergeMetadata(previous[key], local[key], remote[key]),
+      ]),
+    )
+  }
+  throw validation('Conflicting document metadata — keep both versions')
 }

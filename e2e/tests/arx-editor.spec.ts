@@ -243,7 +243,7 @@ test('touch insertion and block actions preserve neighboring content and undo', 
   await expect(editor.locator('p').filter({ hasText: /^Second$/ })).toHaveCount(1)
   await app.getByRole('button', { name: 'Document tools', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
-  await expect(app.locator('.editor-status')).toContainText('Saved')
+  await expect(app.locator('.document-save-status')).toContainText('Saved')
   await expect.poll(() => vault.read(path)).toContain('"type": "select"')
 })
 

@@ -7,6 +7,7 @@ defineProps<{
   placeholder?: string
   type?: string
   disabled?: boolean
+  variant?: 'default' | 'title'
 }>()
 
 const touch = useShellFrame() === 'mobile'
@@ -15,7 +16,7 @@ const touch = useShellFrame() === 'mobile'
 <template>
   <input
     class="input"
-    :class="{ touch }"
+    :class="{ touch, title: variant === 'title' }"
     :type="type || 'text'"
     :placeholder="placeholder"
     :disabled="disabled"
@@ -49,6 +50,8 @@ const touch = useShellFrame() === 'mobile'
   outline-offset: -1px;
   border-color: var(--accent-8);
 }
+
+.input.title { height: auto; min-height: var(--size-xl); padding: 0; border: none; background: transparent; font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); }
 
 .input::placeholder {
   color: var(--gray-10);

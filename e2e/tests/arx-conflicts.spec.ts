@@ -12,8 +12,16 @@ const conflictDocument = JSON.stringify({
         type: 'conflict',
         attrs: { kind: 'edit-edit' },
         content: [
-          { type: 'conflict_side', attrs: { side: 'local' }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Local text' }] }] },
-          { type: 'conflict_side', attrs: { side: 'remote' }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Remote text' }] }] },
+          {
+            type: 'conflict_side',
+            attrs: { side: 'local' },
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Local text' }] }],
+          },
+          {
+            type: 'conflict_side',
+            attrs: { side: 'remote' },
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Remote text' }] }],
+          },
         ],
       },
     ],
@@ -32,7 +40,7 @@ test('a conflict block is resolved in place, and Undo brings it back', async ({ 
   await expect(box).toBeVisible()
   await expect(box).toContainText('Local text')
   await expect(box).toContainText('Remote text')
-  await expect(app.locator('.editor-status')).toContainText('1 conflict')
+  await expect(app.locator('.editor-warning')).toContainText('1 unresolved conflict')
 
   await box.getByRole('button', { name: "Keep other device's", exact: true }).click()
 
@@ -40,7 +48,7 @@ test('a conflict block is resolved in place, and Undo brings it back', async ({ 
   await expect(editor.locator('.conflict-block')).toHaveCount(0)
   await expect(editor).toContainText('Remote text')
   await expect(editor).not.toContainText('Local text')
-  await expect(app.locator('.editor-status')).not.toContainText('conflict')
+  await expect(app.locator('.editor-warning')).toHaveCount(0)
 
   // Autosave writes the resolution to disk — no conflict node left in the file either. Polled on the
   // conflict node's own absence, not on "Remote text" alone: that substring is already in the
@@ -53,5 +61,5 @@ test('a conflict block is resolved in place, and Undo brings it back', async ({ 
   // Undo is one ordinary transaction away, exactly like any other edit.
   await app.keyboard.press('ControlOrMeta+z')
   await expect(editor.locator('.conflict-block')).toBeVisible()
-  await expect(app.locator('.editor-status')).toContainText('1 conflict')
+  await expect(app.locator('.editor-warning')).toContainText('1 unresolved conflict')
 })

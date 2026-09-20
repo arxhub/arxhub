@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { type ActionItem, actionMenu, IconButton } from '@arxhub/uikit/core'
+import { type ActionItem, actionMenu, Icon, IconButton } from '@arxhub/uikit/core'
+import type { PanelChromeState } from '@arxhub/uikit/hooks'
 import { ref } from 'vue'
 import { useDraggableTab } from '../composables/use-draggable-tab'
 import { usePanels } from '../use-panels'
@@ -11,6 +12,7 @@ const props = defineProps<{
   index: number
   title: string
   isActive: boolean
+  chrome?: PanelChromeState
 }>()
 
 const emit = defineEmits<{
@@ -104,7 +106,9 @@ function onContextMenu(event: MouseEvent) {
     @keydown.enter.prevent="emit('click')"
     @keydown.space.prevent="emit('click')"
   >
+    <Icon v-if="chrome?.icon" :name="chrome.icon" :size="14" aria-hidden="true" />
     <span class="tab-title">{{ title }}</span>
+    <span v-if="chrome?.status" class="tab-status" :class="chrome.status.tone" role="status" :aria-label="chrome.status.label" :title="chrome.status.label"><Icon :name="chrome.status.icon" :size="14" /></span>
     <IconButton class="tab-close" icon="lu:x" size="xs" tooltip="Close" @click.stop="emit('close')" />
     <TabDropIndicator :edge="closestEdge" />
   </div>
@@ -150,6 +154,10 @@ function onContextMenu(event: MouseEvent) {
   color: var(--accent-11);
   font-weight: var(--font-weight-medium);
 }
+
+.tab-status { display: flex; flex-shrink: 0; }
+.tab-status.danger { color: var(--danger-11); }
+.tab-status.warning { color: var(--warning-11); }
 
 .tab-title {
   overflow: hidden;

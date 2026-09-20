@@ -3,11 +3,10 @@ import { validation } from '@arxhub/errors'
 import { basename, dirname } from '@arxhub/path'
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
 import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes'
-import { DocumentName } from '@arxhub/plugin-notes/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
-import { Button, Strip } from '@arxhub/uikit/core'
-import { toaster, useArxHub, useFileDocument, useShellFrame } from '@arxhub/uikit/hooks'
+import { Button } from '@arxhub/uikit/core'
+import { toaster, useArxHub, useFileDocument, usePanelChrome, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { closeHistory, history } from 'prosemirror-history'
 import { inputRules } from 'prosemirror-inputrules'
@@ -24,6 +23,7 @@ import { blockSelectionPlugin } from '../block-selection'
 import { codeHighlighting } from '../code-highlighting'
 import { columnsView } from '../columns-view'
 import { createControlViews } from '../control-views'
+import { type DocumentAppearance as Appearance, changeAppearance, documentAppearance } from '../document-appearance'
 import type { ArxDraft } from '../document-drafts'
 import { documentId, withDocumentId } from '../document-history'
 import { documentBlocks, documentHref, documentLinksPlugin, revealBlock } from '../document-links'
@@ -40,9 +40,12 @@ import { slashCommands, slashKey } from '../slash-commands'
 import { restoreVersionBlock } from '../version-diff'
 import ArxComponentHost from './ArxComponentHost.vue'
 import BlockHandle from './BlockHandle.vue'
+import DocumentAppearance from './DocumentAppearance.vue'
 import DocumentBacklinks from './DocumentBacklinks.vue'
+import DocumentChrome from './DocumentChrome.vue'
 import DocumentFind from './DocumentFind.vue'
 import DocumentOutline from './DocumentOutline.vue'
+import DocumentPageHeader from './DocumentPageHeader.vue'
 import DocumentRecovery from './DocumentRecovery.vue'
 import DocumentTools from './DocumentTools.vue'
 import DocumentVersions from './DocumentVersions.vue'
@@ -69,6 +72,8 @@ const assets = createAssetSession(extension.assets ?? createAssetStore(vfs))
 provide(ARX_ASSETS, assets)
 const notes = arxhub.extensions.get(NotesExtension)
 const editorEl = ref<HTMLDivElement>()
+const editorMount = ref<HTMLDivElement>()
+const appearanceOpen = ref(false)
 const view = shallowRef<EditorView | null>(null)
 const revision = ref(0)
 const mode = ref<EditorMode>('editable')
@@ -123,7 +128,7 @@ const conflictCount = computed(() => {
 // Every open `.arx` panel pushes this same layer, and only the one holding the caret is on the stack —
 // so ⌘B reaches ProseMirror alone instead of also collapsing the navigation column on its way past the
 // window (F-06).
-useHotkeyLayer(useHotkeysExtension(), { id: PROSEMIRROR_LAYER, kind: 'editor' }, editorEl)
+useHotkeyLayer(useHotkeysExtension(), { id: PROSEMIRROR_LAYER, kind: 'editor' }, editorMount)
 
 const keys = buildKeymap(schema)
 const interactiveKeys = interactiveKeydown(keys)
@@ -177,6 +182,7 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
   // load hook can route it through the same error path as a read failure, rather than silently
   // substituting an empty document a Save could flush over the original bytes.
   let doc = bytes.length === 0 ? emptyDoc(schema) : deserialize(schema, new TextDecoder().decode(bytes), kit.format)
+  documentAppearance(doc)
   let id = documentId(doc)
   if (id && extension.history) {
     try {
@@ -209,8 +215,8 @@ const {
   apply: (_path, state) => {
     if (view.value) {
       view.value.updateState(state)
-    } else if (editorEl.value) {
-      view.value = new EditorView(editorEl.value, {
+    } else if (editorMount.value) {
+      view.value = new EditorView(editorMount.value, {
         state,
         nodeViews,
         dispatchTransaction(tr) {
@@ -520,16 +526,42 @@ onUnmounted(() => {
   view.value?.destroy()
   view.value = null
 })
+const appearance = computed(() => {
+  void revision.value
+  return view.value ? documentAppearance(view.value.state.doc) : { icon: null, cover: null }
+})
+watch(
+  [() => props.path, appearance],
+  ([path, value]) => {
+    if (view.value && canSave.value) extension.documentIcons?.set(path, value.icon)
+  },
+  { immediate: true },
+)
+function applyAppearance(value: Appearance) {
+  if (view.value && canSave.value && mode.value === 'editable') changeAppearance(view.value, value)
+  appearanceOpen.value = false
+}
+const chromeTarget = usePanelChrome(() => ({
+  icon: appearance.value.icon ?? undefined,
+  status: loadError.value
+    ? { icon: 'lu:triangle-alert', label: 'Document unavailable', tone: 'danger' }
+    : !canSave.value
+      ? { icon: 'lu:loader-circle', label: 'Loading document…' }
+      : saveError.value
+        ? { icon: 'lu:triangle-alert', label: 'Save failed', tone: 'danger' }
+        : assets.pending.value
+          ? { icon: 'lu:upload', label: 'Uploading attachment…' }
+          : saving.value
+            ? { icon: 'lu:loader-circle', label: 'Saving…' }
+            : edits.value !== savedEdits.value
+              ? { icon: 'lu:circle-dot', label: 'Unsaved changes' }
+              : undefined,
+  mode: mode.value === 'readonly' ? 'Read only' : mode.value === 'interactive' ? 'Interactive' : undefined,
+}))
 </script>
 
 <template>
   <div class="editor-panel" :class="{ touch }" @keydown.capture="historyChord" @keydown.ctrl.s.prevent.stop="save" @keydown.meta.s.prevent.stop="save">
-    <!-- The name, and nothing else, at the very top (OR-02). The document's tools stay in the band at
-         the bottom: on the phone that is where a hand reaches, and reading a document is passive while
-         renaming one is rare — which is exactly what earns the name the top. -->
-    <Strip>
-      <DocumentName :path="path" />
-    </Strip>
     <DocumentFind v-if="findOpen && view && canSave" :view="view" :revision="revision" :mode="mode" @close="closeFind" />
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
@@ -543,19 +575,19 @@ onUnmounted(() => {
     <div v-if="assets.error.value" class="editor-error" role="alert">
       <span>{{ assets.error.value }}</span><Button :size="buttonSize" variant="secondary" @click="assets.retry">Retry upload</Button><Button :size="buttonSize" variant="ghost" @click="assets.dismiss">Dismiss</Button>
     </div>
-    <div v-show="!loadError" ref="editorEl" class="editor-content" @scroll="dismissSlash" />
+    <div v-if="saveError" class="editor-error" role="alert"><span>Save failed. Your changes are still in this editor.</span><Button :size="buttonSize" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button></div>
+    <div v-if="conflictCount" class="editor-warning" role="status">{{ conflictCount }} unresolved conflict{{ conflictCount === 1 ? '' : 's' }}</div>
+    <DocumentAppearance v-if="appearanceOpen" :appearance="appearance" @apply="applyAppearance" @close="appearanceOpen = false" />
+    <div v-show="!loadError" ref="editorEl" class="editor-content" @scroll="dismissSlash">
+      <DocumentPageHeader :path="path" :appearance="appearance" :disabled="!canSave || mode !== 'editable'" />
+      <div ref="editorMount" />
+    </div>
     <BlockHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :commands="kit.commands" />
     <SelectionFormatting v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :links="extension.links" :path="path" />
     <SlashMenu v-if="view && slashMenu && !loadError" :view="view" :menu="slashMenu" :menu-id="slashMenuId" :commands="kit.commands" />
-    <div class="editor-status">
-      <DocumentTools v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
-      <span role="status" aria-live="polite">{{ saveStatus }}</span>
-      <span v-if="conflictCount" role="status">{{ conflictCount }} conflict{{ conflictCount === 1 ? '' : 's' }}</span>
-      <span v-if="assets.pending.value" role="status">Uploading attachment…</span>
-      <Button v-if="saveError" :size="buttonSize" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button>
-      <span v-if="mode === 'readonly'">Read only · Select and copy text</span>
-      <span v-else-if="mode === 'interactive'">Interactive · Change values; text stays protected</span>
-    </div>
+    <DocumentChrome :target="chromeTarget" :status="assets.pending.value ? 'Uploading attachment…' : saveStatus" :mode="mode">
+      <DocumentTools v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" :on-appearance="() => appearanceOpen = true" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
+    </DocumentChrome>
     <Teleport v-for="control in controls.values()" :key="control.id" :to="control.host">
       <ArxComponentHost :control="control" />
     </Teleport>
@@ -570,24 +602,7 @@ onUnmounted(() => {
   height: 100%;
   overflow: hidden;
 }
-.editor-status {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  flex-shrink: 0;
-  min-height: var(--size-md);
-  padding: 0 8px;
-  color: var(--gray-11);
-  font-size: var(--font-size-xs);
-  border-top: 1px solid var(--gray-6);
-  background: var(--gray-2);
-}
-.editor-panel.touch .editor-status {
-  min-height: var(--size-xl);
-  padding: 4px 12px;
-  gap: 8px;
-}
+.editor-warning { padding: 8px 12px; color: var(--warning-11); background: var(--warning-2); font-size: var(--font-size-sm); }
 .editor-content {
   min-height: 0;
   overscroll-behavior: contain;

@@ -11,13 +11,14 @@ import { SearchExtension } from '@arxhub/plugin-search'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
-import { PluginVfs, VaultVfs, type VirtualFileSystem } from '@arxhub/vfs'
+import { PluginVfs, VaultVfs, VaultWatcher, type VirtualFileSystem } from '@arxhub/vfs'
 import { nextTick } from 'vue'
 import { mergeArx } from './arx-merge'
 import { createAssetStore } from './assets'
 import { searchDataSources } from './data-sources'
 import { createDraftStore } from './document-drafts'
 import { createSnapshotHistory } from './document-history'
+import { createDocumentIcons } from './document-icons'
 import { createDocumentLinkStore } from './document-link-store'
 import { ArxEditorExtension } from './editor-extension'
 import { deserialize, serialize } from './editor-format'
@@ -66,6 +67,7 @@ export class ArxEditorPlugin extends Plugin {
   }
 
   override stop(ctx: PluginContext): Promise<void> {
+    ctx.extensions.get(ArxEditorExtension).documentIcons?.dispose()
     this.unregisterMerger?.()
     this.unregisterMerger = null
     return super.stop(ctx)
@@ -75,6 +77,7 @@ export class ArxEditorPlugin extends Plugin {
     super.configure(ctx)
     ctx.extensions.get(ArxEditorExtension).assets ??= createAssetStore(ctx.services.get(VaultVfs))
     const editor = ctx.extensions.get(ArxEditorExtension)
+    editor.documentIcons = createDocumentIcons(ctx.services.get(VaultVfs), ctx.services.get(VaultWatcher))
     // The editor's own first-party block, registered the same way a plugin's would be (see
     // properties-block.ts) rather than baked into editor-schema.ts's base builder.
     editor.register(propertiesContribution())
@@ -143,6 +146,9 @@ export class ArxEditorPlugin extends Plugin {
     const explorer = ctx.extensions.get(ExplorerExtension)
     const vault = ctx.services.get(VaultVfs)
     const shell = ctx.extensions.get(ShellExtension)
+    explorer.registerNodeIcon((node) =>
+      node.entry.kind === 'file' && !node.pending ? editor.documentIcons?.get(node.entry.pathname) : undefined,
+    )
     explorer.registerNodeActions((node) => this.conversionAction(node, explorer, shell, vault))
     // A-48: any file that is not itself `.arx` gets a properties card beside it. An `.arx` document
     // carries its properties block in place — reached with the in-document `/properties` slash command

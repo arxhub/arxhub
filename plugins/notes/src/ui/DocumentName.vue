@@ -10,7 +10,7 @@ import { NotesExtension } from '../notes-extension'
 //
 // It is the top of the panel on the phone too, deliberately: reading a document is passive and
 // renaming one is rare, and the top of a phone screen is where a rare thing belongs.
-const props = defineProps<{ path: string }>()
+const props = defineProps<{ path: string; inline?: boolean; disabled?: boolean }>()
 
 const arxhub = useArxHub()
 const notes = arxhub.extensions.get(NotesExtension)
@@ -29,6 +29,7 @@ const draft = ref('')
 const field = ref<HTMLElement | null>(null)
 
 async function start(): Promise<void> {
+  if (props.disabled) return
   draft.value = name.value.text
   renaming.value = true
   await nextTick()
@@ -63,15 +64,15 @@ function commit(): void {
 </script>
 
 <template>
-  <span class="document-name" :class="{ editing: renaming, touch }">
+  <component :is="inline ? 'h1' : 'span'" class="document-name" :class="{ editing: renaming, touch, inline }">
     <span v-if="renaming" ref="field" class="document-name-field">
-      <Input v-model="draft" aria-label="New name" @keydown.enter.prevent.stop="commit" @keydown.escape.prevent.stop="cancel" @blur="commit" @click.stop />
+      <Input v-model="draft" :variant="inline ? 'title' : 'default'" aria-label="New name" @keydown.enter.prevent.stop="commit" @keydown.escape.prevent.stop="cancel" @blur="commit" @click.stop />
     </span>
     <!-- The full path as the native tooltip and nothing on screen: what tells two "Contract.md" apart
          is already the tab's own second line, and a second copy of it would spend the strip's only
          row on a repeat. -->
-    <button v-else type="button" class="document-name-button" :title="path" data-testid="document-name" @click="start">{{ name.text }}</button>
-  </span>
+    <button v-else type="button" class="document-name-button" :title="path" :disabled="disabled" data-testid="document-name" @click="start">{{ name.text }}</button>
+  </component>
 </template>
 
 <style scoped>
@@ -116,7 +117,11 @@ function commit(): void {
   height: var(--size-xl);
 }
 
-.document-name-button:hover {
+.document-name.inline { margin: 0; display: block; max-width: none; }
+.document-name.inline .document-name-button { height: auto; min-height: var(--size-xl); padding: 0; font-size: var(--font-size-2xl); line-height: var(--line-height-tight); font-weight: var(--font-weight-bold); white-space: normal; overflow-wrap: anywhere; }
+.document-name-button:disabled { cursor: default; }
+
+.document-name-button:hover:not(:disabled) {
   background: var(--gray-4);
 }
 

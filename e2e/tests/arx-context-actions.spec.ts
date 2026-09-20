@@ -26,7 +26,7 @@ test('formatting follows selection and edits autosave without a top toolbar', as
   await expect(formatting).toHaveCount(0)
   await app.keyboard.insertText(' autosaved')
   await expect.poll(() => vault.read(path)).toContain('autosaved')
-  await expect(app.locator('.editor-status')).toContainText('Saved')
+  await expect(app.locator('.document-save-status')).toContainText('Saved')
   await app.getByRole('button', { name: 'Document tools', exact: true }).click()
   await expect(app.getByRole('menuitem', { name: 'Saved versions', exact: true })).toBeVisible()
   await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()

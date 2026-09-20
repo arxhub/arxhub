@@ -15,10 +15,11 @@ function setup() {
   const expand = vi.fn()
   const scope = effectScope()
   const dnd = scope.run(() => useTreeDragDrop({ nodes, expandedIds: [], config: { rootLabel: 'Root' }, drop, expand }))!
-  const start = (id: string) => dnd.onDragStart({ operation: { source: { data: { nodeId: id } } } } as DragStartEvent)
-  const over = (id: string | null) => dnd.onDragOver({ operation: { target: { data: { nodeId: id } } } } as DragOverEvent)
+  // These policy tests omit dnd-kit geometry/sensors, which the handlers do not read.
+  const start = (id: string) => dnd.onDragStart({ operation: { source: { data: { nodeId: id } } } } as unknown as DragStartEvent)
+  const over = (id: string | null) => dnd.onDragOver({ operation: { target: { data: { nodeId: id } } } } as unknown as DragOverEvent)
   const end = (id: string | null, canceled = false) =>
-    dnd.onDragEnd({ canceled, operation: { target: { data: { nodeId: id } } } } as DragEndEvent)
+    dnd.onDragEnd({ canceled, operation: { target: { data: { nodeId: id } } } } as unknown as DragEndEvent)
   return { dnd, start, over, end, folder, child, nested, other, nodes, drop, expand, scope }
 }
 afterEach(() => vi.useRealTimers())

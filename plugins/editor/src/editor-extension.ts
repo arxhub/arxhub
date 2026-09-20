@@ -10,6 +10,7 @@ import { identityNodes } from './block-identity'
 import type { ArxDataSource } from './data-sources'
 import type { ArxDraftStore } from './document-drafts'
 import type { ArxHistoryStore } from './document-history'
+import type { createDocumentIcons } from './document-icons'
 import type { ArxDocumentLinks } from './document-links'
 import type { ArxFormatConfig, ArxJsonNode } from './document-migrations'
 import { type ControlPolicy, DEFAULT_CONTROL_POLICIES } from './editor-mode'
@@ -53,6 +54,7 @@ export interface ArxEditorKit {
 // Register in configure; seal in start, after every plugin has contributed. A live document's
 // NodeTypes cannot be replaced without rebuilding its history and component views.
 export class ArxEditorExtension extends Extension {
+  documentIcons: ReturnType<typeof createDocumentIcons> | null = null
   assets: ArxAssetStore | null = null
   links: ArxDocumentLinks | null = null
   history: ArxHistoryStore | null = null

@@ -18,10 +18,12 @@ const props = defineProps<{
   links?: ArxDocumentLinks | null
   path?: string
   hasHistory?: boolean
+  onAppearance?: () => void
   publicationActions?: readonly ActionItem[]
 }>()
 const emit = defineEmits<{ find: []; outline: []; backlinks: []; copyLink: []; versions: [] }>()
 const mode = defineModel<EditorMode>('mode', { default: 'editable' })
+const placement = useShellFrame() === 'mobile' ? 'top-end' : 'bottom-end'
 const iconSize = useShellFrame() === 'mobile' ? 'xl' : 'lg'
 const modes: { value: EditorMode; label: string; description: string }[] = [
   { value: 'readonly', label: 'Read only', description: 'Read and copy; no changes' },
@@ -48,11 +50,12 @@ function cmd(command: Command) {
 </script>
 
 <template>
-  <Dropdown placement="top-end">
+  <Dropdown :placement="placement">
     <template #trigger>
       <IconButton :size="iconSize" icon="lu:ellipsis" tooltip="Document tools" :title="`Editor mode: ${modeLabel}`" />
     </template>
     <MenuItem v-for="item in modes" :key="item.value" :value="item.value" :disabled="busy" :title="item.description" :aria-current="mode === item.value ? 'true' : undefined" @select="selectMode(item.value)">{{ item.label }}</MenuItem>
+    <MenuItem v-if="onAppearance" value="appearance" :disabled="!canSave || busy || mode !== 'editable'" @select="onAppearance()">Page icon and cover</MenuItem>
     <MenuItem v-if="mode !== 'readonly'" value="save" :disabled="!canSave" @select="onSave?.()">Save</MenuItem>
     <MenuItem v-for="action in HISTORY" v-show="mode !== 'readonly'" :key="action.label" :value="action.label" :disabled="!canSave || !view || !action.run(view.state)" @select="cmd(action.run)">{{ action.label }}</MenuItem>
     <MenuItem value="find" :disabled="!canSave" @select="emit('find')">Find in document</MenuItem>

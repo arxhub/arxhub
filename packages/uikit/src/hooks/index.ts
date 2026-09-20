@@ -4,6 +4,7 @@ export { type FileDocument, type UseFileDocumentOptions, useFileDocument } from 
 export { useKeyboardInset } from './useKeyboardInset'
 export { useMediaQuery } from './useMediaQuery'
 export { type UseOverflowActionsOptions, useOverflowActions } from './useOverflowActions'
+export { type PanelChromeHost, type PanelChromeState, providePanelChrome, usePanelChrome } from './usePanelChrome'
 export {
   detectShellFrame,
   MOBILE_BREAKPOINT,

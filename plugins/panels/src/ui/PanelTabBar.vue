@@ -1,14 +1,25 @@
 <script setup lang="ts">
 import { IconButton, Strip } from '@arxhub/uikit/core'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
 import { usePanels } from '../use-panels'
 import DraggableTab from './DraggableTab.vue'
+import { PanelChromeRegistryKey } from './panel-targets'
 
 const props = defineProps<{
   groupId: string
 }>()
 
+const chrome = inject(PanelChromeRegistryKey, null)
+const actionsEl = ref<HTMLElement | null>(null)
+watchEffect((cleanup) => {
+  const el = actionsEl.value
+  const id = props.groupId
+  if (el) chrome?.actions.set(id, el)
+  cleanup(() => {
+    if (chrome?.actions.get(id) === el) chrome.actions.delete(id)
+  })
+})
 const store = usePanels()
 const group = computed(() => store.groups.value[props.groupId])
 const isActiveGroup = computed(() => store.activeGroupId.value === props.groupId)
@@ -67,12 +78,15 @@ watch(
         :group-id="groupId"
         :index="index"
         :title="instance.title"
+        :chrome="chrome?.states.get(instance.instanceId)?.value"
         :is-active="isActiveGroup && instance.instanceId === group?.activeInstanceId"
         @click="onTabClick(instance.instanceId)"
         @close="onCloseTab(instance.instanceId)"
       />
     </div>
     <template #actions>
+      <span v-if="group?.activeInstanceId && chrome?.states.get(group.activeInstanceId)?.value.mode" class="panel-mode">{{ chrome.states.get(group.activeInstanceId)?.value.mode }}</span>
+      <div ref="actionsEl" class="panel-actions" />
       <IconButton size="lg" icon="lu:columns-2" tooltip="Split right" :disabled="(group?.instances.length ?? 0) < 2" @click="onSplit('horizontal')" />
       <IconButton size="lg" icon="lu:rows-2" tooltip="Split down" :disabled="(group?.instances.length ?? 0) < 2" @click="onSplit('vertical')" />
     </template>
@@ -83,6 +97,9 @@ watch(
 .panel-tab-bar {
   overflow: hidden;
 }
+
+.panel-actions { display: flex; align-items: center; }
+.panel-mode { font-size: var(--font-size-xs); color: var(--gray-11); white-space: nowrap; padding-inline: 8px; }
 
 .tabs {
   display: flex;

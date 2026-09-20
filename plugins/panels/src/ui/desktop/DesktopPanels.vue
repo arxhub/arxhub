@@ -6,7 +6,7 @@ import { type DropZone, isPanelTabDragData } from '../../composables/drag-types'
 import type { PanelStore } from '../../types'
 import LayoutRenderer from '../LayoutRenderer.vue'
 import PanelView from '../PanelView.vue'
-import { PanelTargetsKey } from '../panel-targets'
+import { PanelChromeRegistryKey, PanelTargetsKey } from '../panel-targets'
 
 const props = withDefaults(
   defineProps<{
@@ -19,6 +19,7 @@ const props = withDefaults(
 const targets = shallowReactive(new Map<string, HTMLElement>())
 const parkingId = `panels-parking-${useId()}`
 provide(PanelTargetsKey, targets)
+provide(PanelChromeRegistryKey, { actions: shallowReactive(new Map()), states: shallowReactive(new Map()) })
 
 const layout = computed(() => props.store.layout.value)
 

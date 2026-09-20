@@ -223,6 +223,7 @@ export class ExplorerExtension extends Extension {
   // Path of the node currently being inline-renamed (shared so only one renames at a time).
   readonly renamingPath = ref<string | null>(null)
   private creation: Promise<unknown> = Promise.resolve()
+  private readonly nodeIcons: ((node: TreeNode) => string | undefined)[] = []
   private readonly nodeActionContributors: NodeActionContributor[] = []
   readonly fileTemplates = ref<FileTemplate[]>([])
   private pendingSource: PendingSource | null = null
@@ -350,6 +351,17 @@ export class ExplorerExtension extends Extension {
     for (const dir of dirsToRefresh) {
       void this.refreshDir(dir).catch((error) => this.logger.error('Could not refresh after a pending path resolved', error))
     }
+  }
+
+  registerNodeIcon(contributor: (node: TreeNode) => string | undefined): void {
+    this.nodeIcons.push(contributor)
+  }
+  iconFor(node: TreeNode): string | undefined {
+    for (const contributor of this.nodeIcons) {
+      const icon = contributor(node)
+      if (icon) return icon
+    }
+    return undefined
   }
 
   registerNodeActions(contributor: NodeActionContributor): void {
