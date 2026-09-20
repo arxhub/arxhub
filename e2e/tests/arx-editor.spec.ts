@@ -18,6 +18,46 @@ async function mode(app: Page, label: string) {
   await expect(app.getByRole('menu', { name: 'Document tools' })).toBeHidden()
 }
 
+test('Shift-Enter keeps paragraph and list line breaks through undo and reload', async ({ app, vault }) => {
+  test.skip(await isMobileFrame(app), 'Desktop keyboard behavior; Android handles Enter through composition')
+  const path = await vault.write(
+    'line-breaks.arx',
+    document([paragraph('First'), { type: 'bullet_list', content: [{ type: 'list_item', content: [paragraph('Item')] }] }]),
+  )
+  const editor = await openArx(app, path)
+  const first = editor.locator(':scope > p').first()
+  await first.click()
+  await app.keyboard.press('End')
+  await app.keyboard.press('Shift+Enter')
+  await expect(first.locator('br:not(.ProseMirror-trailingBreak)')).toHaveCount(1)
+  await app.keyboard.press('ControlOrMeta+z')
+  await expect(first.locator('br')).toHaveCount(0)
+  await app.keyboard.press('ControlOrMeta+Shift+z')
+  await app.keyboard.insertText('Second')
+  await expect(first).toHaveText('FirstSecond')
+  await expect(editor.locator(':scope > p')).toHaveCount(1)
+  await app.keyboard.press('Enter')
+  await app.keyboard.insertText('Next paragraph')
+  await expect(editor.locator(':scope > p')).toHaveCount(2)
+
+  await editor.locator('li p').click()
+  await app.keyboard.press('End')
+  await app.keyboard.press('Shift+Enter')
+  await app.keyboard.insertText('Continuation')
+  await expect(editor.locator('li')).toHaveCount(1)
+  await expect(editor.locator('li p br')).toHaveCount(1)
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await expect.poll(async () => (await vault.read(path)).match(/"type": "hard_break"/g)?.length).toBe(2)
+  await app.reload()
+  await expect(editor.locator(':scope > p')).toHaveCount(2)
+  await expect(first.locator('br')).toHaveCount(1)
+  await expect(first).toHaveText('FirstSecond')
+  await expect(editor.locator('li')).toHaveCount(1)
+  await expect(editor.locator('li p br')).toHaveCount(1)
+  await expect(editor.locator('li p')).toHaveText('ItemContinuation')
+})
+
 test('arx modes preserve text while saving control values', async ({ app, vault }) => {
   const path = await vault.write(
     `${test.info().project.name}-modes.arx`,

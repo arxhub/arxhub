@@ -1,4 +1,4 @@
-import { baseKeymap, chainCommands, setBlockType, toggleMark } from 'prosemirror-commands'
+import { baseKeymap, chainCommands, newlineInCode, setBlockType, toggleMark } from 'prosemirror-commands'
 import { redo, undo } from 'prosemirror-history'
 import { keydownHandler } from 'prosemirror-keymap'
 import type { NodeType, Schema } from 'prosemirror-model'
@@ -58,6 +58,16 @@ export function buildKeymap(schema: Schema): Record<string, Command> {
   keys['Shift-Home'] = lineBoundary(-1, true)
   keys.End = lineBoundary(1, false)
   keys['Shift-End'] = lineBoundary(1, true)
+
+  const hardBreak = schema.nodes.hard_break
+  if (hardBreak) {
+    keys['Shift-Enter'] = chainCommands(newlineInCode, (state, dispatch) => {
+      const { $from } = state.selection
+      if (!$from.parent.canReplaceWith($from.index(), $from.index(), hardBreak)) return false
+      if (dispatch) dispatch(state.tr.replaceSelectionWith(hardBreak.create()).scrollIntoView())
+      return true
+    })
+  }
 
   if (schema.marks.strong) keys['Mod-b'] = toggleMark(schema.marks.strong)
   if (schema.marks.em) keys['Mod-i'] = toggleMark(schema.marks.em)
