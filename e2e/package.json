@@ -12,8 +12,10 @@
   },
   "devDependencies": {
     "@arxhub/core": "workspace:*",
+    "@arxhub/crypto": "workspace:*",
     "@arxhub/errors": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",
+    "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/uikit": "workspace:*",
     "@noble/hashes": "catalog:shared",

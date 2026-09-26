@@ -18,6 +18,7 @@ export default defineConfig((env) =>
       '@arxhub/plugin-shell/ui',
       '@arxhub/plugin-shell/ui-desktop',
       '@arxhub/plugin-shell/ui-mobile',
+      '@arxhub/plugin-sync/ui',
       '@arxhub/uikit/hooks',
       '@arxhub/vfs',
       '@arxhub/vfs-node',

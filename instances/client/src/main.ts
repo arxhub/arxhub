@@ -54,13 +54,15 @@ await bootClient({
   frame,
   // A shipped build never boots with its secrets in the clear.
   requireLock: true,
+  // This bundle is served by the server its vault lives on.
+  entryServer: { fixed: location.origin },
   // One browser build is served to phones and desktops alike, so this bundle cannot know its frame and
   // probes once, here, at boot. Nothing below the shell measures the window again.
   loadShell: () => shellForFrame(frame),
 
   createVfs: ({ signer, logger }) => Promise.resolve(new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer }, logger)),
 
-  register: (arxhub, { vfs, keystore, keyring, policy }) => {
+  register: (arxhub, { vfs, keystore, keyring, entry, policy }) => {
     arxhub.plugins.register(VfsPlugin, () => ({ fs: vfs }))
     arxhub.plugins.register(LoggerPlugin)
     arxhub.plugins.register(ConfigPlugin)
@@ -86,7 +88,7 @@ await bootClient({
     arxhub.plugins.register(SearchPlugin, () => ({ dataDir: 'idb://arxhub-sql' }))
     arxhub.plugins.register(ThemePlugin, () => ({ themes }))
     arxhub.plugins.register(KeyStorePlugin, () => ({ keystore, deviceLockRequired: true }))
-    arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
+    arxhub.plugins.register(ProtectionPlugin, () => ({ keyring, entry }))
     arxhub.plugins.register(MaintenancePlugin, () => ({ policy }))
     // The local repository (manifest chain, chunk store, checkout index, file history) is essential —
     // version history and pending-file nodes must not go dark when sync (the optional remote exchange

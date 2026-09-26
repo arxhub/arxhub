@@ -23,3 +23,8 @@ tauri-plugin-os = "2"
 
 [target.'cfg(target_os = "android")'.dependencies]
 tauri-plugin-geolocation = "2"
+
+# The camera that reads a pairing invitation's QR. Phones only: a desktop has the in-page scanner (or
+# the typed code), and the plugin has no desktop implementation to link.
+[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
+tauri-plugin-barcode-scanner = "2"

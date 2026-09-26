@@ -34,6 +34,7 @@ import { VfsPlugin } from '@arxhub/plugin-vfs'
 import { isTauri } from '@tauri-apps/api/core'
 import { h, markRaw } from 'vue'
 import { appBudgetCapture } from './budget-capture'
+import { appPairingScanner } from './pairing-scanner'
 import WelcomePanel from './panels/WelcomePanel.vue'
 import VaultSettingsPage from './settings/VaultSettingsPage.vue'
 
@@ -53,6 +54,11 @@ await bootClient({
   frame: __ARXHUB_FRAME__,
   // A shipped build never boots with its secrets in the clear.
   requireLock: true,
+  // Under Tauri the page's origin is the app itself, so a new vault asks where its server is; the SPA
+  // build of this instance is served by one and says so.
+  entryServer: isTauri() ? 'ask' : { fixed: location.origin },
+  // A phone's native camera for the pairing QR; elsewhere the port says so and the page's camera is used.
+  pairingScanner: appPairingScanner,
   // The frame is a build decision here — __ARXHUB_FRAME__ comes from TAURI_ENV_PLATFORM, see
   // vite.config.ts — so this ternary is folded away and a phone package never carries the desktop tree.
   loadShell: () =>
@@ -80,7 +86,7 @@ await bootClient({
     return new HttpFileSystem({ baseUrl: apiBaseUrl('', VFS_NAMESPACE), signer }, logger)
   },
 
-  register: (arxhub, { vfs, keystore, keyring, policy }) => {
+  register: (arxhub, { vfs, keystore, keyring, entry, policy }) => {
     arxhub.plugins.register(VfsPlugin, () => ({ fs: vfs }))
     arxhub.plugins.register(LoggerPlugin)
     arxhub.plugins.register(ConfigPlugin)
@@ -106,7 +112,7 @@ await bootClient({
     arxhub.plugins.register(SearchPlugin, () => ({ dataDir: 'idb://arxhub-sql' }))
     arxhub.plugins.register(ThemePlugin, () => ({ themes }))
     arxhub.plugins.register(KeyStorePlugin, () => ({ keystore, deviceLockRequired: true }))
-    arxhub.plugins.register(ProtectionPlugin, () => ({ keyring }))
+    arxhub.plugins.register(ProtectionPlugin, () => ({ keyring, entry }))
     arxhub.plugins.register(MaintenancePlugin, () => ({ policy }))
     // The local repository (manifest chain, chunk store, checkout index, file history) is essential —
     // version history and pending-file nodes must not go dark when sync (the optional remote exchange

@@ -6,6 +6,8 @@ pub fn run() {
         .plugin(tauri_plugin_os::init());
     #[cfg(target_os = "android")]
     let builder = builder.plugin(tauri_plugin_geolocation::init());
+    #[cfg(mobile)]
+    let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
     builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

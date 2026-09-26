@@ -2,13 +2,14 @@ import { ArxHub, type Logger } from '@arxhub/core'
 import { type Keyring, MutableRequestSigner } from '@arxhub/crypto'
 import { DOCUMENTS_TYPE_ID, migrateWorkspaceRecord } from '@arxhub/plugin-documents'
 import type { KeyStore } from '@arxhub/plugin-keystore'
-import { resolveKeyStore } from '@arxhub/plugin-keystore/ui'
 import { BootPolicy } from '@arxhub/plugin-maintenance'
 import { startWithCrashScreen } from '@arxhub/plugin-maintenance/ui'
 import { PanelStoreExtension, restoreNavigationWorkspace, StorePanelHost } from '@arxhub/plugin-panels'
-import { loadOrCreateKeyring } from '@arxhub/plugin-protection'
+import type { EntryRecord, EntryServer, QrScanPort } from '@arxhub/plugin-protection'
+import { resolveDeviceEntry } from '@arxhub/plugin-protection/ui'
 import { ShellExtension, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell'
 import { ObjectGonePage } from '@arxhub/plugin-shell/ui'
+import { holdForInitialDownload } from '@arxhub/plugin-sync/ui'
 import { ARXHUB_KEY, type ShellFrame } from '@arxhub/uikit/hooks'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { type App, type Component, createApp, markRaw } from 'vue'
@@ -19,16 +20,23 @@ export interface BootClientDeps {
   vfs: VirtualFileSystem
   keystore: KeyStore
   keyring: Keyring
+  // What the first run left for the plugins to finish, handed to ProtectionPlugin.
+  entry: EntryRecord | null
   policy: BootPolicy
 }
 
 export interface BootClientOptions {
   // Chosen once by the instance and shared by the pre-boot key-store gate and the eventual shell.
   frame: ShellFrame
-  // A shipped, user-facing build never boots with its secrets in the clear, so it gates on first-run
-  // lock setup. Dev and e2e leave it false: they seed a plaintext identity into storage before the app
-  // runs and must come straight up with no interaction.
+  // A shipped, user-facing build never boots with its secrets in the clear, so a device from before the
+  // first-run flow gates on lock setup. Dev and e2e leave it false: they seed a plaintext identity into
+  // storage before the app runs and must come straight up with no interaction.
   requireLock: boolean
+  // Where a new vault's server is: the page's own origin for a bundle a server serves, asked for by the
+  // native app, which has no origin of its own.
+  entryServer: EntryServer
+  // A camera the join flow can scan an invitation with — only the native app on a phone has one to offer.
+  pairingScanner?: QrScanPort
   // Where this instance's vault is — the native filesystem under Tauri, an HTTP backend in a browser.
   // Called after the keyring is installed into the signer, because a protected /vfs must already be
   // signed by the first request a plugin makes.
@@ -67,15 +75,19 @@ export async function bootClient(options: BootClientOptions): Promise<BootedClie
   arxhub.logger.info(`ArxHub ${options.version}`)
 
   // Resolve the device identity from client-local storage (never the server VFS) and install it into
-  // the signer before start(). Blocks on the unlock prompt when the device is locked, or on first-run
-  // lock setup when it never has been and this build requires one.
-  const keystore = await resolveKeyStore({ requireLock: options.requireLock, frame: options.frame })
-  const keyring = await loadOrCreateKeyring(keystore)
+  // the signer before start(). Blocks on the unlock prompt when the device is locked, on the first run's
+  // chooser when it holds no identity, and on lock setup for a device from before that flow.
+  const { keystore, keyring, entry } = await resolveDeviceEntry({
+    frame: options.frame,
+    requireLock: options.requireLock,
+    server: options.entryServer,
+    scanner: options.pairingScanner,
+  })
   const signer = new MutableRequestSigner()
   signer.install(keyring)
 
   const vfs = await options.createVfs({ signer, logger: arxhub.logger })
-  await options.register(arxhub, { vfs, keystore, keyring, policy })
+  await options.register(arxhub, { vfs, keystore, keyring, entry, policy })
   checkRegisteredComposition(arxhub, CLIENT_COMPOSITION)
 
   // A failed boot lands on the crash screen instead of a blank page: it names the plugin that broke and
@@ -83,6 +95,11 @@ export async function bootClient(options: BootClientOptions): Promise<BootedClie
   // in start(), carrying on is still an option — configure() had already registered the whole UI.
   await startWithCrashScreen(arxhub, policy, options.frame)
   await options.contribute?.(arxhub)
+  // A device that has just joined a vault waits here, behind the download screen, until the vault is on
+  // it: a desk assembled over half a vault would restore tabs onto files that have not arrived yet.
+  // Any other boot passes straight through — including a maintenance boot or one with sync switched
+  // off, which leave the join to be finished by the next normal one.
+  await holdForInitialDownload(arxhub, options.frame)
 
   const shell = arxhub.extensions.get(ShellExtension)
   const panels = arxhub.extensions.get(PanelStoreExtension)
