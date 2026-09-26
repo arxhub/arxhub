@@ -275,3 +275,35 @@ describe('PluginConfig with no device view', () => {
     expect((await config.read(Schema))['sync.intervalMinutes']).toBe(30)
   })
 })
+
+describe('PluginConfig.holdUntil', () => {
+  it('reads and writes wait for the hold, then see what it put in place', async () => {
+    const storage = new MemoryFileSystem()
+    const config = new PluginConfig(storage, silentLogger())
+    let release: () => void = () => undefined
+    config.holdUntil(
+      new Promise<void>((resolve) => {
+        release = resolve
+      }),
+    )
+
+    const read = config.read(Schema)
+    const write = config.write(Schema, { 'ui.theme': 'slate' })
+    await Promise.resolve()
+    expect(storage.text(PATH)).toBeUndefined()
+
+    storage.seed(PATH, '"server.url" = "https://moved.example"\n')
+    release()
+
+    expect((await read)['server.url']).toBe('https://moved.example')
+    await write
+    expect(parse(storage.text(PATH) ?? '')).toEqual({ 'server.url': 'https://moved.example', 'sync.intervalMinutes': 5, 'ui.theme': 'slate' })
+  })
+
+  it('a rejected hold releases reads instead of failing them', async () => {
+    const config = new PluginConfig(new MemoryFileSystem(), silentLogger())
+    config.holdUntil(Promise.reject(new Error('move failed')))
+
+    expect((await config.read(Schema))['ui.theme']).toBe('default')
+  })
+})

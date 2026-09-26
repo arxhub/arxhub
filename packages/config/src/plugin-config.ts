@@ -38,6 +38,7 @@ export class PluginConfig {
   // Local to this instance, which is itself scoped one-per-plugin (ConfigPlugin.setup) — a plugin only
   // ever hears its OWN writes, never another plugin's.
   private readonly bus = createEventBus<PluginConfigEvents>()
+  private held: Promise<unknown> = Promise.resolve()
 
   constructor(storage: VirtualFileSystem, logger: Logger, state?: VirtualFileSystem) {
     this.storage = storage
@@ -58,7 +59,17 @@ export class PluginConfig {
     })
   }
 
+  // Every read and write waits for `ready` first. For a plugin that must move its own files before
+  // anyone reads them (a renamed bucket): the settings page reads through this same service, so holding
+  // the plugin's own boot read alone would still let the page show — and save — the empty bucket.
+  // A rejected `ready` releases the hold; the owner reports its own failure.
+  holdUntil(ready: Promise<unknown>): void {
+    const previous = this.held
+    this.held = Promise.all([previous, ready.catch(() => undefined)])
+  }
+
   async read<S extends TObject>(schema: S, opts: ConfigOptions = {}): Promise<Static<S>> {
+    await this.held
     const deviceKeys = deviceLocalKeys(schema)
     const state = this.state
     if (state == null || deviceKeys.size === 0) return readConfig(this.storage, schema, opts, this.logger)
@@ -83,6 +94,7 @@ export class PluginConfig {
   }
 
   async write<S extends TObject>(schema: S, data: Partial<Static<S>>, opts: ConfigOptions = {}): Promise<void> {
+    await this.held
     const deviceKeys = deviceLocalKeys(schema)
     const state = this.state
     if (state == null || deviceKeys.size === 0) {
