@@ -2,6 +2,7 @@
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { SegmentGroup } from '@ark-ui/vue'
 import { useShellFrame } from '../hooks/useShellFrame'
+import Icon from './Icon.vue'
 import type { SelectOption } from './options'
 
 defineProps<{
@@ -34,7 +35,9 @@ const touch = useShellFrame() === 'mobile'
       :value="option.value"
       :disabled="option.disabled"
     >
+      <Icon v-if="option.icon" :name="option.icon" :size="touch ? 16 : 14" />
       <SegmentGroup.ItemText class="text">{{ option.label }}</SegmentGroup.ItemText>
+      <span v-if="option.count != null && option.count !== ''" class="count">{{ option.count }}</span>
       <SegmentGroup.ItemControl />
       <SegmentGroup.ItemHiddenInput />
     </SegmentGroup.Item>
@@ -71,6 +74,7 @@ const touch = useShellFrame() === 'mobile'
 .item {
   display: flex;
   align-items: center;
+  gap: 8px;
   height: var(--size-xs);
   padding: 0 16px;
   border-right: 1px solid var(--gray-4);
@@ -84,6 +88,14 @@ const touch = useShellFrame() === 'mobile'
 .root.touch .item {
   height: var(--size-xl);
   font-size: var(--font-size-md);
+}
+
+.count {
+  color: var(--gray-11);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-normal);
 }
 
 .item:last-of-type {
