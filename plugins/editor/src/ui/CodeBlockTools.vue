@@ -8,7 +8,9 @@ import { t } from '../i18n/messages'
 
 const props = defineProps<ArxEditorControlProps>()
 const language = computed(() => props.node.attrs.language || t('settings.plainText'))
-const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
+const touch = useShellFrame() === 'mobile'
+const buttonSize = touch ? 'lg' : 'sm'
+const glyph = touch ? 16 : 14
 
 async function copy(): Promise<void> {
   try {
@@ -24,11 +26,11 @@ async function copy(): Promise<void> {
   <Strip v-if="mode === 'editable' && settings">
     <Button :size="buttonSize" variant="ghost" :aria-label="`Code language: ${language}`" @click="settings()">
       {{ language }}
-      <Icon name="lu:chevron-down" />
+      <Icon name="lu:chevron-down" :size="glyph" />
     </Button>
     <template #actions>
       <Button :size="buttonSize" variant="ghost" @click="copy">
-        <Icon name="lu:copy" />
+        <Icon name="lu:copy" :size="glyph" />
         Copy
       </Button>
     </template>
@@ -36,7 +38,7 @@ async function copy(): Promise<void> {
   <Strip v-else :title="language">
     <template #actions>
       <Button :size="buttonSize" variant="ghost" @click="copy">
-        <Icon name="lu:copy" />
+        <Icon name="lu:copy" :size="glyph" />
         Copy
       </Button>
     </template>
