@@ -7,7 +7,7 @@ import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 // biome-ignore lint/style/useImportType: ScrollArea is also rendered in the template, not only read as a type
 import { actionMenu, Button, ScrollArea } from '@arxhub/uikit/core'
-import { toaster, useArxHub, useFileDocument, usePanelChrome, useShellFrame } from '@arxhub/uikit/hooks'
+import { toaster, useArxHub, useFileDocument, useKeyboardInset, usePanelChrome, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { closeHistory, history } from 'prosemirror-history'
 import { inputRules } from 'prosemirror-inputrules'
@@ -588,6 +588,12 @@ onUnmounted(() => {
   document.removeEventListener('focusin', trackFocus)
   document.removeEventListener('focusout', trackFocus)
 })
+const offersEditing = computed(() => documentFocused.value && mode.value !== 'readonly')
+// While the keyboard is up the phone's band IS the formatting toolbar, so a selection's bubble would be a
+// second copy of the same keys one thumb-width above it — one concept, one control. The desktop has no
+// band, and a phone without the keyboard up has none either, so the bubble stays there.
+const keyboardInset = useKeyboardInset()
+const editingBandUp = computed(() => touch && keyboardInset.value > 0 && offersEditing.value)
 // Hosted here and not in the toolbar: opening it takes focus out of the document, which takes the
 // toolbar off the band — and a dialog inside the toolbar would go with it.
 const bandLinkOpen = ref(false)
@@ -647,7 +653,7 @@ onUnmounted(
         mode: mode.value,
       }),
       menu: barMenu.value,
-      editing: documentFocused.value && mode.value !== 'readonly' ? editing : undefined,
+      editing: offersEditing.value ? editing : undefined,
     }),
   ),
 )
@@ -695,7 +701,7 @@ const chromeTarget = usePanelChrome(() => ({
       <div ref="editorMount" />
     </ScrollArea>
     <BlockHandle v-if="view && editorEl && editorBody && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :panel="editorBody" :revision="revision" :commands="kit.commands" />
-    <SelectionFormatting v-if="view && editorEl && editorBody && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :panel="editorBody" :revision="revision" :links="extension.links" :path="path" />
+    <SelectionFormatting v-if="view && editorEl && editorBody && canSave && mode === 'editable' && !editingBandUp" :view="view" :scroller="editorEl" :panel="editorBody" :revision="revision" :links="extension.links" :path="path" />
     <SlashMenu v-if="view && slashMenu && !loadError" :view="view" :menu="slashMenu" :menu-id="slashMenuId" :commands="kit.commands" />
     <BlockSettingsHandle v-if="view && editorEl && editorBody && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :panel="editorBody" :revision="revision" :components="kit.components" />
     <EditorInspector v-if="view && canSave" :view="view" :revision="revision" :kit="kit" :mode="mode" :path="path" />

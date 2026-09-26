@@ -395,7 +395,10 @@ test('mobile insertion and formatting stay above the on-screen keyboard', async 
   await app.keyboard.insertText('A task above the keyboard')
   await app.keyboard.press('Home')
   await app.keyboard.press('Shift+End')
-  // The band the keyboard raised, not the selection's bubble, which offers the same key while text is selected.
+  // With the keyboard up the band the keyboard raised is the one formatting control: the selection's bubble
+  // steps aside rather than offering the same keys a second time.
+  await expect(app.getByRole('button', { name: 'More formatting', exact: true }).filter({ visible: true })).toHaveCount(1)
+  await expect(app.locator('.selection-formatting')).toHaveCount(0)
   await app.getByTestId('object-bar').getByRole('button', { name: 'More formatting', exact: true }).click()
   const sheet = app.getByRole('dialog', { name: 'Formatting', exact: true })
   await expect(sheet).toBeVisible()
