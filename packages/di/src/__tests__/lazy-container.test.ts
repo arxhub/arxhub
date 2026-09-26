@@ -66,7 +66,7 @@ describe('LazyContainer', () => {
 
   it('caches a factory result even when it is undefined', () => {
     const Sentinel = createKey<undefined>('Sentinel')
-    const c = new LazyContainer<object>('Service')
+    const c = new LazyContainer<object | undefined>('Service')
     let calls = 0
     c.bind(Sentinel, () => {
       calls++
