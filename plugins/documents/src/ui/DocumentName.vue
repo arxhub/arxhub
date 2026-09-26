@@ -107,6 +107,9 @@ function commit(): void {
 
 .document-name.inline { margin: 0; display: block; max-width: none; }
 .document-name.inline .document-name-button { height: auto; min-height: var(--size-xl); padding: 0; font-size: var(--font-size-2xl); line-height: var(--line-height-tight); font-weight: var(--font-weight-bold); white-space: normal; overflow-wrap: anywhere; }
+/* design-ignore DS type ramp: the page title is the note's h1 and scales with it — 26px over the phone's
+   16px body (see the editor's phone headings), or two words already wrap in a phone column. */
+.document-name.inline.touch .document-name-button { font-size: 1.625rem; }
 .document-name-button:disabled { cursor: default; }
 
 .document-name-button:hover:not(:disabled) {
