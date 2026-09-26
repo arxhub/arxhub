@@ -19,6 +19,7 @@ export type {
   OpenedObject,
   TabType,
   TabTypeCreate,
+  TabTypeFind,
   TabTypeNav,
   TabTypeOpen,
   TabTypeSheet,

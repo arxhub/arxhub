@@ -164,6 +164,16 @@ export interface TabTypeSheet {
   anchor?: 'start' | 'end'
 }
 
+// Finding an object of the type by what it says rather than where it sits: the Documents' "Find a
+// document…". The phone draws the field in two places — the foot of the second-tap sheet, under the thumb,
+// and the top of the navigation sheet, focused, where finding comes before browsing — and while something
+// is typed `results` takes the body's place. It gets one prop, `query`, and emits `opened` once a result was
+// opened, which puts the sheet away.
+export interface TabTypeFind {
+  placeholder: string
+  results: Component
+}
+
 interface TabTypeBase {
   id: string
   // Icon spec string resolved by uikit's Icon registry.
@@ -178,6 +188,9 @@ interface TabTypeBase {
   // objects). Not declared, or null — no band: an empty one would spend 48px of the shortest screen.
   bar?: (active: OpenedObject | null) => ObjectBar | null
   sheet?: TabTypeSheet
+  // Read on every render, so a finder contributed by an optional plugin comes and goes with it. Not
+  // declared, or null — no field: a field that finds nothing is a promise the type cannot keep.
+  find?: () => TabTypeFind | null
   // By default a type is pinned and holds a place in the row. `pinned: false` — it does not, but it
   // must appear in the "open new" section of the search sheet: there are no unreachable types.
   pinned?: boolean

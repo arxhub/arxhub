@@ -16,6 +16,9 @@ import { type InjectionKey, inject, provide } from 'vue'
 export interface NavHost {
   readonly dismiss: () => void
   readonly navigated?: () => void
+  // The phone's navigation is opened over the content to go somewhere from the open object, so it starts
+  // at that object; the desktop column is always there and keeps the expansion the owner left it in.
+  readonly revealActive?: boolean
   // Icon spec string resolved by uikit's Icon registry.
   readonly icon: string
   readonly label: string

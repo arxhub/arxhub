@@ -56,7 +56,13 @@ watch(
 
 // Inside a sheet the frame's control over a navigation means "put the sheet away" — and so does a
 // destination being chosen in it, which is what a navigation already announces on the desktop.
-provideNavHost({ dismiss: () => (layer.value = null), navigated: () => (layer.value = null), icon: 'lu:x', label: 'Close' })
+provideNavHost({
+  dismiss: () => (layer.value = null),
+  navigated: () => (layer.value = null),
+  revealActive: true,
+  icon: 'lu:x',
+  label: 'Close',
+})
 
 function toggle(which: Layer): void {
   layer.value = layer.value === which ? null : which
