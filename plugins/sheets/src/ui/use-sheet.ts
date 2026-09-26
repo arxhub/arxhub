@@ -1,5 +1,5 @@
 import { validation } from '@arxhub/errors'
-import { DocumentsExtension } from '@arxhub/plugin-documents'
+import { type BlockAnchor, DocumentsExtension } from '@arxhub/plugin-documents'
 import { useHotkeyLayer, useHotkeys } from '@arxhub/plugin-hotkeys/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
@@ -14,9 +14,10 @@ import { address, emptySheet, MAX_COLUMNS, MAX_FILE_BYTES, MAX_ROWS, type Patch,
 import { autofill, editStructure, renameReferences, sortRange } from '../operations'
 import { canInsertReference, insertReference, type ReferenceInsertion } from '../reference-input'
 import { MAX_SHEETS, parseWorkbook, serializeWorkbook, type Workbook, WorkbookHistory } from '../workbook'
+import { sheetAnchorTarget } from '../workbook-extract'
 import type { XlsxRequest } from '../xlsx.worker'
 
-export function createSheetSession(props: { path: string }) {
+export function createSheetSession(props: { path: string; anchor?: BlockAnchor }) {
   const hub = useArxHub(),
     vfs = hub.services.get(VaultVfs),
     documents = hub.extensions.get(DocumentsExtension)
@@ -56,7 +57,8 @@ export function createSheetSession(props: { path: string }) {
     needsInit = true
   let deadline: ReturnType<typeof setTimeout> | undefined,
     frame = 0,
-    disposed = false
+    disposed = false,
+    anchorApplied = false
   const hiddenRows = shallowRef(new Set<number>())
   const book = computed(() => {
     revision.value
@@ -121,6 +123,13 @@ export function createSheetSession(props: { path: string }) {
       end.value = active.value
       draft.value = history.value.sheet.cells[activeAddress.value] ?? ''
       recalculate()
+      // Once: a later reload (the file changed on disk) must not drag the selection back to the hit the
+      // view was opened at.
+      const anchor = props.anchor
+      if (anchor && !anchorApplied) {
+        anchorApplied = true
+        void nextTick(() => reveal(anchor))
+      }
     },
   })
   const editable = computed(() => document.canSave.value && !gone.value)
@@ -797,13 +806,20 @@ export function createSheetSession(props: { path: string }) {
   async function save(): Promise<void> {
     await beforeClose()
   }
-  onUnmounted(
-    documents.registerOpenView(
-      () => props.path,
-      () => false,
-      beforeClose,
-    ),
-  )
+  // The grid scrolls whatever `end` lands on into view, so selecting the cell is the whole reveal.
+  function reveal(anchor: BlockAnchor): boolean {
+    const current = book.value
+    const target = current ? sheetAnchorTarget(current, anchor) : null
+    if (!target) return false
+    switchSheet(target.sheetId)
+    if (sheetId.value !== target.sheetId) return false
+    select(target.point)
+    requestAnimationFrame(() => {
+      if (!disposed) grid.value?.focus({ preventScroll: true })
+    })
+    return true
+  }
+  onUnmounted(documents.registerOpenView(() => props.path, reveal, beforeClose))
   onUnmounted(
     hub.services.get(VaultWatcher).subscribe((change) => {
       if (change.kind === 'deleted' && (change.pathname === props.path || props.path.startsWith(`${change.pathname}/`))) {

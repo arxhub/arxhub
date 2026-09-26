@@ -5,17 +5,20 @@ import { ArxEditorExtension } from '@arxhub/plugin-editor'
 import { ExplorerExtension } from '@arxhub/plugin-explorer'
 import { PanelStoreExtension } from '@arxhub/plugin-panels'
 import { RepositoryExtension } from '@arxhub/plugin-repository'
+import { SearchExtension } from '@arxhub/plugin-search'
 import { sheetContribution } from './embed'
 import { manifest } from './manifest'
 import { emptySheet } from './model'
 import SheetEditor from './ui/SheetEditor.vue'
 import { parseWorkbook, serializeWorkbook } from './workbook'
 import { diffWorkbookSources } from './workbook-differ'
+import { workbookExtractor } from './workbook-extract'
 import { mergeWorkbooks } from './workbook-merge'
 
 export class SheetsPlugin extends Plugin {
   private unregisterMerger: (() => void) | null = null
   private unregisterDiffer: (() => void) | null = null
+  private unregisterExtractor: (() => void) | null = null
 
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -44,6 +47,7 @@ export class SheetsPlugin extends Plugin {
         diff: (left, right) => (left.text == null || right.text == null ? null : diffWorkbookSources(left.text, right.text)),
       })
     }
+    if (ctx.extensions.has(SearchExtension)) this.unregisterExtractor = ctx.extensions.get(SearchExtension).registerExtractor(workbookExtractor)
     // The plugin that owns the format owns its conflicts (Repository is essential — no has() guard). A
     // file either side cannot parse is declined, not thrown: a corrupt workbook is a state of the file,
     // not a bug in the merger, and the conflict copy it degrades to keeps both versions readable.
@@ -76,6 +80,8 @@ export class SheetsPlugin extends Plugin {
     this.unregisterMerger = null
     this.unregisterDiffer?.()
     this.unregisterDiffer = null
+    this.unregisterExtractor?.()
+    this.unregisterExtractor = null
     return super.stop(ctx)
   }
 }

@@ -20,6 +20,8 @@ export default defineConfig((env) =>
       '@arxhub/plugin-panels',
       '@arxhub/plugin-panels/ui',
       '@arxhub/plugin-repository',
+      '@arxhub/plugin-search',
+      '@arxhub/sql',
       '@arxhub/plugin-shell',
       '@arxhub/plugin-shell/ui',
       '@arxhub/stdlib/scheduling/debounced-task',
