@@ -16,8 +16,13 @@ const props = withDefaults(
     moreTitle?: string
     /** `end` gathers the keys against More at the trailing edge — a band whose leading side is a name. */
     align?: 'start' | 'end'
+    /** The leading slot is a label that takes whatever the keys leave, never less than this (a CSS length):
+     *  the keys give way into More before the label goes below it. */
+    leadingMin?: string
+    /** A hairline between keys — a band whose keys fill its height edge to edge. */
+    divided?: boolean
   }>(),
-  { menu: () => [], align: 'start' },
+  { menu: () => [], align: 'start', leadingMin: undefined, divided: false },
 )
 const touch = useShellFrame() === 'mobile'
 const container = ref<HTMLElement | null>(null)
@@ -30,16 +35,19 @@ const { visible, overflow } = useOverflowActions(() => props.actions, {
   leading,
   trailing,
   reserveOverflow: () => props.menu.length > 0,
+  leadingGrows: () => props.leadingMin != null,
 })
 const more = computed(() => [...overflow.value, ...props.menu])
 </script>
 
 <template>
-  <div ref="container" class="overflow-actions" :class="{ touch }">
+  <div ref="container" class="overflow-actions" :class="{ touch, divided }">
     <!-- An empty sizing element survives even when every action moves into More. -->
     <span ref="item" class="measure" aria-hidden="true" />
-    <div v-if="$slots.leading" ref="leading" class="pinned"><slot name="leading" /></div>
-    <span v-if="align === 'end'" class="spacer" />
+    <div v-if="$slots.leading" ref="leading" class="pinned" :class="{ grow: leadingMin != null }" :style="leadingMin != null ? { minWidth: leadingMin } : undefined">
+      <slot name="leading" />
+    </div>
+    <span v-if="align === 'end' && leadingMin == null" class="spacer" />
     <IconButton
       v-for="action in visible"
       :key="action.id"
@@ -52,7 +60,7 @@ const more = computed(() => [...overflow.value, ...props.menu])
       @click="action.onSelect"
     />
     <span v-if="align === 'start'" class="spacer" />
-    <ActionMenuButton v-if="more.length" :label="moreLabel" :title="moreTitle ?? moreLabel" :items="() => more" />
+    <ActionMenuButton v-if="more.length" class="overflow-more" :label="moreLabel" :title="moreTitle ?? moreLabel" :items="() => more" />
     <div v-if="$slots.trailing" ref="trailing" class="pinned"><slot name="trailing" /></div>
   </div>
 </template>
@@ -72,8 +80,20 @@ const more = computed(() => [...overflow.value, ...props.menu])
   flex-shrink: 0;
 }
 
+.pinned.grow {
+  flex: 1 1 0;
+  align-self: stretch;
+}
+
 .spacer {
   flex: 1;
+}
+
+/* :deep because a key with a tooltip is rooted in the tooltip, not in the button that carries the class. */
+.divided > :deep(.overflow-action),
+.divided > :deep(.overflow-more) {
+  border-left: 1px solid var(--gray-4);
+  border-radius: 0;
 }
 
 .measure {

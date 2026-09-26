@@ -31,7 +31,9 @@ withDefaults(
   height: var(--size-xs-half);
 }
 
+/* A block of its own: outside a flex row an inline span would ignore its height and stand a line tall. */
 .separator.horizontal {
+  display: block;
   width: 100%;
   height: 1px;
 }

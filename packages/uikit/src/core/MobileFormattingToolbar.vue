@@ -81,7 +81,6 @@ function hideKeyboard(): void {
     <!-- A code file has undo and redo and nothing to format: a More key there would open an empty menu. -->
     <IconButton v-if="rest.length" size="row" icon="lu:ellipsis" tooltip="More formatting" @click="more" />
     <div v-if="dismissKeyboard" ref="trailing" class="pinned end">
-      <Separator />
       <IconButton size="row" icon="lu:keyboard-off" tooltip="Hide keyboard" data-testid="hide-keyboard" @click="hideKeyboard" />
     </div>
   </div>
@@ -106,8 +105,12 @@ function hideKeyboard(): void {
   flex-shrink: 0;
 }
 
+/* Hide keyboard leaves the editing it closes, so it stands apart the way a band's keys do from its name:
+   a hairline the band's full height, not the short rule between groups of formatting. */
 .pinned.end {
+  align-self: stretch;
   margin-left: auto;
+  border-left: 1px solid var(--gray-4);
 }
 
 .measure {

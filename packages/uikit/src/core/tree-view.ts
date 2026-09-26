@@ -5,6 +5,8 @@ export interface TreeViewNode<T = unknown> {
   icon?: string
   ariaLabel?: string
   description?: string
+  /** A second, quieter line under the label, shown rather than only announced ("This document's folder"). */
+  detail?: string
   disabled?: boolean
   /** A lazy or empty branch can have no children yet. */
   branch?: boolean

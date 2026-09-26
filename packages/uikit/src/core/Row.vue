@@ -40,6 +40,8 @@ const props = withDefaults(
     checked?: boolean
     // The row leads one level further in (a list of tabs to the whole vault) rather than acting in place.
     next?: boolean
+    // What a search typed: its first occurrence in the label is marked, so a result says why it is there.
+    match?: string
   }>(),
   { as: 'div', selected: false, disabled: false, depth: 0, tone: 'neutral', wrap: false, plain: false, checked: false, next: false },
 )
@@ -49,7 +51,18 @@ const props = withDefaults(
 const touch = useShellFrame() === 'mobile'
 const glyph = touch ? 16 : 14
 const wraps = computed(() => props.wrap || props.detail != null)
-const indent = computed(() => ({ paddingLeft: `calc(8px + ${props.depth} * var(--size-2xs-half))` }))
+// The touch frame insets a row by 16 and nests by 12 — the chevron, glyph and name of a tree row then land
+// on the same 12px rhythm as their gaps, so a child's glyph sits under its parent's name.
+const indent = computed(() => ({
+  paddingLeft: touch ? `calc(16px + ${props.depth} * 12px)` : `calc(8px + ${props.depth} * var(--size-2xs-half))`,
+}))
+const lined = computed(() => props.detail != null && props.detail !== '')
+const marked = computed(() => {
+  const needle = props.match?.trim().toLowerCase() ?? ''
+  const label = props.label ?? ''
+  const at = needle === '' ? -1 : label.toLowerCase().indexOf(needle)
+  return at < 0 ? null : { before: label.slice(0, at), hit: label.slice(at, at + needle.length), after: label.slice(at + needle.length) }
+})
 const slots = useSlots()
 const attrs = useAttrs()
 const boxAttrs = computed(() => ({ class: attrs.class, style: attrs.style }))
@@ -60,7 +73,7 @@ const rowAttrs = computed(() => {
 </script>
 
 <template>
-  <div v-if="slots.trailing" class="row has-trailing" :class="[tone, { selected, disabled, wrap: wraps, plain, touch }]" v-bind="boxAttrs">
+  <div v-if="slots.trailing" class="row has-trailing" :class="[tone, { selected, disabled, wrap: wraps, lined, plain, touch }]" v-bind="boxAttrs">
     <component
       :is="as"
       class="row-main"
@@ -70,7 +83,10 @@ const rowAttrs = computed(() => {
     >
       <Icon v-if="icon" class="row-icon" :name="icon" :size="glyph" />
       <span v-if="label != null" class="row-text">
-        <span class="row-label">{{ label }}</span>
+        <span class="row-label"
+          ><template v-if="marked">{{ marked.before }}<mark class="row-match">{{ marked.hit }}</mark>{{ marked.after }}</template
+          ><template v-else>{{ label }}</template></span
+        >
         <span v-if="detail" class="row-detail">{{ detail }}</span>
       </span>
       <slot />
@@ -83,14 +99,17 @@ const rowAttrs = computed(() => {
     :is="as"
     v-else
     class="row"
-    :class="[tone, { selected, disabled, wrap: wraps, plain, touch }]"
+    :class="[tone, { selected, disabled, wrap: wraps, lined, plain, touch }]"
     :style="indent"
     :disabled="as === 'button' && disabled ? true : undefined"
     v-bind="$attrs"
   >
     <Icon v-if="icon" class="row-icon" :name="icon" :size="glyph" />
     <span v-if="label != null" class="row-text">
-      <span class="row-label">{{ label }}</span>
+      <span class="row-label"
+          ><template v-if="marked">{{ marked.before }}<mark class="row-match">{{ marked.hit }}</mark>{{ marked.after }}</template
+          ><template v-else>{{ label }}</template></span
+        >
       <span v-if="detail" class="row-detail">{{ detail }}</span>
     </span>
     <slot />
@@ -123,7 +142,9 @@ const rowAttrs = computed(() => {
 }
 
 .row.touch {
+  gap: 12px;
   height: var(--size-xl);
+  padding-right: 16px;
   font-size: var(--font-size-md);
 }
 
@@ -138,6 +159,24 @@ const rowAttrs = computed(() => {
 
 .row.touch.wrap {
   min-height: var(--size-xl);
+}
+
+/* A label and its second line fit the touch height as they are: the row stays a 48px target centred on
+   both lines instead of growing into a taller one. */
+.row.touch.lined,
+.row.touch.lined > .row-main {
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.row.touch.lined .row-text {
+  gap: 0;
+}
+
+.row.touch.lined .row-icon,
+.row.touch.lined .row-check {
+  margin-top: 0;
 }
 
 /* One highlight under two names: :hover for a row the pointer is over, and data-highlighted for a menu
@@ -194,6 +233,15 @@ const rowAttrs = computed(() => {
   gap: 0;
   padding: 0;
   cursor: auto;
+}
+
+.row.touch > .row-main {
+  gap: 12px;
+  padding-right: 16px;
+}
+
+.row.touch.has-trailing > .row-main {
+  padding-right: 0;
 }
 
 .row-main {
@@ -269,6 +317,13 @@ const rowAttrs = computed(() => {
 .row-detail {
   color: var(--gray-11);
   font-size: var(--font-size-xs);
+}
+
+/* The accent is spent on selection (design.md <Colour>), so a match takes the warning wash. */
+.row-match {
+  border-radius: var(--radius-xs);
+  background: var(--warning-4);
+  color: var(--gray-12);
 }
 
 .row.selected .row-detail {

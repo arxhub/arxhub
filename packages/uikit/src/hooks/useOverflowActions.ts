@@ -11,6 +11,8 @@ export interface UseOverflowActionsOptions {
   /** Pinned content is measured separately and never enters the overflow list. */
   leading?: ElementSource
   trailing?: ElementSource
+  /** The leading content takes whatever the actions leave, so only its min-width is spent on it. */
+  leadingGrows?: MaybeRefOrGetter<boolean>
   /** The overflow trigger is shown whatever fits (it also holds menu-only items), so its width is always spent. */
   reserveOverflow?: MaybeRefOrGetter<boolean>
 }
@@ -30,6 +32,11 @@ export function useOverflowActions<T>(items: MaybeRefOrGetter<readonly T[]>, opt
 
       const measure = () => {
         const style = getComputedStyle(container)
+        const leadingWidth = !leading
+          ? 0
+          : toValue(options.leadingGrows)
+            ? Number.parseFloat(getComputedStyle(leading).minWidth) || 0
+            : leading.getBoundingClientRect().width
         const insets = [style.paddingLeft, style.paddingRight, style.borderLeftWidth, style.borderRightWidth].reduce(
           (sum, value) => sum + (Number.parseFloat(value) || 0),
           0,
@@ -37,10 +44,7 @@ export function useOverflowActions<T>(items: MaybeRefOrGetter<readonly T[]>, opt
         widths.value = {
           available: Math.max(
             0,
-            container.getBoundingClientRect().width -
-              insets -
-              (leading?.getBoundingClientRect().width ?? 0) -
-              (trailing?.getBoundingClientRect().width ?? 0),
+            container.getBoundingClientRect().width - insets - leadingWidth - (trailing?.getBoundingClientRect().width ?? 0),
           ),
           item: item.getBoundingClientRect().width,
           overflow: overflow?.getBoundingClientRect().width ?? 0,

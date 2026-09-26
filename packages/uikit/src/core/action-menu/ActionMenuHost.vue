@@ -229,10 +229,9 @@ onBeforeUnmount(() => {
 }
 
 /* The sheet itself — backdrop, dismissal, back handling — belongs to BottomSheet; only the item
-   list is styled here. */
+   list is styled here. Its rows run edge to edge and keep the touch row's own inset, as in every sheet. */
 .action-sheet {
   display: flex;
   flex-direction: column;
-  padding: 0 8px;
 }
 </style>

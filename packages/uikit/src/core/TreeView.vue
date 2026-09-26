@@ -179,7 +179,10 @@ function keydown(node: TreeViewNode<T>, event: KeyboardEvent) {
                 <Icon v-if="entry.row.branch" :name="entry.row.expanded ? 'lu:chevron-down' : 'lu:chevron-right'" :size="iconSize" />
               </span>
               <span v-if="entry.row.node.icon" class="glyph" aria-hidden="true"><Icon :name="entry.row.node.icon" :size="iconSize" /></span>
-              <span class="tree-view-label"><slot name="label" :node="entry.row.node">{{ entry.row.node.label }}</slot></span>
+              <span class="tree-view-label" :class="{ lined: entry.row.node.detail }"
+                ><slot name="label" :node="entry.row.node">{{ entry.row.node.label }}</slot
+                ><span v-if="entry.row.node.detail" class="tree-view-detail">{{ entry.row.node.detail }}</span></span
+              >
               <slot name="actions" :node="entry.row.node" />
               <span v-if="(picking || markSelected) && entry.row.node.id === selectedId" class="glyph pick-mark" aria-hidden="true">
                 <Icon name="lu:check" :size="iconSize" />
@@ -236,6 +239,10 @@ function keydown(node: TreeViewNode<T>, event: KeyboardEvent) {
   background: var(--gray-3);
 }
 
+.row.tree-view-node.touch {
+  gap: 12px;
+}
+
 .row.tree-view-node {
   gap: 4px;
   user-select: none;
@@ -250,6 +257,23 @@ function keydown(node: TreeViewNode<T>, event: KeyboardEvent) {
   width: var(--size-xs-half);
   flex-shrink: 0;
   color: var(--gray-10);
+}
+
+.tree-view-label.lined {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tree-view-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--gray-11);
+  font-size: var(--font-size-xs);
+}
+
+.selected .tree-view-detail {
+  color: var(--accent-11);
 }
 
 .selected .glyph {
