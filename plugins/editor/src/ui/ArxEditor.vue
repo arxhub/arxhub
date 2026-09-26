@@ -858,10 +858,13 @@ const chromeTarget = usePanelChrome(() => ({
 .editor-scroll :deep(pre code) { background: none; padding: 0; border-radius: 0; font-size: 0.9em; }
 .editor-scroll :deep(hr) { border: none; border-top: 1px solid var(--gray-5); margin: 1.5em 0; }
 .editor-scroll :deep(ul[data-type="task_list"]) { list-style: none; padding-left: 0.25em; }
-.editor-scroll :deep(li[data-type="task_item"]) { display: flex; align-items: flex-start; gap: 8px; margin: 0.15em 0; }
-/* An empty box has no text baseline, so it is centred on the first line explicitly: one line box tall, and
-   offset by the same top margin the first paragraph carries. */
-.editor-scroll :deep(li[data-type="task_item"] > .arx-control) { display: flex; align-items: center; flex: none; height: 1.7em; margin-top: 0.4em; }
+/* A flex item keeps its children's margins inside it, so the paragraph's own 0.4em moves out to the item:
+   a task list then keeps the same pitch as a bulleted one, where those margins collapse between items. */
+.editor-scroll :deep(li[data-type="task_item"]) { display: flex; align-items: flex-start; gap: 8px; margin: 0.4em 0; }
+.editor-scroll :deep(li[data-type="task_item"] > .task-content > :first-child) { margin-top: 0; }
+.editor-scroll :deep(li[data-type="task_item"] > .task-content > :last-child) { margin-bottom: 0; }
+/* An empty box has no text baseline, so it is centred on the first line explicitly: one line box tall. */
+.editor-scroll :deep(li[data-type="task_item"] > .arx-control) { display: flex; align-items: center; flex: none; height: 1.7em; }
 .editor-scroll :deep(.task-content > ul[data-type="task_list"]) { padding-left: 1.25em; }
 .editor-scroll :deep(.task-content) { flex: 1; min-width: 0; }
 .editor-scroll :deep(li[data-checked="true"] > .task-content > p) { color: var(--gray-9); text-decoration: line-through; }
