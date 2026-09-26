@@ -1,73 +1,19 @@
 <script setup lang="ts">
-import { onUnmounted, ref, useId, useSlots, watch } from 'vue'
-import { useStageVisible } from '../type-stage'
-import { claimRailHost, fallbackRailId, MOBILE_RAIL_HOST_ID, releaseRailHost } from './rail-host'
-
-const props = withDefaults(
-  defineProps<{
-    // Accepted for one shape across both frames; a phone has no second column to size.
-    widthKey?: string
-    // Force-hide the rail even when a #rail slot is provided.
-    rail?: boolean
-    // What this mini-app's rail holds, for the key that reveals it — the frame falls back to the
-    // mini-app's own title, which is at least never wrong, unlike a frame-level guess like "Files".
-    railTitle?: string
-    railIcon?: string
-  }>(),
-  { widthKey: 'default', rail: true, railIcon: 'lu:panel-bottom' },
-)
-
-const slots = useSlots()
-// A mini-app declares its #rail slot in its own template, so whether it has one is fixed for the life
-// of the component — settled once here rather than watched.
-const hasRail = props.rail && !!slots.rail
-const id = useId() ?? fallbackRailId()
-
-// A mini-app's layout sits on its type's stage, which stays mounted when the person switches away
-// (F-05) — so being mounted says nothing about being on screen, and the rail claim has to follow
-// VISIBILITY. A claim made once at setup and never released left every previously-visited mini-app's
-// Teleport still rendering into the shared rail host forever, stacked underneath whichever one claimed
-// the (title, icon) pair last: Explorer's file tree and Search's rail both live in
-// #arxhub-mobile-rail at once, and the dock key names only the most recent of them. The watcher is
-// immediate, so the first appearance and every later return are the same event; onUnmounted stays for
-// the type being closed, which takes the stage away without a visibility change to observe.
-const visible = useStageVisible()
-const isActive = ref(false)
-
-function claim(): void {
-  isActive.value = true
-  if (hasRail) claimRailHost(id, { title: props.railTitle, icon: props.railIcon })
-}
-
-function release(): void {
-  isActive.value = false
-  releaseRailHost(id)
-}
-
-watch(visible, (on) => (on ? claim() : release()), { immediate: true })
-onUnmounted(release)
+// Accepted for one shape across both frames; a phone has neither a second column to size nor a panel to
+// put a rail in. A mini-app's navigation reaches the phone through its type instead — `TabType.nav` or
+// `TabType.sheet`, behind a second tap on the type — which is one road for every type rather than a
+// teleport only a mini-app could use.
+defineProps<{ widthKey?: string; rail?: boolean }>()
 </script>
 
 <template>
-  <Teleport v-if="hasRail" :to="`#${MOBILE_RAIL_HOST_ID}`" defer>
-    <div v-show="isActive" class="rail-content">
-      <slot name="rail" />
-    </div>
-  </Teleport>
-
-  <!-- The content is the whole screen. A mini-app's navigation is a layer you summon, not a column
-       that permanently spends a third of the width. -->
+  <!-- The content is the whole screen. -->
   <div class="mini-app-shell">
     <slot />
   </div>
 </template>
 
 <style scoped>
-.rail-content {
-  height: 100%;
-  min-height: 0;
-}
-
 .mini-app-shell {
   width: 100%;
   height: 100%;

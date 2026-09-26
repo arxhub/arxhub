@@ -16,6 +16,8 @@ export interface SheetEntry {
   // The object's key within its type. Absent — the row stands for the type itself.
   objectKey?: string
   meta?: string
+  // The type the person is in right now — the row wears the selection instead of offering to switch.
+  current?: boolean
 }
 
 export interface SheetSection {
@@ -38,6 +40,37 @@ export function sheetSections(workspace: Workspace, types: TabTypeRegistry): She
   return [
     { id: 'open', title: 'Currently open', empty: 'Nothing is open yet.', entries: openEntries(workspace, types) },
     { id: 'new', title: 'Open new', empty: 'No types are registered.', entries: types.all.value.map((type) => typeEntry('new', type)) },
+  ]
+}
+
+// The phone's "More": the same two sections at the level of TYPES. The objects inside a type are one tap
+// away on the phone already — a second tap on the type lists them — so repeating every open document here
+// would turn a list of a handful of mini-apps into a list someone has to search, and this sheet
+// deliberately has no search. `shown` is what the type row has keys for; an open type without one says so,
+// because this sheet is then the only road back to it.
+export function typeSections(workspace: Workspace, types: TabTypeRegistry, shown: ReadonlySet<string>): SheetSection[] {
+  const open = workspace.openTypeIds.value.flatMap((typeId) => types.get(typeId) ?? [])
+  const openIds = new Set(open.map((type) => type.id))
+  const active = workspace.activeTypeId.value
+  return [
+    {
+      id: 'open',
+      title: 'Currently open',
+      empty: 'Nothing is open yet.',
+      entries: open.map((type) => {
+        const count = workspace.tabsOf(type.id).length
+        const meta = [count > 0 ? `${count} open` : null, shown.has(type.id) ? null : 'Not in the row']
+          .filter((part) => part != null)
+          .join(' · ')
+        return { ...typeEntry('open', type), ...(meta ? { meta } : {}), current: type.id === active }
+      }),
+    },
+    {
+      id: 'new',
+      title: 'Open new',
+      empty: 'Everything is open.',
+      entries: types.all.value.filter((type) => !openIds.has(type.id)).map((type) => typeEntry('new', type)),
+    },
   ]
 }
 

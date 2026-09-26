@@ -4,35 +4,38 @@ import { provideShellFrame, useKeyboardInset } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import { useOpenSheetKey } from '../hotkeys'
 import { provideNavHost } from '../nav-host'
+import { secondTapOf } from '../second-tap'
 import TypeStage from '../TypeStage.vue'
 import { useNavigation } from '../use-navigation'
 import MobileBackgroundBar from './MobileBackgroundBar.vue'
-import MobileDock from './MobileDock.vue'
-import MobileEdgeGestures from './MobileEdgeGestures.vue'
 import MobileExitGuard from './MobileExitGuard.vue'
-import MobileNavPanel from './MobileNavPanel.vue'
-import MobileOpenLayer from './MobileOpenLayer.vue'
+import MobileNavSheet from './MobileNavSheet.vue'
+import MobileObjectBar from './MobileObjectBar.vue'
+import MobilePartsSheet from './MobilePartsSheet.vue'
 import MobileSearchSheet from './MobileSearchSheet.vue'
 import MobileTypeRow from './MobileTypeRow.vue'
-import { railClaim } from './rail-host'
+import MobileTypeSheet from './MobileTypeSheet.vue'
 
 // The whole mobile frame, and the only place that says so: everything below reads the frame from
 // injection rather than measuring the window.
 //
 // The same two levels the desktop shows side by side, shown one at a time: the types along the bottom,
-// and what is open inside the active one behind a second tap on it.
+// and what is open inside the active one behind a second tap on it. There are no edge gestures: a road
+// nobody can see is a road only the person who built it knows about.
 provideShellFrame('mobile')
 
 const { workspace, types, status } = useNavigation()
 
 // The frame gives up the height the keyboard takes instead of letting it cover the bottom of the app.
 // Everything that can be operated is down there, so this is the difference between typing blind and
-// seeing what you type.
+// seeing what you type. While it is up the type row goes away and the band becomes the editor's.
 const keyboardInset = useKeyboardInset()
+const typing = computed(() => keyboardInset.value > 0)
 
 // One layer at a time: opening the second would bury the first, and back would then have to unwind two
-// things the owner only opened once.
-type Layer = 'nav' | 'open' | 'search'
+// things the owner only opened once. `nav` is the one exception in spirit — it is reached FROM `second`,
+// and replaces it rather than stacking on it.
+type Layer = 'second' | 'nav' | 'parts' | 'more'
 const layer = ref<Layer | null>(null)
 
 const activeType = computed(() => {
@@ -40,22 +43,10 @@ const activeType = computed(() => {
   return id == null ? null : (types.get(id) ?? null)
 })
 
-// What the navigation panel would hold, and therefore whether the key that opens it exists at all. Two
-// sources: the active type's own `nav` role, and a rail teleported into the panel by a type whose
-// content is a `MiniAppShell` (settings, search). A key in front of an empty panel is worse than no key.
-const nav = computed(() => activeType.value?.nav ?? null)
-const navTitle = computed(() => {
-  if (nav.value != null) return nav.value.title ?? activeType.value?.title ?? 'Navigation'
-  const claim = railClaim.value
-  return claim == null ? null : (claim.title ?? activeType.value?.title ?? 'Navigation')
-})
-
-// Only a type that declared the "what is open" role has a second level; for the rest there is nothing
-// to open and the gesture leads nowhere.
-const hasOpen = computed(() => activeType.value?.open != null)
+const bar = computed(() => workspace.bar())
 
 // Switching type closes the layer: it belonged to the previous type, and leaving it up would mean
-// showing the note tree over the settings sections.
+// showing the vault over the settings sections.
 watch(
   () => workspace.activeTypeId.value,
   () => {
@@ -63,72 +54,57 @@ watch(
   },
 )
 
-// The frame's own control over the active type's navigation, contributed into the navigation's own
-// strip rather than drawn in a second band above it. On this frame it means "put the panel away"; on
-// the desktop the same control collapses the column.
-provideNavHost({ dismiss: () => (layer.value = null), navigated: () => (layer.value = null), icon: 'lu:x', label: 'Close navigation' })
+// Inside a sheet the frame's control over a navigation means "put the sheet away" — and so does a
+// destination being chosen in it, which is what a navigation already announces on the desktop.
+provideNavHost({ dismiss: () => (layer.value = null), navigated: () => (layer.value = null), icon: 'lu:x', label: 'Close' })
 
 function toggle(which: Layer): void {
   layer.value = layer.value === which ? null : which
 }
 
-function openNav(): void {
-  if (navTitle.value != null) toggle('nav')
-}
-
-function openWhatsOpen(): void {
-  if (hasOpen.value) layer.value = 'open'
+function again(): void {
+  const type = activeType.value
+  if (type != null && secondTapOf(type) != null) toggle('second')
 }
 
 // A phone rarely has a keyboard, but when one is attached the chord has to mean the same thing it means
 // on the desktop: there is one open-or-switch-to operation, not one per frame.
 useOpenSheetKey(() => {
-  layer.value = 'search'
+  layer.value = 'more'
 })
 </script>
 
 <template>
   <div class="mobile-shell" :style="{ paddingBottom: keyboardInset ? `${keyboardInset}px` : undefined }">
-    <!-- No app bar. The top of the screen is content, and the title it would have shown is either in
-         the note itself or on the key that opened it. -->
-    <div class="mobile-stage">
-      <main class="mobile-content">
-        <!-- Switching type is the most frequent operation on this frame, and it must not unmount what is
-             open: a return to Documents would otherwise be a freshly mounted editor — scroll at the top,
-             undo history gone, selection lost (F-05). -->
-        <TypeStage :workspace="workspace" :types="types" hint="Pick a type in the row below." />
-        <MobileEdgeGestures
-          :left="navTitle != null && layer == null && !keyboardInset"
-          :right="hasOpen && layer == null && !keyboardInset"
-          @left="openNav"
-          @right="openWhatsOpen"
-        />
-      </main>
+    <!-- No app bar. The top of the screen is content, and nothing up there can be pressed: a phone held
+         in one hand does not reach it. -->
+    <main class="mobile-content">
+      <!-- Switching type is the most frequent operation on this frame, and it must not unmount what is
+           open: a return to Documents would otherwise be a freshly mounted editor — scroll at the top,
+           undo history gone, selection lost (F-05). -->
+      <TypeStage :workspace="workspace" :types="types" hint="Pick a type in the row below." />
+    </main>
 
-      <!-- Three bands from the bottom up: the background line (only while something is running), the
-           dock of the active tab (only if the type declared one) and the type row. Not one of them
-           appears just in case. -->
-      <MobileBackgroundBar :status="status" :workspace="workspace" />
-      <MobileDock :component="workspace.dock()" :create="navTitle == null ? (activeType?.create ?? null) : null" />
-
-      <MobileNavPanel :open="layer === 'nav'" :title="navTitle ?? 'Navigation'" :nav="nav?.component ?? null" @close="layer = null" />
-    </div>
-
+    <!-- Three bands from the bottom up: the type row (not while typing), the object's band (only if its
+         type describes one) and the background line (only while something is running). Not one of them
+         appears just in case. -->
+    <MobileBackgroundBar :status="status" :workspace="workspace" />
+    <MobileObjectBar v-if="bar != null && !(typing && bar.editing == null)" :bar="bar" :typing="typing" :parts-open="layer === 'parts'" @parts="toggle('parts')" />
     <MobileTypeRow
+      v-show="!typing"
       :row="workspace.row.value"
-      :sheet-open="layer === 'search'"
-      :nav-title="navTitle"
-      :nav-open="layer === 'nav'"
+      :more-open="layer === 'more'"
       @select="workspace.activateType($event)"
-      @peek="toggle('open')"
-      @sheet="toggle('search')"
-      @nav="openNav"
+      @again="again"
+      @more="toggle('more')"
     />
     <Toaster />
   </div>
 
-  <MobileOpenLayer :open="layer === 'open'" :type="activeType" :workspace="workspace" @close="layer = null" />
-  <MobileSearchSheet :open="layer === 'search'" :workspace="workspace" :types="types" :status="status" @close="layer = null" />
+  <MobileTypeSheet :open="layer === 'second'" :type="activeType" :workspace="workspace" @close="layer = null" @browse="layer = 'nav'" />
+  <MobileNavSheet :open="layer === 'nav'" :type="activeType" @close="layer = null" />
+  <MobilePartsSheet :open="layer === 'parts'" :bar="bar" @close="layer = null" />
+  <MobileSearchSheet :open="layer === 'more'" :workspace="workspace" :types="types" :status="status" @close="layer = null" />
   <ModalsProvider />
   <MobileExitGuard />
   <ActionMenuHost />
@@ -145,16 +121,6 @@ useOpenSheetKey(() => {
   color: var(--gray-12);
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
-}
-
-/* Anchors the panel and the edge strips: they cover the content they belong to (the dock included —
-   it is a normal flex child here, not a sibling), and leave the type row below them live. */
-.mobile-stage {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
 }
 
 .mobile-content {

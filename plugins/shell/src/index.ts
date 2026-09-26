@@ -8,6 +8,9 @@ export { type StatusBusy, type StatusBusyEntry, type StatusItem, StatusRegistry 
 export type {
   ContentTabType,
   Json,
+  ObjectBar,
+  ObjectBarPart,
+  ObjectBarParts,
   ObjectGone,
   ObjectLabel,
   ObjectRef,
@@ -18,6 +21,7 @@ export type {
   TabTypeCreate,
   TabTypeNav,
   TabTypeOpen,
+  TabTypeSheet,
 } from './ui/tab-type'
 export { isObjectGone, isObjectType, isPinned, objectGone } from './ui/tab-type'
 export { TabTypeRegistry } from './ui/tab-type-registry'

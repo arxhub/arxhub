@@ -3,9 +3,9 @@ import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { dirname } from '@arxhub/path'
 import { RepositoryExtension } from '@arxhub/plugin-repository'
 import { SettingsExtension } from '@arxhub/plugin-settings'
-import { type ObjectGone, type ObjectRef, type OpenedObject, objectGone, ShellExtension } from '@arxhub/plugin-shell'
+import { type ObjectBar, type ObjectGone, type ObjectRef, type OpenedObject, objectGone, ShellExtension } from '@arxhub/plugin-shell'
 import { RootVfs, VaultVfs, VaultWatcher } from '@arxhub/vfs'
-import { type Component, h, markRaw } from 'vue'
+import { markRaw } from 'vue'
 import { DOCUMENTS_SETTINGS_SECTION, DocumentsConfigSchema, toHideKnownExtensions } from './documents-config'
 import { DocumentsExtension } from './documents-extension'
 import { blockAnchorOf, DOCUMENTS_TYPE_ID, documentSnapshotPath } from './documents-type'
@@ -29,10 +29,6 @@ export class DocumentsPlugin extends Plugin {
   private stopping = false
   // Cleared when config.watch delivers a save while boot tryRead is still in flight (TH-24-01).
   private bootConfigPending = true
-  // The dock wrapper of the note that is active right now. `dock()` is asked on every render, so the
-  // wrapper is remembered rather than rebuilt: a fresh closure each time is a fresh component
-  // identity, and the bar would be torn down and remounted — losing focus and state — on every tick.
-  private dockCache: { path: string; viewerId: string; component: Component } | null = null
 
   constructor(args: DocumentsPluginArgs) {
     super(args, manifest)
@@ -97,6 +93,11 @@ export class DocumentsPlugin extends Plugin {
       }
     }
 
+    const createDocument = async (): Promise<void> => {
+      const path = await documents.createDocument()
+      if (path != null) await shell.workspace.openObject(DOCUMENTS_TYPE_ID, { id: path })
+    }
+
     shell.types.register({
       id: DOCUMENTS_TYPE_ID,
       icon: 'lu:file-text',
@@ -121,26 +122,31 @@ export class DocumentsPlugin extends Plugin {
         },
       },
       nav: { component: markRaw(DocumentsNav), title: 'Vault' },
-      create: {
-        title: 'New note',
-        icon: 'lu:file-plus',
-        run: async () => {
-          const path = await documents.createDocument()
-          if (path != null) await shell.workspace.openObject(DOCUMENTS_TYPE_ID, { id: path })
-        },
-      },
+      create: { title: 'New note', icon: 'lu:file-plus', run: createDocument },
       open: { title: 'Open documents' },
-      // The dock is declared by the type — once; what fills it is decided by the active note's viewer.
-      dock: (active) => {
-        if (active == null) return null
-        const path = typeof active.props.path === 'string' ? active.props.path : active.key
-        const viewer = documents.viewerFor(path)
-        if (viewer?.dock == null) return null
-        if (this.dockCache?.path !== path || this.dockCache.viewerId !== viewer.id) {
-          const dock = viewer.dock
-          this.dockCache = { path, viewerId: viewer.id, component: markRaw(() => h(dock, { path })) }
+      // The band above the phone's type row. The least it has to say until each viewer describes its own
+      // object (its parts, its editing toolbar): where you are, New, and Close.
+      bar: (active): ObjectBar => {
+        const create = {
+          id: 'documents.new',
+          label: 'New document',
+          icon: 'lu:plus',
+          onSelect: () => void createDocument(),
         }
-        return this.dockCache.component
+        if (active == null) return { icon: 'lu:folder', name: 'Vault', actions: [create] }
+        return {
+          icon: 'lu:file-text',
+          name: shell.workspace.activeTab(DOCUMENTS_TYPE_ID)?.title ?? active.title,
+          actions: [create],
+          menu: [
+            {
+              id: 'documents.close',
+              label: 'Close',
+              icon: 'lu:x',
+              onSelect: () => void shell.workspace.closeObject(DOCUMENTS_TYPE_ID, active.key),
+            },
+          ],
+        }
       },
     })
   }

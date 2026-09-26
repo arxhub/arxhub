@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { Component } from 'vue'
-import { chooseEntry, sheetSections } from '../ui/search-sheet'
+import { chooseEntry, sheetSections, typeSections } from '../ui/search-sheet'
 import { type ObjectRef, type OpenedObject, objectGone, type TabType } from '../ui/tab-type'
 import { TabTypeRegistry } from '../ui/tab-type-registry'
 import { Workspace } from '../ui/workspace'
@@ -113,5 +113,24 @@ describe('the search sheet: two guaranteed sections', () => {
 
     chooseEntry(workspace, fresh.entries.find((it) => it.typeId === 'logs') ?? fresh.entries[0])
     expect(workspace.activeTypeId.value).toBe('logs')
+  })
+})
+
+describe("the phone's More: the same two sections, at the level of types", () => {
+  test('open types, not the objects inside them; the current one is marked, and one with no key says so', async () => {
+    const { workspace, types } = build()
+    await workspace.openObject('notes', { id: 'a.md' })
+    await workspace.openObject('notes', { id: 'b.md' })
+    workspace.activateType('logs')
+
+    const [open, fresh] = typeSections(workspace, types, new Set(['notes']))
+    expect(open.entries.map((it) => [it.typeId, it.meta ?? null, it.current])).toEqual([
+      ['notes', '2 open', false],
+      ['logs', 'Not in the row', true],
+    ])
+    // Nothing opens an object from here: a row stands for its type.
+    expect(open.entries.every((it) => it.objectKey == null)).toBe(true)
+    // What is open already is not offered a second time.
+    expect(fresh.entries.map((it) => it.typeId)).toEqual(['settings'])
   })
 })

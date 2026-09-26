@@ -9,8 +9,6 @@ import { FakePanelHost } from './fake-panel-host'
 const NoteView = { name: 'note' } as Component
 const LogsView = { name: 'logs' } as Component
 const NotesNav = { name: 'notes-nav' } as Component
-const NotesDock = { name: 'notes-dock' } as Component
-const ObjectDock = { name: 'object-dock' } as Component
 
 // The fixture's note store: what is in it opens, everything else is gone.
 let vault: Set<string>
@@ -34,7 +32,7 @@ function notesType(extra: Partial<TabType> = {}): TabType {
     order: 10,
     nav: { component: NotesNav, title: 'Files' },
     open: { title: 'Open notes' },
-    dock: (active) => (active == null ? NotesDock : ObjectDock),
+    bar: (active) => (active == null ? { icon: 'lu:folder', name: 'Vault' } : { icon: 'lu:file-text', name: active.title }),
     objects: {
       open: (ref) => {
         openCalls.push(ref)
@@ -397,18 +395,53 @@ describe('Workspace: switching, closing and the row', () => {
     expect(row.settings).toBe(0)
   })
 
-  test('the dock is declared by the type and filled by the active object', async () => {
+  test('the band is declared by the type and described by the active object', async () => {
     const { workspace } = build(notesType(), settingsType())
 
     workspace.activateType('notes')
-    expect(workspace.dock()).toBe(NotesDock)
+    expect(workspace.bar()).toMatchObject({ name: 'Vault' })
 
     await workspace.openObject('notes', { id: 'a.md' })
-    expect(workspace.dock()).toBe(ObjectDock)
+    expect(workspace.bar()).toMatchObject({ name: 'a.md' })
 
-    // A type that never declared a dock gets no band above the row.
+    // A type that never described a band gets none above the row.
     workspace.activateType('settings')
-    expect(workspace.dock()).toBeNull()
+    expect(workspace.bar()).toBeNull()
+  })
+
+  test('tabs read by recency: the one shown last is last, a new one joins at the end', async () => {
+    const { workspace } = build(notesType())
+    await workspace.openObject('notes', { id: 'a.md' })
+    await workspace.openObject('notes', { id: 'b.md' })
+    await workspace.openObject('notes', { id: 'c.md' })
+    expect(workspace.tabsByRecency('notes').map((tab) => tab.title)).toEqual(['a.md', 'b.md', 'c.md'])
+
+    workspace.activateObject('notes', 'note:a.md')
+    expect(workspace.tabsByRecency('notes').map((tab) => tab.title)).toEqual(['b.md', 'c.md', 'a.md'])
+
+    // Opening an object that is already open is a switch, and moves it too.
+    await workspace.openObject('notes', { id: 'b.md' })
+    expect(workspace.tabsByRecency('notes').map((tab) => tab.title)).toEqual(['c.md', 'a.md', 'b.md'])
+
+    // Closing the active tab puts the host's neighbour on screen, and what is on screen is always last.
+    await workspace.closeObject('notes', 'note:b.md')
+    const active = workspace.activeTab('notes')?.title
+    expect(workspace.tabsByRecency('notes').map((tab) => tab.title)).toEqual(active === 'c.md' ? ['a.md', 'c.md'] : ['c.md', 'a.md'])
+  })
+
+  test('after a restore the tabs keep the host order, with the active one last', async () => {
+    const { workspace } = build(notesType())
+    await workspace.restore({
+      activeTypeId: 'notes',
+      types: [
+        {
+          id: 'notes',
+          activeKey: 'note:a.md',
+          tabs: ['a.md', 'b.md', 'c.md'].map((id) => ({ key: `note:${id}`, title: id, object: { path: id } })),
+        },
+      ],
+    })
+    expect(workspace.tabsByRecency('notes').map((tab) => tab.title)).toEqual(['b.md', 'c.md', 'a.md'])
   })
 
   test('a tab’s label comes from the type: label knows more about the object than a title does', async () => {

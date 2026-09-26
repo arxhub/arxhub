@@ -1,5 +1,4 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { type Component, type ShallowRef, shallowRef } from 'vue'
 import type { CompareMode } from './session-store'
 import type { CompareResult, SessionView } from './session-view'
 
@@ -29,7 +28,4 @@ export class AiWorkspaceExtension extends Extension {
   readonly compare: (sessionId: string, pathname: string, mode: CompareMode) => Promise<CompareResult>
   readonly openOverlay: (sessionId: string, pathname: string) => Promise<void>
   readonly openSource: (pathname: string, excerpt: string) => Promise<void>
-  // The phone's band for an open diff. Claimed by the mobile realization while a diff is on screen and released
-  // when it goes; the desktop never claims it, so the desktop dock stays empty.
-  readonly dock: ShallowRef<Component | null> = shallowRef(null)
 }

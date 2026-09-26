@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { DiffBand, type DiffController, DiffView, useDiffController } from '@arxhub/plugin-diff/ui'
-import { type ActionItem, Button, PageLayout, Row, ScrollArea, SectionLabel } from '@arxhub/uikit/core'
-import { useArxHub, useBackStack } from '@arxhub/uikit/hooks'
-import { type Component, computed, h, markRaw, onUnmounted, ref, watch } from 'vue'
-import { AiWorkspaceExtension } from '../ai-workspace-extension'
+import { type ActionItem, Button, PageLayout, Row, ScrollArea, SectionLabel, Strip } from '@arxhub/uikit/core'
+import { useBackStack } from '@arxhub/uikit/hooks'
+import { computed, ref, watch } from 'vue'
 import { type AiWorkspaceProps, changeLabel, MODE_OPTIONS, useAiWorkspace } from './use-ai-workspace'
 
 const props = defineProps<AiWorkspaceProps>()
 const state = useAiWorkspace(props)
 const { sessions, active, selectedPath, selectedName, diffMode, busy, error, archived, comparing, diff, parts } = state
 const controller: DiffController = useDiffController(() => diff.result.value)
-const extension = useArxHub().extensions.get(AiWorkspaceExtension)
 
 const diffOpen = ref(false)
 useBackStack(
@@ -58,36 +56,6 @@ const bandActions = computed((): ActionItem[] => [
   { id: 'ai.mode', label: `Режим: ${modeLabel.value}`, icon: 'lu:git-compare', onSelect: state.toggleMode },
   { id: 'ai.back', label: 'К предложению', icon: 'lu:arrow-left', onSelect: () => afterSheet(() => (diffOpen.value = false)) },
 ])
-
-// Read on every render of the dock, so the band follows the change, the parts and the busy state without the dock
-// being re-claimed.
-const band: Component = markRaw(() =>
-  h(DiffBand, {
-    controller,
-    title: selectedName.value,
-    parts: parts.value,
-    partsTitle: 'Изменения',
-    activePart: selectedPath.value ?? undefined,
-    actions: bandActions.value,
-    openDocument: () => void state.openInDocuments(),
-    'onUpdate:activePart': (id: string) => state.selectChange(id),
-  }),
-)
-
-// The dock is claimed only while a diff is on screen: the proposal has nothing to put there, and an empty band
-// would take 48px on the shortest screen there is.
-const showing = computed(() => diffOpen.value && diff.result.value != null)
-watch(
-  showing,
-  (visible) => {
-    if (visible) extension.dock.value = band
-    else if (extension.dock.value === band) extension.dock.value = null
-  },
-  { immediate: true },
-)
-onUnmounted(() => {
-  if (extension.dock.value === band) extension.dock.value = null
-})
 
 watch(active, (session) => {
   if (session == null) diffOpen.value = false
@@ -154,6 +122,20 @@ watch(active, (session) => {
         <div v-if="diff.result.value" class="diff-frame" data-testid="ai-workspace-diff">
           <DiffView class="diff" :result="diff.result.value" :controller="controller" :title="selectedName" :open-document="() => state.openInDocuments()" />
         </div>
+        <!-- The diff's controls sit under it, where the thumb is. Drawn here rather than described to the
+             shell's band until this type describes its band as data (TabType.bar). -->
+        <Strip v-if="diff.result.value" below flush>
+          <DiffBand
+            :controller="controller"
+            :title="selectedName"
+            :parts="parts"
+            parts-title="Changes"
+            :active-part="selectedPath ?? undefined"
+            :actions="bandActions"
+            :open-document="() => void state.openInDocuments()"
+            @update:active-part="state.selectChange"
+          />
+        </Strip>
       </div>
     </template>
   </div>

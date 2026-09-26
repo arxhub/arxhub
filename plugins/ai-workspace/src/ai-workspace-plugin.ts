@@ -140,7 +140,6 @@ export class AiWorkspacePlugin extends Plugin {
       pinned: false,
       order: 80,
       content: markRaw(AiWorkspaceHost),
-      dock: () => this.dockOf(ctx),
     })
 
     if (ctx.services.has(VaultWatcher) && ctx.extensions.has(DocumentsExtension)) {
@@ -149,10 +148,6 @@ export class AiWorkspacePlugin extends Plugin {
         void this.onVaultChange(ctx, documents, change)
       })
     }
-  }
-
-  private dockOf(ctx: PluginContext) {
-    return ctx.extensions.get(AiWorkspaceExtension).dock.value
   }
 
   private async onVaultChange(ctx: PluginContext, documents: DocumentsExtension, change: VfsChange): Promise<void> {

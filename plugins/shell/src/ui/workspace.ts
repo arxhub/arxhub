@@ -2,7 +2,7 @@ import { type Component, type ComputedRef, computed, ref } from 'vue'
 import type { WorkspaceEmit } from './nav-events'
 import { ObjectGoneView } from './object-gone'
 import type { PanelHost } from './panel-host'
-import { isObjectGone, isObjectType, type Json, type ObjectRef, type OpenedObject, objectGone, type TabType } from './tab-type'
+import { isObjectGone, isObjectType, type Json, type ObjectBar, type ObjectRef, type OpenedObject, objectGone, type TabType } from './tab-type'
 import type { TabTypeRegistry } from './tab-type-registry'
 
 // The space of one type. A type with objects gets its own panel host: groups, splitting and ratios
@@ -96,6 +96,11 @@ export class Workspace {
   // The "this object is gone" marks, one set for the whole workspace rather than one per type: the
   // state is shared and has no per-type wording.
   private readonly gone = ref<ReadonlySet<string>>(new Set())
+  // Per type, the tab keys in the order they were last shown, oldest first. Kept apart from the panel
+  // order: a tab strip is arranged by hand, while the phone's list of tabs reads by recency, with the one
+  // just left under the thumb. Not persisted — a restore starts from the panel order with the active tab
+  // last, which is the same answer the person saw before the restart.
+  private readonly recent = ref<ReadonlyMap<string, readonly string[]>>(new Map())
 
   readonly activeTypeId: ComputedRef<string | null> = computed(() => this.active.value)
   readonly openTypeIds: ComputedRef<readonly string[]> = computed(() => this.order.value)
@@ -145,6 +150,7 @@ export class Workspace {
     if (!this.spaces.has(typeId)) return
     this.spaces.delete(typeId)
     this.order.value = this.order.value.filter((it) => it !== typeId)
+    this.forgetRecent(typeId, () => true)
     this.forgetGone((id) => id === typeId)
     if (this.active.value === typeId) {
       const next =
@@ -188,6 +194,7 @@ export class Workspace {
       space.panels.activate(object.key)
     }
 
+    this.touch(typeId, object.key)
     this.emit('workspace:object-activated', { typeId, key: object.key })
     return this.tabOf(typeId, object.key)
   }
@@ -200,6 +207,7 @@ export class Workspace {
 
     this.activateType(typeId)
     space.panels.activate(key)
+    this.touch(typeId, key)
     this.emit('workspace:object-activated', { typeId, key })
   }
 
@@ -212,6 +220,7 @@ export class Workspace {
       if (this.spaces.get(typeId) !== space || space.objects.get(key) !== object) return
       space.panels.close(key)
       space.objects.delete(key)
+      this.forgetRecent(typeId, (candidate) => candidate === key)
       this.forgetGone((id, objectKey) => id === typeId && objectKey === key)
       this.emit('workspace:object-closed', { typeId, key })
       const next = this.activeTab(typeId)
@@ -252,6 +261,24 @@ export class Workspace {
     return space.panels.keys().flatMap((key) => this.tabOf(typeId, key) ?? [])
   }
 
+  // The tabs of a type from the one shown longest ago to the one shown last, the active tab always last.
+  // A tab this workspace never saw activated — a panel opened straight on the store, a tab raised by a
+  // restore — counts as older than every one it did see, in the host's own order.
+  tabsByRecency(typeId: string): OpenedTab[] {
+    const tabs = this.tabsOf(typeId)
+    const seen = this.recent.value.get(typeId) ?? []
+    const rank = (key: string): number => seen.indexOf(key)
+    const active = this.activeTab(typeId)?.key
+    return tabs
+      .map((tab, index) => ({ tab, index }))
+      .sort((a, b) => {
+        if (a.tab.key === active) return 1
+        if (b.tab.key === active) return -1
+        return rank(a.tab.key) - rank(b.tab.key) || a.index - b.index
+      })
+      .map((entry) => entry.tab)
+  }
+
   // The active tab of a type, and with no argument the active tab of the active type.
   activeTab(typeId?: string): OpenedTab | null {
     const id = typeId ?? this.active.value
@@ -268,14 +295,14 @@ export class Workspace {
     return space.objects.get(key) ?? this.adopted(space, key)
   }
 
-  // The active type's dock: declared by the type, filled by the active object.
-  dock(): Component | null {
+  // The active type's band: declared by the type, described by the active object.
+  bar(): ObjectBar | null {
     const id = this.active.value
     if (id == null) return null
     const type = this.types.get(id)
-    if (type?.dock == null) return null
+    if (type?.bar == null) return null
     const tab = this.activeTab(id)
-    return type.dock(tab == null ? null : (this.objectOf(id, tab.key) ?? null))
+    return type.bar(tab == null ? null : (this.objectOf(id, tab.key) ?? null))
   }
 
   isGone(typeId: string, key: string): boolean {
@@ -289,6 +316,7 @@ export class Workspace {
     space.objects.delete(key)
     space.objects.set(object.key, object)
     space.panels.replace(key, this.hosted(typeId, object))
+    if (object.key !== key) this.renameRecent(typeId, key, object.key)
     this.forgetGone((id, candidate) => id === typeId && candidate === key)
     this.emit('workspace:object-opened', { typeId, key: object.key })
   }
@@ -383,6 +411,7 @@ export class Workspace {
     this.order.value = []
     this.active.value = null
     this.gone.value = new Set()
+    this.recent.value = new Map()
   }
 
   private ensureSpace(type: TabType): boolean {
@@ -439,6 +468,28 @@ export class Workspace {
       // start-up too — the object may yet come back.
       snapshot: () => tab.object,
     }
+  }
+
+  private touch(typeId: string, key: string): void {
+    const seen = (this.recent.value.get(typeId) ?? []).filter((candidate) => candidate !== key)
+    this.recent.value = new Map(this.recent.value).set(typeId, [...seen, key])
+  }
+
+  private renameRecent(typeId: string, from: string, to: string): void {
+    const seen = this.recent.value.get(typeId)
+    if (seen == null) return
+    const next = seen.filter((candidate) => candidate !== to).map((candidate) => (candidate === from ? to : candidate))
+    this.recent.value = new Map(this.recent.value).set(typeId, next)
+  }
+
+  private forgetRecent(typeId: string, matches: (key: string) => boolean): void {
+    const seen = this.recent.value.get(typeId)
+    if (seen == null) return
+    const next = new Map(this.recent.value)
+    const kept = seen.filter((key) => !matches(key))
+    if (kept.length === 0) next.delete(typeId)
+    else next.set(typeId, kept)
+    this.recent.value = next
   }
 
   private forgetGone(matches: (typeId: string, key: string) => boolean): void {

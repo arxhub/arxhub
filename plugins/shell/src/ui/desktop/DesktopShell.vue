@@ -100,7 +100,7 @@ useHotkeys(hotkeys, [
         <!-- No tab strip here, on purpose. Tabs belong to a GROUP, not to a type: split the panels and
              each half has its own set, so one strip above both would answer "which group do I
              activate" wrongly. The panel host draws them, one strip per group. -->
-        <DesktopDock :component="workspace.dock()" :create="dockCreate" />
+        <DesktopDock :create="dockCreate" />
 
         <main class="content">
           <!-- Switching type is the row's basic operation, and it unmounts nothing: every type entered

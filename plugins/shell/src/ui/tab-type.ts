@@ -1,3 +1,4 @@
+import type { ActionItem } from '@arxhub/uikit/core'
 import type { Component } from 'vue'
 
 // What survives a restart. The workspace is written to the device as a JSON string, so everything a
@@ -99,6 +100,70 @@ export interface TabTypeOpen {
   // It comes back together with the first producer, and with a decision covering both frames at once.
 }
 
+// One part of a composite object: a sheet of a workbook, a page of a PDF, a file of an AI proposal. A plain
+// document has none — its name is a label, not a road — so the role exists only where there is something
+// to choose between.
+export interface ObjectBarPart {
+  id: string
+  title: string
+  subtitle?: string
+  // Icon spec string resolved by uikit's Icon registry. Unset — the bar's own icon.
+  icon?: string
+  selected?: boolean
+  tone?: 'neutral' | 'danger'
+}
+
+export interface ObjectBarParts {
+  // The heading of the sheet the name opens: "Sheets", "Pages", "Files".
+  title: string
+  items: ObjectBarPart[]
+  pick(id: string): void
+  // A row after the parts that makes a new one ("New sheet"). Unset — the sheet only chooses.
+  add?: ActionItem
+}
+
+// The band above the phone's type row, described as DATA rather than drawn by the type. One component draws
+// every type's band (MobileObjectBar), so two types that describe the same thing get the same band — a
+// component per type is how five bottom bars with five geometries came about.
+//
+// Read on every render, so whatever it reads must be reactive; a plain variable answers once.
+export interface ObjectBar {
+  // "Where I am": the open object, or the place the type stands in when nothing is open ("Vault").
+  icon: string
+  name: string
+  // A second, quieter half of the name: the active sheet, the current period, "3 of 7".
+  sub?: string
+  // Present only for a composite object: the name then carries a chevron and opens the list of parts.
+  parts?: ObjectBarParts
+  // Keys while they fit, in priority order; the trailing ones move into More first (OverflowActions).
+  actions?: ActionItem[]
+  // Only ever in More, after whatever overflowed. Destructive ones last, with `tone: 'danger'`.
+  menu?: ActionItem[]
+  // What takes the band while the on-screen keyboard is up — the active editor's editing toolbar, undo and
+  // redo first. Unset — the band stays as described while typing.
+  editing?: Component
+}
+
+// What a second tap on the active type opens — the way a tab counter in a phone's browser opens the tabs.
+// Every field is optional because the shell has a default for each: an object type lists its tabs, oldest
+// at the top and the freshest under the thumb, followed by a road into its `nav`; a type without objects
+// shows its `nav` in the sheet. A type overrides only what it knows better.
+//
+// The components are mounted inside the shell's own sheet and get one prop, `typeId`. A component that
+// has done its job — a month was picked, a section chosen — closes the sheet through
+// `useNavHost().navigated()`, the same call a navigation already makes on the desktop.
+export interface TabTypeSheet {
+  // Defaults to the type's own title.
+  title?: string
+  // Replaces the default body: the months of Budget, the sessions of AI.
+  content?: Component
+  // Pinned under the body, above the keyboard: the Documents' "Find a document…" field.
+  footer?: Component
+  // Where the sheet opens scrolled to. Defaults to `end` for the tab list — the freshest tab is the one the
+  // sheet was raised for — and to `start` for everything else.
+  anchor?: 'start' | 'end'
+}
+
 interface TabTypeBase {
   id: string
   // Icon spec string resolved by uikit's Icon registry.
@@ -108,11 +173,11 @@ interface TabTypeBase {
   nav?: TabTypeNav
   create?: TabTypeCreate
   open?: TabTypeOpen
-  // The dock is declared by the type — once; what fills it is decided by the active object. A type
-  // without objects simply ignores the argument, and that is the single dishonesty in the signature —
-  // in exchange there is one extension point, and the band above the row cannot turn out to be two
-  // bands.
-  dock?: (active: OpenedObject | null) => Component | null
+  // The band above the phone's type row. Declared by the type once; what it says is decided by the active
+  // object, which is the argument (null while nothing is open, and always null for a type without
+  // objects). Not declared, or null — no band: an empty one would spend 48px of the shortest screen.
+  bar?: (active: OpenedObject | null) => ObjectBar | null
+  sheet?: TabTypeSheet
   // By default a type is pinned and holds a place in the row. `pinned: false` — it does not, but it
   // must appear in the "open new" section of the search sheet: there are no unreachable types.
   pinned?: boolean

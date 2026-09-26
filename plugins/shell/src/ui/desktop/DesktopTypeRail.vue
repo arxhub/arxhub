@@ -19,18 +19,16 @@ function label(item: TypeRowItem): string {
 <template>
   <nav class="type-rail" aria-label="Types">
     <ScrollArea passive class="type-scroll" content-class="type-list">
-      <div v-for="item in props.row" :key="item.type.id" class="type">
-        <NavItem
-          :icon="item.type.icon"
-          :title="label(item)"
-          :active="item.active"
-          :data-testid="`type-${item.type.id}`"
-          @click="$emit('select', item.type.id)"
-        />
-        <!-- Zero is never drawn: an empty badge would say "a number belongs here", which is not a
-             number. -->
-        <span v-if="item.count > 0" class="count" aria-hidden="true">{{ item.count > 99 ? '99+' : item.count }}</span>
-      </div>
+      <NavItem
+        v-for="item in props.row"
+        :key="item.type.id"
+        :icon="item.type.icon"
+        :title="label(item)"
+        :active="item.active"
+        :count="item.count"
+        :data-testid="`type-${item.type.id}`"
+        @click="$emit('select', item.type.id)"
+      />
       <NavItem icon="lu:layout-grid" title="Open or switch to" @click="$emit('sheet')" />
     </ScrollArea>
   </nav>
@@ -57,30 +55,5 @@ function label(item: TypeRowItem): string {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.type {
-  position: relative;
-  display: flex;
-  flex-shrink: 0;
-}
-
-/* Not the accent. In this rail the accent means exactly one thing — "where I am" — and it is already
-   spent on the active key (F-17). A badge wearing it too would put three accent marks on the rail
-   answering a different question each. */
-.count {
-  position: absolute;
-  top: 0;
-  right: 0;
-  min-width: 16px;
-  padding: 0 4px;
-  border-radius: var(--radius-full);
-  background: var(--gray-7);
-  color: var(--gray-12);
-  font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
-  line-height: 16px;
-  text-align: center;
-  pointer-events: none;
 }
 </style>

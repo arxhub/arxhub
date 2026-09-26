@@ -1,85 +1,54 @@
 <script setup lang="ts">
-import { Icon, ScrollArea } from '@arxhub/uikit/core'
+import { NavItem } from '@arxhub/uikit/core'
+import { computed } from 'vue'
 import type { TypeRowItem } from '../workspace'
+import { fitTypeRow } from './type-row'
 
-const props = defineProps<{ row: TypeRowItem[]; sheetOpen: boolean; navTitle: string | null; navOpen: boolean }>()
-const emit = defineEmits<{ select: [typeId: string]; peek: [typeId: string]; sheet: []; nav: [] }>()
+const props = defineProps<{ row: TypeRowItem[]; moreOpen: boolean }>()
+const emit = defineEmits<{ select: [typeId: string]; again: [typeId: string]; more: [] }>()
 
-// A count is part of what the key says, so it belongs in the accessible name and not only in the
-// badge — "Documents" and "Documents, 3 open" are different controls to someone who cannot see the dot.
+// A few keys and More, never a ribbon to scroll: a key in this row is the most frequent target on the
+// screen, and one that has scrolled out of sight is not a target at all. What does not fit is one tap
+// away behind More, which says how many.
+const fitted = computed(() => fitTypeRow(props.row))
+
+// Icons only, so the name has to be in the accessible name — and so does the count, which is part of
+// what the key says: "Documents" and "Documents, 3 open" are different controls to someone who cannot
+// see the badge.
 function label(item: TypeRowItem): string {
   return item.count > 0 ? `${item.type.title}, ${item.count} open` : item.type.title
 }
 
-// Tapping your own type a second time opens the list of what is open inside it — the second level. A
-// type that never declared the "what is open" role has no second level, and a second tap does nothing.
+// A second tap on your own type opens its second level — what a tap on the tab counter does in a phone's
+// browser. The frame decides whether that type has one.
 function tap(item: TypeRowItem): void {
-  if (item.active && item.type.open != null) emit('peek', item.type.id)
+  if (item.active) emit('again', item.type.id)
   else emit('select', item.type.id)
 }
 </script>
 
 <template>
   <nav class="type-row" aria-label="Types">
-    <!-- The types scroll rather than squeeze. A key in this row is the most frequent target on the
-         screen and must never fall below the touch minimum: dividing 412px between eight types gives
-         46px and between nine gives 41px, so the row broke exactly when there were many of them. -->
-    <ScrollArea axis="x" class="types" viewport-class="types-viewport" content-class="types-row">
-      <button
-        v-for="item in props.row"
-        :key="item.type.id"
-        type="button"
-        class="key type"
-        :class="{ active: item.active }"
-        :data-testid="`type-${item.type.id}`"
-        :aria-label="label(item)"
-        :aria-pressed="item.active"
-        @click="tap(item)"
-      >
-        <span class="glyph">
-          <Icon :name="item.type.icon" :size="16" />
-          <span v-if="item.count > 0" class="count" aria-hidden="true">{{ item.count > 99 ? '99+' : item.count }}</span>
-        </span>
-        <!-- The label is on the active one only: seven labels at once turn the row into mush, and on
-             the active one the label is what answers "where am I". -->
-        <span v-if="item.active" class="label">{{ item.type.title }}</span>
-      </button>
-    </ScrollArea>
-
-    <!-- The active type's own navigation: the tree under Documents, the sections under Settings. It used
-         to be the only thing in the band above the row, which spent 48px of the shortest screen there
-         is on one button. The left-edge swipe still does the same thing, but a gesture is invisible
-         and the road to the tree has no right to be. -->
-    <button
-      v-if="props.navTitle != null"
-      type="button"
-      class="key edge"
-      :class="{ active: props.navOpen }"
-      data-testid="arxhub.shell.rail"
-      :aria-label="props.navTitle"
-      :aria-pressed="props.navOpen"
-      @click="emit('nav')"
-    >
-      <span class="glyph"><Icon name="lu:panel-bottom" :size="16" /></span>
-    </button>
-
-    <!-- The way to everything that is not on the screen right now: what is open elsewhere, every type
-         with no place in the row, and the status block this frame has no permanent bar for.
-         A grid rather than a magnifier: the magnifier belongs to the Search type, which is one of the
-         things reached through here, and one glyph answering two things is worse than an unfamiliar
-         one. Not the ⌘ sign either — it is a Mac key, and on a phone (or Linux, or Windows) it names
-         a keyboard the person does not have. -->
-    <button
-      type="button"
-      class="key edge"
-      :class="{ active: props.sheetOpen }"
+    <NavItem
+      v-for="item in fitted.shown"
+      :key="item.type.id"
+      :icon="item.type.icon"
+      :title="label(item)"
+      :active="item.active"
+      :count="item.count"
+      :data-testid="`type-${item.type.id}`"
+      @click="tap(item)"
+    />
+    <!-- The way to everything that has no key right now: the types that did not fit, the ones not open
+         yet, and the status block this frame has no permanent bar for. -->
+    <NavItem
+      icon="lu:ellipsis"
+      :title="fitted.hidden > 0 ? `More, ${fitted.hidden} not in the row` : 'More'"
+      :open="props.moreOpen"
+      :count="fitted.hidden"
       data-testid="arxhub.shell.search"
-      aria-label="Open or switch to"
-      :aria-pressed="props.sheetOpen"
-      @click="emit('sheet')"
-    >
-      <span class="glyph"><Icon name="lu:layout-grid" :size="16" /></span>
-    </button>
+      @click="emit('more')"
+    />
   </nav>
 </template>
 
@@ -93,106 +62,5 @@ function tap(item: TypeRowItem): void {
   padding-bottom: env(safe-area-inset-bottom);
   border-top: 1px solid var(--gray-6);
   background: var(--gray-2);
-}
-
-.types {
-  flex: 1;
-}
-
-.types :deep(.types-viewport) {
-  overscroll-behavior-x: contain;
-}
-
-.types :deep(.types-row) {
-  display: flex;
-  align-items: stretch;
-}
-
-.key {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: var(--size-xl);
-  border: none;
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--gray-11);
-  font-family: var(--font-sans);
-  cursor: pointer;
-}
-
-/* Grows while there are few types, and never shrinks below the touch minimum when there are many. */
-.type {
-  flex: 1 0 64px;
-  min-width: 64px;
-}
-
-/* Where I am: the accent wash plus accent text, the same selection treatment every row and tab in the
-   app uses. Exactly one at a time (F-17). */
-.type.active {
-  background: var(--accent-3);
-  color: var(--accent-11);
-}
-
-/* The two immobile keys, both at the RIGHT edge and both literally immobile: they sit outside the
-   scrolling ribbon, so their width does not depend on how many types are open. Right and low because
-   that is where the hand is on a phone held in one — the left edge and the top are for rare things,
-   and opening the tree is not one. */
-.edge {
-  flex: 0 0 var(--size-xl);
-  width: var(--size-xl);
-  border-left: 1px solid var(--gray-6);
-  border-radius: 0;
-}
-
-/* Neither is a place you can be in, so neither takes the accent: what they open is a layer ON TOP of
-   where you are, and a raised fill is how a layer states itself (F-17). */
-.edge.active {
-  background: var(--gray-4);
-  color: var(--gray-12);
-}
-
-.key:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -1px;
-}
-
-.glyph {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* NOT the accent. The accent in this row means exactly one thing — "where I am" — and it is already
-   spent on the active type. A badge wearing it on three inactive types would put four accent marks in
-   the row, three of them answering a different question. */
-.count {
-  position: absolute;
-  top: -6px;
-  left: 12px;
-  min-width: 16px;
-  max-width: 28px;
-  overflow: hidden;
-  padding: 0 4px;
-  border-radius: var(--radius-full);
-  background: var(--gray-7);
-  color: var(--gray-12);
-  font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
-  line-height: 16px;
-  text-align: center;
-}
-
-/* A key's label is a hint under a glyph, not body text. */
-.label {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-none);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 </style>

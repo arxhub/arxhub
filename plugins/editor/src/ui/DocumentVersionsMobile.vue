@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DiffBand, DiffView } from '@arxhub/plugin-diff/ui'
-import type { ActionItem } from '@arxhub/uikit/core'
+import { type ActionItem, Strip } from '@arxhub/uikit/core'
 import { useBackStack } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { type DocumentVersionsProps, useDocumentVersions } from './use-document-versions'
@@ -47,8 +47,8 @@ const actions = computed((): ActionItem[] => [
     </div>
     <DiffView v-if="result" class="diff" :result="result" :controller="controller" :title="title" icon="lu:file-text" :open-document="() => emit('close')" />
     <!-- A band of its own, not the editor's status chrome: that one pads and wraps, and the band's keys are
-         written to fill a flush 48px dock edge to edge. -->
-    <div class="band">
+         written to fill a flush touch strip edge to edge. -->
+    <Strip below flush>
       <DiffBand
         :controller="controller"
         :title="title"
@@ -60,7 +60,7 @@ const actions = computed((): ActionItem[] => [
         :open-document="() => emit('close')"
         @update:active-part="state.select"
       />
-    </div>
+    </Strip>
   </div>
 </template>
 
@@ -69,6 +69,4 @@ const actions = computed((): ActionItem[] => [
 .notes:empty { display: none; }
 .notes p { margin: 8px 16px; font-size: var(--font-size-sm); color: var(--gray-11); }
 .diff { flex: 1; min-height: 0; }
-/* The hairline is a shadow, as in the shell's dock: a border would take a pixel off the 48px keys. */
-.band { display: flex; flex-shrink: 0; align-items: stretch; height: var(--size-xl); box-shadow: inset 0 1px 0 var(--gray-6); background: var(--gray-2); }
 </style>

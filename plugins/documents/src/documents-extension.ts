@@ -27,9 +27,6 @@ export interface DocumentViewer {
   // A range-capable viewer reads the pending file through the repository instead of first asking
   // sync to materialize the whole object. The default keeps the ordinary open path unchanged.
   readMode?: 'range'
-  // The tool bar of the active note. Not declared — no bar: an empty dock would take a band of the
-  // screen for nothing. The component gets a single `path` prop.
-  dock?: Component
   // The lower, the earlier a viewer is asked. Two viewers on one extension — the first wins.
   order?: number
   // Show a place inside an ALREADY OPEN note. Needed because re-opening an object is a switch, not a
