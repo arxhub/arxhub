@@ -84,3 +84,23 @@ test('sections collapse while reading and code language persists with highlighte
   await expect(editor.locator('.section-content')).toBeVisible()
   await expect(editor.getByRole('button', { name: 'Code language' })).toHaveCount(0)
 })
+
+test('a code block carries its language and Copy inside its own box', async ({ app, vault }) => {
+  const path = await vault.write(
+    `${test.info().project.name}-code-head.arx`,
+    document([{ type: 'code_block', content: [{ type: 'text', text: 'print(1)' }] }]),
+  )
+  const editor = await open(app, path)
+  const block = editor.locator('div[data-type="code_block"]')
+  const language = block.getByRole('button', { name: 'Code language: Plain text' })
+  await expect(language).toBeVisible()
+  await expect(block.getByRole('button', { name: 'Copy', exact: true })).toBeVisible()
+  const box = await block.boundingBox()
+  const head = await language.boundingBox()
+  expect(head && box && head.y >= box.y && head.y + head.height <= box.y + box.height).toBe(true)
+  await language.click()
+  await app.getByRole('textbox', { name: 'Search code languages' }).fill('Python')
+  await app.getByRole('button', { name: 'Python', exact: true }).click()
+  await closeSettings(app)
+  await expect(block.getByRole('button', { name: 'Code language: Python' })).toBeVisible()
+})

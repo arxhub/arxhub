@@ -2,6 +2,7 @@ import type { Attrs, Node } from 'prosemirror-model'
 import { NodeSelection } from 'prosemirror-state'
 import type { EditorProps } from 'prosemirror-view'
 import { shallowReactive } from 'vue'
+import { blockTarget, inspect } from './block-settings'
 import type { ArxEditorComponent } from './editor-extension'
 import { type EditorMode, editorMode } from './editor-mode'
 import { t } from './i18n/messages'
@@ -22,6 +23,9 @@ export interface ArxEditorControlProps {
   // 'interactive' cannot pass a structural change through its own transaction filter (see editor-mode.ts,
   // `onlyControlValuesChanged`), so letting the dispatch through there would just be a silent no-op.
   replace: (nodes: readonly Node[]) => void
+  // Opens this block's settings in the shared inspector — for a control that carries a shortcut into them
+  // (a code block's language), so the picker stays the inspector's one list rather than a second copy.
+  settings?: () => void
 }
 
 export interface ControlView extends ArxEditorControlProps {
@@ -110,6 +114,10 @@ export function createControlViews(components: Readonly<Record<string, ArxEditor
         // destroyed along with the node it belonged to — DOM focus would otherwise fall out of the
         // editor entirely, taking every keyboard chord routed through it (Undo included) with it.
         view.focus()
+      },
+      settings: () => {
+        const pos = getPos()
+        if (pos != null && !view.isDestroyed) inspect(view, blockTarget(view.state.doc, pos))
       },
     })
     if (task) dom.dataset.checked = String(node.attrs.checked)

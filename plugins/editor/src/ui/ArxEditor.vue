@@ -834,6 +834,15 @@ const chromeTarget = usePanelChrome(() => ({
   margin: 0.5em 0;
 }
 
+/* The box is the whole block, so its header (language, Copy) sits inside it rather than floating above. */
+.editor-scroll :deep(div[data-type="code_block"]) {
+  background: var(--gray-2);
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin: 0.5em 0;
+}
+.editor-scroll :deep(div[data-type="code_block"] > pre) { margin: 0; border: 0; border-radius: 0; background: none; padding: 12px; }
 /* design-ignore DS type ramp: code block inside note content, relative to the note body. */
 .editor-scroll :deep(pre code) { background: none; padding: 0; border-radius: 0; font-size: 0.9em; }
 .editor-scroll :deep(hr) { border: none; border-top: 1px solid var(--gray-5); margin: 1.5em 0; }

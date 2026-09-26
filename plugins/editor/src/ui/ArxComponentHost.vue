@@ -22,5 +22,5 @@ onErrorCaptured((error) => {
     <span>{{ t('component.failedBody') }}</span>
     <Button :size="buttonSize" variant="secondary" @click="failed = false">{{ t('component.retry') }}</Button>
   </Card>
-  <component v-else :is="control.component ?? DocumentControl" :node="control.node" :mode="control.mode" :change="control.change" :replace="control.replace" />
+  <component v-else :is="control.component ?? DocumentControl" :node="control.node" :mode="control.mode" :change="control.change" :replace="control.replace" :settings="control.settings" />
 </template>
