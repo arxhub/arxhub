@@ -2,9 +2,10 @@ import { createEventBus, type TypedEventBus, type Unsubscribe } from '@arxhub/ev
 import type { Logger } from '@arxhub/logger'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import type { VirtualFileSystem } from '@arxhub/vfs'
-import { detectDocumentKind, documentPath, type ParsedDocument } from './document'
+import { BUILTIN_KINDS, builtinKind, type DocumentKind, documentPath, type ParsedDocument } from './document'
+import { type DocumentExtractor, extractorKind, linkExtensions, resolveExtractor } from './extractor'
 import { removeDocument, removeDocumentsUnder, writeDocument } from './index-document'
-import { metadataDocument, parseDocument } from './parse-document'
+import { extractDocument, metadataDocument } from './parse-document'
 import { isIndexablePath } from './path-filter'
 import { CONTENT_TABLES } from './schema'
 import type { SqlIndex } from './types'
@@ -16,6 +17,11 @@ export const LAST_SCAN_FINISHED_AT_KEY = 'last_scan_finished_at'
 // A file larger than this is indexed by its metadata alone. 2 MiB of prose is a book; past it the file
 // is far more likely to be something the parser would chew through for nothing.
 export const DEFAULT_MAX_FILE_SIZE = 2 * 1024 * 1024
+
+// The limit for a file an extractor claims. A separate one because the formats that arrive this way are
+// not prose: a PDF of a few pages already passes 2 MiB, and under the prose limit most of them would be
+// found by name only.
+export const DEFAULT_MAX_EXTRACTED_FILE_SIZE = 64 * 1024 * 1024
 
 // Documents per checkpoint: how often the walk saves its cursor and hands the thread back so the
 // interface stays responsive (FR-223).
@@ -38,6 +44,7 @@ export interface IndexerOptions {
   // Path masks that are not indexed.
   exclude?: readonly string[]
   maxFileSize?: number
+  maxExtractedFileSize?: number
   batchSize?: number
 }
 
@@ -59,13 +66,16 @@ export interface Indexer {
   // Asks a running walk to stop at the next file, leaving its cursor saved so the next one resumes.
   cancel(): void
   // Replaces the tunables above; anything left out keeps its current value. Only makes the new rule live
-  // from here on — `exclude` and `maxFileSize` decide what the index CONTAINS, so a caller that changes
-  // either has to rebuild as well, or the rows the old rule admitted stay.
+  // from here on — `exclude` and the two size limits decide what the index CONTAINS, so a caller that
+  // changes one has to rebuild as well, or the rows the old rule admitted stay.
   configure(options: IndexerOptions): void
 }
 
 export interface CreateIndexerOptions extends IndexerOptions {
   logger: Logger
+  // Read on every file rather than once: an owner that stops unregisters, and its format must stop being
+  // read from then on. The index is emptied when the set changes (`reconcileExtractors`), not here.
+  extractors?: () => readonly DocumentExtractor[]
 }
 
 // The indexer's own event map. Local rather than the application-wide bus: a status belongs to the walk
@@ -91,8 +101,10 @@ class VaultIndexer implements Indexer {
   private readonly index: SqlIndex
   private readonly vfs: VirtualFileSystem
   private readonly logger: Logger
+  private readonly extractors: () => readonly DocumentExtractor[]
   private exclude: readonly string[] = []
   private maxFileSize: number = DEFAULT_MAX_FILE_SIZE
+  private maxExtractedFileSize: number = DEFAULT_MAX_EXTRACTED_FILE_SIZE
   private batchSize: number = DEFAULT_BATCH_SIZE
 
   private snapshot: IndexerStatus = {
@@ -114,6 +126,7 @@ class VaultIndexer implements Indexer {
     this.index = index
     this.vfs = vfs
     this.logger = options.logger
+    this.extractors = options.extractors ?? (() => [])
     this.configure(options)
   }
 
@@ -124,6 +137,9 @@ class VaultIndexer implements Indexer {
       this.exclude = options.exclude.map((pattern) => pattern.trim()).filter((pattern) => pattern !== '')
     }
     if (options.maxFileSize !== undefined) this.maxFileSize = positiveInteger(options.maxFileSize, DEFAULT_MAX_FILE_SIZE)
+    if (options.maxExtractedFileSize !== undefined) {
+      this.maxExtractedFileSize = positiveInteger(options.maxExtractedFileSize, DEFAULT_MAX_EXTRACTED_FILE_SIZE)
+    }
     if (options.batchSize !== undefined) this.batchSize = positiveInteger(options.batchSize, DEFAULT_BATCH_SIZE)
   }
 
@@ -272,25 +288,29 @@ class VaultIndexer implements Indexer {
     const head = await this.vfs.head(path)
     const stat = { size: head.size, mtime: head.modifiedAt, ctime: head.createdAt }
     const existing = await this.readDocumentState(path)
-    const kind = detectDocumentKind(path)
+    const extractors = this.extractors()
+    const claimed = resolveExtractor(path, extractors)
+    const kind = claimed == null ? builtinKind(path) : extractorKind(claimed)
+    const readable = claimed != null || kind !== BUILTIN_KINDS.binary
+    const limit = claimed == null ? this.maxFileSize : this.maxExtractedFileSize
 
     // Same path, same size, same modification time — nothing to read (FR-224).
     //
     // Except one case: a row with no hash. A hash only appears after a real parse, so its absence on an
-    // otherwise-indexable file within the size limit means the parse never actually happened — the row
+    // otherwise-readable file within the size limit means the parse never actually happened — the row
     // was written from metadata alone after some earlier failure. Without this check that row was stuck
     // forever: size and mtime already matched, so the file was never read again, staying in the index
     // with no text and no title. A transient failure has no business becoming a permanent one.
-    const unparsed = existing != null && existing.hash == null && kind !== 'binary' && stat.size <= this.maxFileSize
+    const unparsed = existing != null && existing.hash == null && readable && stat.size <= limit
     if (!force && !unparsed && existing != null && existing.size === stat.size && existing.mtime === stat.mtime) return
 
-    if (kind === 'binary') {
+    if (!readable) {
       // Nothing in the file would be read, so it is not read: hashing a video to learn it is still a
       // video costs a full pass over it.
       await this.write(metadataDocument(path, stat, kind))
       return
     }
-    if (stat.size > this.maxFileSize) {
+    if (stat.size > limit) {
       await this.write(metadataDocument(path, stat, kind))
       return
     }
@@ -303,13 +323,30 @@ class VaultIndexer implements Indexer {
       return
     }
 
-    await this.write(parseDocument(path, bytes, stat))
+    let doc: ParsedDocument
+    try {
+      doc = await extractDocument(path, bytes, stat, extractors)
+    } catch (error) {
+      // Caught here rather than by the walk alone: a single reindexed path (a save) must fall back the
+      // same way, and an owner's extractor failing is that owner's bug, not a reason to lose the file.
+      this.logger.warn({ path, err: error }, 'Could not read a file — indexing its metadata only')
+      // The bytes' hash is kept: an extractor that failed on these bytes fails on them again, so the
+      // hash-null retry above would re-read and re-fail the file on every walk. A change to the file, or to
+      // the extractor set or version (reconcileExtractors), is what earns another attempt.
+      doc = { ...metadataDocument(path, stat, kind), hash }
+    }
+    await this.write(doc)
+  }
+
+  private kindOf(path: string): DocumentKind {
+    const claimed = resolveExtractor(path, this.extractors())
+    return claimed == null ? builtinKind(path) : extractorKind(claimed)
   }
 
   private async indexMetadataOnly(path: string): Promise<void> {
     try {
       const head = await this.vfs.head(path)
-      await this.write(metadataDocument(path, { size: head.size, mtime: head.modifiedAt, ctime: head.createdAt }))
+      await this.write(metadataDocument(path, { size: head.size, mtime: head.modifiedAt, ctime: head.createdAt }, this.kindOf(path)))
     } catch (error) {
       // The file itself is unreadable now — there is nothing left to record about it.
       this.logger.warn({ path, err: error }, 'Could not read a file at all — leaving it out of the index')
@@ -317,8 +354,9 @@ class VaultIndexer implements Indexer {
   }
 
   private async write(doc: ParsedDocument): Promise<void> {
+    const extensions = linkExtensions(this.extractors())
     await this.index.transaction(async (tx) => {
-      await writeDocument(tx, doc)
+      await writeDocument(tx, doc, { linkExtensions: extensions })
     })
   }
 

@@ -1,40 +1,42 @@
 import { normalizePath, posix } from '@arxhub/path'
 
-// How the content of a file was read. Stored as text rather than an enum type: a new parser adds a
-// value without a type migration (see db/client/tables/document.dbml).
-export type DocumentKind = 'markdown' | 'arx' | 'text' | 'binary'
+// How the content of a file was read. A string rather than a union: the built-in rules below name three,
+// and every contributed extractor names its own ('arx', 'arxs', 'pdf') — stored as text so a new format
+// adds a value without a type migration (see db/client/tables/document.dbml).
+export type DocumentKind = string
 
-// The block vocabulary of the first release. Tables are still absent — no parser produces one, and a
-// block type nothing produces is a column nobody can query. `task` is separate from `list-item` rather
-// than a flag on it (A-28): "what is still open" is the question tasks are indexed for, and it must not
-// have to know that a task is a kind of list item first. Only the `.arx` reader produces one — see
-// A-29 in the decisions register: `.arx` is the format the product reasons about, markdown is read for
-// its text and its rough shape and nothing more.
-export type BlockType = 'heading' | 'paragraph' | 'list-item' | 'task' | 'code' | 'quote'
+export const BUILTIN_KINDS = { markdown: 'markdown', text: 'text', binary: 'binary' } as const
+
+// The block vocabulary. `task` is separate from `list-item` rather than a flag on it (A-28): "what is
+// still open" is the question tasks are indexed for, and it must not have to know that a task is a kind
+// of list item first. No built-in rule produces a task — structure comes from the format that states it
+// (A-29), through that format's extractor. `cell` and `page` are the units of a spreadsheet and a PDF.
+export type BlockType = 'heading' | 'paragraph' | 'list-item' | 'task' | 'code' | 'quote' | 'cell' | 'page'
 
 export type RefKind = 'wikilink' | 'markdown'
 
-// Extensions that make a document out of a file, in the order a link without one is resolved against
-// them. `text`/`markdown`/`arx` — everything else is metadata only.
+// Extensions the engine reads by itself. Everything else is metadata only unless an extractor claims it.
 export const MARKDOWN_EXTENSIONS = ['md', 'markdown'] as const
-export const ARX_EXTENSIONS = ['arx'] as const
 export const TEXT_EXTENSIONS = ['txt', 'text'] as const
-export const DOCUMENT_EXTENSIONS = [...MARKDOWN_EXTENSIONS, ...ARX_EXTENSIONS, ...TEXT_EXTENSIONS] as const
+export const BUILTIN_DOCUMENT_EXTENSIONS = [...MARKDOWN_EXTENSIONS, ...TEXT_EXTENSIONS] as const
 
 export interface ParsedBlock {
   // `<document path>#<ordinal>` — composite, and only stable within one version of the document.
   id: string
   ordinal: number
   type: BlockType
-  // Heading depth for a heading, nesting depth for an `.arx` list item or task, null for everything
-  // else — markdown's list items included. One column for both because it is the same question — how
+  // Heading depth for a heading, nesting depth for a list item or task where the format states one, null
+  // for everything else — markdown's list items included. One column for both because it is the same question — how
   // deep this block sits — and the type beside it already says which scale to read it on.
   level: number | null
   // Whether a task is done. Null for every other block type, the way `level` is: a plain list item has
   // no state to be in, and a `false` there would answer "not done" to a question nobody asked.
   checked: boolean | null
-  // The `.arx` block's own stable id (block-identity.ts); null for markdown and text.
-  arxId: string | null
+  // The unit inside the object the block is, in its owner's terms (an `.arx` block id, a cell address);
+  // null for markdown and text, which carry no block identity.
+  anchorId: string | null
+  // The part of a composite object the block sits in (a worksheet id, a PDF page number); null otherwise.
+  part: string | null
   // How many earlier blocks of this document already had this exact content, 0 for the first — the
   // fallback anchor for a format with no block identity (markdown).
   occurrence: number
@@ -48,7 +50,7 @@ export interface ParsedTag {
   blockId: string | null
 }
 
-// A key/value field from an `.arx` document's `properties` block (A-48). The block itself never becomes
+// A key/value field from a document's `properties` block (A-48). The block itself never becomes
 // a row of `block` (it carries no text) — this is the whole of what it contributes to the index besides
 // its tags (folded into `tag`, the same as frontmatter's) and `document.favorite`/`subject_*`.
 export interface ParsedProperty {
@@ -127,14 +129,14 @@ export function documentDir(pathname: string): string {
   return dir === '.' || dir === '/' ? '' : dir
 }
 
-export function detectDocumentKind(pathname: string): DocumentKind {
+// The rule the engine applies when no extractor claims the path.
+export function builtinKind(pathname: string): DocumentKind {
   const ext = documentExtension(pathname)
-  if ((MARKDOWN_EXTENSIONS as readonly string[]).includes(ext)) return 'markdown'
-  if ((ARX_EXTENSIONS as readonly string[]).includes(ext)) return 'arx'
+  if ((MARKDOWN_EXTENSIONS as readonly string[]).includes(ext)) return BUILTIN_KINDS.markdown
   // A file with no extension is read as text: a README or a LICENSE is prose, and refusing to look
   // inside it would hide it from search for a reason the owner cannot see.
-  if (ext === '' || (TEXT_EXTENSIONS as readonly string[]).includes(ext)) return 'text'
-  return 'binary'
+  if (ext === '' || (TEXT_EXTENSIONS as readonly string[]).includes(ext)) return BUILTIN_KINDS.text
+  return BUILTIN_KINDS.binary
 }
 
 export function blockId(path: string, ordinal: number): string {

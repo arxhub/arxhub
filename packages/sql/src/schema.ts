@@ -2,12 +2,16 @@
 // walk did not (nested `.arx` list items, at version 3; `block.arx_id`/`block.occurrence`, at version
 // 4 — a search hit needs to reopen the exact block it matched, not merely the first one that reads the
 // same; the `property` table and `document.favorite`/`subject_path`/`subject_file_id`, at version 5 — an
-// `.arx` document's `properties` block, A-48). An index written by another version is discarded, not
+// `.arx` document's `properties` block, A-48; `block.arx_id` generalised to `anchor_id` plus `part`, at
+// version 6 — formats are read by their owners' extractors, and a cell or a PDF page needs an address too). An index written by another version is discarded, not
 // migrated (FR-217): every row is recoverable by walking the content store, so rebuilding is cheaper
 // than carrying a data migration for a derived index.
-export const SQL_SCHEMA_VERSION = 5
+export const SQL_SCHEMA_VERSION = 6
 
 export const SCHEMA_VERSION_KEY = 'schema_version'
+
+// The signature of the extractor set the rows were read under (extractorSignature).
+export const EXTRACTORS_KEY = 'extractors'
 
 // Full-text configuration for every tsvector in the schema. Deliberately 'simple' rather than
 // 'english'/'russian': the vault is multilingual and stemming one language degrades search in the
@@ -77,9 +81,11 @@ export const CONTENT_SCHEMA_DDL: readonly string[] = [
     level int,
     -- Done state of a task; null for every other type, so "unfinished" and "not a task" stay apart.
     checked boolean,
-    -- The .arx block's own stable id (plugins/editor/src/block-identity.ts), survives reordering and
-    -- editing; null for markdown and text, which carry no such identity (A-29).
-    arx_id text,
+    -- The unit inside the object the block is, in its owner's terms: an .arx block id (survives
+    -- reordering and editing), a sheet cell address. Null for markdown and text (A-29).
+    anchor_id text,
+    -- The part of a composite object the block sits in: a worksheet id, a PDF page number.
+    part text,
     -- How many earlier blocks of this document already had this exact content, 0 for the first. The
     -- fallback anchor for a format with no block identity: a search hit re-opens the Nth occurrence of
     -- a repeated line instead of always the first.
@@ -150,7 +156,10 @@ export const SCHEMA_TABLES: readonly SqlSchemaTable[] = [
       { name: 'name', description: 'File name with extension.' },
       { name: 'dir', description: 'Parent folder; empty string at the root.' },
       { name: 'ext', description: 'Lower-case extension without the dot; empty string when there is none.' },
-      { name: 'kind', description: 'How the content was read: markdown | arx | text | binary.' },
+      {
+        name: 'kind',
+        description: 'How the content was read: markdown | text | binary, or the kind of the extractor that read it (arx, arxs, pdf…).',
+      },
       { name: 'title', description: 'Title to show. Never empty.' },
       { name: 'title_fold', description: 'Title lower-cased and unaccented — what similarity() compares.' },
       { name: 'content', description: 'Flat text of the document. Empty for a binary file.' },
@@ -171,15 +180,20 @@ export const SCHEMA_TABLES: readonly SqlSchemaTable[] = [
   },
   {
     name: 'block',
-    description: 'A part of a document as a unit of search — heading, paragraph, list item, task, code, quote. Dropped with its document.',
+    description:
+      'A part of a document as a unit of search — heading, paragraph, list item, task, code, quote, cell, page. Dropped with its document.',
     columns: [
       { name: 'id', description: 'Document path plus the block ordinal. Not stable across versions of a document.' },
       { name: 'doc_path', description: 'Owning document. ON DELETE CASCADE.' },
       { name: 'ordinal', description: 'Position inside the document, from zero.' },
-      { name: 'type', description: 'heading | paragraph | list-item | task | code | quote.' },
+      { name: 'type', description: 'heading | paragraph | list-item | task | code | quote | cell | page.' },
       { name: 'level', description: 'Heading depth for a heading, nesting depth for a list item or a task; null otherwise.' },
       { name: 'checked', description: 'Done state of a task; null for every other type, so "unfinished" and "not a task" stay apart.' },
-      { name: 'arx_id', description: "The `.arx` block's own stable id; null for markdown and text, which carry no block identity." },
+      {
+        name: 'anchor_id',
+        description: "The unit inside the object, in its format's terms: an `.arx` block id, a sheet cell address; null for markdown and text.",
+      },
+      { name: 'part', description: 'The part of a composite object the block is in: a worksheet id, a PDF page number; null otherwise.' },
       { name: 'occurrence', description: 'How many earlier blocks of this document already had this exact content; 0 for the first.' },
       { name: 'content', description: 'Flat text of the block — what a snippet shows.' },
       { name: 'tsv', description: `Generated from content under the '${FTS_CONFIG}' configuration.` },
@@ -224,7 +238,7 @@ export const SCHEMA_TABLES: readonly SqlSchemaTable[] = [
     name: 'index_meta',
     description: 'Bookkeeping: schema version and the state of the last walk. One row per key.',
     columns: [
-      { name: 'key', description: `${SCHEMA_VERSION_KEY} | last_scan_started_at | last_scan_finished_at | scan_cursor.` },
+      { name: 'key', description: `${SCHEMA_VERSION_KEY} | ${EXTRACTORS_KEY} | last_scan_started_at | last_scan_finished_at | scan_cursor.` },
       { name: 'value', description: 'Value as a string — every reader knows its own key.' },
     ],
   },

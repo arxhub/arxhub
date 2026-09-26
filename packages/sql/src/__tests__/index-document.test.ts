@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import type { Extraction } from '../extractor'
 import { indexDocument, removeDocument, removeDocumentsUnder } from '../index-document'
-import { parseDocument } from '../parse-document'
+import { assembleDocument, parseDocument } from '../parse-document'
 import { openSqlIndex } from '../pglite-index'
 import type { SqlIndex } from '../types'
 
@@ -12,6 +13,11 @@ const encoder = new TextEncoder()
 
 function write(path: string, lines: readonly string[]): Promise<void> {
   return indexDocument(index, parseDocument(path, encoder.encode(lines.join('\n')), { size: 100, mtime: 1, ctime: 1 }))
+}
+
+// A contributed format's record, without the format: storage does not care who produced the extraction.
+function writeExtraction(path: string, extraction: Extraction, mtime = 1): Promise<void> {
+  return indexDocument(index, assembleDocument(path, 'fixture', extraction, encoder.encode(`${path}@${mtime}`), { size: 10, mtime, ctime: 1 }))
 }
 
 async function rows<R>(sql: string, params: unknown[] = []): Promise<R[]> {
@@ -63,38 +69,37 @@ describe('indexDocument', () => {
     expect(document).toEqual({ title: 'Пример', kind: 'markdown', frontmatter: { title: 'Пример', tags: ['alpha'] } })
   })
 
-  it('writes the .arx block identity and the occurrence of a repeated line', async () => {
-    const tree = {
-      version: 1,
-      doc: {
-        type: 'doc',
-        content: [
-          { type: 'paragraph', attrs: { arxId: 'aaa' }, content: [{ type: 'text', text: 'Повтор' }] },
-          { type: 'paragraph', attrs: { arxId: 'bbb' }, content: [{ type: 'text', text: 'Повтор' }] },
-        ],
-      },
-    }
-    await indexDocument(index, parseDocument('notes/tree.arx', encoder.encode(JSON.stringify(tree)), { size: 10, mtime: 1, ctime: 1 }))
+  it('writes the anchor of a contributed block and the occurrence of a repeated line', async () => {
+    await writeExtraction('notes/tree.fx', {
+      blocks: [
+        { type: 'paragraph', content: 'Повтор', anchor: { id: 'aaa' } },
+        { type: 'paragraph', content: 'Повтор', anchor: { id: 'bbb' } },
+        { type: 'cell', content: 'Значение', anchor: { id: 'B3', part: 'sheet-1' } },
+      ],
+    })
 
     expect(
-      await rows<{ arx_id: string | null; occurrence: number }>('SELECT arx_id, occurrence FROM block WHERE doc_path = $1 ORDER BY ordinal', [
-        'notes/tree.arx',
-      ]),
+      await rows<{ anchor_id: string | null; part: string | null; occurrence: number }>(
+        'SELECT anchor_id, part, occurrence FROM block WHERE doc_path = $1 ORDER BY ordinal',
+        ['notes/tree.fx'],
+      ),
     ).toEqual([
-      { arx_id: 'aaa', occurrence: 0 },
-      { arx_id: 'bbb', occurrence: 1 },
+      { anchor_id: 'aaa', part: null, occurrence: 0 },
+      { anchor_id: 'bbb', part: null, occurrence: 1 },
+      { anchor_id: 'B3', part: 'sheet-1', occurrence: 0 },
     ])
 
     // Markdown carries no such identity — only the occurrence is available.
     await write('notes/dup.md', ['Повтор', '', 'Другое', '', 'Повтор'])
     expect(
-      await rows<{ arx_id: string | null; occurrence: number }>('SELECT arx_id, occurrence FROM block WHERE doc_path = $1 ORDER BY ordinal', [
-        'notes/dup.md',
-      ]),
+      await rows<{ anchor_id: string | null; occurrence: number }>(
+        'SELECT anchor_id, occurrence FROM block WHERE doc_path = $1 ORDER BY ordinal',
+        ['notes/dup.md'],
+      ),
     ).toEqual([
-      { arx_id: null, occurrence: 0 },
-      { arx_id: null, occurrence: 0 },
-      { arx_id: null, occurrence: 1 },
+      { anchor_id: null, occurrence: 0 },
+      { anchor_id: null, occurrence: 0 },
+      { anchor_id: null, occurrence: 1 },
     ])
   })
 
@@ -150,24 +155,12 @@ describe('indexDocument', () => {
   // A-48: a properties block writes onto `document` (favorite, subject_*) and into its own `property`
   // table — one row per field, dropped and rewritten whole like `block`/`tag`/`ref` on every reindex.
   it('writes a properties block onto document and into property', async () => {
-    const arx = {
-      version: 1,
-      doc: {
-        type: 'doc',
-        content: [
-          {
-            type: 'properties',
-            attrs: {
-              tags: [],
-              favorite: true,
-              fields: [{ key: 'status', value: 'done' }],
-              subject: { path: 'photo.jpg', fileId: 'file-1' },
-            },
-          },
-        ],
-      },
-    }
-    await indexDocument(index, parseDocument('photo.jpg.arx', encoder.encode(JSON.stringify(arx)), { size: 10, mtime: 1, ctime: 1 }))
+    await writeExtraction('photo.jpg.arx', {
+      blocks: [],
+      favorite: true,
+      properties: [{ key: 'status', value: 'done' }],
+      subject: { path: 'photo.jpg', fileId: 'file-1' },
+    })
 
     const [document] = await rows<{ favorite: boolean; subject_path: string | null; subject_file_id: string | null }>(
       'SELECT favorite, subject_path, subject_file_id FROM document WHERE path = $1',
@@ -180,15 +173,8 @@ describe('indexDocument', () => {
   })
 
   it('replaces the property rows of the previous version whole', async () => {
-    const withOneField = (value: string) => ({
-      version: 1,
-      doc: {
-        type: 'doc',
-        content: [{ type: 'properties', attrs: { tags: [], favorite: false, fields: [{ key: 'k', value }] } }],
-      },
-    })
-    await indexDocument(index, parseDocument('a.arx', encoder.encode(JSON.stringify(withOneField('one'))), { size: 1, mtime: 1, ctime: 1 }))
-    await indexDocument(index, parseDocument('a.arx', encoder.encode(JSON.stringify(withOneField('two'))), { size: 1, mtime: 2, ctime: 1 }))
+    await writeExtraction('a.arx', { blocks: [], properties: [{ key: 'k', value: 'one' }] }, 1)
+    await writeExtraction('a.arx', { blocks: [], properties: [{ key: 'k', value: 'two' }] }, 2)
 
     expect(await rows<{ value: string }>('SELECT value FROM property WHERE doc_path = $1', ['a.arx'])).toEqual([{ value: 'two' }])
   })
@@ -210,11 +196,7 @@ describe('removeDocument', () => {
   })
 
   it('takes its property rows with it', async () => {
-    const arx = {
-      version: 1,
-      doc: { type: 'doc', content: [{ type: 'properties', attrs: { tags: [], favorite: false, fields: [{ key: 'k', value: 'v' }] } }] },
-    }
-    await indexDocument(index, parseDocument('a.arx', encoder.encode(JSON.stringify(arx)), { size: 1, mtime: 1, ctime: 1 }))
+    await writeExtraction('a.arx', { blocks: [], properties: [{ key: 'k', value: 'v' }] })
     await removeDocument(index, 'a.arx')
 
     expect(await rows('SELECT 1 FROM property')).toEqual([])

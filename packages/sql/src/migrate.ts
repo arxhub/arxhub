@@ -1,4 +1,4 @@
-import { CONTENT_SCHEMA_DDL, CONTENT_TABLES, INDEX_META_DDL, SCHEMA_VERSION_KEY, SQL_SCHEMA_VERSION } from './schema'
+import { CONTENT_SCHEMA_DDL, CONTENT_TABLES, EXTRACTORS_KEY, INDEX_META_DDL, SCHEMA_VERSION_KEY, SQL_SCHEMA_VERSION } from './schema'
 import type { SqlExecutor, SqlIndex } from './types'
 
 // The version the index was written by, or null when there is none or it is not an integer. An
@@ -37,4 +37,28 @@ export async function migrate(index: SqlIndex): Promise<void> {
       String(SQL_SCHEMA_VERSION),
     ])
   })
+}
+
+// Empties the index when the set of extractors it was read under is not the one running now — a format
+// owner switched off, a new one added, or an owner's `version` bumped. The stat check never re-reads a
+// file whose size and mtime still match, so without this a PDF indexed while preview was off would stay
+// metadata-only forever. Answers whether rows read under another set were thrown away; a fresh index
+// has no signature yet and nothing to throw away.
+export async function reconcileExtractors(index: SqlIndex, signature: string): Promise<boolean> {
+  const { rows } = await index.query<{ value: string }>('SELECT value FROM index_meta WHERE key = $1', [EXTRACTORS_KEY])
+  const stored = rows[0]?.value
+  if (stored === signature) return false
+
+  await index.transaction(async (tx) => {
+    for (const table of CONTENT_TABLES) {
+      await tx.exec(`DELETE FROM ${table}`)
+    }
+    // The cursor and the scan timestamps describe the walk that filled the rows just deleted.
+    await tx.query('DELETE FROM index_meta WHERE key NOT IN ($1, $2)', [SCHEMA_VERSION_KEY, EXTRACTORS_KEY])
+    await tx.query('INSERT INTO index_meta (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = excluded.value', [
+      EXTRACTORS_KEY,
+      signature,
+    ])
+  })
+  return stored != null
 }

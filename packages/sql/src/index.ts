@@ -1,11 +1,10 @@
-export { type ArxParse, parseArx } from './arx'
 export {
-  ARX_EXTENSIONS,
   type BlockType,
+  BUILTIN_DOCUMENT_EXTENSIONS,
+  BUILTIN_KINDS,
   blockId,
-  DOCUMENT_EXTENSIONS,
+  builtinKind,
   type DocumentKind,
-  detectDocumentKind,
   documentDir,
   documentExtension,
   documentPath,
@@ -14,6 +13,7 @@ export {
   MARKDOWN_EXTENSIONS,
   type ParsedBlock,
   type ParsedDocument,
+  type ParsedProperty,
   type ParsedRef,
   type ParsedTag,
   type RefKind,
@@ -28,17 +28,38 @@ export {
   sqlIndexOpenErrorSchema,
 } from './errors'
 export {
+  type DocumentExtractor,
+  type ExtractedAnchor,
+  type ExtractedBlock,
+  type ExtractInput,
+  type Extraction,
+  extractorKind,
+  extractorSignature,
+  linkExtensions,
+  matchingExtractors,
+  resolveExtractor,
+} from './extractor'
+export {
   type FrontmatterSplit,
   frontmatterTags,
   frontmatterTitle,
   parseFrontmatter,
   splitFrontmatter,
 } from './frontmatter'
-export { indexDocument, refCandidates, removeDocument, removeDocumentsUnder, resolveRefTargets, writeDocument } from './index-document'
+export {
+  indexDocument,
+  refCandidates,
+  removeDocument,
+  removeDocumentsUnder,
+  resolveRefTargets,
+  type WriteDocumentOptions,
+  writeDocument,
+} from './index-document'
 export {
   type CreateIndexerOptions,
   createIndexer,
   DEFAULT_BATCH_SIZE,
+  DEFAULT_MAX_EXTRACTED_FILE_SIZE,
   DEFAULT_MAX_FILE_SIZE,
   type Indexer,
   type IndexerOptions,
@@ -50,13 +71,14 @@ export {
 } from './indexer'
 export { parseMarkdownBlocks, type SourceBlock } from './markdown'
 export { dedupeRefs, extractRefs, extractTags, isIntraVaultTarget, stripInlineMarkup } from './markup'
-export { migrate, readSchemaVersion } from './migrate'
-export { metadataDocument, parseDocument } from './parse-document'
+export { migrate, readSchemaVersion, reconcileExtractors } from './migrate'
+export { type AssembleOptions, assembleDocument, extractDocument, metadataDocument, parseDocument } from './parse-document'
 export { FOLDER_MARKER_FILE, isIndexablePath, METADATA_FILE_SUFFIX, matchesGlob } from './path-filter'
 export { openSqlIndex } from './pglite-index'
 export {
   CONTENT_SCHEMA_DDL,
   CONTENT_TABLES,
+  EXTRACTORS_KEY,
   FTS_CONFIG,
   INDEX_META_DDL,
   SCHEMA_TABLES,

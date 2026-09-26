@@ -38,9 +38,12 @@ export interface SearchOptions {
 export interface SearchSnippet {
   blockId: string
   ordinal: number
-  // The `.arx` block's own stable id; null for markdown and text. An opener that has this can jump to
-  // the exact block a hit matched instead of the first one that reads the same.
-  arxId: string | null
+  // The unit inside the object the hit is, in its format's terms (an `.arx` block id, a cell address);
+  // null for markdown and text. An opener that has this can jump to the exact place a hit matched
+  // instead of the first one that reads the same.
+  anchorId: string | null
+  // The part of a composite object the hit is in (a worksheet id, a PDF page number); null otherwise.
+  part: string | null
   // How many earlier blocks of the document already had this exact content — the fallback anchor for a
   // format with no block identity (markdown).
   occurrence: number
@@ -81,7 +84,8 @@ interface BlockRow {
   id: string
   doc_path: string
   ordinal: number
-  arx_id: string | null
+  anchor_id: string | null
+  part: string | null
   occurrence: number
 }
 
@@ -220,12 +224,12 @@ async function readSnippets(
     const query = `to_tsquery('${FTS_CONFIG}', ${params.add(compiled.tsQuery)})`
     const { rows } = await index.query<SnippetRow>(
       `WITH matched AS (
-         SELECT b.id, b.doc_path, b.ordinal, b.arx_id, b.occurrence, b.content,
+         SELECT b.id, b.doc_path, b.ordinal, b.anchor_id, b.part, b.occurrence, b.content,
                 row_number() OVER (PARTITION BY b.doc_path ORDER BY b.ordinal) AS rn
          FROM block b
          WHERE b.doc_path = ANY(${params.add([...paths])}::text[]) AND b.tsv @@ ${query}
        )
-       SELECT m.id, m.doc_path, m.ordinal, m.arx_id, m.occurrence,
+       SELECT m.id, m.doc_path, m.ordinal, m.anchor_id, m.part, m.occurrence,
               ts_headline('${FTS_CONFIG}', m.content, ${query}, ${params.add(headlineOptions(snippetWords))}::text) AS text
        FROM matched m
        WHERE m.rn <= ${params.add(snippetsPerDocument)}
@@ -234,7 +238,7 @@ async function readSnippets(
     )
     for (const row of rows) {
       const list = found.get(row.doc_path) ?? []
-      list.push({ blockId: row.id, ordinal: row.ordinal, arxId: row.arx_id, occurrence: row.occurrence, text: row.text })
+      list.push({ blockId: row.id, ordinal: row.ordinal, anchorId: row.anchor_id, part: row.part, occurrence: row.occurrence, text: row.text })
       found.set(row.doc_path, list)
     }
   }
@@ -244,7 +248,7 @@ async function readSnippets(
 
   const params = new Params()
   const { rows } = await index.query<ContentRow>(
-    `SELECT DISTINCT ON (b.doc_path) b.id, b.doc_path, b.ordinal, b.arx_id, b.occurrence, b.content
+    `SELECT DISTINCT ON (b.doc_path) b.id, b.doc_path, b.ordinal, b.anchor_id, b.part, b.occurrence, b.content
      FROM block b
      WHERE b.doc_path = ANY(${params.add(missing)}::text[])
      ORDER BY b.doc_path, b.ordinal`,
@@ -252,7 +256,14 @@ async function readSnippets(
   )
   for (const row of rows) {
     found.set(row.doc_path, [
-      { blockId: row.id, ordinal: row.ordinal, arxId: row.arx_id, occurrence: row.occurrence, text: firstWords(row.content, snippetWords) },
+      {
+        blockId: row.id,
+        ordinal: row.ordinal,
+        anchorId: row.anchor_id,
+        part: row.part,
+        occurrence: row.occurrence,
+        text: firstWords(row.content, snippetWords),
+      },
     ])
   }
 

@@ -1,6 +1,7 @@
 import type { PluginConfig } from '@arxhub/config'
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import {
+  type DocumentExtractor,
   type Indexer,
   parseSearchQuery,
   SCHEMA_TABLES,
@@ -16,6 +17,7 @@ import {
 } from '@arxhub/sql'
 import { ref, shallowRef } from 'vue'
 import { searchIndexUnavailable } from './errors'
+import { ExtractorRegistry } from './extractor-registry'
 import { DEFAULT_SEARCH_SETTINGS, reindexRequired, type SearchSettings } from './search-config'
 
 // opening — the index is being opened, nothing can be asked yet. ready — it answers. scanning — it
@@ -59,6 +61,9 @@ export class SearchExtension extends Extension {
   // The plugin's own scoped config service, assigned in configure(). The settings section builds its form
   // from SearchConfigSchema and persists through this, so it can never write outside the plugin's sandbox.
   config!: PluginConfig
+  // The formats read beyond markdown and text. A format owner registers in its own configure(), behind
+  // `extensions.has(SearchExtension)` — search is optional, and the owner must not need it to load.
+  readonly extractors = new ExtractorRegistry()
 
   // Resolves once the open attempt has finished — either way. A plugin asking a question during boot must
   // not be told "unavailable" merely because it was early (BE 2.1), so the query paths await this first.
@@ -84,6 +89,11 @@ export class SearchExtension extends Extension {
   // line, a disabled control) still needs a way to know the answer is final.
   whenSettled(): Promise<void> {
     return this.opened
+  }
+
+  // Returns the unregister; the owner calls it in its stop().
+  registerExtractor(extractor: DocumentExtractor): () => void {
+    return this.extractors.register(extractor)
   }
 
   // What the tables and columns of the index MEAN — the half a database cannot answer about itself.

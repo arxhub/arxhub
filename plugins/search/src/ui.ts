@@ -1,5 +1,7 @@
+export { default as DocumentFinderResults } from './ui/DocumentFinderResults.vue'
 export { default as SearchLayout } from './ui/SearchLayout.vue'
 export { default as SearchRail } from './ui/SearchRail.vue'
+export { default as SearchResultList } from './ui/SearchResultList.vue'
 export { default as SearchSettingsPage } from './ui/SearchSettingsPage.vue'
 export { default as SqlConsolePanel } from './ui/SqlConsolePanel.vue'
 export {

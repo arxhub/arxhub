@@ -9,8 +9,11 @@ import type { Json } from '@arxhub/plugin-shell'
 // and neither of them needs an editor component. A module with no `.vue` in it is also the only way to
 // keep this unit-tested.
 export interface BlockAnchor {
+  // The unit inside the object, in its format's terms: an `.arx` block id, a sheet cell address ('B3').
   blockId?: string
   documentId?: string
+  // The part of a composite object: a worksheet id, a PDF page number ('12').
+  part?: string
   // What matched the query. Its bounds come from `snippetSegments` in `@arxhub/sql`.
   text: string
   // A hint about which one: how many identical matches came before this one in the document. Zero is
@@ -37,9 +40,10 @@ export function blockAnchorOf(at: Json | undefined): BlockAnchor | null {
   const text = record.text
   const blockId = typeof record.blockId === 'string' && record.blockId ? record.blockId : undefined
   const documentId = typeof record.documentId === 'string' && record.documentId ? record.documentId : undefined
-  if (typeof text !== 'string' || (!text.trim() && !blockId && !documentId)) return null
+  const part = typeof record.part === 'string' && record.part ? record.part : undefined
+  if (typeof text !== 'string' || (!text.trim() && !blockId && !documentId && !part)) return null
   const skip = typeof record.skip === 'number' && Number.isFinite(record.skip) && record.skip > 0 ? Math.floor(record.skip) : undefined
-  return { text, ...(skip ? { skip } : {}), ...(blockId ? { blockId } : {}), ...(documentId ? { documentId } : {}) }
+  return { text, ...(skip ? { skip } : {}), ...(blockId ? { blockId } : {}), ...(documentId ? { documentId } : {}), ...(part ? { part } : {}) }
 }
 
 // A snapshot arrived from the previous session, which means from the previous build: it is read as

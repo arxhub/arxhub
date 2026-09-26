@@ -21,6 +21,14 @@ describe('the address of a place inside a note', () => {
     })
   })
 
+  // A PDF page or a worksheet: the part alone names the place, with nothing to match inside it yet.
+  test('keeps the part of a composite object, and accepts it as the only address', () => {
+    expect(blockAnchorOf({ text: 'total', blockId: 'B3', part: 'sheet-1' })).toEqual({ text: 'total', blockId: 'B3', part: 'sheet-1' })
+    expect(blockAnchorOf({ text: '', part: '12' })).toEqual({ text: '', part: '12' })
+    expect(blockAnchorOf({ text: '', part: '' })).toBeNull()
+    expect(blockAnchorOf({ text: 'total', part: 12 })).toEqual({ text: 'total' })
+  })
+
   test('an empty text is still a valid anchor once a block id names the place', () => {
     expect(blockAnchorOf({ text: '', blockId: 'b1' })).toEqual({ text: '', blockId: 'b1' })
   })

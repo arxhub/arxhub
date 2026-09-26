@@ -1,5 +1,15 @@
+export type {
+  DocumentExtractor,
+  ExtractedAnchor,
+  ExtractedBlock,
+  ExtractInput,
+  Extraction,
+  ParsedProperty,
+  ParsedRef,
+} from '@arxhub/sql'
 export { SEARCH_SETTINGS_SECTION, SEARCH_TYPE_ID, SQL_CONSOLE_PANEL } from './contributions'
 export { searchIndexUnavailable, searchIndexUnavailableErrorSchema } from './errors'
+export { ExtractorRegistry } from './extractor-registry'
 export { createIndexQueue, DEFAULT_DEBOUNCE_MS, type IndexQueue, type IndexQueueOptions } from './index-queue'
 export {
   DEFAULT_SEARCH_SETTINGS,

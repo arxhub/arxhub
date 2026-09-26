@@ -42,6 +42,13 @@ export interface DocumentViewer {
   reveal?(path: string, anchor: BlockAnchor): boolean
 }
 
+// What finds documents by their content, under the type's own find field. Contributed by search, which
+// is optional: while nothing has set one, the navigation draws no field at all. `results` takes a
+// `query: string` prop and emits `opened` once a result was opened.
+export interface DocumentFinder {
+  results: Component
+}
+
 type Creator = () => Promise<string | null>
 // Runs before an object opens, with its path and selected viewer. What sync uses to bring a file this
 // device left in the cloud onto disk first — the viewer that mounts next reads from disk and knows
@@ -67,6 +74,7 @@ export class DocumentsExtension extends Extension {
   // The type's navigation. Reactive because the explorer sets it in its own `configure()` — after the
   // type is already registered — and the wrapper component has to see that.
   readonly nav = shallowRef<Component | null>(null)
+  readonly finder = shallowRef<DocumentFinder | null>(null)
   // What creates a note when somebody knows the place better. The explorer does: it has a selected
   // folder and a tree that has to show the result.
   private creator: Creator | null = null
@@ -123,6 +131,10 @@ export class DocumentsExtension extends Extension {
 
   setNav(component: Component): void {
     this.nav.value = markRaw(component)
+  }
+
+  setFinder(finder: DocumentFinder | null): void {
+    this.finder.value = finder == null ? null : markRaw({ results: markRaw(finder.results) })
   }
 
   setCreator(creator: Creator): void {

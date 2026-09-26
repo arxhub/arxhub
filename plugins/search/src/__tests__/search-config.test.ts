@@ -1,10 +1,16 @@
-import { DEFAULT_FUZZY_THRESHOLD, DEFAULT_MAX_FILE_SIZE, DEFAULT_MAX_ROWS, DEFAULT_TIMEOUT_MS } from '@arxhub/sql'
+import {
+  DEFAULT_FUZZY_THRESHOLD,
+  DEFAULT_MAX_EXTRACTED_FILE_SIZE,
+  DEFAULT_MAX_FILE_SIZE,
+  DEFAULT_MAX_ROWS,
+  DEFAULT_TIMEOUT_MS,
+} from '@arxhub/sql'
 import { Value } from '@sinclair/typebox/value'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SEARCH_SETTINGS, reindexRequired, type SearchConfig, SearchConfigSchema, toSearchSettings } from '../search-config'
 
 describe('the settings schema', () => {
-  it('declares exactly the eight settings the plugin owns, dotted so the form shows where each belongs', () => {
+  it('declares exactly the nine settings the plugin owns, dotted so the form shows where each belongs', () => {
     expect(Object.keys(SearchConfigSchema.properties)).toEqual([
       'sql.maxRows',
       'sql.timeoutMs',
@@ -13,13 +19,14 @@ describe('the settings schema', () => {
       'search.fuzzyThreshold',
       'index.debounceMs',
       'index.maxFileSize',
+      'index.maxExtractedFileSize',
       'index.exclude',
     ])
   })
 
   it('groups the fields so the generated form reads as three sections in declaration order', () => {
     const groups = Object.values(SearchConfigSchema.properties).map((field) => (field as { group?: string }).group)
-    expect(groups).toEqual(['SQL console', 'SQL console', 'Search', 'Search', 'Search', 'Index', 'Index', 'Index'])
+    expect(groups).toEqual(['SQL console', 'SQL console', 'Search', 'Search', 'Search', 'Index', 'Index', 'Index', 'Index'])
   })
 
   it('names no widget: every field describes its data and lets the settings kit choose the control', () => {
@@ -38,6 +45,7 @@ describe('the settings schema', () => {
       fuzzyThreshold: DEFAULT_FUZZY_THRESHOLD,
       debounceMs: 400,
       maxFileSize: DEFAULT_MAX_FILE_SIZE,
+      maxExtractedFileSize: DEFAULT_MAX_EXTRACTED_FILE_SIZE,
       exclude: [],
     })
   })
@@ -96,6 +104,12 @@ describe('deciding whether a saved change costs a rebuild', () => {
 
   it('rebuilds when the size limit changes: a file past it holds only its metadata', () => {
     expect(reindexRequired(base, { ...base, maxFileSize: 1024 })).toBe(true)
+    expect(reindexRequired(base, { ...base, maxExtractedFileSize: 1024 })).toBe(true)
+  })
+
+  it('sanitises the extracted-file limit like the prose one', () => {
+    expect(toSearchSettings({ 'index.maxExtractedFileSize': 0 }).maxExtractedFileSize).toBe(DEFAULT_MAX_EXTRACTED_FILE_SIZE)
+    expect(toSearchSettings({ 'index.maxExtractedFileSize': 4096.7 }).maxExtractedFileSize).toBe(4096)
   })
 
   it('does not rebuild for a value that only changes how the index is READ', () => {

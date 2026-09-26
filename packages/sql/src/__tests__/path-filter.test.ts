@@ -50,16 +50,19 @@ describe('refCandidates', () => {
       'notes/deep/target',
       'notes/deep/target.md',
       'notes/deep/target.markdown',
-      'notes/deep/target.arx',
       'notes/deep/target.txt',
       'notes/deep/target.text',
       'target',
       'target.md',
       'target.markdown',
-      'target.arx',
       'target.txt',
       'target.text',
     ])
+  })
+
+  it('tries the extensions it is given, in their order', () => {
+    expect(refCandidates('', 'target', ['md', 'arx'])).toEqual(['target', 'target.md', 'target.arx'])
+    expect(refCandidates('', 'target.arx', ['md', 'arx'])).toEqual(['target.arx'])
   })
 
   it('keeps an extension the link already carries', () => {

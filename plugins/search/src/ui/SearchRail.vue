@@ -1,27 +1,28 @@
 <script setup lang="ts">
-import { DEFAULT_SEARCH_LIMIT, SEARCH_QUALIFIERS, type SearchSnippet, snippetSegments } from '@arxhub/sql'
-// biome-ignore lint/correctness/noUnusedImports: ScrollArea is used in template
-import { IconButton, Input, Row, ScrollArea, SectionLabel, StatusDot, Strip } from '@arxhub/uikit/core'
+import { DEFAULT_SEARCH_LIMIT, SEARCH_QUALIFIERS } from '@arxhub/sql'
+// biome-ignore lint/style/useImportType: SearchField is used in the template and as InstanceType<typeof SearchField>
+import { IconButton, ScrollArea, SearchField, SectionLabel, StatusDot, Strip } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { SearchExtension } from '../search-extension'
 import SearchFilters from './SearchFilters.vue'
+// biome-ignore lint/style/useImportType: used in the template and as InstanceType<typeof SearchResultList>
+import SearchResultList from './SearchResultList.vue'
 import { createSearchController } from './search-controller'
 import { useSearchPreferences } from './search-preferences'
 import { useIndexStatus } from './use-index-status'
 import { useOpenConsole } from './use-open-console'
-import { useOpenDocument } from './use-open-document'
 
 const arxhub = useArxHub()
 const search = arxhub.extensions.get(SearchExtension)
 const preferences = useSearchPreferences()
-const workspace = useOpenDocument()
 const sqlConsole = useOpenConsole()
 // The same status line and the same rebuild control the settings section shows — one wording for both.
 const index = useIndexStatus()
 const touch = useShellFrame() === 'mobile'
 
 const query = ref('')
+const selected = ref(-1)
 const controller = createSearchController({
   search: (input, options) => search.search(input, options),
   query,
@@ -34,7 +35,6 @@ const controller = createSearchController({
   limit: DEFAULT_SEARCH_LIMIT,
   onError: (error) => arxhub.logger.error('[search] the search failed', error),
 })
-onUnmounted(controller.dispose)
 
 // What each qualifier narrows by. Driven off the parser's own list, so the hint cannot promise a filter
 // the parser does not understand — and a qualifier added there without a line here shows up unexplained
@@ -51,114 +51,30 @@ const QUALIFIER_DOES: Record<(typeof SEARCH_QUALIFIERS)[number], string> = {
 
 const QUALIFIER_HINTS = SEARCH_QUALIFIERS.map((name) => ({ name, does: QUALIFIER_DOES[name] }))
 
-// One flat list of what the arrow keys move over: a row per document, then a row per snippet under it.
-// Flat because that is what a listbox is — the grouping is what the rows look like, not how they nest.
-interface ResultEntry {
-  key: string
-  kind: 'document' | 'snippet'
-  path: string
-  title: string
-  // Where in the document to open. A document row carries its first snippet's block, so pressing Enter on
-  // the heading still lands where the match is.
-  blockId: string | null
-  snippet: SearchSnippet | null
-}
+const field = ref<InstanceType<typeof SearchField> | null>(null)
+const list = ref<InstanceType<typeof SearchResultList> | null>(null)
 
-const entries = computed((): ResultEntry[] => {
-  const list: ResultEntry[] = []
-  for (const found of controller.documents.value) {
-    list.push({
-      key: found.path,
-      kind: 'document',
-      path: found.path,
-      title: found.title,
-      blockId: found.snippets[0]?.blockId ?? null,
-      snippet: null,
-    })
-    for (const snippet of found.snippets) {
-      list.push({
-        key: `${found.path}#${snippet.blockId}`,
-        kind: 'snippet',
-        path: found.path,
-        title: found.title,
-        blockId: snippet.blockId,
-        snippet,
-      })
-    }
-  }
-  return list
-})
+// A list stays on screen while the query is wrong (FR-232), and "nothing matches" only answers a search
+// that ran.
+const showResults = computed(
+  () => controller.documents.value.length > 0 || (controller.answered.value !== '' && !controller.resultsError.value),
+)
 
-const selected = ref(-1)
-const listEl = ref<HTMLElement | null>(null)
-const headEl = ref<HTMLElement | null>(null)
-
-function optionId(index: number): string {
-  return `arxhub-search-result-${index}`
-}
-
-const activeDescendant = computed(() => (selected.value >= 0 ? optionId(selected.value) : undefined))
-
-// querySelector rather than a template ref on <Input>: the ref would be the component, and reaching
-// through it for the element it renders needs a cast that strict mode has no honest form for.
 function focusInput(): void {
-  headEl.value?.querySelector('input')?.focus()
-}
-
-// A refreshed list is a different list — keeping row four selected would move the selection to whatever
-// happens to be there now.
-watch(entries, () => {
-  selected.value = -1
-})
-
-watch(selected, async (index) => {
-  if (index < 0) return
-  await nextTick()
-  listEl.value?.querySelector(`#${optionId(index)}`)?.scrollIntoView({ block: 'nearest' })
-})
-
-function move(delta: number): void {
-  const total = entries.value.length
-  if (total === 0) return
-  const next = selected.value + delta
-  // Up from the first row goes back to where the query is typed, which is the only place above the list.
-  if (next < 0) {
-    focusInput()
-    return
-  }
-  selected.value = Math.min(next, total - 1)
+  field.value?.focus()
 }
 
 function enterList(): void {
-  if (entries.value.length === 0) return
-  selected.value = 0
-  listEl.value?.focus()
-}
-
-function openEntry(entry: ResultEntry): void {
-  const text = entry.snippet == null ? undefined : snippetSegments(entry.snippet.text).find((part) => part.match)?.text
-  // The block the snippet came from, when the index has one to give: the `.arx` block's own id ahead of
-  // everything else, the occurrence of a repeated markdown line as the fallback.
-  workspace.open(entry.path, {
-    text,
-    blockId: entry.snippet?.arxId ?? undefined,
-    occurrence: entry.snippet?.occurrence,
-  })
-}
-
-function openSelected(): void {
-  const entry = entries.value[selected.value]
-  if (entry != null) openEntry(entry)
-}
-
-function selectAndOpen(index: number): void {
-  selected.value = index
-  const entry = entries.value[index]
-  if (entry != null) openEntry(entry)
+  list.value?.enter()
 }
 
 // Escape means "never mind": the field goes back to empty and the cursor back into it, from wherever the
-// owner had got to in the list.
+// owner had got to in the list. Up from the first row only goes back to the field.
+function leaveList(reason: 'up' | 'escape'): void {
+  if (reason === 'escape') reset()
+  else focusInput()
+}
+
 function reset(): void {
   query.value = ''
   selected.value = -1
@@ -170,16 +86,18 @@ const countLabel = computed(() => {
   return total === 1 ? '1 document' : `${total} documents`
 })
 
-onMounted(focusInput)
+onUnmounted(controller.dispose)
 </script>
 
 <template>
   <div class="search-rail" :class="{ touch }">
-    <div ref="headEl" class="search-head">
-      <Input
+    <div class="search-head">
+      <SearchField
+        ref="field"
         v-model="query"
         placeholder="Search notes…"
         aria-label="Search"
+        autofocus
         :disabled="index.unavailable.value"
         @keydown.down.prevent="enterList"
         @keydown.esc.prevent="reset"
@@ -205,75 +123,14 @@ onMounted(focusInput)
       </template>
     </div>
 
-    <!-- The listbox is the element inside the scroller, not the scroller: the viewport's own role belongs
-         to the scroll area, and aria-activedescendant has to sit on the element that holds focus. -->
-    <ScrollArea v-if="entries.length > 0" class="results" viewport-class="results-viewport" content-class="results-content">
-      <div
-        ref="listEl"
-        class="results-list"
-        role="listbox"
-        aria-label="Search results"
-        tabindex="0"
-        :aria-activedescendant="activeDescendant"
-        @keydown.down.prevent="move(1)"
-        @keydown.up.prevent="move(-1)"
-        @keydown.enter.prevent="openSelected"
-        @keydown.esc.prevent="reset"
-      >
-        <template v-for="(entry, index) in entries" :key="entry.key">
-          <Row
-            v-if="entry.kind === 'document'"
-            :id="optionId(index)"
-            as="button"
-            type="button"
-            wrap
-            tabindex="-1"
-            class="document"
-            :selected="index === selected"
-            role="option"
-            :aria-selected="index === selected"
-            @click="selectAndOpen(index)"
-          >
-            <span class="doc-text">
-              <span class="doc-title">{{ entry.title }}</span>
-              <span class="doc-path">{{ entry.path }}</span>
-            </span>
-          </Row>
-          <!-- A snippet sits one level in under the document it belongs to: the grouping is what the rows
-               look like, not how they nest, so it is the row role's own indent rather than a margin. -->
-          <Row
-            v-else
-            :id="optionId(index)"
-            as="button"
-            type="button"
-            wrap
-            :depth="1"
-            tabindex="-1"
-            class="snippet"
-            :selected="index === selected"
-            role="option"
-            :aria-selected="index === selected"
-            @click="selectAndOpen(index)"
-          >
-            <!-- Interpolated, segment by segment: the snippet arrives with control characters around each
-                 match, so anything in the note that looks like markup stays text on the way to the page.
-                 One wrapper around the lot, because the row role puts a gap between its children and a
-                 snippet is one run of text. -->
-            <span class="snippet-text"
-              ><span v-for="(segment, position) in snippetSegments(entry.snippet?.text ?? '')" :key="position" :class="{ match: segment.match }">{{
-                segment.text
-              }}</span></span
-            >
-          </Row>
-        </template>
-      </div>
-    </ScrollArea>
-
-    <!-- Outside the list rather than a row inside it: a listbox holds options, and "nothing matches" is not
-         something to select. It says what was searched, not what is currently in the field. -->
-    <p v-else-if="controller.answered.value !== '' && !controller.resultsError.value" class="empty">
-      Nothing matches <span class="term">{{ controller.answered.value }}</span>
-    </p>
+    <SearchResultList
+      v-if="showResults"
+      ref="list"
+      v-model:selected="selected"
+      :documents="controller.documents.value"
+      :answered="controller.answered.value"
+      @leave="leaveList"
+    />
     <!-- Nothing has been asked yet. This space held an empty filler, with the qualifier list dumped
          under the field as a bare "title: path: tag: ext: in:" — which names the filters without saying
          what any of them does. Same facts, in the space that was already going spare. -->
@@ -367,31 +224,6 @@ onMounted(focusInput)
   color: var(--danger-11);
 }
 
-.results {
-  flex: 1;
-}
-
-.results :deep(.results-content) {
-  display: flex;
-  flex-direction: column;
-}
-
-.results-list {
-  flex: 1 0 auto;
-  padding: 4px 0;
-}
-
-/* The ring is drawn on the viewport, where it sat before: on the list itself it would run the list's full
-   length and be cut off by the viewport wherever the list is taller than it. */
-.results:has(.results-list:focus-visible) :deep(.results-viewport) {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -1px;
-}
-
-.results-list:focus-visible {
-  outline: none;
-}
-
 /* The space before anything has been asked. It still takes the slack — the index status stays pinned to
    the bottom of the rail — but it now spends it on the syntax rather than on nothing. */
 .results-filler {
@@ -428,76 +260,6 @@ onMounted(focusInput)
   margin: 0;
   color: var(--gray-10);
   line-height: var(--line-height-snug);
-}
-
-/* The two lines of a result, stacked inside the row's box: the row owns its height and inset, this owns
-   how a title and a path sit in it. */
-.doc-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
-}
-
-.doc-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-}
-
-.doc-path {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--gray-10);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-}
-
-.search-rail.touch .doc-path {
-  font-size: var(--font-size-sm);
-}
-
-/* Quoted note content, not a label: a step down the ramp and a step down the greys, so the titles stay
-   the structure of the list. Only while the row is not the selected one — selection owns its colour. */
-.snippet-text {
-  min-width: 0;
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-relaxed);
-}
-
-.search-rail.touch .snippet-text {
-  font-size: var(--font-size-sm);
-}
-
-.snippet:not(.selected) .snippet-text {
-  color: var(--gray-11);
-}
-
-/* The accent is spent on selection, so a match inside a snippet is weight and a wash, not another colour
-   competing with the selected row. */
-.snippet .match {
-  background: var(--accent-4);
-  color: var(--accent-11);
-  font-weight: var(--font-weight-medium);
-}
-
-.empty {
-  flex: 1;
-  min-height: 0;
-  margin: 8px;
-  color: var(--gray-11);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-relaxed);
-}
-
-.empty .term {
-  font-family: var(--font-mono);
-  color: var(--gray-12);
 }
 
 .index-strip {

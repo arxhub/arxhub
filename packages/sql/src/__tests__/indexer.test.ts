@@ -6,7 +6,8 @@ import type { LogFn, Logger } from '@arxhub/logger'
 import { ScopedFileSystem, type VirtualFileSystem } from '@arxhub/vfs'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createIndexer, type Indexer, SCAN_CURSOR_KEY } from '../indexer'
+import type { DocumentExtractor } from '../extractor'
+import { createIndexer, type Indexer, type IndexerOptions, SCAN_CURSOR_KEY } from '../indexer'
 import { openSqlIndex } from '../pglite-index'
 import type { SqlIndex } from '../types'
 
@@ -56,8 +57,20 @@ class UnreadableFileVault extends ScopedFileSystem {
 
 let logger: CapturingLogger
 
-function indexer(vfs: VirtualFileSystem = vault, options: { batchSize?: number; exclude?: string[]; maxFileSize?: number } = {}): Indexer {
+function indexer(vfs: VirtualFileSystem = vault, options: IndexerOptions & { extractors?: () => readonly DocumentExtractor[] } = {}): Indexer {
   return createIndexer(index, vfs, { logger, ...options })
+}
+
+// A made-up binary-ish format: without its extractor the engine would read `.xyz` by metadata alone.
+function xyzExtractor(overrides: Partial<DocumentExtractor> = {}): DocumentExtractor {
+  return {
+    id: 'xyz',
+    version: 1,
+    extensions: ['.xyz'],
+    linkable: true,
+    extract: async (input) => ({ blocks: [{ type: 'page', content: input.text().toUpperCase(), anchor: { part: '1' } }] }),
+    ...overrides,
+  }
 }
 
 async function writeNote(path: string, lines: readonly string[], mtimeMs = 1_700_000_000_000): Promise<void> {
@@ -399,5 +412,113 @@ describe('configure', () => {
     await walk.scan()
 
     expect(await documentPaths()).toEqual(['notes/keep.md'])
+  })
+})
+
+describe('extractors', () => {
+  it('reads a file an extractor claims instead of skipping it as binary', async () => {
+    await writeNote('files/scan.xyz', ['бирюза'])
+    const extractors = [xyzExtractor()]
+
+    await indexer(vault, { extractors: () => extractors }).scan()
+
+    expect(await rows<{ kind: string; content: string }>(`SELECT kind, content FROM document WHERE path = 'files/scan.xyz'`)).toEqual([
+      { kind: 'xyz', content: 'БИРЮЗА' },
+    ])
+    expect(await rows<{ part: string }>(`SELECT part FROM block WHERE doc_path = 'files/scan.xyz'`)).toEqual([{ part: '1' }])
+  })
+
+  it('leaves the same file metadata-only when nothing claims it', async () => {
+    await writeNote('files/scan.xyz', ['бирюза'])
+
+    await indexer().scan()
+
+    expect(await rows<{ kind: string; content: string }>(`SELECT kind, content FROM document WHERE path = 'files/scan.xyz'`)).toEqual([
+      { kind: 'binary', content: '' },
+    ])
+  })
+
+  it('holds a claimed file to its own size limit, not the prose one', async () => {
+    await writeNote('files/big.xyz', ['x'.repeat(200)])
+    await writeNote('notes/big.md', ['x'.repeat(200)])
+    const extractors = [xyzExtractor()]
+
+    await indexer(vault, { extractors: () => extractors, maxFileSize: 64, maxExtractedFileSize: 1024 }).scan()
+
+    const contents = await rows<{ path: string; content: string }>('SELECT path, content FROM document ORDER BY path')
+    expect(contents.map((row) => [row.path, row.content.length])).toEqual([
+      ['files/big.xyz', 200],
+      ['notes/big.md', 0],
+    ])
+  })
+
+  it('indexes a claimed file past its limit by metadata, under the extractor kind', async () => {
+    await writeNote('files/big.xyz', ['x'.repeat(200)])
+    const extractors = [xyzExtractor()]
+
+    await indexer(vault, { extractors: () => extractors, maxExtractedFileSize: 64 }).scan()
+
+    expect(await rows<{ kind: string; content: string }>('SELECT kind, content FROM document')).toEqual([{ kind: 'xyz', content: '' }])
+  })
+
+  it('falls back to metadata when an extractor throws, and logs it', async () => {
+    await writeNote('files/bad.xyz', ['anything'])
+    const extractors = [
+      xyzExtractor({
+        extract: () => {
+          throw validation('broken file')
+        },
+      }),
+    ]
+
+    const status = await indexer(vault, { extractors: () => extractors }).scan()
+
+    expect(status.processed).toBe(1)
+    expect(await rows<{ content: string }>('SELECT content FROM document')).toEqual([{ content: '' }])
+    expect(logger.records.some((record) => record.level === 'warn')).toBe(true)
+  })
+
+  it('does not retry a failing extractor on a file that has not changed', async () => {
+    await writeNote('files/bad.xyz', ['anything'])
+    let calls = 0
+    const extractors = [
+      xyzExtractor({
+        extract: () => {
+          calls += 1
+          throw validation('broken file')
+        },
+      }),
+    ]
+    const walk = indexer(vault, { extractors: () => extractors })
+
+    await walk.scan()
+    await walk.scan()
+
+    expect(calls).toBe(1)
+  })
+
+  it('reads the live list, so an extractor registered later is used by the next file', async () => {
+    const extractors: DocumentExtractor[] = []
+    const walk = indexer(vault, { extractors: () => extractors })
+    extractors.push(xyzExtractor())
+    await writeNote('files/late.xyz', ['поздно'])
+
+    await walk.indexPath('files/late.xyz')
+
+    expect(await rows<{ content: string }>('SELECT content FROM document')).toEqual([{ content: 'ПОЗДНО' }])
+  })
+
+  it("resolves a bare link against a linkable extractor's extension", async () => {
+    await writeNote('notes/target.xyz', ['цель'])
+    const extractors = [xyzExtractor()]
+    const walk = indexer(vault, { extractors: () => extractors })
+    await walk.scan()
+    // Written after the walk, so the target is already a row when the link is resolved.
+    await writeNote('notes/source.md', ['Смотри [[target]].'])
+    await walk.indexPath('notes/source.md')
+
+    expect(await rows<{ target_path: string | null }>(`SELECT target_path FROM ref WHERE src_path = 'notes/source.md'`)).toEqual([
+      { target_path: 'notes/target.xyz' },
+    ])
   })
 })

@@ -1,8 +1,8 @@
 import { hasErrorCode } from '@arxhub/errors'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { migrate, readSchemaVersion } from '../migrate'
+import { migrate, readSchemaVersion, reconcileExtractors } from '../migrate'
 import { openSqlIndex } from '../pglite-index'
-import { SCHEMA_VERSION_KEY, SQL_SCHEMA_VERSION } from '../schema'
+import { EXTRACTORS_KEY, SCHEMA_VERSION_KEY, SQL_SCHEMA_VERSION } from '../schema'
 import { SQL_REJECTION, type SqlIndex } from '../types'
 
 // A cold PGlite costs about a second, so the whole file shares one index and each test puts the
@@ -115,6 +115,46 @@ describe('migrate', () => {
 
     const { rows } = await index.query<{ key: string; value: string }>('SELECT key, value FROM index_meta ORDER BY key')
     expect(rows).toEqual([{ key: SCHEMA_VERSION_KEY, value: String(SQL_SCHEMA_VERSION) }])
+  })
+})
+
+describe('reconcileExtractors', () => {
+  beforeEach(async () => {
+    await index.query('DELETE FROM index_meta WHERE key <> $1', [SCHEMA_VERSION_KEY])
+  })
+
+  async function metaKeys(): Promise<Record<string, string>> {
+    const { rows } = await index.query<{ key: string; value: string }>('SELECT key, value FROM index_meta ORDER BY key')
+    return Object.fromEntries(rows.map((row) => [row.key, row.value]))
+  }
+
+  it('stamps a fresh index without reporting a rebuild', async () => {
+    expect(await reconcileExtractors(index, 'arx@1:.arx')).toBe(false)
+    expect((await metaKeys())[EXTRACTORS_KEY]).toBe('arx@1:.arx')
+  })
+
+  it('leaves the rows alone while the set is the same', async () => {
+    await reconcileExtractors(index, 'arx@1:.arx')
+    await insertDocuments(2)
+
+    expect(await reconcileExtractors(index, 'arx@1:.arx')).toBe(false)
+    expect(await countDocuments()).toBe(2)
+  })
+
+  it('empties the rows and the walk state when the set changed', async () => {
+    await reconcileExtractors(index, 'arx@1:.arx')
+    await insertDocuments(2)
+    await index.query('INSERT INTO index_meta (key, value) VALUES ($1, $2), ($3, $4)', [
+      'scan_cursor',
+      'notes/a.md',
+      'last_scan_finished_at',
+      '1',
+    ])
+
+    expect(await reconcileExtractors(index, 'arx@1:.arx;pdf@1:.pdf')).toBe(true)
+
+    expect(await countDocuments()).toBe(0)
+    expect(await metaKeys()).toEqual({ [EXTRACTORS_KEY]: 'arx@1:.arx;pdf@1:.pdf', [SCHEMA_VERSION_KEY]: String(SQL_SCHEMA_VERSION) })
   })
 })
 

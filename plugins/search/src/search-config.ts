@@ -1,5 +1,6 @@
 import {
   DEFAULT_FUZZY_THRESHOLD,
+  DEFAULT_MAX_EXTRACTED_FILE_SIZE,
   DEFAULT_MAX_FILE_SIZE,
   DEFAULT_MAX_ROWS,
   DEFAULT_SNIPPET_WORDS,
@@ -76,6 +77,16 @@ export const SearchConfigSchema = Type.Object(
       default: DEFAULT_MAX_FILE_SIZE,
       minimum: 1,
     }),
+    // Separate from the prose limit: a format read by its owner's extractor (a PDF, a workbook) is larger
+    // per word of text than a note is, and under 2 MiB most PDFs would be found by name only.
+    'index.maxExtractedFileSize': Type.Integer({
+      title: 'Largest file to extract',
+      description: 'The same limit for formats read by their own plugin — PDFs, workbooks, .arx documents. Changing it rebuilds the index.',
+      group: 'Index',
+      unit: 'bytes',
+      default: DEFAULT_MAX_EXTRACTED_FILE_SIZE,
+      minimum: 1,
+    }),
     // Optional, unlike the numbers above, and not for want of a default: an empty list is the normal state
     // of this setting, so a reader is never asked for one. A required field that is legitimately empty also
     // blocks the global save the moment the section is opened — the form counts an unedited empty required
@@ -104,6 +115,7 @@ export interface SearchSettings {
   fuzzyThreshold: number
   debounceMs: number
   maxFileSize: number
+  maxExtractedFileSize: number
   exclude: readonly string[]
 }
 
@@ -118,6 +130,7 @@ export function toSearchSettings(config: Partial<SearchConfig>): SearchSettings 
     fuzzyThreshold: boundedNumber(config['search.fuzzyThreshold'], DEFAULT_FUZZY_THRESHOLD, 0, 1),
     debounceMs: boundedInteger(config['index.debounceMs'], DEFAULT_DEBOUNCE_MS, 0, Number.MAX_SAFE_INTEGER),
     maxFileSize: positiveInteger(config['index.maxFileSize'], DEFAULT_MAX_FILE_SIZE),
+    maxExtractedFileSize: positiveInteger(config['index.maxExtractedFileSize'], DEFAULT_MAX_EXTRACTED_FILE_SIZE),
     exclude: patterns(config['index.exclude']),
   }
 }
@@ -125,11 +138,12 @@ export function toSearchSettings(config: Partial<SearchConfig>): SearchSettings 
 // Every default in one place, derived from the schema rather than restated — the two cannot drift.
 export const DEFAULT_SEARCH_SETTINGS: SearchSettings = toSearchSettings(Value.Default(SearchConfigSchema, {}) as SearchConfig)
 
-// Whether a saved change alters what the index CONTAINS rather than how it is read. Those two settings
+// Whether a saved change alters what the index CONTAINS rather than how it is read. Those settings
 // decide which files have rows at all, so leaving the index as it is would answer with what the previous
 // rule admitted — every other value applies to the next query or the next walk on its own.
 export function reindexRequired(before: SearchSettings, after: SearchSettings): boolean {
   if (before.maxFileSize !== after.maxFileSize) return true
+  if (before.maxExtractedFileSize !== after.maxExtractedFileSize) return true
   return before.exclude.length !== after.exclude.length || before.exclude.some((pattern, index) => pattern !== after.exclude[index])
 }
 

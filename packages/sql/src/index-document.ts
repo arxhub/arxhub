@@ -1,21 +1,28 @@
 import { normalizePath, posix } from '@arxhub/path'
-import { DOCUMENT_EXTENSIONS, documentExtension, documentPath, type ParsedDocument } from './document'
+import { documentExtension, documentPath, type ParsedDocument } from './document'
+import { linkExtensions as defaultLinkExtensions } from './extractor'
 import type { SqlExecutor, SqlIndex } from './types'
 
 // Rows written per INSERT. Postgres takes at most 65535 bind parameters per statement, and the widest
-// row here binds seven — a document with thousands of blocks stays well inside the limit at this size.
+// row here binds ten — a document with thousands of blocks stays well inside the limit at this size.
 const INSERT_CHUNK = 200
+
+export interface WriteDocumentOptions {
+  // Extensions a link written without one is tried against, in order (`linkExtensions`). The built-in
+  // ones when absent — the caller that knows the registered extractors passes theirs.
+  linkExtensions?: readonly string[]
+}
 
 // Writes a parsed document into the index, replacing whatever was there. One transaction for the whole
 // record: a document must never be visible with the blocks of its previous version.
-export async function indexDocument(index: SqlIndex, doc: ParsedDocument): Promise<void> {
+export async function indexDocument(index: SqlIndex, doc: ParsedDocument, options: WriteDocumentOptions = {}): Promise<void> {
   await index.transaction(async (tx) => {
-    await writeDocument(tx, doc)
+    await writeDocument(tx, doc, options)
   })
 }
 
 // The same write inside a transaction the caller already owns — a batch of documents shares one.
-export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument): Promise<void> {
+export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument, options: WriteDocumentOptions = {}): Promise<void> {
   await tx.query(
     `INSERT INTO document
        (path, name, dir, ext, kind, title, title_fold, content, frontmatter, size, mtime, ctime, hash, indexed_at,
@@ -58,7 +65,7 @@ export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument): Promi
 
   for (const chunk of chunks(doc.blocks, INSERT_CHUNK)) {
     await tx.query(
-      `INSERT INTO block (id, doc_path, ordinal, type, level, checked, arx_id, occurrence, content) VALUES ${placeholders(chunk.length, 9)}`,
+      `INSERT INTO block (id, doc_path, ordinal, type, level, checked, anchor_id, part, occurrence, content) VALUES ${placeholders(chunk.length, 10)}`,
       chunk.flatMap((block) => [
         block.id,
         doc.path,
@@ -66,7 +73,8 @@ export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument): Promi
         block.type,
         block.level,
         block.checked,
-        block.arxId,
+        block.anchorId,
+        block.part,
         block.occurrence,
         block.content,
       ]),
@@ -92,6 +100,7 @@ export async function writeDocument(tx: SqlExecutor, doc: ParsedDocument): Promi
       tx,
       doc.dir,
       doc.refs.map((ref) => ref.targetRaw),
+      options.linkExtensions,
     )
     for (const chunk of chunks(doc.refs, INSERT_CHUNK)) {
       await tx.query(
@@ -128,12 +137,17 @@ export async function removeDocumentsUnder(index: SqlIndex, prefix: string): Pro
 
 // Which indexed document each link points at. A target that is not in the index resolves to null and
 // the link is still stored — a link to a note that does not exist yet is a link, not a mistake (FR-222).
-export async function resolveRefTargets(tx: SqlExecutor, srcDir: string, targets: readonly string[]): Promise<Map<string, string>> {
+export async function resolveRefTargets(
+  tx: SqlExecutor,
+  srcDir: string,
+  targets: readonly string[],
+  linkExtensions: readonly string[] = defaultLinkExtensions([]),
+): Promise<Map<string, string>> {
   const candidates = new Map<string, string[]>()
   const lookup = new Set<string>()
   for (const target of targets) {
     if (candidates.has(target)) continue
-    const paths = refCandidates(srcDir, target)
+    const paths = refCandidates(srcDir, target, linkExtensions)
     candidates.set(target, paths)
     for (const path of paths) lookup.add(path)
   }
@@ -159,7 +173,7 @@ export async function resolveRefTargets(tx: SqlExecutor, srcDir: string, targets
 // The paths a link could mean, most specific first: as written next to the document that carries it,
 // then from the root of the content store, each with and without a document extension (a wikilink is
 // normally written without one).
-export function refCandidates(srcDir: string, target: string): string[] {
+export function refCandidates(srcDir: string, target: string, linkExtensions: readonly string[] = defaultLinkExtensions([])): string[] {
   const cleaned = cleanTarget(target)
   if (cleaned === '') return []
 
@@ -172,8 +186,8 @@ export function refCandidates(srcDir: string, target: string): string[] {
     // A '..' that climbs past the root of the content store points outside the index.
     if (base === '' || base.startsWith('..')) continue
     push(result, base)
-    if (!(DOCUMENT_EXTENSIONS as readonly string[]).includes(documentExtension(base))) {
-      for (const ext of DOCUMENT_EXTENSIONS) push(result, `${base}.${ext}`)
+    if (!linkExtensions.includes(documentExtension(base))) {
+      for (const ext of linkExtensions) push(result, `${base}.${ext}`)
     }
   }
   return result

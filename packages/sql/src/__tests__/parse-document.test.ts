@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectDocumentKind, foldText } from '../document'
+import { builtinKind, foldText } from '../document'
 import { frontmatterTags, splitFrontmatter } from '../frontmatter'
 import { stripInlineMarkup } from '../markup'
 import { metadataDocument, parseDocument } from '../parse-document'
@@ -34,15 +34,19 @@ const FULL_NOTE = [
   '> цитата с *разметкой*',
 ]
 
-describe('detectDocumentKind', () => {
+describe('builtinKind', () => {
   it('reads the kind from the extension', () => {
-    expect(detectDocumentKind('notes/a.md')).toBe('markdown')
-    expect(detectDocumentKind('notes/a.MARKDOWN')).toBe('markdown')
-    expect(detectDocumentKind('notes/a.arx')).toBe('arx')
-    expect(detectDocumentKind('notes/a.txt')).toBe('text')
-    expect(detectDocumentKind('notes/a.text')).toBe('text')
-    expect(detectDocumentKind('notes/LICENSE')).toBe('text')
-    expect(detectDocumentKind('notes/photo.png')).toBe('binary')
+    expect(builtinKind('notes/a.md')).toBe('markdown')
+    expect(builtinKind('notes/a.MARKDOWN')).toBe('markdown')
+    expect(builtinKind('notes/a.txt')).toBe('text')
+    expect(builtinKind('notes/a.text')).toBe('text')
+    expect(builtinKind('notes/LICENSE')).toBe('text')
+    expect(builtinKind('notes/photo.png')).toBe('binary')
+  })
+
+  // `.arx` is its owner's format: without the editor's extractor the engine does not read it.
+  it('knows no contributed format', () => {
+    expect(builtinKind('notes/a.arx')).toBe('binary')
   })
 })
 
@@ -171,7 +175,7 @@ describe('parseDocument — markdown', () => {
     expect(doc.refs).toHaveLength(1)
   })
 
-  // Deliberate, not an omission: structure is read from `.arx`, and markdown gets the rough shape only.
+  // Deliberate, not an omission: structure is read from `.arx` by its owner, and markdown gets the rough shape only.
   // A checkbox here is a list item whose marker was taken out of the text, and nesting is not read at all.
   it('reads no task and no nesting out of markdown', () => {
     const doc = parseDocument('notes/tasks.md', bytes(['- [ ] написать', '- [x] прочитать', '  - вложенный']))
@@ -184,7 +188,11 @@ describe('parseDocument — markdown', () => {
 
   it('carries no block identity, and numbers a repeated line by how many came before it', () => {
     const doc = parseDocument('notes/repeat.md', bytes(['Повтор.', '', 'Другое.', '', 'Повтор.']))
-    expect(doc.blocks.map((block) => block.arxId)).toEqual([null, null, null])
+    expect(doc.blocks.map((block) => [block.anchorId, block.part])).toEqual([
+      [null, null],
+      [null, null],
+      [null, null],
+    ])
     expect(doc.blocks.map((block) => block.occurrence)).toEqual([0, 0, 1])
   })
 })
@@ -235,258 +243,5 @@ describe('parseDocument — text and binary', () => {
       blocks: 0,
     })
     expect(doc.size).toBe(9_000_000)
-  })
-})
-
-describe('parseDocument — arx', () => {
-  const tree = {
-    version: 1,
-    doc: {
-      type: 'doc',
-      content: [
-        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Дерево' }] },
-        { type: 'paragraph', content: [{ type: 'text', text: 'Абзац с #тегом' }] },
-        {
-          type: 'bullet_list',
-          content: [
-            { type: 'list_item', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'раз' }] }] },
-            { type: 'list_item', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'два' }] }] },
-          ],
-        },
-        { type: 'code_block', content: [{ type: 'text', text: 'let x = 1' }] },
-        { type: 'blockquote', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'цитата' }] }] },
-        {
-          type: 'paragraph',
-          content: [{ type: 'text', text: 'сюда', marks: [{ type: 'link', attrs: { href: 'notes/other.md' } }] }],
-        },
-      ],
-    },
-  }
-
-  it('walks the tree into blocks, opening the containers', () => {
-    const doc = parseDocument('notes/tree.arx', encoder.encode(JSON.stringify(tree)))
-    expect(doc.kind).toBe('arx')
-    expect(doc.blocks.map((block) => [block.type, block.level, block.content])).toEqual([
-      ['heading', 2, 'Дерево'],
-      ['paragraph', null, 'Абзац с #тегом'],
-      ['list-item', 1, 'раз'],
-      ['list-item', 1, 'два'],
-      ['code', null, 'let x = 1'],
-      ['quote', null, 'цитата'],
-      ['paragraph', null, 'сюда'],
-    ])
-    expect(doc.title).toBe('Дерево')
-    expect(doc.tags).toEqual([{ name: 'тегом', nameFold: 'тегом', blockId: 'notes/tree.arx#1' }])
-    expect(doc.refs).toEqual([{ kind: 'markdown', targetRaw: 'notes/other.md', label: 'сюда', srcBlock: 'notes/tree.arx#6' }])
-  })
-
-  it('reads a file that is not a tree as text, so it is still findable', () => {
-    const doc = parseDocument('notes/broken.arx', bytes(['{ not json at all']))
-    expect(doc.kind).toBe('text')
-    expect(doc.blocks).toHaveLength(1)
-    expect(doc.blocks[0].type).toBe('paragraph')
-    expect(doc.title).toBe('broken')
-  })
-
-  // Every tree below is one the editor can actually write: `list_item` is `paragraph block*`, so a
-  // nested list hangs INSIDE its parent item, and `task_item` is `paragraph+`, so nothing hangs inside a
-  // task (plugins/editor/src/editor-schema.ts). The fixture this replaced put a bullet_list straight
-  // into a task_list — an invalid document, and the only place depth 2 was ever produced.
-  const para = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
-  const item = (...content: object[]) => ({ type: 'list_item', content })
-  const arxDoc = (path: string, ...content: object[]) =>
-    parseDocument(path, encoder.encode(JSON.stringify({ version: 1, doc: { type: 'doc', content } })))
-  const shape = (doc: { blocks: readonly { type: string; level: number | null; content: string }[] }) =>
-    doc.blocks.map((block) => [block.type, block.level, block.content])
-
-  it('keeps headings, tasks and links structured inside sections and table cells', () => {
-    const doc = arxDoc('notes/structured.arx', {
-      type: 'section',
-      attrs: { title: 'Details' },
-      content: [
-        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Nested heading' }] },
-        {
-          type: 'table',
-          content: [
-            {
-              type: 'table_row',
-              content: [
-                {
-                  type: 'table_cell',
-                  content: [{ type: 'task_list', content: [{ type: 'task_item', attrs: { checked: true }, content: [para('Finished')] }] }],
-                },
-                {
-                  type: 'table_cell',
-                  content: [
-                    {
-                      type: 'paragraph',
-                      content: [{ type: 'text', text: 'Destination', marks: [{ type: 'link', attrs: { href: '/target.arx#text=Block' } }] }],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    })
-    expect(shape(doc)).toEqual([
-      ['heading', 2, 'Nested heading'],
-      ['task', 1, 'Finished'],
-      ['paragraph', null, 'Destination'],
-    ])
-    expect(doc.blocks[1].checked).toBe(true)
-    expect(doc.refs[0].targetRaw).toBe('/target.arx#text=Block')
-  })
-
-  it('reads a task_item as a task, with its state and its depth', () => {
-    const doc = arxDoc('notes/tasks.arx', {
-      type: 'task_list',
-      content: [
-        { type: 'task_item', attrs: { checked: true }, content: [para('сделано')] },
-        { type: 'task_item', attrs: { checked: false }, content: [para('нет')] },
-        // No attrs at all: the editor's schema defaults `checked` to false, so this is unfinished
-        // rather than a task with nothing to say about its state.
-        { type: 'task_item', content: [para('без атрибута')] },
-      ],
-    })
-    expect(doc.blocks.map((block) => [block.type, block.level, block.checked, block.content])).toEqual([
-      ['task', 1, true, 'сделано'],
-      ['task', 1, false, 'нет'],
-      ['task', 1, false, 'без атрибута'],
-    ])
-  })
-
-  it('gives a nested bullet list a row per item, one level deeper', () => {
-    const doc = arxDoc('notes/nested.arx', {
-      type: 'bullet_list',
-      content: [
-        item(para('внешний пункт'), {
-          type: 'bullet_list',
-          content: [item(para('вложенный пункт'), { type: 'bullet_list', content: [item(para('третий уровень'))] })],
-        }),
-        item(para('второй внешний')),
-      ],
-    })
-    expect(shape(doc)).toEqual([
-      ['list-item', 1, 'внешний пункт'],
-      ['list-item', 2, 'вложенный пункт'],
-      ['list-item', 3, 'третий уровень'],
-      ['list-item', 1, 'второй внешний'],
-    ])
-  })
-
-  it('reads a nested ordered list the same way', () => {
-    const doc = arxDoc('notes/ordered.arx', {
-      type: 'ordered_list',
-      content: [item(para('первый'), { type: 'ordered_list', content: [item(para('первый вложенный'))] }), item(para('второй'))],
-    })
-    expect(shape(doc)).toEqual([
-      ['list-item', 1, 'первый'],
-      ['list-item', 2, 'первый вложенный'],
-      ['list-item', 1, 'второй'],
-    ])
-  })
-
-  it('reads a task list nested in a list item, keeping the task apart from its parent', () => {
-    const doc = arxDoc('notes/mixed.arx', {
-      type: 'bullet_list',
-      content: [
-        item(para('пункт с задачами'), {
-          type: 'task_list',
-          content: [{ type: 'task_item', attrs: { checked: true }, content: [para('подзадача')] }],
-        }),
-      ],
-    })
-    expect(doc.blocks.map((block) => [block.type, block.level, block.checked, block.content])).toEqual([
-      ['list-item', 1, null, 'пункт с задачами'],
-      ['task', 2, true, 'подзадача'],
-    ])
-  })
-
-  it('separates the blocks it flattens, so two words never fuse into one token', () => {
-    const doc = arxDoc(
-      'notes/quote.arx',
-      { type: 'blockquote', content: [para('первый абзац'), para('второй абзац')] },
-      { type: 'bullet_list', content: [item(para('первый абзац пункта'), para('второй абзац пункта'))] },
-    )
-    expect(shape(doc)).toEqual([
-      ['quote', null, 'первый абзац второй абзац'],
-      ['list-item', 1, 'первый абзац пункта второй абзац пункта'],
-    ])
-  })
-
-  // The stable identity plugins/editor/src/block-identity.ts stamps on every block node — read here
-  // structurally, so a search hit can reopen the exact block rather than the first one that reads the
-  // same (two identical paragraphs still carry two different ids).
-  it('reads the block-identity id off each node, distinct even for identical text', () => {
-    const doc = arxDoc(
-      'notes/identical.arx',
-      { type: 'paragraph', attrs: { arxId: 'aaa' }, content: [{ type: 'text', text: 'Повтор' }] },
-      { type: 'paragraph', attrs: { arxId: 'bbb' }, content: [{ type: 'text', text: 'Повтор' }] },
-    )
-    expect(doc.blocks.map((block) => block.arxId)).toEqual(['aaa', 'bbb'])
-    expect(doc.blocks.map((block) => block.occurrence)).toEqual([0, 1])
-  })
-
-  it('has no id for a node the identity pass never reached', () => {
-    const doc = arxDoc('notes/no-id.arx', para('без идентификатора'))
-    expect(doc.blocks[0].arxId).toBeNull()
-  })
-
-  // A-48: the properties block carries user metadata as attrs, not text — it must never become a row of
-  // `block` (there is nothing there for a snippet to show), and its tags are document metadata the same
-  // way frontmatter's are, not text a reader could mistake for a #tag in the note's own prose.
-  describe('the properties block (A-48)', () => {
-    it('produces no block of its own, and does not shift the ordinals of what follows', () => {
-      const doc = arxDoc(
-        'notes/props.arx',
-        { type: 'properties', attrs: { tags: ['family'], favorite: true, fields: [] } },
-        para('Текст заметки'),
-      )
-      expect(shape(doc)).toEqual([['paragraph', null, 'Текст заметки']])
-    })
-
-    it('reads favorite, subject and property fields onto the document', () => {
-      const doc = arxDoc('photo.jpg.arx', {
-        type: 'properties',
-        attrs: {
-          tags: [],
-          favorite: true,
-          fields: [{ key: 'location', value: 'Berlin' }],
-          subject: { path: 'photo.jpg', fileId: 'file-1' },
-        },
-      })
-      expect(doc.favorite).toBe(true)
-      expect(doc.subjectPath).toBe('photo.jpg')
-      expect(doc.subjectFileId).toBe('file-1')
-      expect(doc.properties).toEqual([{ key: 'location', value: 'Berlin' }])
-    })
-
-    it('defaults favorite/subject/properties for a document without one', () => {
-      const doc = arxDoc('notes/plain.arx', para('Ничего особенного'))
-      expect(doc.favorite).toBe(false)
-      expect(doc.subjectPath).toBeNull()
-      expect(doc.subjectFileId).toBeNull()
-      expect(doc.properties).toEqual([])
-    })
-
-    it('folds its tags into the document’s tags, the same as frontmatter’s', () => {
-      const doc = arxDoc(
-        'notes/tagged.arx',
-        { type: 'properties', attrs: { tags: ['work', 'home'], favorite: false, fields: [] } },
-        para('Заметка про #проект'),
-      )
-      expect(doc.tags.map((tag) => tag.name).sort()).toEqual(['home', 'work', 'проект'].sort())
-      expect(doc.tags.find((tag) => tag.name === 'work')?.blockId).toBeNull()
-      expect(doc.tags.find((tag) => tag.name === 'проект')?.blockId).not.toBeNull()
-    })
-
-    it('is only read from the FIRST block — a properties-shaped node elsewhere is not one', () => {
-      const buried = { type: 'properties', attrs: { tags: ['ignored'], favorite: true, fields: [] } }
-      const doc = arxDoc('notes/buried.arx', para('Первый абзац'), buried)
-      expect(doc.favorite).toBe(false)
-      expect(doc.tags).toEqual([])
-    })
   })
 })

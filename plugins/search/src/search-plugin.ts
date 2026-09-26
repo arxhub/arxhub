@@ -1,9 +1,10 @@
 import { PluginConfig } from '@arxhub/config'
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { PanelStoreExtension } from '@arxhub/plugin-panels'
 import { SettingsExtension } from '@arxhub/plugin-settings'
 import { ShellExtension } from '@arxhub/plugin-shell'
-import { createIndexer, type IndexerStatus, openSqlIndex, type SqlIndex } from '@arxhub/sql'
+import { createIndexer, type IndexerStatus, openSqlIndex, reconcileExtractors, type SqlIndex } from '@arxhub/sql'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { markRaw, watch } from 'vue'
 import { SEARCH_SETTINGS_SECTION, SEARCH_TYPE_ID, SQL_CONSOLE_PANEL } from './contributions'
@@ -12,6 +13,7 @@ import { manifest } from './manifest'
 import { openWithRetry } from './open-index'
 import { SearchConfigSchema, toSearchSettings } from './search-config'
 import { SearchExtension } from './search-extension'
+import DocumentFinderResults from './ui/DocumentFinderResults.vue'
 import SearchIndexStatus from './ui/SearchIndexStatus.vue'
 import SearchLayout from './ui/SearchLayout.vue'
 import SearchSettingsPage from './ui/SearchSettingsPage.vue'
@@ -84,6 +86,10 @@ export class SearchPlugin extends Plugin {
       component: markRaw(SearchSettingsPage),
     })
 
+    // The results under the Documents type's own find field. Contributed rather than imported by it:
+    // Documents is essential and search is not, so the field is there only while this plugin is.
+    ctx.extensions.get(DocumentsExtension).setFinder({ results: markRaw(DocumentFinderResults) })
+
     const shell = ctx.extensions.get(ShellExtension)
     // No owner: indexing belongs to the vault, not to an open object — the background line shows the label
     // and does not pretend there is somewhere to lead (same contract as sync).
@@ -111,6 +117,9 @@ export class SearchPlugin extends Plugin {
 
     const search = ctx.extensions.get(SearchExtension)
     search.status.value = 'opening'
+    // Every configure() has run by now, so every format owner has registered; the index is built under
+    // exactly this set.
+    search.extractors.seal()
     this.stopping = false
     this.bringUp = this.bringUpIndex(ctx, search)
 
@@ -119,7 +128,7 @@ export class SearchPlugin extends Plugin {
 
   private async bringUpIndex(ctx: PluginContext, search: SearchExtension): Promise<void> {
     try {
-      // Still read before the index opens, because `exclude` and `maxFileSize` decide what the very first
+      // Still read before the index opens, because `exclude` and the size limits decide what the very first
       // walk covers. tryRead, not read: the settings store may be unreachable (the product works offline),
       // and a search plugin that gives up over that is worse than one running on the defaults.
       const config = await search.config.tryRead(SearchConfigSchema)
@@ -152,6 +161,13 @@ export class SearchPlugin extends Plugin {
       // Assigned before anything else can fail, so the teardown always has something to close.
       this.index = index
 
+      // Before anything reads the rows: rows read under another set of formats are thrown away, because
+      // the stat check would never read an unchanged file again to fix them.
+      if (await reconcileExtractors(index, search.extractors.signature())) {
+        this.logger.info('The set of readable formats changed — rebuilding the index')
+      }
+      if (this.stopping) return
+
       await readIndexState(index, search)
       if (this.stopping) return
       search.index = index
@@ -163,6 +179,8 @@ export class SearchPlugin extends Plugin {
         logger: this.logger.child({ name: 'indexer' }),
         exclude: settings.exclude,
         maxFileSize: settings.maxFileSize,
+        maxExtractedFileSize: settings.maxExtractedFileSize,
+        extractors: () => search.extractors.list(),
       })
       search.indexer = indexer
       this.unsubscribe = indexer.subscribe((status) => applyIndexerStatus(search, status))
@@ -182,7 +200,7 @@ export class SearchPlugin extends Plugin {
         search.settings,
         (values) => {
           queue.debounceMs = values.debounceMs
-          indexer.configure({ exclude: values.exclude, maxFileSize: values.maxFileSize })
+          indexer.configure({ exclude: values.exclude, maxFileSize: values.maxFileSize, maxExtractedFileSize: values.maxExtractedFileSize })
         },
         { flush: 'sync' },
       )

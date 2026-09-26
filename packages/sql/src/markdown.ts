@@ -6,12 +6,9 @@ import { stripInlineMarkup } from './markup'
 export interface SourceBlock {
   type: BlockType
   level: number | null
-  // Done state of a task; null for every other block type, and always null out of this reader — only
-  // `.arx` produces a task. See ParsedBlock.checked.
+  // Always null out of this reader: a task is structure, and structure comes from a format that states
+  // it (A-29). See ParsedBlock.checked.
   checked: boolean | null
-  // The block's own stable id; always null out of this reader — only `.arx` carries one (A-29). See
-  // ParsedBlock.arxId.
-  arxId: string | null
   raw: string
   content: string
 }
@@ -29,8 +26,8 @@ const TASK_MARKER = /^\[[ xX]\][ \t]+/
 // text a reader sees and its rough shape, not a faithful document tree, and every parser dependency
 // would have to run in the browser too.
 //
-// Deliberately the dumb reader of the two. Structure the product actually reasons about — a task and
-// its state, how deep a list nests — is read from `.arx`, where the tree says so outright; here it
+// Deliberately a dumb reader. Structure the product actually reasons about — a task and its state, how
+// deep a list nests — is read from `.arx` by its owner's extractor, where the tree says so outright; here it
 // would be guesswork over indentation and brackets, and the guess would then have to be maintained
 // against every dialect someone writes in. A task marker is matched away rather than read for the
 // same reason: what a reader sees is the text after it.
@@ -61,14 +58,14 @@ export function parseMarkdownBlocks(body: string): SourceBlock[] {
       i += 1
       const code = fenced.join('\n')
       // Code keeps every character: in code the markers are the content.
-      blocks.push({ type: 'code', level: null, checked: null, arxId: null, raw: code, content: code })
+      blocks.push({ type: 'code', level: null, checked: null, raw: code, content: code })
       continue
     }
 
     const heading = HEADING.exec(line)
     if (heading != null) {
       const raw = heading[2].replace(/[ \t]+#+[ \t]*$/, '')
-      blocks.push({ type: 'heading', level: heading[1].length, checked: null, arxId: null, raw, content: stripInlineMarkup(raw) })
+      blocks.push({ type: 'heading', level: heading[1].length, checked: null, raw, content: stripInlineMarkup(raw) })
       i += 1
       continue
     }
@@ -89,7 +86,7 @@ export function parseMarkdownBlocks(body: string): SourceBlock[] {
         i += 1
       }
       const raw = joinSoftLines(quoted)
-      blocks.push({ type: 'quote', level: null, checked: null, arxId: null, raw, content: stripInlineMarkup(raw) })
+      blocks.push({ type: 'quote', level: null, checked: null, raw, content: stripInlineMarkup(raw) })
       continue
     }
 
@@ -102,7 +99,7 @@ export function parseMarkdownBlocks(body: string): SourceBlock[] {
         i += 1
       }
       const raw = joinSoftLines(parts)
-      blocks.push({ type: 'list-item', level: null, checked: null, arxId: null, raw, content: stripInlineMarkup(raw) })
+      blocks.push({ type: 'list-item', level: null, checked: null, raw, content: stripInlineMarkup(raw) })
       continue
     }
 
@@ -113,7 +110,7 @@ export function parseMarkdownBlocks(body: string): SourceBlock[] {
       i += 1
     }
     const raw = joinSoftLines(paragraph)
-    blocks.push({ type: 'paragraph', level: null, checked: null, arxId: null, raw, content: stripInlineMarkup(raw) })
+    blocks.push({ type: 'paragraph', level: null, checked: null, raw, content: stripInlineMarkup(raw) })
   }
 
   return blocks

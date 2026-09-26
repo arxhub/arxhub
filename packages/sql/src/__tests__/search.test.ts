@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { FileStat } from '../document'
+import type { Extraction } from '../extractor'
 import { indexDocument } from '../index-document'
-import { parseDocument } from '../parse-document'
+import { assembleDocument, parseDocument } from '../parse-document'
 import { openSqlIndex } from '../pglite-index'
 import { type SearchOptions, type SearchResult, searchDocuments } from '../search'
 import { parseSearchQuery } from '../search-query'
@@ -17,6 +18,11 @@ const encoder = new TextEncoder()
 function write(path: string, lines: readonly string[], stat: Partial<FileStat> = {}): Promise<void> {
   const bytes = encoder.encode(lines.join('\n'))
   return indexDocument(index, parseDocument(path, bytes, { size: bytes.length, mtime: 1, ctime: 1, ...stat }))
+}
+
+// A contributed format's record: search reads rows, and does not care which extractor wrote them.
+function writeExtraction(path: string, extraction: Extraction): Promise<void> {
+  return indexDocument(index, assembleDocument(path, 'fixture', extraction, encoder.encode(path), { size: 10, mtime: 1, ctime: 1 }))
 }
 
 function search(input: string, options: SearchOptions = {}): Promise<SearchResult> {
@@ -161,27 +167,14 @@ describe('searchDocuments', () => {
   })
 
   describe('is: and prop: qualifiers (A-48)', () => {
-    function arxDoc(path: string, properties: Record<string, unknown>, text: string): Promise<void> {
-      const doc = {
-        version: 1,
-        doc: {
-          type: 'doc',
-          content: [
-            { type: 'properties', attrs: properties },
-            { type: 'paragraph', content: [{ type: 'text', text }] },
-          ],
-        },
-      }
-      return write(path, [JSON.stringify(doc)])
-    }
-
     beforeEach(async () => {
-      await arxDoc(
-        'photo.jpg.arx',
-        { tags: [], favorite: true, fields: [{ key: 'status', value: 'done' }], subject: { path: 'photo.jpg' } },
-        'Бирюза на фото.',
-      )
-      await arxDoc('plain.arx', { tags: [], favorite: false, fields: [] }, 'Бирюза без свойств.')
+      await writeExtraction('photo.jpg.arx', {
+        blocks: [{ type: 'paragraph', content: 'Бирюза на фото.' }],
+        favorite: true,
+        properties: [{ key: 'status', value: 'done' }],
+        subject: { path: 'photo.jpg', fileId: null },
+      })
+      await writeExtraction('plain.arx', { blocks: [{ type: 'paragraph', content: 'Бирюза без свойств.' }] })
     })
 
     it('narrows by is:favorite', async () => {
@@ -303,21 +296,19 @@ describe('searchDocuments', () => {
     }
   })
 
-  it('carries the .arx block identity through to the result, so a hit can reopen the exact block', async () => {
-    const tree = {
-      version: 1,
-      doc: {
-        type: 'doc',
-        content: [
-          { type: 'paragraph', attrs: { arxId: 'aaa' }, content: [{ type: 'text', text: 'бирюза первая' }] },
-          { type: 'paragraph', attrs: { arxId: 'bbb' }, content: [{ type: 'text', text: 'бирюза вторая' }] },
-        ],
-      },
-    }
-    await write('notes/tree.arx', [JSON.stringify(tree)])
+  it("carries a contributed block's anchor through to the result, so a hit can reopen the exact place", async () => {
+    await writeExtraction('notes/tree.fx', {
+      blocks: [
+        { type: 'paragraph', content: 'бирюза первая', anchor: { id: 'aaa' } },
+        { type: 'page', content: 'бирюза вторая', anchor: { part: '12' } },
+      ],
+    })
 
     const [document] = (await search('бирюза ')).documents
-    expect(document.snippets.map((snippet) => snippet.arxId)).toEqual(['aaa', 'bbb'])
+    expect(document.snippets.map((snippet) => [snippet.anchorId, snippet.part])).toEqual([
+      ['aaa', null],
+      [null, '12'],
+    ])
     expect(document.snippets.every((snippet) => snippet.occurrence === 0)).toBe(true)
   })
 
@@ -325,7 +316,7 @@ describe('searchDocuments', () => {
     await write('notes/dup.md', ['бирюза раз.', '', 'другое.', '', 'бирюза раз.'])
 
     const [document] = (await search('бирюза ')).documents
-    expect(document.snippets.map((snippet) => snippet.arxId)).toEqual([null, null])
+    expect(document.snippets.map((snippet) => snippet.anchorId)).toEqual([null, null])
     expect(document.snippets.map((snippet) => snippet.occurrence)).toEqual([0, 1])
   })
 
