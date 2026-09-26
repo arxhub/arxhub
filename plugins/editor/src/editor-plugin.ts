@@ -15,6 +15,7 @@ import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs, VaultWatcher, type VirtualFileSystem } from '@arxhub/vfs'
 import { nextTick } from 'vue'
 import { arxDiffTexts } from './arx-diff'
+import { ARX_EXTRACTOR } from './arx-extract'
 import { mergeArx } from './arx-merge'
 import { createAssetStore } from './assets'
 import { searchDataSources } from './data-sources'
@@ -54,6 +55,7 @@ export const EDITOR_VIEWER: DocumentViewer = {
 export class ArxEditorPlugin extends Plugin {
   private unregisterMerger: (() => void) | null = null
   private unregisterDiffer: (() => void) | null = null
+  private unregisterExtractor: (() => void) | null = null
 
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -75,6 +77,8 @@ export class ArxEditorPlugin extends Plugin {
     this.unregisterMerger = null
     this.unregisterDiffer?.()
     this.unregisterDiffer = null
+    this.unregisterExtractor?.()
+    this.unregisterExtractor = null
     return super.stop(ctx)
   }
 
@@ -86,8 +90,11 @@ export class ArxEditorPlugin extends Plugin {
     // The editor's own first-party block, registered the same way a plugin's would be (see
     // properties-block.ts) rather than baked into editor-schema.ts's base builder.
     editor.register(propertiesContribution())
-    if (ctx.extensions.has(SearchExtension))
-      editor.register({ id: 'arxhub.search-data', dataSources: searchDataSources(ctx.extensions.get(SearchExtension)) })
+    if (ctx.extensions.has(SearchExtension)) {
+      const search = ctx.extensions.get(SearchExtension)
+      editor.register({ id: 'arxhub.search-data', dataSources: searchDataSources(search) })
+      this.unregisterExtractor = search.registerExtractor(ARX_EXTRACTOR)
+    }
     if (ctx.extensions.has(PublishExtension)) {
       const publish = ctx.extensions.get(PublishExtension)
       publish.normalizeArx = (raw) => JSON.stringify({ version: 1, doc: deserialize(editor.kit.schema, raw, editor.kit.format).toJSON() })

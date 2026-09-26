@@ -1811,6 +1811,9 @@ importers:
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell
+      '@arxhub/sql':
+        specifier: workspace:*
+        version: link:../../packages/sql
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../../packages/stdlib
@@ -2167,6 +2170,9 @@ importers:
       '@arxhub/plugin-panels':
         specifier: workspace:*
         version: link:../panels
+      '@arxhub/plugin-search':
+        specifier: workspace:*
+        version: link:../search
       '@arxhub/plugin-vfs':
         specifier: workspace:*
         version: link:../vfs
@@ -2533,9 +2539,15 @@ importers:
       '@arxhub/plugin-repository':
         specifier: workspace:*
         version: link:../repository
+      '@arxhub/plugin-search':
+        specifier: workspace:*
+        version: link:../search
       '@arxhub/plugin-shell':
         specifier: workspace:*
         version: link:../shell
+      '@arxhub/sql':
+        specifier: workspace:*
+        version: link:../../packages/sql
       '@arxhub/stdlib':
         specifier: workspace:*
         version: link:../../packages/stdlib
