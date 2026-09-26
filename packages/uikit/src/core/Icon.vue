@@ -34,6 +34,13 @@ const resolved = computed(() => resolveIcon(props.name))
 </template>
 
 <style scoped>
+/* A glyph is a fixed mark: inside a flex box that runs out of room (a button in a narrow strip) the
+   text gives way, never the icon — a squeezed chevron reads as a stray dot. */
+svg,
+.icon-glyph {
+  flex-shrink: 0;
+}
+
 .icon-glyph {
   display: inline-flex;
   align-items: center;
