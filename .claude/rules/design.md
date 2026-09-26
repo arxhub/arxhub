@@ -122,8 +122,8 @@ Every value below comes from a token. A literal in place of one of these is a vi
 - A generic control belongs in `@arxhub/uikit/core` and wraps Ark UI (`@ark-ui/vue`), which owns its state machine,
   keyboard model and ARIA; the wrapper owns only the box. A package outside the uikit never hand-rolls one.
 - Prop names differ per component: `Checkbox`/`Switch` are controlled by `checked`, while `SegmentGroup`,
-  `RadioGroup`, `NumberInput`, `Slider`, `TagsInput` and `CheckboxGroup` use `modelValue`. Binding `value` on the
-  latter silently renders an empty control.
+  `RadioGroup`, `NumberInput`, `Slider`, `TagsInput`, `CheckboxGroup` and `Progress` use `modelValue`. Binding
+  `value` on the latter silently renders an empty control (a `Progress` stuck at its default 50%).
 </Generic_Controls>
 
 <Enforcement>

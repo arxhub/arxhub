@@ -11,7 +11,7 @@ withDefaults(
 </script>
 
 <template>
-  <Progress.Root class="root" :value="value" :max="max ?? 100">
+  <Progress.Root class="root" :model-value="value" :max="max ?? 100">
     <Progress.Track class="track">
       <Progress.Range class="range" />
     </Progress.Track>
