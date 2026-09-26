@@ -14,6 +14,9 @@ withDefaults(
     // A strip divides two regions and says so with a rule. The exception is a strip that is already
     // inside a bordered box (a dialog closes its own edge), not a matter of taste.
     bordered?: boolean
+    // A strip UNDER the content it serves — the phone's band above the type row — draws its rule on top,
+    // between it and that content, instead of below.
+    below?: boolean
     // A size="lg" IconButton already fills the strip's own height — the 8px right inset built for
     // text and smaller icons then just eats into it instead of framing it. Set this when the strip
     // ends in one, so the icon reaches the edge on purpose instead of overflowing into it by accident.
@@ -26,7 +29,7 @@ withDefaults(
 </script>
 
 <template>
-  <div class="strip" :class="{ touch, bordered, flush, 'flush-actions': flushActions }">
+  <div class="strip" :class="{ touch, bordered, below, flush, 'flush-actions': flushActions }">
     <div v-if="$slots.leading" class="strip-leading">
       <slot name="leading" />
     </div>
@@ -62,6 +65,10 @@ withDefaults(
 .strip.bordered {
   /* Draw the divider inside the token height without stealing a pixel from its controls. */
   box-shadow: inset 0 -1px 0 var(--gray-6);
+}
+
+.strip.bordered.below {
+  box-shadow: inset 0 1px 0 var(--gray-6);
 }
 
 .strip.flush-actions {

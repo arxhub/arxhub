@@ -10,6 +10,9 @@ const props = defineProps<{
   type?: 'button' | 'submit' | 'reset'
   /** Fills the width of its container — the confirm action at the foot of a sheet. */
   block?: boolean
+  /** `start` reads its label from the leading edge and lets it shrink — a button that names a place (the
+   * open object in the phone's band) rather than an action, whose name can be longer than its room. */
+  align?: 'center' | 'start'
 }>()
 
 // Like Row, the frame decides the default height: a control on the phone is a touch target (48px). An
@@ -21,7 +24,7 @@ const resolvedSize = computed(() => props.size ?? (touch ? 'lg' : 'md'))
 <template>
   <button
     class="btn"
-    :class="[`btn-${variant || 'primary'}`, `btn-${resolvedSize}`, { active, block }]"
+    :class="[`btn-${variant || 'primary'}`, `btn-${resolvedSize}`, { active, block, start: align === 'start' }]"
     :type="type || 'button'"
     :disabled="disabled"
   >
@@ -58,6 +61,13 @@ const resolvedSize = computed(() => props.size ?? (touch ? 'lg' : 'md'))
   border-color: transparent;
   color: var(--gray-9);
   cursor: not-allowed;
+}
+
+.btn.start {
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
+  text-align: start;
 }
 
 .btn.block {

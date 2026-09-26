@@ -14,8 +14,10 @@ const props = withDefaults(
     menu?: readonly ActionItem[]
     moreLabel: string
     moreTitle?: string
+    /** `end` gathers the keys against More at the trailing edge — a band whose leading side is a name. */
+    align?: 'start' | 'end'
   }>(),
-  { menu: () => [] },
+  { menu: () => [], align: 'start' },
 )
 const touch = useShellFrame() === 'mobile'
 const container = ref<HTMLElement | null>(null)
@@ -37,18 +39,19 @@ const more = computed(() => [...overflow.value, ...props.menu])
     <!-- An empty sizing element survives even when every action moves into More. -->
     <span ref="item" class="measure" aria-hidden="true" />
     <div v-if="$slots.leading" ref="leading" class="pinned"><slot name="leading" /></div>
+    <span v-if="align === 'end'" class="spacer" />
     <IconButton
       v-for="action in visible"
       :key="action.id"
       class="overflow-action"
       :class="{ danger: action.tone === 'danger' }"
-      :size="touch ? 'xl' : 'lg'"
+      :size="touch ? 'row' : 'lg'"
       :icon="action.icon"
       :tooltip="action.label"
       :disabled="action.disabled"
       @click="action.onSelect"
     />
-    <span class="spacer" />
+    <span v-if="align === 'start'" class="spacer" />
     <ActionMenuButton v-if="more.length" :label="moreLabel" :title="moreTitle ?? moreLabel" :items="() => more" />
     <div v-if="$slots.trailing" ref="trailing" class="pinned"><slot name="trailing" /></div>
   </div>
