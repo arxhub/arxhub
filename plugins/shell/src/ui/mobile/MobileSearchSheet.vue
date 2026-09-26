@@ -33,7 +33,7 @@ const statusItems = computed(() => [...props.status.statuses.value, ...props.sta
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
-  margin: 0 16px 16px;
+  margin: 16px;
   padding: 12px 16px;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);

@@ -21,5 +21,5 @@ const order = computed(() => ({ relevance: 'Relevance', title: 'Title', modified
 </template>
 
 <style scoped>
-.content { display: flex; flex-direction: column; gap: 16px; padding: 0 16px 16px; }
+.content { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
 </style>

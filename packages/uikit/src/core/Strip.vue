@@ -27,6 +27,9 @@ withDefaults(
 
 <template>
   <div class="strip" :class="{ touch, bordered, flush, 'flush-actions': flushActions }">
+    <div v-if="$slots.leading" class="strip-leading">
+      <slot name="leading" />
+    </div>
     <span v-if="title || $slots.title" class="strip-title">
       <slot name="title">{{ title }}</slot>
     </span>
@@ -89,6 +92,14 @@ withDefaults(
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Before the title, never instead of it: a step back in a multi-step sheet, which keeps the name of
+   where you are beside it. */
+.strip-leading {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .strip-content {
