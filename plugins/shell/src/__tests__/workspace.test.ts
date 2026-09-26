@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { Component } from 'vue'
 import type { WorkspaceEvents } from '../ui/nav-events'
-import { type Json, type ObjectRef, type OpenedObject, objectGone, type TabType } from '../ui/tab-type'
+import { isObjectType, type Json, type ObjectRef, type OpenedObject, objectGone, type TabType } from '../ui/tab-type'
 import { TabTypeRegistry } from '../ui/tab-type-registry'
 import { Workspace } from '../ui/workspace'
 import { FakePanelHost } from './fake-panel-host'
@@ -157,6 +157,16 @@ describe('Workspace: panels it did not open itself', () => {
     // Its title is whatever the host is showing: there is no type-side object to ask `label()` about,
     // so an adopted tab has no subtitle rather than a made-up one.
     expect(workspace.tabsOf('notes')[0].subtitle).toBeUndefined()
+  })
+
+  test('an adopted panel wears the object glyph of its type, not the type glyph', () => {
+    const type = notesType({ icon: 'lu:folder' })
+    if (isObjectType(type)) type.objects.icon = 'lu:file-text'
+    const { workspace } = build(type)
+    workspace.activateType('notes')
+    hostOf(workspace, 'notes').open({ key: 'welcome', title: 'Welcome', component: NoteView, props: {} })
+
+    expect(workspace.tabsOf('notes')[0].icon).toBe('lu:file-text')
   })
 
   test('activating and closing an adopted panel goes through the same two operations', () => {

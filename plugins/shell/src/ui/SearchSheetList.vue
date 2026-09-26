@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { EmptyState, Icon, IconButton, Row, SectionLabel } from '@arxhub/uikit/core'
+import { EmptyState, IconButton, Row, SectionLabel } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useSheetLayer } from './hotkeys'
@@ -23,9 +23,9 @@ const listEl = ref<HTMLElement | null>(null)
 // container is a uikit control and uikit may not depend on a plugin — the frame owns the layer.
 useSheetLayer(listEl)
 
-// DS-8: the icon's size follows the row it sits in, and the row's density is the frame's. Read once —
-// the frame never changes while the app is up.
-const iconSize = useShellFrame() === 'mobile' ? 16 : 14
+// A dialog pads its body and a bottom sheet deliberately does not: on the phone the rows run edge to edge
+// and keep their own touch inset, the way every other sheet's rows do. Read once — the frame never changes.
+const touch = useShellFrame() === 'mobile'
 
 // Focus lands on the first row as the sheet opens, so the whole sheet is operable from the keyboard
 // without a pointer ever touching it. Driven by the prop rather than by mounting: whether the container
@@ -68,9 +68,9 @@ function choose(entry: SheetEntry): void {
 </script>
 
 <template>
-  <div ref="listEl" class="sheet-list" @keydown.down.prevent="step(1)" @keydown.up.prevent="step(-1)">
+  <div ref="listEl" class="sheet-list" :class="{ touch }" @keydown.down.prevent="step(1)" @keydown.up.prevent="step(-1)">
     <section v-for="section in listed" :key="section.id" class="sheet-section">
-      <SectionLabel class="sheet-heading">{{ section.title }}</SectionLabel>
+      <SectionLabel :inset="touch" :class="{ 'sheet-heading': !touch }">{{ section.title }}</SectionLabel>
       <EmptyState v-if="section.entries.length === 0" compact :text="section.empty" />
       <Row
         v-for="entry in section.entries"
@@ -78,14 +78,15 @@ function choose(entry: SheetEntry): void {
         as="button"
         type="button"
         :data-testid="`sheet:${entry.id}`"
+        :icon="entry.icon"
+        :label="entry.title"
+        :detail="entry.detail"
+        :checked="entry.current"
         :selected="entry.current"
         :aria-current="entry.current ? 'true' : undefined"
         @click="choose(entry)"
       >
-        <Icon :name="entry.icon" :size="iconSize" />
-        <span class="sheet-row-title">{{ entry.title }}</span>
         <span v-if="entry.meta" class="sheet-row-meta">{{ entry.meta }}</span>
-        <Icon v-if="entry.current" name="lu:check" :size="iconSize" />
         <template v-if="closable(section, entry)" #trailing>
           <IconButton icon="lu:x" size="row" :aria-label="`Close ${entry.title}`" @click="workspace.closeType(entry.typeId)" />
         </template>
@@ -104,6 +105,11 @@ function choose(entry: SheetEntry): void {
   padding: 0 8px;
 }
 
+.sheet-list.touch {
+  gap: 0;
+  padding: 0;
+}
+
 .sheet-section {
   display: flex;
   flex-direction: column;
@@ -111,12 +117,6 @@ function choose(entry: SheetEntry): void {
 
 .sheet-heading {
   padding: 0 8px 8px;
-}
-
-.sheet-row-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Pushed to the trailing edge so the titles read as a column: which type a row belongs to is the answer

@@ -9,13 +9,18 @@ export interface SheetEntry {
   // Unique across the whole sheet: the row key, and what a test addresses.
   id: string
   title: string
-  // Icon spec string resolved by uikit's Icon registry. A row wears the icon of its TYPE — an object is
-  // recognised by its name, and giving each object its own glyph would spend the column on nothing.
+  // Icon spec string resolved by uikit's Icon registry. A row wears the icon of its type, or of its kind of
+  // object where the type holds several (a workbook among documents) — the same glyph its tab and tree
+  // row wear.
   icon: string
   typeId: string
   // The object's key within its type. Absent — the row stands for the type itself.
   objectKey?: string
+  // A quiet fact on the trailing edge: which type an object row belongs to.
   meta?: string
+  // A second line under the title: what the type holds right now ("3 open") or what it is for. The phone's
+  // rows of types carry it; a row of the desktop's objects has its type as `meta` instead.
+  detail?: string
   // The type the person is in right now — the row wears the selection instead of offering to switch.
   current?: boolean
 }
@@ -59,17 +64,23 @@ export function typeSections(workspace: Workspace, types: TabTypeRegistry, shown
       empty: 'Nothing is open yet.',
       entries: open.map((type) => {
         const count = workspace.tabsOf(type.id).length
-        const meta = [count > 0 ? `${count} open` : null, shown.has(type.id) ? null : 'Not in the row']
-          .filter((part) => part != null)
+        const detail = [count > 0 ? `${count} open` : (type.summary?.() ?? null), shown.has(type.id) ? null : 'not in the row']
+          .filter((part) => part != null && part !== '')
           .join(' · ')
-        return { ...typeEntry('open', type), ...(meta ? { meta } : {}), current: type.id === active }
+          .replace(/^./, (first) => first.toUpperCase())
+        return { ...typeEntry('open', type), ...(detail ? { detail } : {}), current: type.id === active }
       }),
     },
     {
       id: 'new',
       title: 'Open new',
       empty: 'Everything is open.',
-      entries: types.all.value.filter((type) => !openIds.has(type.id)).map((type) => typeEntry('new', type)),
+      entries: types.all.value
+        .filter((type) => !openIds.has(type.id))
+        .map((type) => {
+          const detail = type.summary?.()
+          return { ...typeEntry('new', type), ...(detail ? { detail } : {}) }
+        }),
     },
   ]
 }
@@ -94,7 +105,7 @@ function openEntries(workspace: Workspace, types: TabTypeRegistry): SheetEntry[]
     return tabs.map((tab) => ({
       id: `open:${type.id}:${tab.key}`,
       title: tab.title,
-      icon: type.icon,
+      icon: tab.icon ?? type.icon,
       typeId: type.id,
       objectKey: tab.key,
       // A tab whose object is gone says so instead of naming its type: the type is the least useful

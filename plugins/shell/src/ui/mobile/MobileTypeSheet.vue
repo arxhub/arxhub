@@ -12,7 +12,12 @@ const props = defineProps<{ open: boolean; type: TabType | null; workspace: Work
 const emit = defineEmits<{ close: []; browse: [] }>()
 
 const mode = computed(() => (props.type == null ? null : secondTapOf(props.type)))
-const title = computed(() => props.type?.sheet?.title ?? props.type?.title ?? '')
+// "Budget · Months": the sheet says whose it is before what it lists — it rises over the type's own page.
+const title = computed(() => {
+  const type = props.type
+  if (type == null) return ''
+  return type.sheet?.title == null ? type.title : `${type.title} · ${type.sheet.title}`
+})
 const anchor = computed(() => props.type?.sheet?.anchor ?? (mode.value === 'tabs' ? 'end' : 'start'))
 
 // Oldest at the top, the freshest at the bottom under the thumb — and the sheet opens scrolled there.
@@ -45,21 +50,23 @@ function drop(key: string): void {
 <template>
   <BottomSheet :open="props.open && mode != null" :title="title" :anchor="anchor" @close="emit('close')">
     <template v-if="props.type != null">
-      <component :is="find?.results" v-if="finding" :query="query" @opened="emit('close')" />
+      <component :is="find?.results" v-if="finding" :query="query" :context="props.type.title" @opened="emit('close')" />
       <component :is="props.type.sheet?.content" v-else-if="mode === 'content'" :type-id="props.type.id" />
 
       <template v-else-if="mode === 'tabs'">
         <SectionLabel v-if="tabs.length" inset>Tabs · {{ tabs.length }}</SectionLabel>
         <!-- With a navigation below, no tabs is just a shorter sheet: the browse row is the whole answer. -->
         <EmptyState v-else-if="props.type.nav == null" compact icon="lu:layers" text="Nothing is open in this type yet." />
+        <!-- The second line says which tab is the current one in words, not only by the wash: the folder is
+             one tap away in the vault, and "which of these am I in" is what this list is opened for. -->
         <Row
           v-for="tab in tabs"
           :key="tab.key"
           as="button"
           type="button"
-          :icon="props.type.icon"
+          :icon="tab.icon ?? props.type.icon"
           :label="tab.title"
-          :detail="tab.subtitle || undefined"
+          :detail="tab.key === activeKey ? 'Current tab' : 'Open'"
           :selected="tab.key === activeKey"
           :aria-current="tab.key === activeKey ? 'true' : undefined"
           :data-testid="`open:${tab.typeId}:${tab.key}`"
@@ -73,12 +80,13 @@ function drop(key: string): void {
         <!-- The road from what is open to everything that could be: the type's own navigation, whole
              screen, since a tree of the vault needs the room a list of tabs does not. -->
         <template v-if="props.type.nav != null">
-          <Separator v-if="tabs.length" orientation="horizontal" />
+          <Separator v-if="tabs.length" class="rule" orientation="horizontal" />
           <Row
             as="button"
             type="button"
             :icon="props.type.nav.icon ?? 'lu:folder'"
             :label="props.type.nav.title ?? props.type.title"
+            :detail="props.type.nav.detail"
             next
             data-testid="type-sheet-browse"
             @click="emit('browse')"
@@ -97,6 +105,12 @@ function drop(key: string): void {
 </template>
 
 <style scoped>
+/* A hairline set in by the rows' own inset, not a region border: the browse row still belongs to the list. */
+.rule {
+  width: auto;
+  margin: 4px 16px;
+}
+
 .note {
   flex-shrink: 0;
   color: var(--gray-10);

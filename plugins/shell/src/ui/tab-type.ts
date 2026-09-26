@@ -48,6 +48,9 @@ export function isObjectGone(result: OpenedObject | ObjectGone): result is Objec
 export interface ObjectLabel {
   title: string
   subtitle?: string
+  // What kind of object it is, where one type holds several (a workbook among documents). Unset — the
+  // type's own icon.
+  icon?: string
 }
 
 // The role "objects open inside this type". These three operations are everything the shell needs to
@@ -61,6 +64,10 @@ export interface ObjectsRole {
   // the tab stays, marked, instead of disappearing silently.
   revive(snapshot: Json): Promise<OpenedObject | ObjectGone>
   label(object: OpenedObject): ObjectLabel
+  // The glyph of an object that says nothing of its own kind: a tab whose object is gone, a panel the
+  // workspace adopted. The type's own icon stands for the type, and on a row that stands for an object
+  // it would claim to be something else (a folder for a Documents tab).
+  icon?: string
 }
 
 // A type's navigation: the vault tree, a list of albums, the sections of settings. Not a tab — it is
@@ -70,6 +77,9 @@ export interface TabTypeNav {
   component: Component
   title?: string
   icon?: string
+  // What the road into the navigation leads to, as the second line of its row in the phone's second-tap
+  // sheet ("All documents · search"). Unset — the row has one line.
+  detail?: string
   // The key the column's width and collapsed state are remembered under. Defaults to the type id:
   // width is remembered per type.
   widthKey?: string
@@ -153,7 +163,7 @@ export interface ObjectBar {
 // has done its job — a month was picked, a section chosen — closes the sheet through
 // `useNavHost().navigated()`, the same call a navigation already makes on the desktop.
 export interface TabTypeSheet {
-  // Defaults to the type's own title.
+  // What the sheet lists, shown after the type's own title ("Budget · Months"). Unset — the type's title.
   title?: string
   // Replaces the default body: the months of Budget, the sessions of AI.
   content?: Component
@@ -171,6 +181,9 @@ export interface TabTypeSheet {
 // opened, which puts the sheet away.
 export interface TabTypeFind {
   placeholder: string
+  // Mounted with `query`, and with `context` — the type's title — where the field stands outside the
+  // type's own navigation (the second-tap sheet): there a hit has to say which type it belongs to, while
+  // under the vault tree that is already the answer.
   results: Component
 }
 
@@ -188,6 +201,10 @@ interface TabTypeBase {
   // objects). Not declared, or null — no band: an empty one would spend 48px of the shortest screen.
   bar?: (active: OpenedObject | null) => ObjectBar | null
   sheet?: TabTypeSheet
+  // What the type is, or what it holds right now, in a few words: the second line of its row in the phone's
+  // "Open or switch to" ("Current month", "2 sessions"). Read on every render, so whatever it reads must
+  // be reactive. An object type with tabs open says how many instead.
+  summary?: () => string | null | undefined
   // Read on every render, so a finder contributed by an optional plugin comes and goes with it. Not
   // declared, or null — no field: a field that finds nothing is a promise the type cannot keep.
   find?: () => TabTypeFind | null

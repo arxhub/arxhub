@@ -124,7 +124,7 @@ describe("the phone's More: the same two sections, at the level of types", () =>
     workspace.activateType('logs')
 
     const [open, fresh] = typeSections(workspace, types, new Set(['notes']))
-    expect(open.entries.map((it) => [it.typeId, it.meta ?? null, it.current])).toEqual([
+    expect(open.entries.map((it) => [it.typeId, it.detail ?? null, it.current])).toEqual([
       ['notes', '2 open', false],
       ['logs', 'Not in the row', true],
     ])
@@ -132,5 +132,21 @@ describe("the phone's More: the same two sections, at the level of types", () =>
     expect(open.entries.every((it) => it.objectKey == null)).toBe(true)
     // What is open already is not offered a second time.
     expect(fresh.entries.map((it) => it.typeId)).toEqual(['settings'])
+  })
+
+  test("a type's summary is the second line while it has no tabs to count, and a count wins over it", async () => {
+    const types = new TabTypeRegistry()
+    types.register({ ...notesType, summary: () => 'Every note' })
+    types.register({ ...settingsType, summary: () => 'App and device' })
+    const workspace = new Workspace({ types, createPanels: () => new FakePanelHost() })
+    workspace.activateType('settings')
+
+    const [open, fresh] = typeSections(workspace, types, new Set(['settings']))
+    expect(open.entries.map((it) => it.detail)).toEqual(['App and device'])
+    expect(fresh.entries.map((it) => it.detail)).toEqual(['Every note'])
+
+    await workspace.openObject('notes', { id: 'a.md' })
+    const [again] = typeSections(workspace, types, new Set(['settings', 'notes']))
+    expect(again.entries.find((it) => it.typeId === 'notes')?.detail).toBe('1 open')
   })
 })

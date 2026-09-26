@@ -17,48 +17,57 @@ const emit = defineEmits<{ parts: [] }>()
     <!-- While the keyboard is up the band is the editor's: undo and redo belong to editing, which is
          exactly when they are needed, and the type row has made room by going away. -->
     <component :is="props.bar.editing" v-if="props.typing && props.bar.editing != null" />
-    <template v-else>
-      <!-- The name leads somewhere only for a composite object; for a plain document a chevron would
-           promise a sheet with one row in it. -->
-      <Button
-        v-if="props.bar.parts != null"
-        variant="ghost"
-        align="start"
-        class="name"
-        :class="{ open: props.partsOpen }"
-        aria-haspopup="dialog"
-        :aria-expanded="props.partsOpen"
-        :aria-label="`${props.bar.name}: ${props.bar.parts.title}`"
-        data-testid="object-bar-parts"
-        @click="emit('parts')"
-      >
-        <Icon :name="props.bar.icon" :size="16" />
-        <span class="text">{{ props.bar.name }}<span v-if="props.bar.sub" class="sub"> · {{ props.bar.sub }}</span></span>
-        <Icon name="lu:chevron-up" :size="16" />
-      </Button>
-      <div v-else class="name label" data-testid="object-bar-name">
-        <Icon :name="props.bar.icon" :size="16" />
-        <span class="text">{{ props.bar.name }}<span v-if="props.bar.sub" class="sub"> · {{ props.bar.sub }}</span></span>
-      </div>
-      <OverflowActions
-        align="end"
-        class="actions"
-        :actions="props.bar.actions ?? []"
-        :menu="props.bar.menu ?? []"
-        more-label="More actions"
-        :more-title="props.bar.name"
-      />
-    </template>
+    <!-- The name is the leading side of the keys rather than their sibling, so the keys know the room it
+         leaves them: they give way into More before the name goes below its floor. -->
+    <OverflowActions
+      v-else
+      align="end"
+      leading-min="176px"
+      divided
+      class="actions"
+      :actions="props.bar.actions ?? []"
+      :menu="props.bar.menu ?? []"
+      more-label="More actions"
+      :more-title="props.bar.name"
+    >
+      <template #leading>
+        <!-- The name leads somewhere only for a composite object; for a plain document a chevron would
+             promise a sheet with one row in it. -->
+        <Button
+          v-if="props.bar.parts != null"
+          variant="ghost"
+          align="start"
+          class="name"
+          :class="{ open: props.partsOpen }"
+          aria-haspopup="dialog"
+          :aria-expanded="props.partsOpen"
+          :aria-label="`${props.bar.name}: ${props.bar.parts.title}`"
+          data-testid="object-bar-parts"
+          @click="emit('parts')"
+        >
+          <Icon :name="props.bar.icon" :size="16" />
+          <span class="text">{{ props.bar.name }}<span v-if="props.bar.sub" class="sub"> · {{ props.bar.sub }}</span></span>
+          <Icon name="lu:chevron-up" :size="16" />
+        </Button>
+        <div v-else class="name label" data-testid="object-bar-name">
+          <Icon :name="props.bar.icon" :size="16" />
+          <span class="text">{{ props.bar.name }}<span v-if="props.bar.sub" class="sub"> · {{ props.bar.sub }}</span></span>
+        </div>
+      </template>
+    </OverflowActions>
   </Strip>
 </template>
 
 <style scoped>
-/* The name takes whatever the fitted keys leave; the keys give way into More before the name does. */
+/* The name takes whatever the fitted keys leave (OverflowActions' leading-min is its floor). It is set at
+   the strip's own text step (DS Strip role), not a touch row's: the band is a strip, and a 16px name ate
+   the room the keys needed at 360. */
 .name {
   flex: 1 1 auto;
   min-width: 0;
   height: 100%;
   border-radius: 0;
+  font-size: var(--font-size-sm);
 }
 
 /* The same colour and weight the ghost Button draws, so only the chevron and the hover tell a name that
@@ -69,7 +78,6 @@ const emit = defineEmits<{ parts: [] }>()
   gap: 8px;
   padding: 0 16px;
   color: var(--gray-11);
-  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
 }
 
@@ -80,6 +88,7 @@ const emit = defineEmits<{ parts: [] }>()
 }
 
 .text {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -91,6 +100,7 @@ const emit = defineEmits<{ parts: [] }>()
 }
 
 .actions {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
+  align-self: stretch;
 }
 </style>

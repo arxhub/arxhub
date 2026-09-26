@@ -2,7 +2,17 @@ import { type Component, type ComputedRef, computed, ref } from 'vue'
 import type { WorkspaceEmit } from './nav-events'
 import { ObjectGoneView } from './object-gone'
 import type { PanelHost } from './panel-host'
-import { isObjectGone, isObjectType, type Json, type ObjectBar, type ObjectRef, type OpenedObject, objectGone, type TabType } from './tab-type'
+import {
+  isObjectGone,
+  isObjectType,
+  type Json,
+  type ObjectBar,
+  type ObjectLabel,
+  type ObjectRef,
+  type OpenedObject,
+  objectGone,
+  type TabType,
+} from './tab-type'
 import type { TabTypeRegistry } from './tab-type-registry'
 
 // The space of one type. A type with objects gets its own panel host: groups, splitting and ratios
@@ -18,6 +28,7 @@ export interface OpenedTab {
   readonly key: string
   readonly title: string
   readonly subtitle?: string
+  readonly icon?: string
   // The tab's object did not come back from its snapshot. The tab is in place and marked.
   readonly gone: boolean
 }
@@ -445,14 +456,15 @@ export class Workspace {
     if (object == null) return null
     // An adopted panel has no type-side object, so there is nothing to ask `label()` about: its title
     // is whatever the host is showing.
-    if (own == null) return { typeId, key, title: object.title, gone: false }
+    const type = this.types.get(typeId)
+    const fallbackIcon = type != null && isObjectType(type) ? type.objects.icon : undefined
+    if (own == null) return { typeId, key, title: object.title, icon: fallbackIcon, gone: false }
 
     const gone = this.isGone(typeId, key)
-    const type = this.types.get(typeId)
     // A marked tab takes its label from the saved title: the object the type could have told us more
     // about is no longer there.
-    const label = gone || type == null || !isObjectType(type) ? { title: object.title } : type.objects.label(object)
-    return { typeId, key, title: label.title, subtitle: label.subtitle, gone }
+    const label: ObjectLabel = gone || type == null || !isObjectType(type) ? { title: object.title } : type.objects.label(object)
+    return { typeId, key, title: label.title, subtitle: label.subtitle, icon: label.icon ?? fallbackIcon, gone }
   }
 
   private placeholderFor(typeId: string, tab: TabState): OpenedObject {

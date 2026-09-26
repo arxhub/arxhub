@@ -19,7 +19,8 @@ import { fitTypeRow } from './type-row'
 const props = defineProps<{ open: boolean; workspace: Workspace; types: TabTypeRegistry; status: StatusRegistry }>()
 const emit = defineEmits<{ close: [] }>()
 
-const statusItems = computed(() => [...props.status.statuses.value, ...props.status.actions.value])
+const states = computed(() => props.status.statuses.value)
+const actions = computed(() => props.status.actions.value)
 const sections = computed(() => {
   const shown = new Set(fitTypeRow(props.workspace.row.value).shown.map((item) => item.type.id))
   return typeSections(props.workspace, props.types, shown)
@@ -28,24 +29,56 @@ const sections = computed(() => {
 
 <template>
   <BottomSheet :open="props.open" label="Open or switch to" @close="emit('close')">
-    <div v-if="statusItems.length" class="status-card">
-      <component :is="item.component" v-for="item in statusItems" :key="item.id" />
+    <div v-if="states.length || actions.length" class="status-block">
+      <div class="states">
+        <component :is="item.component" v-for="item in states" :key="item.id" />
+      </div>
+      <div class="actions">
+        <component :is="item.component" v-for="item in actions" :key="item.id" />
+      </div>
     </div>
     <SearchSheetList :open="props.open" :workspace="props.workspace" :types="props.types" :sections="sections" @chosen="emit('close')" />
   </BottomSheet>
 </template>
 
 <style scoped>
-.status-card {
+/* The head of the list, not a card inside it: a band at the rows' own height and inset, set off from the
+   sections below by the hairline a region keeps inside itself. One line at any width: on a narrow phone
+   the states give way (truncated) and the actions keep their place at the end, rather than the band
+   wrapping to twice its height and pushing the list down. */
+.status-block {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
-  margin: 16px;
-  padding: 12px 16px;
-  border: 1px solid var(--gray-6);
-  border-radius: var(--radius-sm);
-  background: var(--gray-2);
+  gap: 12px;
+  height: var(--size-xl);
+  padding: 0 16px;
+  border-bottom: 1px solid var(--gray-4);
   color: var(--gray-11);
+}
+
+.states,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.states {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.states > :deep(*) {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 </style>
