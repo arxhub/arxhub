@@ -1,5 +1,5 @@
 import { openBlockSettings } from './arx-inspector-helpers'
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { documentTool, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 async function open(page: Parameters<typeof openNavigation>[0], name: string) {
   await page.getByRole('button', { name: 'Block actions', exact: true }).click()
@@ -29,8 +29,7 @@ test('columns retain content and use the frame layout after saving', async ({ ap
   if (!left || !right) throw new Error('Columns must be visible')
   if (await isMobileFrame(app)) expect(right.y).toBeGreaterThan(left.y)
   else expect(right.x).toBeGreaterThan(left.x)
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('"type": "columns"')
   await app.reload()
   await expect(columns).toHaveText(['Left', 'Right'])
@@ -64,8 +63,7 @@ test('modifier clicks select disjoint blocks for group actions', async ({ app, v
   await expect(editor.locator('.arx-block-selected')).toHaveText(['First', 'Third'])
   await open(app, 'Delete block')
   await expect(editor.locator('p')).toHaveText(['Untouched'])
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Undo', exact: true }).click()
+  await documentTool(app, 'Undo')
   await expect(editor.locator('p')).toHaveText(['First', 'Untouched', 'Third'])
   await expect(editor.locator('.arx-block-selected')).toHaveText(['First', 'Third'])
 })

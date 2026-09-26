@@ -37,3 +37,23 @@ test('a desk saved under the Notes type reopens its tabs under Documents', async
 
   await app.evaluate(() => localStorage.removeItem('arxhub.boot'))
 })
+
+// The plugin's own folders move with its name: whatever an older build kept under storage/Notes is under
+// storage/Documents after the next boot, so saved settings are still there after the update.
+test('what the plugin kept under the Notes folders is under Documents after the update', async ({ app, vault }, testInfo) => {
+  const marker = `e2e-${testInfo.project.name}-${Date.now()}.txt`
+  await vault.writeData(`storage/Notes/${marker}`, 'kept by the old build')
+  await app.reload()
+  await waitForApp(app)
+
+  await expect.poll(() => vault.readData(`storage/Documents/${marker}`).catch(() => null), { timeout: 15_000 }).toBe('kept by the old build')
+  await expect
+    .poll(() =>
+      vault.readData(`storage/Notes/${marker}`).then(
+        () => true,
+        () => false,
+      ),
+    )
+    .toBe(false)
+  await vault.removeData(`storage/Documents/${marker}`)
+})

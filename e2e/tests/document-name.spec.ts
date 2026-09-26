@@ -1,4 +1,5 @@
-import { expect, openFile, openNavigation, openNote, test, type Vault } from './fixtures'
+import type { Locator, Page } from '@playwright/test'
+import { expect, isMobileFrame, openDocumentTools, openFile, openNavigation, openNote, test, type Vault } from './fixtures'
 
 // OR-02: whatever is showing a document says what the document is CALLED, at the very top, and the
 // name is where it is renamed. Both frames run this file — the strip is the same one on the phone,
@@ -13,6 +14,30 @@ function shown(path: string): string {
   return path.slice(0, path.lastIndexOf('.'))
 }
 
+// Where the name is shown: the strip at the top of the document on the desktop, the object bar's name on
+// the phone, whose top holds nothing to press.
+async function nameOf(app: Page): Promise<Locator> {
+  return (await isMobileFrame(app)) ? app.getByTestId('object-bar-name') : app.getByTestId('document-name')
+}
+
+// The name exactly — and on the phone the quieter half the bar may carry after it (a picture's size, a save
+// state), which is not part of the name.
+function named(stem: string): RegExp {
+  return new RegExp(`^${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( · .+)?$`)
+}
+
+// The field a rename is typed into: the name itself on the desktop, Rename in the bar's More on the phone,
+// which raises a sheet with the field above the keyboard.
+async function startRename(app: Page): Promise<Locator> {
+  if (await isMobileFrame(app)) {
+    await openDocumentTools(app)
+    await app.getByRole('menuitem', { name: 'Rename', exact: true }).click()
+    return app.getByTestId('rename-document-field')
+  }
+  await app.getByTestId('document-name').click()
+  return app.getByRole('textbox', { name: 'New name' })
+}
+
 // The file may legitimately not be there (that is half of what a rename means), and readFileSync
 // throwing would end the poll instead of retrying it.
 function readOrNull(vault: Vault, path: string): Promise<string | null> {
@@ -25,15 +50,14 @@ test.describe('the name of an open document', () => {
     const renamed = path.replace('rename-me.md', 'renamed.md')
 
     await openNote(app, path)
-    const name = app.getByTestId('document-name')
-    await expect(name).toHaveText(shown(path))
+    const name = await nameOf(app)
+    await expect(name).toHaveText(named(shown(path)))
     // Visible, not merely present: this strip shares its 40px with the formatting keys and Save, and on
     // a phone a name that yields ALL of its room is a name nobody can read or press.
     await expect(name).toBeVisible()
 
-    await name.click()
     // Seeded with the current name and selected, so typing replaces it rather than appending to it.
-    const field = app.getByRole('textbox', { name: 'New name' })
+    const field = await startRename(app)
     await expect(field).toHaveValue(shown(path))
     // The visible name only — the hidden '.md' is glued back on at commit, and typing it here would
     // write 'renamed.md.md'. The prefix stays because the vault fixture puts the test's own name in
@@ -44,19 +68,18 @@ test.describe('the name of an open document', () => {
     await expect.poll(() => readOrNull(vault, renamed)).toContain('the text')
     await expect.poll(() => readOrNull(vault, path)).toBeNull()
     // The strip follows the file: the tab was retargeted through VaultWatcher, not re-opened.
-    await expect(app.getByTestId('document-name')).toHaveText(shown(renamed))
+    await expect(await nameOf(app)).toHaveText(named(shown(renamed)))
   })
 
   test('Escape leaves the file alone', async ({ app, vault }) => {
     const path = await vault.write('keep-me.md', 'untouched\n')
 
     await openNote(app, path)
-    await app.getByTestId('document-name').click()
-    const field = app.getByRole('textbox', { name: 'New name' })
+    const field = await startRename(app)
     await field.fill(shown(path.replace('keep-me.md', 'something-else.md')))
     await field.press('Escape')
 
-    await expect(app.getByTestId('document-name')).toHaveText(shown(path))
+    await expect(await nameOf(app)).toHaveText(named(shown(path)))
     await expect.poll(() => readOrNull(vault, path)).toContain('untouched')
     await expect.poll(() => readOrNull(vault, path.replace('keep-me.md', 'something-else.md'))).toBeNull()
   })
@@ -68,8 +91,7 @@ test.describe('the name of an open document', () => {
     const path = await vault.write('collides.md', 'mine\n')
 
     await openNote(app, path)
-    await app.getByTestId('document-name').click()
-    const field = app.getByRole('textbox', { name: 'New name' })
+    const field = await startRename(app)
     await field.fill(shown(occupied))
     await field.press('Enter')
 
@@ -92,8 +114,7 @@ test.describe('the name of an open document', () => {
     await app.keyboard.type(' plus more')
     await expect(app.locator('.cm-content')).toContainText('first line plus more')
 
-    await app.getByTestId('document-name').click()
-    const field = app.getByRole('textbox', { name: 'New name' })
+    const field = await startRename(app)
     await field.fill(shown(renamed))
     await field.press('Enter')
 
@@ -109,8 +130,7 @@ test.describe('the name of an open document', () => {
     const renamed = path.replace('from-the-strip.md', 'from-the-strip-2.md')
 
     await openNote(app, path)
-    await app.getByTestId('document-name').click()
-    const field = app.getByRole('textbox', { name: 'New name' })
+    const field = await startRename(app)
     await field.fill(shown(renamed))
     await field.press('Enter')
 
@@ -126,6 +146,6 @@ test.describe('the name of an open document', () => {
 
     await openFile(app, path)
 
-    await expect(app.getByTestId('document-name')).toHaveText(shown(path))
+    await expect(await nameOf(app)).toHaveText(named(shown(path)))
   })
 })

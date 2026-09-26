@@ -1,4 +1,5 @@
-import { expect, openType, test } from './fixtures'
+import type { Page } from '@playwright/test'
+import { activeTypeKey, expect, isMobileFrame, openType, test } from './fixtures'
 
 const header = '{"type":"budget","version":1}\n'
 const storage = 'storage/budget/budget.jsonl'
@@ -14,6 +15,18 @@ const fiscalQrPng = Buffer.from(
   ].join(''),
   'base64',
 )
+// The period on screen: the desktop page's own month control, the second tap's list of months on a phone.
+async function showMonth(app: Page, month: string): Promise<void> {
+  if (!(await isMobileFrame(app))) {
+    await app.getByTestId('budget-page').locator('input[type="month"]').fill(month)
+    return
+  }
+  await activeTypeKey(app).click()
+  const months = app.getByTestId('budget-months')
+  await months.getByTestId(`budget-month:${month}`).click()
+  await expect(months).toBeHidden()
+}
+
 const captureSeed = [
   { type: 'budget', version: 2 },
   { type: 'account', id: 'rub', name: 'Everyday', currency: 'RUB', openingBalance: 100_000 },
@@ -80,7 +93,7 @@ test.describe('budget accounting', () => {
       await dialog.getByRole('button', { name: kind === 'Expense' ? 'Save purchase' : 'Save income', exact: true }).click()
       await expect(dialog).toBeHidden()
     }
-    await page.locator('input[type="month"]').fill('2026-09')
+    await showMonth(app, '2026-09')
     const summary = page.getByTestId('budget-summary')
     await expect(summary).toContainText('2,000.00')
     await expect(summary).toContainText('250.50')
@@ -104,7 +117,7 @@ test.describe('budget accounting', () => {
     await page.getByRole('navigation', { name: 'Budget sections' }).getByText('Accounts', { exact: true }).click()
     await expect(page.getByRole('button', { name: 'Remove Everyday', exact: true })).toBeDisabled()
     await page.getByRole('navigation', { name: 'Budget sections' }).getByText('Transactions', { exact: true }).click()
-    await page.locator('input[type="month"]').fill('2026-09')
+    await showMonth(app, '2026-09')
     await page.getByRole('button', { name: 'Edit Lunch transaction', exact: true }).click()
     dialog = app.getByRole('dialog', { name: 'Edit transaction', exact: true })
     await dialog.getByRole('button', { name: 'Transaction details', exact: false }).click()

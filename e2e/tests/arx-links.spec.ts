@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { documentTool, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 const document = (...texts: string[]) =>
   JSON.stringify({ version: 1, doc: { type: 'doc', content: texts.map((text) => ({ type: 'paragraph', content: [{ type: 'text', text }] })) } })
@@ -26,21 +26,18 @@ test('internal block links persist, open through Documents and appear as backlin
   await dialog.getByRole('button', { name: 'Chosen destination', exact: true }).click()
   await expect(dialog.getByRole('textbox', { name: 'Link address' })).toHaveValue(/#text=Chosen/)
   await dialog.getByRole('button', { name: 'Apply link', exact: true }).click()
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(source)).toContain('#text=Chosen')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
-  await expect(editor).toBeFocused()
+  await documentTool(app, 'Read only')
+  // On the phone a menu hands focus back to its key: the caret in the text would raise the keyboard.
+  if (!(await isMobileFrame(app))) await expect(editor).toBeFocused()
   await editor.getByRole('link', { name: 'Visit destination' }).click()
   await expect(editor).toContainText('Chosen destination')
   await expect.poll(() => editor.evaluate(() => window.getSelection()?.toString())).toBe('Chosen destination')
   await app.context().grantPermissions(['clipboard-read', 'clipboard-write'])
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Copy link to block', exact: true }).click()
+  await documentTool(app, 'Copy link to block')
   await expect.poll(() => app.evaluate(() => navigator.clipboard.readText())).toContain('#text=Chosen')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Backlinks', exact: true }).click()
+  await documentTool(app, 'Backlinks')
   const backlinks = app.getByRole('dialog', { name: 'Backlinks', exact: true })
   await expect(backlinks.getByRole('button', { name: new RegExp(source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) })).toBeVisible({
     timeout: 15_000,
@@ -55,8 +52,7 @@ test('internal block links persist, open through Documents and appear as backlin
   await app.reload()
   await openNavigation(app)
   await app.getByRole('treeitem', { name: source, exact: true }).click()
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
+  await documentTool(app, 'Read only')
   await editor.getByRole('link', { name: 'Visit destination' }).click()
   await expect(editor).toContainText('Renamed and edited destination')
   await expect.poll(() => editor.evaluate(() => window.getSelection()?.toString())).toBe('Renamed and edited destination')

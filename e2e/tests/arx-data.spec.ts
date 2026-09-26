@@ -1,5 +1,5 @@
 import { closeSettings, openBlockSettings } from './arx-inspector-helpers'
-import { expect, openNavigation, test } from './fixtures'
+import { documentTool, expect, openNavigation, test } from './fixtures'
 
 test('data blocks load tasks, open their sources and group documents by date in both frames', async ({ app, vault }) => {
   const tasks = await vault.write(
@@ -42,8 +42,7 @@ test('data blocks load tasks, open their sources and group documents by date in 
   await view.getByLabel('Grouped results').getByRole('button', { name: 'First indexed task', exact: true }).first().click()
   await expect(app.locator('.ProseMirror:visible')).toContainText('Second indexed task')
   await app.locator('.ProseMirror:visible').getByRole('checkbox').first().press('Space')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(async () => JSON.parse(await vault.read(tasks)).doc.content[0].content[0].attrs.checked).toBe(true)
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path, exact: true }).click()
@@ -56,11 +55,9 @@ test('data blocks load tasks, open their sources and group documents by date in 
   await closeSettings(app)
   await expect(view.getByLabel('Calendar month')).toBeVisible()
   await expect(view).toContainText('Dates show when documents were last modified.')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('"layout": "calendar"')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
+  await documentTool(app, 'Read only')
   await expect(app.getByRole('button', { name: 'Collection settings', exact: true })).toHaveCount(0)
   await expect(view.getByRole('button', { name: 'Refresh data', exact: true })).toBeEnabled()
 })

@@ -7,6 +7,7 @@ import {
   openSearchApp as openSearch,
   openType,
   test,
+  viewerAction,
   waitForApp,
   waitForIndex,
 } from './fixtures'
@@ -291,7 +292,7 @@ test.describe('finding a note by a word in its text', () => {
     await expect(app.locator('.cm-content:visible')).toContainText('трилобит')
     // Exact: the workspace tab beside it is named after the file, and this test's own name has "saved" in
     // it — a substring match would find two buttons.
-    await app.getByRole('button', { name: 'Save', exact: true }).click()
+    await viewerAction(app, 'Save')
     // The write reached the vault. The freshness path starts at a write, so a save that never happened
     // would make everything below prove nothing.
     await expect.poll(() => vault.read(live)).toContain('трилобит')

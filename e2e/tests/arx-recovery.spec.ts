@@ -1,4 +1,4 @@
-import { expect, openNavigation, test } from './fixtures'
+import { documentTool, expect, openNavigation, test } from './fixtures'
 
 const document = (text: string) =>
   JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] } })
@@ -38,8 +38,7 @@ test('external edits are preserved when an unsaved buffer is saved as a recovery
   await app.keyboard.press('End')
   await app.keyboard.insertText(' local draft')
   await vault.writeData(`vault/${path}`, document('External edit'))
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   const recovery = app.getByRole('dialog', { name: 'File changed outside this editor', exact: true })
   await expect(recovery.getByLabel('Saved file preview')).toContainText('External edit')
   await expect(recovery.getByLabel('Draft preview')).toContainText('Original local draft')

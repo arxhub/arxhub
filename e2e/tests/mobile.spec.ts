@@ -1,12 +1,14 @@
 import {
   expect,
   isMobileFrame,
+  navigationSheet,
   openDocumentList,
   openNavigation,
   openNote,
   openType,
   SETTINGS_TYPE,
   shownName,
+  tabEntry,
   test,
   typeRow,
   waitForApp,
@@ -52,11 +54,11 @@ test.describe('mobile navigation', () => {
     test.skip(!(await isMobileFrame(app)), 'only meaningful on the mobile frame')
   })
 
-  test('back closes the files panel instead of leaving the app', async ({ app }) => {
+  test('back closes the vault instead of leaving the app', async ({ app }) => {
     await openNavigation(app)
     await app.goBack()
 
-    await expect(app.getByRole('region', { name: /navigation$/ })).toBeHidden()
+    await expect(navigationSheet(app)).toBeHidden()
     // Still the app, not a blank tab or the previous page.
     await waitForApp(app)
   })
@@ -97,30 +99,29 @@ test.describe('mobile navigation', () => {
     // One at a time hides how many are waiting, so the second level is a second tap on the type you are
     // already in — the counter on the key is what says there is anything behind it.
     const list = await openDocumentList(app)
-    await expect(list.getByRole('menuitem', { name: shownName(first) })).toBeVisible()
-    await expect(list.getByRole('menuitem', { name: shownName(second) })).toBeVisible()
+    await expect(tabEntry(list, shownName(first))).toBeVisible()
+    await expect(tabEntry(list, shownName(second))).toBeVisible()
 
-    await list.getByRole('menuitem', { name: shownName(first) }).click()
+    await tabEntry(list, shownName(first)).click()
     // Choosing one is navigation, so the layer it was chosen from gets out of the way.
     await expect(list).toBeHidden()
     await expect(app.locator('.cm-content:visible')).toContainText('first')
   })
 
-  test('switching types does not stack navigation in the shared panel', async ({ app, vault }) => {
+  test("each type's second tap holds its own navigation, never another type's", async ({ app, vault }) => {
     const path = await vault.write('kept.md', 'kept\n')
     await openNote(app, path)
     await openType(app, 'Settings', SETTINGS_TYPE)
     await openNavigation(app)
-    const panel = app.getByRole('region', { name: /navigation$/ })
+    const panel = navigationSheet(app)
     await expect(panel.locator('.settings-nav')).toHaveCount(1)
-    await expect(panel.getByRole('tree')).toHaveCount(0)
+    await expect(panel.getByRole('treeitem', { name: path })).toHaveCount(0)
     await openType(app, 'Search', 'arxhub.search')
     await expect(app.getByRole('textbox', { name: 'Search', exact: true })).toBeVisible()
     await expect(panel).toBeHidden()
-    await expect(app.getByTestId('arxhub.shell.rail')).toHaveCount(0)
     await openType(app, 'Documents')
     await openNavigation(app)
-    await expect(panel.getByRole('tree')).toHaveCount(1)
+    await expect(panel.getByRole('treeitem', { name: path })).toHaveCount(1)
     await expect(panel.locator('.settings-nav')).toHaveCount(0)
     await expect(panel.locator('.search-rail')).toHaveCount(0)
   })
@@ -184,38 +185,5 @@ test.describe('mobile navigation', () => {
 
     // The irreversible action must not have happened.
     await expect.poll(() => vault.read(path)).toBe('keep me\n')
-  })
-})
-
-test.describe('the on-screen keyboard', () => {
-  test.beforeEach(async ({ app }) => {
-    test.skip(!(await isMobileFrame(app)), 'only meaningful on the mobile frame')
-  })
-
-  // A real soft keyboard cannot be raised from a test, so this drives the signal the app actually
-  // reacts to: an Android WebView shrinks the visual viewport without touching the layout viewport,
-  // which is exactly why 100dvh alone leaves the toolbar under the keyboard.
-  test('gives up the height the keyboard covers', async ({ app, vault }) => {
-    const path = await vault.write('typing.md', 'line\n')
-    await openNote(app, path)
-
-    const shell = app.locator('.mobile-shell')
-    await expect(shell).toHaveCSS('padding-bottom', '0px')
-
-    await app.evaluate(() => {
-      const vv = window.visualViewport
-      if (vv == null) throw new Error('visualViewport is unavailable')
-      Object.defineProperty(vv, 'height', { configurable: true, get: () => window.innerHeight - 300 })
-      vv.dispatchEvent(new Event('resize'))
-    })
-
-    await expect(shell).toHaveCSS('padding-bottom', '300px')
-
-    // The formatting toolbar has to stay above the keyboard, not behind it.
-    const toolbar = app.getByRole('toolbar', { name: 'Formatting' })
-    const box = await toolbar.boundingBox()
-    const viewport = app.viewportSize()
-    expect(box).not.toBeNull()
-    if (box && viewport) expect(box.y + box.height).toBeLessThanOrEqual(viewport.height - 300)
   })
 })

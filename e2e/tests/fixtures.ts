@@ -197,7 +197,9 @@ async function attachPageChatter(page: Page, testInfo: TestInfo): Promise<void> 
 // is true. Nothing here waits longer than the plain assertion did.
 export async function waitForApp(page: Page): Promise<void> {
   try {
-    await expect(page.getByRole('main')).toBeVisible()
+    // The element, not the role: a modal sheet over the app (the phone's vault, the second tap) takes the
+    // rest of the page out of the accessibility tree, and the app is no less on screen for it.
+    await expect(page.locator('main')).toBeVisible()
   } catch (error) {
     throw new Error(`no app on screen: ${await whyNoApp(page)}`, { cause: error })
   }
@@ -268,16 +270,35 @@ export async function isMobileFrame(page: Page): Promise<boolean> {
   return (await page.locator('.mobile-shell').count()) > 0
 }
 
-// A type's own navigation. On the mobile frame it is a panel summoned from the bottom row, not a column
-// that is always there; on the desktop it is the column beside the content and there is nothing to
-// summon. Reached by test id because the key is named by whichever type owns the navigation — "Vault"
-// under Documents, "Sections" under Settings — so there is no one label to click.
+// A type's own navigation. On the desktop it is the column beside the content and there is nothing to
+// summon. On the phone it is one step down the second tap on the active type: a type without objects
+// (Settings) shows it in that sheet directly, an object type (Documents) lists its tabs there and leads
+// to the navigation from the row under them, which opens it over the whole screen.
 export async function openNavigation(page: Page): Promise<void> {
   if (!(await isMobileFrame(page))) return
-  const panel = page.getByRole('region', { name: /navigation$/ })
-  // Idempotent: some flows leave the panel open, and the key would close it again.
-  if (!(await panel.isVisible())) await page.getByTestId('arxhub.shell.rail').click()
+  const panel = navigationSheet(page)
+  // Idempotent: some flows leave the navigation up, and a second tap would stack a sheet under it.
+  if (await panel.isVisible()) return
+  await activeTypeKey(page).click()
+  const browse = page.getByTestId('type-sheet-browse')
+  await expect(browse.or(panel)).toBeVisible()
+  if (await browse.isVisible()) await browse.click()
   await expect(panel).toBeVisible()
+}
+
+// The phone's navigation, whichever sheet holds it — the vault over the whole screen, or Settings'
+// sections in its second-tap sheet. What they share is the tree; the tab list has none.
+// The vault is named as well, for the boot that has no tree to put in it (explorer switched off).
+export function navigationSheet(page: Page): Locator {
+  return page
+    .getByRole('dialog')
+    .filter({ has: page.getByRole('tree') })
+    .or(page.getByRole('dialog', { name: 'Vault', exact: true }))
+}
+
+// The key of the type you are in. A tap on it is the second tap: the type's own sheet.
+export function activeTypeKey(page: Page): Locator {
+  return typeRow(page).locator('[aria-pressed="true"]')
 }
 
 // The status widgets: a permanent bar on the desktop frame, one level down inside the search sheet on a
@@ -290,7 +311,7 @@ export async function withShellChrome<T>(page: Page, read: (chrome: Locator) => 
 
   const sheet = searchSheet(page)
   const wasOpen = await sheet.isVisible()
-  if (!wasOpen) await page.getByRole('button', { name: SHEET_LABEL }).click()
+  if (!wasOpen) await moreKey(page).click()
   await expect(sheet).toBeVisible()
   try {
     return await read(sheet)
@@ -320,6 +341,17 @@ export const SETTINGS_TYPE = 'arxhub.settings'
 // the path.
 export function shownName(path: string): string {
   return path.replace(/\.[^./]+$/, '')
+}
+
+// The last key of the phone's type row. It opens "Open or switch to", and its name says how many types did
+// not fit ("More, 2 not in the row"), so it is reached by id rather than by a name that changes.
+export function moreKey(page: Page): Locator {
+  return typeRow(page).getByTestId('arxhub.shell.search')
+}
+
+// What opens that sheet by a tap: the rail's own button on the desktop, More on the phone.
+export async function switcherKey(page: Page): Promise<Locator> {
+  return (await isMobileFrame(page)) ? moreKey(page) : page.getByRole('button', { name: SHEET_LABEL, exact: true })
 }
 
 export function searchSheet(page: Page): Locator {
@@ -356,7 +388,10 @@ export async function openType(page: Page, title: string, typeId?: string): Prom
     await waitForApp(page)
     if ((await key.count()) === 0) {
       await page.keyboard.press('ControlOrMeta+k')
-      await searchSheet(page).getByTestId(`sheet:new:${typeId}`).click()
+      // Open but not in the row (the phone's row holds four) is the "Currently open" section instead.
+      await searchSheet(page)
+        .getByTestId(new RegExp(`^sheet:(new|open):${typeId.replace(/\./g, '\\.')}$`))
+        .click()
       await expect(searchSheet(page)).toBeHidden()
       await expect(key).toHaveAttribute('aria-pressed', 'true')
       return
@@ -398,9 +433,17 @@ export async function openDocumentList(page: Page): Promise<Locator> {
   await openType(page, 'Documents')
   // The second tap, which is what opens it.
   await typeKey(page, 'Documents').click()
-  const list = page.getByRole('menu', { name: 'Open documents' })
+  const list = page.getByRole('dialog', { name: 'Documents', exact: true })
   await expect(list).toBeVisible()
   return list
+}
+
+// One tab in the second-tap sheet. Its accessible name is the title and then the second line, which says
+// whether it is the tab on screen — so this matches the title and either of the two.
+export function tabEntry(list: Locator, title: string): Locator {
+  const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  // The extension is optional: whether a known one is shown is a synced setting another spec may be toggling.
+  return list.getByRole('button', { name: new RegExp(`^${escaped}(\\.[a-z0-9]+)? (Open|Current tab)$`) })
 }
 
 // Welcome is a utility panel on the Documents host — restored sessions often leave a document active
@@ -412,7 +455,7 @@ export async function openWelcome(page: Page): Promise<void> {
 
   if (await isMobileFrame(page)) {
     const list = await openDocumentList(page)
-    await list.getByRole('menuitem', { name: 'Welcome', exact: true }).click()
+    await tabEntry(list, 'Welcome').click()
     await expect(list).toBeHidden()
   } else {
     // Accessible name is "Welcome Close" — the tab title plus its close control. Match exact so a
@@ -447,9 +490,20 @@ export async function openSecuritySettings(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Device identity' })).toBeVisible()
 }
 
-// A vault-strip control: on the desktop every action is its own icon; on the phone occasional ones
-// sit behind "More vault actions" so the strip stays thumb-reachable.
+// A vault-strip control. The desktop strip draws each action as its own icon and moves the trailing ones
+// into More as the column narrows. The phone has no vault strip: adding files is Upload in the three-step
+// New, raised from the object bar, and the tree's housekeeping (Refresh, Collapse tree) is not offered there.
 export async function vaultStripAction(page: Page, name: string): Promise<void> {
+  if (await isMobileFrame(page)) {
+    test.skip(name !== 'Add files…', `the phone vault has no "${name}"`)
+    if (await navigationSheet(page).isVisible()) {
+      await page.goBack()
+      await expect(navigationSheet(page)).toBeHidden()
+    }
+    await page.getByTestId('object-bar').getByRole('button', { name: 'New document', exact: true }).click()
+    await page.getByTestId('create-kind:upload').click()
+    return
+  }
   await openNavigation(page)
   const direct = page.getByRole('button', { name, exact: true })
   if (await direct.isVisible().catch(() => false)) {
@@ -493,4 +547,114 @@ export { expect }
 export async function openTreeActions(page: Page, row: Locator): Promise<void> {
   if (await isMobileFrame(page)) await row.getByRole('button', { name: /^Actions for / }).click()
   else await row.click({ button: 'right' })
+}
+
+const EDITOR_MODES = new Set(['Read only', 'Editable', 'Interactive'])
+
+// The open document's own menu: "Document tools" in the desktop tab strip, the object bar's More on the
+// phone — where the viewer's entries follow Rename and Close.
+export async function openDocumentTools(page: Page): Promise<void> {
+  if (await isMobileFrame(page)) {
+    // While the keyboard is up the bar is the editing band and has no More: put it away, as the owner would.
+    await setKeyboard(page, 0)
+    const bar = page.getByTestId('object-bar')
+    // The menu is the entries as they stand when it opens, and a viewer still loading offers them disabled.
+    await expect(bar).not.toContainText(/Loading…|Opening…/)
+    await bar.getByRole('button', { name: 'More actions', exact: true }).click()
+  } else await page.getByRole('button', { name: 'Document tools', exact: true }).click()
+}
+
+// One entry of that menu, in whichever frame.
+export async function documentTool(page: Page, name: string): Promise<void> {
+  await viewerAction(page, name, { desktopMenu: 'Document tools' })
+}
+
+// An action of the open viewer. On the desktop it is a key of its own in the viewer's strip, or an entry of
+// the strip's menu (`desktopMenu`). On the phone there is no strip: every tool of the viewer is an entry of
+// the object bar's More. Two land elsewhere there — the editor mode is one row that opens the choice, and an
+// editor's undo and redo live only in the editing band the keyboard raises, which a test cannot raise for
+// real, so the phone reaches those by the editor's own chord: the same history either way.
+export async function viewerAction(page: Page, name: string, options: { desktopMenu?: string } = {}): Promise<void> {
+  if (!(await isMobileFrame(page))) {
+    if (options.desktopMenu == null) {
+      await page.getByRole('button', { name, exact: true }).click()
+      return
+    }
+    await page.getByRole('button', { name: options.desktopMenu, exact: true }).click()
+    await page.getByRole('menuitem', { name, exact: true }).click()
+    return
+  }
+  await openDocumentTools(page)
+  const items = page.getByRole('menuitem')
+  await expect(items.first()).toBeVisible()
+  const item = page.getByRole('menuitem', { name, exact: true })
+  if ((await item.count()) > 0) {
+    await item.click()
+    return
+  }
+  if (EDITOR_MODES.has(name)) {
+    await page.getByRole('menuitem', { name: /^Editor mode: / }).click()
+    await item.click()
+    return
+  }
+  if (name !== 'Undo' && name !== 'Redo') throw new Error(`the object bar offers no "${name}"`)
+  await page.goBack()
+  await expect(items.first()).toBeHidden()
+  await page.locator('.ProseMirror:visible, .cm-content:visible').first().focus()
+  await page.keyboard.press(name === 'Undo' ? 'ControlOrMeta+z' : 'ControlOrMeta+y')
+}
+
+// A soft keyboard cannot be raised from a test. An Android WebView shrinks the visual viewport and leaves
+// the layout viewport alone, and that is the signal the phone frame reacts to — so this drives it. 0 puts
+// the keyboard away again.
+export async function setKeyboard(page: Page, covered: number): Promise<void> {
+  await page.evaluate((height) => {
+    const vv = window.visualViewport
+    if (vv == null) throw new Error('visualViewport is unavailable')
+    Object.defineProperty(vv, 'height', { configurable: true, get: () => window.innerHeight - height })
+    vv.dispatchEvent(new Event('resize'))
+  }, covered)
+}
+
+// The open document's formatting keys: a toolbar of the page on the desktop; on the phone the band the
+// object bar becomes while the keyboard is up and the caret is in the text — so this puts both in place.
+export async function formattingToolbar(page: Page): Promise<Locator> {
+  if (!(await isMobileFrame(page))) return page.getByRole('toolbar', { name: 'Formatting' })
+  const text = page.locator('.ProseMirror:visible, .cm-content:visible').first()
+  if (!(await text.evaluate((el) => el.contains(document.activeElement)))) await text.focus()
+  await setKeyboard(page, 300)
+  const band = page.getByTestId('object-bar').getByRole('toolbar', { name: 'Formatting' })
+  await expect(band).toBeVisible()
+  return band
+}
+
+// Save the open document the way its frame offers it: a Save key where the viewer has one, the document's
+// menu otherwise — and on the phone always the bar's More, with the keyboard put away so the bar is back.
+export async function saveDocument(page: Page): Promise<void> {
+  if (await isMobileFrame(page)) {
+    await documentTool(page, 'Save')
+    return
+  }
+  const key = page.getByRole('button', { name: 'Save', exact: true })
+  if (await key.isVisible()) await key.click()
+  else await documentTool(page, 'Save')
+}
+
+// A workbook's save state: the status line of its bar on the desktop; on the phone the quieter half of the
+// object bar's name, which says nothing while the workbook is saved.
+export async function expectSheetState(page: Page, state: string): Promise<void> {
+  if (!(await isMobileFrame(page))) {
+    await expect(page.locator('.sheet-status')).toHaveText(state)
+    return
+  }
+  const name = page.getByTestId('object-bar-parts')
+  if (state === 'Saved') await expect(name).not.toContainText(/Unsaved|Saving…|Save failed/)
+  else await expect(name).toContainText(state)
+}
+
+// The toaster's region, by its label rather than its role: on the phone a toast often lands while a modal
+// sheet is still up (a tree action inside the vault), and the sheet takes the rest of the page out of the
+// accessibility tree.
+export function toastRegion(page: Page): Locator {
+  return page.locator('[aria-label^="Notifications"]')
 }

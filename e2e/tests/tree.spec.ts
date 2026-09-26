@@ -1,4 +1,4 @@
-import { expect, openNavigation, openTreeActions, test } from './fixtures'
+import { expect, isMobileFrame, openNavigation, openTreeActions, test } from './fixtures'
 
 // A half-written file is not a failure, it is "not yet" — the poll that waits for the seed needs it to
 // answer that way rather than throwing out of the poll callback, which expect.poll does not retry.
@@ -14,6 +14,7 @@ function parseOrNull(text: string): unknown {
 // tree, because the tree agreeing with itself proves nothing.
 test.describe('keeping the tree in order', () => {
   test('creates a note in the format the product reasons about', async ({ app, vault }) => {
+    test.skip(await isMobileFrame(app), "the phone's New is the three-step flow, in mobile-navigation.spec.ts")
     await openNavigation(app)
     await app.getByRole('button', { name: 'New file', exact: true }).click()
     await app.getByRole('menuitem', { name: 'New document', exact: true }).click()

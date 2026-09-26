@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { expect, isMobileFrame, openNavigation, test, viewerAction } from './fixtures'
 
 const cell = (page: Page, name: string) => page.getByRole('gridcell', { name, exact: true })
 const formula = (page: Page) => page.getByRole('textbox', { name: 'Cell value or formula', exact: true })
@@ -50,7 +50,7 @@ test('formula editing picks cells and ranges without committing or changing the 
   await expect(formula(app)).toHaveValue('=SUM(A1:B2)+B1')
   await formula(app).press('Enter')
   await expect(cell(app, 'C4')).toHaveText('17')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await viewerAction(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('"C4":"=SUM(A1:B2)+B1"')
 })
 

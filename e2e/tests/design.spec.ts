@@ -10,12 +10,12 @@ import type { Page } from '@playwright/test'
 import {
   expect,
   isMobileFrame,
+  moreKey,
   openDocumentList,
   openNavigation,
   openSettingsSection,
   openTreeActions,
   openType,
-  SHEET_LABEL,
   searchSheet,
   test,
   withShellChrome,
@@ -111,7 +111,7 @@ test.describe('the visual language holds on screen', () => {
     const expected = await token(app, '--size-xl')
 
     // The search sheet: one line each, so it lands exactly on the role's touch value.
-    await app.getByRole('button', { name: SHEET_LABEL }).click()
+    await moreKey(app).click()
     const sheet = searchSheet(app)
     await expect(sheet).toBeVisible()
     const apps = await heights(app, '.sheet-list .row')
@@ -120,13 +120,13 @@ test.describe('the visual language holds on screen', () => {
     await app.goBack()
     await expect(sheet).toBeHidden()
 
-    // The list of what is open in the type — a name with its path under it, so it grows down from the
-    // same value rather than landing exactly on it.
+    // The second tap's list of what is open in the type — a name with a second line under it, so it grows
+    // down from the same value rather than landing exactly on it.
     await openNavigation(app)
     await app.getByRole('treeitem', { name: note }).click()
     await expect(app.locator('.cm-content')).toBeVisible()
     await openDocumentList(app)
-    const open = await heights(app, '.open-list .row')
+    const open = await heights(app, '.row:has(> [data-testid^="open:"])')
     expect(open.length).toBeGreaterThan(0)
     for (const height of open) expect(height).toBeGreaterThanOrEqual(expected)
     await app.goBack()
@@ -137,6 +137,10 @@ test.describe('the visual language holds on screen', () => {
   // phone — but where the content starts afterwards must not, and a page frame inside a panel is what
   // once put 140px between these on one frame while leaving the other alone.
   test('switching what is open does not move where content starts', async ({ app, vault }) => {
+    // On the phone a document starts at the top of the screen (its name and tools are the object bar's), while
+    // a utility panel like the SQL console still opens with its own strip — the two are no longer the same
+    // kind of top, so the claim holds for the desktop's panels only.
+    test.skip(await isMobileFrame(app), 'the phone has no strip above a document')
     const note = await vault.write('tabs.md', '# Tabs\n\nbody\n')
     await app.reload()
 

@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { documentTool, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 const doc = (text = 'Document body') =>
   JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] } })
@@ -38,8 +38,7 @@ test('page icon and local cover survive saving and reopening and can be removed'
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   await expect(app.locator('.ProseMirror:visible')).toBeVisible()
   const configure = async () => {
-    await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-    await app.getByRole('menuitem', { name: 'Page icon and cover', exact: true }).click()
+    await documentTool(app, 'Page icon and cover')
     return app.getByRole('dialog', { name: 'Page icon and cover', exact: true })
   }
   let dialog = await configure()

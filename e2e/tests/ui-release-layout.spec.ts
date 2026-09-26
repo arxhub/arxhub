@@ -34,6 +34,14 @@ test('compact editors keep formatting and save reachable', async ({ app, vault }
     await openNavigation(app)
     await app.getByRole('treeitem', { name: path, exact: true }).click()
     await expect(app.locator(ext === 'arx' ? '.ProseMirror:visible' : '.cm-content:visible')).toBeVisible()
+    // On the phone the document's tools and save state are the object bar's, and formatting is the band the
+    // keyboard raises (mobile-navigation.spec.ts); what has to hold at 360 is that the bar's keys are reachable.
+    if (mobile) {
+      await unobstructed(app.getByTestId('object-bar').getByRole('button', { name: 'More actions', exact: true }))
+      await capture(app, `${ext}-compact`)
+      expect(await app.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+      continue
+    }
     if (ext === 'arx') {
       await unobstructed(app.getByRole('button', { name: 'Document tools', exact: true }))
       await expect(app.getByRole('toolbar', { name: 'Formatting' })).toHaveCount(0)
@@ -59,8 +67,11 @@ test('compact tools keep their controls within the viewport', async ({ app }) =>
   const mobile = await isMobileFrame(app)
   await app.setViewportSize(mobile ? { width: 360, height: 640 } : { width: 800, height: 600 })
   await withShellChrome(app, (chrome) => chrome.getByRole('button', { name: 'Open logs' }).click())
-  await unobstructed(app.getByRole('textbox', { name: 'Filter logs', exact: true }))
-  await unobstructed(app.getByRole('combobox', { name: 'Log session', exact: true }))
+  // The phone keeps the log's filter and sessions in its second-tap sheet; the page itself has only the log.
+  if (!mobile) {
+    await unobstructed(app.getByRole('textbox', { name: 'Filter logs', exact: true }))
+    await unobstructed(app.getByRole('combobox', { name: 'Log session', exact: true }))
+  }
   await capture(app, 'logs-compact')
   await openSearchApp(app)
   await capture(app, 'search-compact')

@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { closeFromBand, expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { closeFromBand, documentTool, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 const arx = (text: string) =>
   JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] } })
@@ -69,10 +69,9 @@ for (const extension of ['md', 'arx']) {
     await editor.click()
     await app.keyboard.press('ControlOrMeta+End')
     await app.keyboard.insertText(' first')
-    if (extension === 'arx') {
-      await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-      await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
-    } else await app.getByRole('button', { name: 'Save', exact: true }).click()
+    // A markdown note's Save is a key of its own on the desktop; on the phone it is in the bar's More, as the .arx one is.
+    if (extension === 'arx' || (await isMobileFrame(app))) await documentTool(app, 'Save')
+    else await app.getByRole('button', { name: 'Save', exact: true }).click()
     await expect.poll(() => writing).toBe(true)
     await editor.click()
     await app.keyboard.press('ControlOrMeta+End')

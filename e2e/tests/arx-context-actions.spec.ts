@@ -1,4 +1,4 @@
-import { expect, openNavigation, test } from './fixtures'
+import { expect, isMobileFrame, openDocumentTools, openNavigation, test } from './fixtures'
 
 test('formatting follows selection and edits autosave without a top toolbar', async ({ app, vault }) => {
   const path = await vault.write(
@@ -27,8 +27,9 @@ test('formatting follows selection and edits autosave without a top toolbar', as
   await app.keyboard.insertText(' autosaved')
   await expect.poll(() => vault.read(path)).toContain('autosaved')
   await expect(app.locator('.document-save-status')).toContainText('Saved')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await openDocumentTools(app)
   await expect(app.getByRole('menuitem', { name: 'Saved versions', exact: true })).toBeVisible()
+  if (await isMobileFrame(app)) await app.getByRole('menuitem', { name: /^Editor mode: / }).click()
   await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
   await expect(editor).toHaveAttribute('contenteditable', 'false')
   await expect(app.getByRole('button', { name: 'Insert block', exact: true })).toHaveCount(0)

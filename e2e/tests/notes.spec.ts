@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openNote, test } from './fixtures'
+import { expect, formattingToolbar, isMobileFrame, openNote, saveDocument, test } from './fixtures'
 
 // The whole point of markdown-first storage: the file on disk is the note. These tests read and
 // write the vault through the same guarded API the app uses, then check what the editor did to it.
@@ -7,7 +7,7 @@ test.describe('editing a note', () => {
     const path = await vault.write('toolbar.md', '# Title\n\nsome text\n')
 
     await openNote(app, path)
-    await expect(app.getByRole('toolbar', { name: 'Formatting' })).toBeVisible()
+    await expect(await formattingToolbar(app)).toBeVisible()
     await expect(app.locator('.cm-content')).toContainText('# Title')
   })
 
@@ -19,7 +19,7 @@ test.describe('editing a note', () => {
 
     await openNote(app, path)
     await expect(app.locator('.cm-content')).toContainText('Kept')
-    await app.getByRole('button', { name: 'Save' }).click()
+    await saveDocument(app)
 
     await expect.poll(() => vault.read(path)).toBe(original)
   })
@@ -37,10 +37,10 @@ test.describe('editing a note', () => {
     await app.keyboard.down('Shift')
     await app.keyboard.press('End')
     await app.keyboard.up('Shift')
-    await app.getByRole('button', { name: 'Bold' }).click()
+    await (await formattingToolbar(app)).getByRole('button', { name: 'Bold' }).click()
 
     await expect(app.locator('.cm-content')).toContainText('**plain**')
-    await app.getByRole('button', { name: 'Save' }).click()
+    await saveDocument(app)
     await expect.poll(() => vault.read(path)).toBe('**plain**\n')
   })
 
@@ -51,10 +51,10 @@ test.describe('editing a note', () => {
     await expect(app.locator('.cm-content')).toContainText('title')
     await app.locator('.cm-line').first().click()
     if (await isMobileFrame(app)) {
-      await app.getByRole('button', { name: 'More formatting' }).click()
+      await (await formattingToolbar(app)).getByRole('button', { name: 'More formatting' }).click()
       await app.getByRole('menuitem', { name: 'Heading 2', exact: true }).click()
     } else await app.getByRole('button', { name: 'Heading 2', exact: true }).click()
-    await app.getByRole('button', { name: 'Save' }).click()
+    await saveDocument(app)
 
     await expect.poll(() => vault.read(path)).toBe('## title\n')
   })

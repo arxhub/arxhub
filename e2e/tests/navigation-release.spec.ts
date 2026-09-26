@@ -1,4 +1,5 @@
 import {
+  documentTool,
   expect,
   isMobileFrame,
   openNavigation,
@@ -8,9 +9,11 @@ import {
   openWelcome,
   SETTINGS_TYPE,
   searchSheet,
+  switcherKey,
   test,
   typeKey,
   vaultStripAction,
+  viewerAction,
 } from './fixtures'
 
 const arx = (text: string) =>
@@ -75,7 +78,7 @@ test('renaming an open document preserves its buffer and saves to the new path',
   await app.getByRole('treeitem', { name: renamed, exact: true }).click()
   await expect(app.locator('.cm-content')).toHaveCount(1)
   await expect(app.locator('.cm-content')).toContainText('original edited')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await viewerAction(app, 'Save')
   await expect.poll(() => vault.read(renamed)).toContain('original edited')
   expect(await vault.read(path).catch(() => null)).toBeNull()
   await app.reload()
@@ -83,6 +86,7 @@ test('renaming an open document preserves its buffer and saves to the new path',
 })
 
 test('creating repeatedly keeps the earlier notes and opens the new one', async ({ app, vault }) => {
+  test.skip(await isMobileFrame(app), "the vault strip's New file is the desktop's; the phone's New is mobile-navigation.spec.ts")
   const original = arx('Keep this note')
   const path = await vault.write(`${test.info().project.name}-folder/untitled.arx`, original)
   const folder = path.slice(0, path.lastIndexOf('/'))
@@ -93,8 +97,7 @@ test('creating repeatedly keeps the earlier notes and opens the new one', async 
   await app.getByRole('menuitem', { name: 'New document', exact: true }).click()
   await expect(app.locator('.ProseMirror:visible')).toBeVisible()
   await app.locator('.ProseMirror:visible').fill('Second note')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(`${folder}/untitled 2.arx`)).toContain('Second note')
   await openNavigation(app)
   await app.getByRole('button', { name: 'New file', exact: true }).click()
@@ -105,18 +108,20 @@ test('creating repeatedly keeps the earlier notes and opens the new one', async 
 })
 
 test('search returns to the same buffer and keeps its query', async ({ app, vault }) => {
-  const path = await vault.write('single-buffer.md', 'original needle\n')
+  // A word only this note holds: the result list is capped, and a word every spec writes is no longer found here.
+  const path = await vault.write('single-buffer.md', 'original singlebufferneedle\n')
   await openNote(app, path)
   const editor = app.locator('.cm-content:visible')
   await editor.click()
   await app.keyboard.press('ControlOrMeta+End')
   await app.keyboard.insertText(' from-notes')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await viewerAction(app, 'Save')
   await openSearchApp(app)
   const query = app.getByRole('textbox', { name: 'Search', exact: true })
-  await query.fill('needle')
+  await query.fill('singlebufferneedle')
   const result = app.getByRole('option').filter({ hasText: path })
-  await expect(result).toBeVisible()
+  // The save just before reaches the index through the debounced queue, behind four workers' walks.
+  await expect(result).toBeVisible({ timeout: 20_000 })
   await result.click()
   await expect(typeKey(app, 'Documents')).toHaveAttribute('aria-pressed', 'true')
   await expect(app.locator('.cm-content')).toHaveCount(1)
@@ -124,10 +129,10 @@ test('search returns to the same buffer and keeps its query', async ({ app, vaul
   await editor.click()
   await app.keyboard.press('ControlOrMeta+End')
   await app.keyboard.insertText(' from-search')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await viewerAction(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('from-notes from-search')
   await openSearchApp(app)
-  await expect(query).toHaveValue('needle')
+  await expect(query).toHaveValue('singlebufferneedle')
 })
 
 test('folders stay expanded after switching types and restarting', async ({ app, vault }) => {
@@ -162,10 +167,12 @@ test('the switcher traps focus and returns it to its opener', async ({ app, vaul
   await app.keyboard.press('Escape')
   await expect(sheet).toBeHidden()
   await expect(editor).toBeFocused()
-  const trigger = app.getByRole('button', { name: 'Open or switch to', exact: true })
+  const trigger = await switcherKey(app)
   await trigger.click()
   await expect(sheet).toBeVisible()
-  await expect(sheet.locator('button.row').first()).toBeFocused()
+  // Focus goes into the sheet's content: its first row on the desktop, the status block above the rows on the phone.
+  if (await isMobileFrame(app)) expect(await sheet.evaluate((el) => el.contains(document.activeElement))).toBe(true)
+  else await expect(sheet.locator('button.row').first()).toBeFocused()
   await app.keyboard.press('Escape')
   await expect(sheet).toBeHidden()
   await expect(trigger).toBeFocused()
@@ -173,7 +180,9 @@ test('the switcher traps focus and returns it to its opener', async ({ app, vaul
 
 test('an unpinned tool can be closed and stays closed after restart', async ({ app }) => {
   await openSearchApp(app)
-  await app.getByRole('button', { name: 'Open or switch to', exact: true }).click()
+  // The phone offers no × on the type you are in — closing it would leave you nowhere — so step out first.
+  if (await isMobileFrame(app)) await openType(app, 'Documents')
+  await (await switcherKey(app)).click()
   await searchSheet(app).getByRole('button', { name: 'Close Search', exact: true }).click()
   await app.keyboard.press('Escape')
   await expect(typeKey(app, 'Search')).toHaveCount(0)
@@ -229,5 +238,5 @@ test('the mobile close control receives the actual touch', async ({ app, vault }
   if (item == null) return
   await app.touchscreen.tap(item.x + item.width / 2, item.y + item.height / 2)
   await expect(app.locator('.cm-content')).toHaveCount(0)
-  await expect(app.getByRole('menu', { name: 'Open documents' })).toBeHidden()
+  await expect(app.getByRole('dialog', { name: 'Documents', exact: true })).toBeHidden()
 })

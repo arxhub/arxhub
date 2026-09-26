@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { documentTool, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 test('mouse marquee selects whole blocks, cancels and leaves text selection available', async ({ app, vault }) => {
   test.skip(await isMobileFrame(app), 'Mouse selection on the desktop frame')
@@ -40,8 +40,7 @@ test('mouse marquee selects whole blocks, cancels and leaves text selection avai
     'Second paragraph',
     'Third paragraph',
   ])
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Undo', exact: true }).click()
+  await documentTool(app, 'Undo')
   await expect(editor.locator('p')).toHaveCount(3)
   await app.mouse.move(third.x + third.width + 12, third.y + third.height - 2)
   await app.mouse.down()
@@ -98,8 +97,7 @@ test('marquee follows autoscroll in long documents', async ({ app, vault }) => {
   await expect(editor.locator('.arx-block-selected').first()).toHaveText('Block 1')
   await app.keyboard.press('Backspace')
   await expect(editor.locator('p')).toHaveCount(60 - count)
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Undo', exact: true }).click()
+  await documentTool(app, 'Undo')
   await expect(editor.locator('p')).toHaveCount(60)
 })
 
@@ -136,8 +134,7 @@ test('marquee selects opaque plugin blocks without editing their data and respec
   expect(await vault.read(path)).toBe(content)
   await app.keyboard.press('Escape')
   for (const mode of ['Read only', 'Interactive']) {
-    await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-    await app.getByRole('menuitem', { name: mode, exact: true }).click()
+    await documentTool(app, mode)
     await drag()
     await expect(editor.locator('.arx-block-selected')).toHaveCount(0)
     await expect(app.locator('.arx-block-marquee')).toHaveCount(0)

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { confirmPublish, expect, openNavigation, openType, publicationAction, publishTest as test } from './fixtures'
+import { confirmPublish, expect, openNavigation, openType, publicationAction, publishTest as test, toastRegion } from './fixtures'
 
 interface HistoryEntry {
   hash: string
@@ -11,7 +11,7 @@ interface HistoryEntry {
 // and a pointer resting on one pauses its timer, so a click that lands there is swallowed and the toast then
 // never leaves. Every toast has a Dismiss control; use it, rather than waiting on a clock.
 async function dismissToasts(app: Page): Promise<void> {
-  const notifications = app.getByRole('region', { name: /Notifications/ })
+  const notifications = toastRegion(app)
   for (const close of await notifications.getByRole('button', { name: 'Dismiss' }).all()) await close.click().catch(() => undefined)
   await expect(notifications.getByRole('status')).toHaveCount(0)
 }
@@ -30,7 +30,7 @@ test('the Publications type lists what is public, and a roll back serves the ear
   await app.getByRole('treeitem', { name: path }).click({ button: 'right' })
   await app.getByRole('menuitem', { name: 'Publish', exact: true }).click()
   await confirmPublish(app)
-  const notifications = app.getByRole('region', { name: /Notifications/ })
+  const notifications = toastRegion(app)
   await expect(notifications.getByText('Published', { exact: true })).toBeVisible()
   const publicUrl = `${baseURL}/api/publish/public/${encodeURIComponent(path)}`
   expect(await (await app.request.get(publicUrl)).text()).toContain('First edition')

@@ -1,5 +1,5 @@
 import { closeSettings, openBlockSettings, openProperties } from './arx-inspector-helpers'
-import { expect, openNavigation, test } from './fixtures'
+import { documentTool, expect, openNavigation, test } from './fixtures'
 
 test('page properties are hidden by default and survive replacing the entire body', async ({ app, vault }) => {
   const path = await vault.write(
@@ -30,8 +30,7 @@ test('page properties are hidden by default and survive replacing the entire bod
   await editor.locator('p').click()
   await app.keyboard.press('ControlOrMeta+a')
   await app.keyboard.insertText('Replacement body')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(async () => JSON.parse(await vault.read(path)).doc.content[0].attrs.fields).toEqual([{ key: 'Status', value: 'Ready' }])
   const saved = JSON.parse(await vault.read(path))
   expect(saved.doc.content[0].attrs).toMatchObject({ tags: ['keep'], favorite: true })
@@ -69,7 +68,6 @@ test('the insertion menu has one Columns entry and opens page properties separat
   await header.getByRole('textbox', { name: 'Tags', exact: true }).fill('project')
   await header.getByRole('textbox', { name: 'Tags', exact: true }).press('Enter')
   await closeSettings(app)
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(async () => JSON.parse(await vault.read(path)).doc.content[0].attrs?.tags).toEqual(['project'])
 })

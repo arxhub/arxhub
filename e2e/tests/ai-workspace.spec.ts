@@ -66,7 +66,8 @@ test.describe('ai workspace agent channel', () => {
       await band.getByTestId('diff-more').click()
       await app.getByTestId('diff-options').getByRole('button', { name: 'Back to proposal' }).click()
       await expect(proposal).toBeVisible()
-      await expect(band).toHaveCount(0)
+      // Hidden, not unmounted: the diff layer is kept (v-show) so going back to it keeps its place.
+      await expect(band).toBeHidden()
     }
     // The phone keeps the session's commands in the band above the type row, the desktop under the proposal.
     const commands = (await isMobileFrame(app)) ? app.getByTestId('object-bar') : proposal

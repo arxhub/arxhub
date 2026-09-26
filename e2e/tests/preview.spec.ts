@@ -1,4 +1,4 @@
-import { expect, openFile, test } from './fixtures'
+import { expect, isMobileFrame, openFile, test } from './fixtures'
 
 // The smallest valid GIF: one transparent pixel. Binary on purpose — the point is that a file no text
 // viewer claims opens as what it is.
@@ -66,12 +66,17 @@ test.describe('opening a file that is not a note', () => {
 
     await openFile(app, path)
 
-    await expect(app.getByText('1 page', { exact: false })).toBeVisible()
+    // The page count is the viewer's strip on the desktop, the quieter half of the object bar's name on the phone.
+    if (await isMobileFrame(app)) await expect(app.getByTestId('object-bar-parts')).toContainText('Page 1 of 1')
+    else await expect(app.getByText('1 page', { exact: false })).toBeVisible()
     const canvas = app.locator('.pdf-canvas')
     await expect(canvas).toBeVisible()
     await expect.poll(() => canvas.evaluate((el: HTMLCanvasElement) => el.getBoundingClientRect().width)).toBeGreaterThan(0)
-    expect(reads.length).toBeGreaterThan(0)
-    expect(reads.every((url) => url.pathname.endsWith('/read-range'))).toBe(true)
-    expect(reads.reduce((total, url) => total + Number(url.searchParams.get('length')), 0)).toBeLessThan(pdf.length)
+    // The viewer reads ranges. The one whole read allowed is the search index's: the PDF extractor needs the
+    // bytes to pull the pages' text, runs in this same page, and lands whenever the watcher reports the file.
+    const ranges = reads.filter((url) => url.pathname.endsWith('/read-range'))
+    expect(ranges.length).toBeGreaterThan(0)
+    expect(reads.length - ranges.length).toBeLessThanOrEqual(1)
+    expect(ranges.reduce((total, url) => total + Number(url.searchParams.get('length')), 0)).toBeLessThan(pdf.length)
   })
 })

@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { closeSettings, openBlockSettings } from './arx-inspector-helpers'
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { documentTool, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 const document = (content: unknown[]) => JSON.stringify({ version: 1, doc: { type: 'doc', content } })
 const paragraph = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
@@ -14,8 +14,7 @@ async function openArx(app: Page, path: string) {
 }
 
 async function mode(app: Page, label: string) {
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: label, exact: true }).click()
+  await documentTool(app, label)
   await expect(app.getByRole('menu', { name: 'Document tools' })).toBeHidden()
 }
 
@@ -47,8 +46,7 @@ test('Shift-Enter keeps paragraph and list line breaks through undo and reload',
   await app.keyboard.insertText('Continuation')
   await expect(editor.locator('li')).toHaveCount(1)
   await expect(editor.locator('li p br')).toHaveCount(1)
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(async () => (await vault.read(path)).match(/"type": "hard_break"/g)?.length).toBe(2)
   await app.reload()
   await expect(editor.locator(':scope > p')).toHaveCount(2)
@@ -86,8 +84,7 @@ test('arx modes preserve text while saving control values', async ({ app, vault 
   await expect(checkbox).toBeChecked()
   await editor.getByRole('button', { name: 'Priority', exact: true }).click()
   await app.getByRole('menuitem', { name: 'High', exact: true }).click()
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('"value": "High"')
   expect(await vault.read(path)).toContain('"checked": true')
   expect(await vault.read(path)).toContain('Original text unsaved')
@@ -127,8 +124,7 @@ test('slash builds tasks and a configurable dropdown with keyboard and pointer',
   await mode(app, 'Interactive')
   await editor.getByRole('button', { name: 'Stage', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Review', exact: true }).click()
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   // A freshly configured option is stored by an id of its own, and the value names that id.
   await expect.poll(() => vault.read(path)).toContain('"label": "Review"')
   const saved = await vault.read(path)
@@ -190,8 +186,7 @@ test('interactive mode undoes and redoes a value it just changed', async ({ app,
   // ProseMirror, which never sees a keydown while the view is not editable.
   await app.keyboard.press('ControlOrMeta+z')
   await expect(checkbox).not.toBeChecked()
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Redo', exact: true }).click()
+  await documentTool(app, 'Redo')
   await expect(checkbox).toBeChecked()
   await expect(editor.locator('p').first()).toHaveText('Protected text')
 })
@@ -243,8 +238,7 @@ test('a space keeps the slash menu open, and the insert hint follows the caret',
 
 async function formatting(app: Page, label: string) {
   if (label === 'Undo') {
-    await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-    await app.getByRole('menuitem', { name: 'Undo', exact: true }).click()
+    await documentTool(app, 'Undo')
     return
   }
   if (label === 'Current block' || label === 'Indent list item') {
@@ -283,8 +277,7 @@ test('touch insertion and block actions preserve neighboring content and undo', 
   await expect(editor.locator('p').filter({ hasText: /^Second$/ })).toHaveCount(2)
   await formatting(app, 'Undo')
   await expect(editor.locator('p').filter({ hasText: /^Second$/ })).toHaveCount(1)
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect(app.locator('.document-save-status')).toContainText('Saved')
   await expect.poll(() => vault.read(path)).toContain('"type": "select"')
 })
@@ -299,8 +292,7 @@ test('unknown plugin blocks survive edits to surrounding content', async ({ app,
   await app.locator('.ProseMirror > p').click()
   await app.keyboard.press('End')
   await app.keyboard.insertText(' edited')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('Neighbor edited')
   expect(JSON.parse(await vault.read(path)).doc.content[0]).toEqual({
     type: 'missing_plugin_block',
@@ -329,8 +321,7 @@ test('block handle and link editing work without losing the text selection', asy
   await app.getByRole('button', { name: 'Block actions', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Move block up', exact: true }).click()
   await expect(editor.locator('p').first()).toHaveText('Second')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('https://example.com')
 })
 
@@ -374,8 +365,7 @@ test('nested tasks keep their structure and checked values through copy and past
   await expect(editor.getByRole('checkbox')).toHaveCount(4)
   await expect(editor.getByRole('checkbox', { name: 'Parent task', exact: true })).toHaveCount(2)
   await expect(editor.locator('ul[data-type="task_list"] ul[data-type="task_list"]')).toHaveCount(2)
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(async () => (await vault.read(path)).match(/"checked": true/g)?.length).toBe(2)
 })
 
@@ -405,7 +395,8 @@ test('mobile insertion and formatting stay above the on-screen keyboard', async 
   await app.keyboard.insertText('A task above the keyboard')
   await app.keyboard.press('Home')
   await app.keyboard.press('Shift+End')
-  await app.getByRole('button', { name: 'More formatting', exact: true }).click()
+  // The band the keyboard raised, not the selection's bubble, which offers the same key while text is selected.
+  await app.getByTestId('object-bar').getByRole('button', { name: 'More formatting', exact: true }).click()
   const sheet = app.getByRole('dialog', { name: 'Formatting', exact: true })
   await expect(sheet).toBeVisible()
   await expect.poll(() => sheet.evaluate((el) => el.getBoundingClientRect().bottom)).toBeLessThanOrEqual(360)
@@ -414,7 +405,6 @@ test('mobile insertion and formatting stay above the on-screen keyboard', async 
   await test.info().attach('keyboard-formatting', { path: screenshot, contentType: 'image/png' })
   await app.keyboard.press('Escape')
   await expect(editor).toContainText('A task above the keyboard')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('A task above the keyboard')
 })

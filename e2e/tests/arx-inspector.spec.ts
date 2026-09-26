@@ -1,5 +1,5 @@
 import { closeSettings, openBlockSettings, openProperties } from './arx-inspector-helpers'
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { documentTool, expect, isMobileFrame, openDocumentTools, openNavigation, test } from './fixtures'
 
 const paragraph = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
 
@@ -43,8 +43,7 @@ test('settings stay pinned while the caret moves and disappear when the block is
   await app.getByRole('button', { name: 'Block actions', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Delete block', exact: true }).click()
   await expect(panel).toBeHidden()
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Undo', exact: true }).click()
+  await documentTool(app, 'Undo')
   await expect(editor.locator('.callout').first()).toContainText('Pinned block')
 })
 
@@ -55,9 +54,12 @@ test('opening and closing properties creates no metadata or undo entry', async (
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   await openProperties(app)
   await closeSettings(app)
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await expect(app.getByRole('menuitem', { name: 'Undo', exact: true })).toBeDisabled()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  // Undo is in the desktop menu; on the phone it exists only in the editing band while typing.
+  if (!(await isMobileFrame(app))) {
+    await openDocumentTools(app)
+    await expect(app.getByRole('menuitem', { name: 'Undo', exact: true })).toBeDisabled()
+    await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  } else await documentTool(app, 'Save')
   await expect
     .poll(async () => JSON.parse(await vault.read(path)).doc.content.map((node: { type: string }) => node.type))
     .toEqual(['paragraph'])

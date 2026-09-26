@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { Page, Route } from '@playwright/test'
-import { expect, openNavigation, test } from './fixtures'
+import { documentTool, expect, openDocumentTools, openNavigation, test } from './fixtures'
 
 const fixtureModule = `/@fs${fileURLToPath(new URL('../fixtures/arx-components.ts', import.meta.url))}`
 const mainModule = (url: URL) => url.pathname === '/src/main.ts'
@@ -22,8 +22,7 @@ async function withComponents(page: Page) {
 }
 
 async function mode(page: Page, name: string) {
-  await page.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await page.getByRole('menuitem', { name, exact: true }).click()
+  await documentTool(page, name)
 }
 
 test('an installed plugin renders, validates, saves and restores its component in both frames', async ({ app, vault }) => {
@@ -44,8 +43,7 @@ test('an installed plugin renders, validates, saves and restores its component i
   await expect(rating.getByLabel('Rating value')).toHaveText('1')
   await rating.getByRole('button', { name: 'Invalid rating' }).click()
   await expect(rating.getByLabel('Rating value')).toHaveText('1')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('"value": 1')
   await mode(app, 'Read only')
   await expect(rating.getByRole('button', { name: 'Increase rating' })).toBeDisabled()
@@ -55,8 +53,7 @@ test('an installed plugin renders, validates, saves and restores its component i
   await uninstall()
   await app.reload()
   await expect(app.locator('.unknown-block')).toContainText('fixture_rating')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(async () => JSON.parse(await vault.read(path))).toEqual(JSON.parse(saved))
   await withComponents(app)
   await app.reload()
@@ -89,8 +86,7 @@ test('a failing plugin component is contained and retried without reloading the 
   await app.getByRole('button', { name: 'Retry block', exact: true }).click()
   await expect(editor).toContainText('Recovered plugin component')
   await expect(editor).toContainText('Keep these words and edits')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('Keep these words and edits')
   expect(await vault.read(path)).toContain('Keep plugin data too')
 })
@@ -108,8 +104,7 @@ test('an installed plugin migrates its saved data before editing', async ({ app,
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   await expect(app.getByTestId('plugin-rating').getByLabel('Rating value')).toHaveText('3')
   expect(await vault.read(path)).toBe(original)
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(async () => JSON.parse(await vault.read(path)).plugins['fixture.rating']).toBe(2)
   expect(JSON.parse(await vault.read(path)).doc.content[0].attrs).toEqual({ value: 3, maximum: 5, arxId: expect.any(String) })
   await app.reload()
@@ -130,7 +125,7 @@ test('a plugin supplies its publication representation without shipping its UI t
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   await expect(app.getByTestId('plugin-rating').getByLabel('Rating value')).toHaveText('4')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await openDocumentTools(app)
   const pending = app.waitForEvent('download')
   await app.getByRole('menuitem', { name: 'Export HTML', exact: true }).click()
   const download = await pending

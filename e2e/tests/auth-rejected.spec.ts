@@ -1,4 +1,4 @@
-import { expect, openNavigation, test, withShellChrome } from './fixtures'
+import { expect, isMobileFrame, openNavigation, test, withShellChrome } from './fixtures'
 
 // A refused request used to be invisible: the toolbar awaited the write with nothing to catch it, so a
 // server that would not accept this device produced an unhandled rejection in the console and a button
@@ -49,14 +49,21 @@ test.describe('a server that refuses this device', () => {
       await expect(chrome.getByRole('button', { name: 'Device not paired' })).toBeVisible()
     })
 
-    await openNavigation(app)
-    await app.getByRole('button', { name: 'New file', exact: true }).click()
-    await app.getByRole('menuitem', { name: 'New document', exact: true }).click()
+    if (await isMobileFrame(app)) {
+      // The phone's New: what, where, confirm — the write is the confirm's.
+      await app.getByTestId('object-bar').getByRole('button', { name: 'New document', exact: true }).click()
+      await app.getByTestId('create-kind:.arx').click()
+      await app.getByTestId('create-confirm').click()
+    } else {
+      await openNavigation(app)
+      await app.getByRole('button', { name: 'New file', exact: true }).click()
+      await app.getByRole('menuitem', { name: 'New document', exact: true }).click()
+    }
 
     // The action that failed says so on its own, naming what the server said about it.
-    await expect(app.locator('.toast-title')).toHaveText('Could not create the file')
+    await expect(app.locator('.toast-title')).toHaveText(/^Could not create the (file|document)$/)
     await expect(app.locator('.toast-desc')).toContainText('Unauthorized')
     // Dismissed once is dismissed: the pill is the standing reminder, not a dialog on every attempt.
-    await expect(dialog).toBeHidden()
+    await expect(app.locator('.auth-actions')).toBeHidden()
   })
 })

@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { closeSettings, openBlockSettings } from './arx-inspector-helpers'
-import { expect, openNavigation, test } from './fixtures'
+import { documentTool, expect, openNavigation, test } from './fixtures'
 
 const document = (content: unknown[]) => JSON.stringify({ version: 1, doc: { type: 'doc', content } })
 async function open(app: Page, path: string) {
@@ -35,14 +35,12 @@ test('document tables insert, navigate cells and preserve structural edits throu
   await expect(editor.locator('th').first()).toContainText('Value')
   await app.getByRole('button', { name: 'Block actions', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Split cell', exact: true }).click()
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('Value')
   await open(app, path)
   await expect(editor.locator('tr')).toHaveCount(4)
   await expect(editor.locator('th').first()).toContainText('Value')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Interactive', exact: true }).click()
+  await documentTool(app, 'Interactive')
   await expect(app.getByRole('button', { name: 'Block actions', exact: true })).toHaveCount(0)
 })
 
@@ -66,14 +64,12 @@ test('sections collapse while reading and code language persists with highlighte
   await editor.locator('pre code').click()
   await app.keyboard.press('End')
   await app.keyboard.insertText(' + 1')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('42 + 1')
   await open(app, path)
   await expect(editor.locator('summary')).toContainText('Saved section')
   await expect(editor.locator('.tok-keyword')).toHaveText('const')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
+  await documentTool(app, 'Read only')
   const summary = editor.locator('summary')
   await expect(summary).toContainText('Saved section')
   await expect(summary).toHaveAccessibleName('Toggle section: Saved section')
@@ -83,8 +79,7 @@ test('sections collapse while reading and code language persists with highlighte
   await app.keyboard.press('Enter')
   await expect(editor.locator('.section-content')).toBeVisible()
   await summary.click()
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Find in document', exact: true }).click()
+  await documentTool(app, 'Find in document')
   await app.getByRole('textbox', { name: 'Find text', exact: true }).fill('Hidden body')
   await expect(editor.locator('.section-content')).toBeVisible()
   await expect(editor.getByRole('button', { name: 'Code language' })).toHaveCount(0)

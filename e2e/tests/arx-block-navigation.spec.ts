@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { documentTool, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 const paragraph = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
 const document = (content: unknown[]) => JSON.stringify({ version: 1, doc: { type: 'doc', content } })
@@ -21,8 +21,7 @@ async function open(app: Page, path: string) {
 }
 
 async function save(app: Page) {
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect(app.locator('.document-save-status')).toContainText('Saved')
 }
 

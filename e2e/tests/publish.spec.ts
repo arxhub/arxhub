@@ -1,4 +1,4 @@
-import { confirmPublish, expect, openNavigation, publishTest as test } from './fixtures'
+import { confirmPublish, expect, openNavigation, publishTest as test, toastRegion } from './fixtures'
 
 // UJ-13 end to end: the owner marks a note published, and a reader with no identity opens it.
 // The dev stand is both the app and the publish server, so the origin under test is its own.
@@ -35,7 +35,7 @@ test.describe('publishing a note', () => {
     await app.getByRole('treeitem', { name: path }).click({ button: 'right' })
     await app.getByRole('menuitem', { name: 'Publish', exact: true }).click()
     await confirmPublish(app)
-    const notifications = app.getByRole('region', { name: /Notifications/ })
+    const notifications = toastRegion(app)
     await expect(notifications.getByText('Published', { exact: true })).toBeVisible()
 
     await app.context().grantPermissions(['clipboard-read', 'clipboard-write'])
@@ -117,7 +117,7 @@ test('a publication transport failure keeps its cause in the log and can be retr
   await confirmPublish(app)
   const args = await Promise.all((await logged).args().map((arg) => arg.jsonValue()))
   expect(args).toContainEqual({ error: expect.stringMatching(/.+/) })
-  const notifications = app.getByRole('region', { name: /Notifications/ })
+  const notifications = toastRegion(app)
   await expect(notifications.getByText(`Could not publish ${path}`, { exact: true })).toBeVisible()
   expect((await app.request.get(`/api/publish/public/${encodeURIComponent(path)}`)).status()).toBe(404)
   await app.unroute(endpoint)

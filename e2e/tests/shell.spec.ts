@@ -73,7 +73,7 @@ test.describe('the status registry', () => {
     if (await isMobileFrame(app)) {
       await withShellChrome(app, async (chrome) => {
         const labels = await chrome
-          .locator('.status-card button')
+          .locator('.status-block button')
           .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label') ?? ''))
         expect(labels).toContain('Open logs')
         expect(labels).toContain('Sync now')

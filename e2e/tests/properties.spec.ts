@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import { closeSettings, openProperties } from './arx-inspector-helpers'
-import { expect, isMobileFrame, openNavigation, openSearchApp, openTreeActions, test } from './fixtures'
+import { documentTool, expect, isMobileFrame, openNavigation, openSearchApp, openTreeActions, test } from './fixtures'
 
 // A tooltip-wrapped trigger's hover/focus machinery does not treat a plain Playwright `.click()`
 // (or a synthetic 'click' Event) as a real pointer interaction on the mobile project's touch-emulated
@@ -38,8 +38,7 @@ function parseOrNull(text: string): CardDoc | null {
 }
 
 async function save(page: import('@playwright/test').Page): Promise<void> {
-  await page.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await page.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(page, 'Save')
 }
 
 // A-48: user metadata lives in `.arx` — inside a document, or in a card beside anything else. This
@@ -117,7 +116,7 @@ test.describe('properties (A-48)', () => {
           await field.fill('')
           await field.fill('tag:family')
           await app.waitForTimeout(400)
-          return app.getByRole('listbox', { name: 'Search results' }).getByRole('option', { hasText: cardPath }).count()
+          return app.getByRole('listbox', { name: 'Search results' }).getByRole('option').filter({ hasText: cardPath }).count()
         },
         { timeout: 20_000, message: `tag:family never found ${cardPath}` },
       )

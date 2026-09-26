@@ -1,5 +1,5 @@
 import type { Page, TestInfo } from '@playwright/test'
-import { expect, openNavigation, test, vaultStripAction } from './fixtures'
+import { expect, isMobileFrame, openNavigation, test, vaultStripAction } from './fixtures'
 
 // OR-07: putting a file the owner already has into the vault. The chooser is the platform's own, opened
 // through a plain `<input type="file">` — so what is driven here is the real dialog Playwright
@@ -19,11 +19,17 @@ function pickedName(testInfo: TestInfo, name: string): string {
 
 // Opens the chooser and hands it the files. The listener is armed BEFORE whatever opens it: the chooser
 // is intercepted at the browser, and one nobody is waiting on leaves the page holding a modal dialog.
-async function chooseFiles(page: Page, open: () => Promise<void>, files: { name: string; body: string }[]): Promise<void> {
+async function chooseFiles(page: Page, open: () => Promise<void>, files: { name: string; body: string }[], viaNew = true): Promise<void> {
   const chooser = page.waitForEvent('filechooser')
   await open()
   const files_ = files.map((file) => ({ name: file.name, mimeType: 'text/plain', buffer: Buffer.from(file.body) }))
   await (await chooser).setFiles(files_)
+  // The phone's Upload is a step of New: the files are picked, then a folder, then the confirm under the thumb.
+  if (viaNew && (await isMobileFrame(page))) {
+    await page.getByTestId('create-confirm').click()
+    await expect(page.getByTestId('create-confirm')).toBeHidden()
+    await openNavigation(page)
+  }
 }
 
 test.describe('adding an existing file to the vault', () => {
@@ -87,10 +93,15 @@ test.describe('adding an existing file to the vault', () => {
     await app.reload()
     await openNavigation(app)
 
-    await chooseFiles(app, async () => {
-      await app.getByRole('treeitem', { name: folder }).click({ button: 'right' })
-      await app.getByRole('menuitem', { name: 'Add files…' }).click()
-    }, [{ name, body: 'picked from the menu\n' }])
+    await chooseFiles(
+      app,
+      async () => {
+        await app.getByRole('treeitem', { name: folder }).click({ button: 'right' })
+        await app.getByRole('menuitem', { name: 'Add files…' }).click()
+      },
+      [{ name, body: 'picked from the menu\n' }],
+      false,
+    )
 
     await expect.poll(() => vault.read(`${folder}/${name}`).catch(() => null)).toBe('picked from the menu\n')
     await expect(app.getByRole('treeitem', { name })).toBeVisible()

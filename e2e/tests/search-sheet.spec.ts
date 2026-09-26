@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openNote, SHEET_LABEL, searchSheet, shownName, test, typeKey } from './fixtures'
+import { expect, isMobileFrame, moreKey, openNote, searchSheet, shownName, test, typeKey } from './fixtures'
 
 // One operation — open or switch to — and one sheet behind it in both frames: a dialog on the desktop,
 // a bottom sheet on the phone. Its two sections are guaranteed, so these tests assert that both are
@@ -14,7 +14,8 @@ test.describe('open or switch to', () => {
 
     // "Open new" is the whole registry, not the row: the log viewer holds no place in the row at all,
     // and the sheet is the thing that makes it reachable.
-    await expect(sheet.getByTestId('sheet:new:arxhub.documents')).toBeVisible()
+    // Documents is always open on the phone, whose sheet lists types; the desktop's lists what is open inside them.
+    await expect(sheet.getByTestId(/^sheet:(new|open):arxhub\.documents$/)).toBeVisible()
     await expect(sheet.getByTestId('sheet:new:arxhub.settings')).toBeVisible()
     await expect(sheet.getByTestId('sheet:new:arxhub.logs')).toBeVisible()
   })
@@ -28,6 +29,7 @@ test.describe('open or switch to', () => {
   })
 
   test('an open note stands in the first section and can be switched to', async ({ app, vault }) => {
+    test.skip(await isMobileFrame(app), "the phone's sheet lists types; a note is a second tap on Documents away (mobile-navigation.spec.ts)")
     const path = await vault.write('sheet-open.md', '# In the sheet\n\nbody\n')
     await openNote(app, path)
 
@@ -71,10 +73,10 @@ test.describe('open or switch to', () => {
     await expect(searchSheet(app)).toBeHidden()
   })
 
-  test('the phone opens the same sheet from the key beside the type row', async ({ app }) => {
+  test('the phone opens the same sheet from More, the last key of the type row', async ({ app }) => {
     test.skip(!(await isMobileFrame(app)), 'the desktop frame reaches the sheet by the chord alone')
 
-    await app.getByRole('button', { name: SHEET_LABEL }).click()
+    await moreKey(app).click()
     const sheet = searchSheet(app)
     await expect(sheet).toBeVisible()
     // The status block the desktop keeps permanently in its bar lives here on this frame — F-11's third

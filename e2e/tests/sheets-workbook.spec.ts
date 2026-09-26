@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import type { Page } from '@playwright/test'
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { expect, isMobileFrame, openNavigation, test, viewerAction } from './fixtures'
 
 const cell = (page: Page, name: string) => page.getByRole('gridcell', { name, exact: true })
 const input = (page: Page) => page.getByRole('textbox', { name: 'Cell value or formula', exact: true })
@@ -12,9 +12,37 @@ async function open(page: Page, path: string) {
   await expect(page.getByRole('grid', { name: 'Spreadsheet', exact: true })).toBeVisible()
 }
 async function action(page: Page, name: string, advanced = true) {
-  await page.getByRole('button', { name: 'Spreadsheet actions', exact: true }).click()
-  if (advanced) await page.getByRole('menuitem', { name: 'More tools', exact: true }).click()
-  await page.getByRole('menuitem', { name, exact: true }).click()
+  if (advanced) {
+    await viewerAction(page, 'More tools', { desktopMenu: 'Spreadsheet actions' })
+    await page.getByRole('menuitem', { name, exact: true }).click()
+  } else await viewerAction(page, name, { desktopMenu: 'Spreadsheet actions' })
+}
+// The workbook's sheets: tabs under the grid on the desktop, the parts the object bar's name opens on the phone.
+async function showSheet(page: Page, name: string) {
+  if (!(await isMobileFrame(page))) {
+    await page.locator('.sheet-tabs').getByText(name, { exact: true }).click()
+    return
+  }
+  await page.getByTestId('object-bar-parts').click()
+  await page
+    .getByRole('dialog', { name: / · Sheets$/ })
+    .getByRole('button', { name: new RegExp(`^${name}\\b`) })
+    .click()
+}
+async function expectSheet(page: Page, name: string) {
+  if (await isMobileFrame(page)) await expect(page.getByTestId('object-bar-parts')).toContainText(`· ${name}`)
+  else await expect(page.getByRole('radio', { name, exact: true })).toBeChecked()
+}
+async function addSheet(page: Page) {
+  if (!(await isMobileFrame(page))) {
+    await page.getByRole('button', { name: 'Add sheet', exact: true }).click()
+    return
+  }
+  await page.getByTestId('object-bar-parts').click()
+  await page
+    .getByRole('dialog', { name: / · Sheets$/ })
+    .getByRole('button', { name: 'New sheet', exact: true })
+    .click()
 }
 async function edit(page: Page, key: string, value: string) {
   await cell(page, key).click()
@@ -78,20 +106,19 @@ test('structural edits update cross-sheet formulas and undo survives sheet switc
   await expect(cell(app, 'A3')).toHaveText('3')
   await cell(app, 'B1').click()
   await expect(input(app)).toHaveValue('=SUM(A1:A3)')
-  await app.locator('.sheet-tabs').getByText('Totals', { exact: true }).click()
+  await showSheet(app, 'Totals')
   await expect(cell(app, 'A1')).toHaveText('5')
   await expect(input(app)).toHaveValue("=SUM('Data'!A1:A3)")
-  await app.getByRole('button', { name: 'Undo', exact: true }).click()
-  await expect(app.getByRole('radio', { name: 'Data', exact: true })).toBeChecked()
+  await viewerAction(app, 'Undo')
+  await expectSheet(app, 'Data')
   await expect(cell(app, 'A2')).toHaveText('3')
-  await app.getByRole('button', { name: 'Add sheet', exact: true }).click()
+  await addSheet(app)
   await edit(app, 'A1', "='Totals'!A1*2")
   await expect(cell(app, 'A1')).toHaveText('10')
-  await app.getByRole('button', { name: 'Worksheet actions', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Rename sheet', exact: true }).click()
+  await viewerAction(app, 'Rename sheet', { desktopMenu: 'Worksheet actions' })
   await app.getByRole('textbox', { name: 'Sheet name', exact: true }).fill('Report')
   await app.getByRole('dialog').getByRole('button', { name: 'Apply', exact: true }).click()
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await viewerAction(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('Report')
   await open(app, path)
   await expect(cell(app, 'A1')).toHaveText('10')
@@ -170,7 +197,7 @@ test('formats, variable widths and frozen panes persist while sorting and filter
   await expect(cell(app, 'B3')).toHaveText('B')
   await action(app, 'Clear filter')
   await expect(cell(app, 'B2')).toHaveText('A')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await viewerAction(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('"freeze":{"rows":1,"columns":1}')
 })
 
@@ -197,7 +224,7 @@ test('fill handle extends numeric sequences using mouse and touch', async ({ app
     await app.mouse.up()
   }
   await expect(cell(app, 'A5')).toHaveText('10')
-  await app.getByRole('button', { name: 'Undo', exact: true }).click()
+  await viewerAction(app, 'Undo')
   await expect(cell(app, 'A5')).toHaveText('')
 })
 
@@ -220,7 +247,7 @@ test('XLSX export and reviewed import run in the browser worker and can be undon
   await expect(app.locator('.sheet-cell[aria-label="B1"]')).toHaveText('198')
   await app.getByRole('dialog').getByRole('button', { name: 'Apply', exact: true }).click()
   await expect(cell(app, 'B1')).toHaveText('14')
-  await app.getByRole('button', { name: 'Undo', exact: true }).click()
+  await viewerAction(app, 'Undo')
   await expect(cell(app, 'B1')).toHaveText('198')
 })
 

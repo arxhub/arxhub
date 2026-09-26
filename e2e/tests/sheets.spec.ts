@@ -1,5 +1,17 @@
 import type { Page } from '@playwright/test'
-import { closeFromBand, expect, isMobileFrame, openNavigation, openType, SETTINGS_TYPE, test } from './fixtures'
+import {
+  closeFromBand,
+  expect,
+  expectSheetState,
+  isMobileFrame,
+  openDocumentTools,
+  openNavigation,
+  openType,
+  SETTINGS_TYPE,
+  test,
+  typeRow,
+  viewerAction,
+} from './fixtures'
 
 const spreadsheet = (cells: Record<string, string>, rows = 1000, columns = 26) => JSON.stringify({ version: 1, rows, columns, cells })
 const cell = (page: Page, name: string) => page.getByRole('gridcell', { name, exact: true })
@@ -26,30 +38,38 @@ test('spreadsheet formulas recalculate, undo and survive reopening', async ({ ap
   await expect(cell(app, 'C3')).toHaveText('80')
   await input(app, 'A1', '5')
   await expect(cell(app, 'C3')).toHaveText('120')
-  await app.getByRole('button', { name: 'Undo', exact: true }).click()
+  await viewerAction(app, 'Undo')
   await expect(cell(app, 'C3')).toHaveText('80')
-  await app.getByRole('button', { name: 'Redo', exact: true }).click()
+  await viewerAction(app, 'Redo')
   await expect(cell(app, 'C3')).toHaveText('120')
   await input(app, 'B2', '=1/0')
   await expect(cell(app, 'C3')).toHaveText('#DIV/0!')
   await input(app, 'B2', '6')
   await expect(cell(app, 'C3')).toHaveText('124')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
-  await expect(app.locator('.sheet-status')).toHaveText('Saved')
+  await viewerAction(app, 'Save')
+  await expectSheetState(app, 'Saved')
   await expect.poll(() => vault.read(path)).toContain('"A1":"5"')
   await openSheet(app, path)
   await expect(cell(app, 'C3')).toHaveText('124')
 })
 
 test('new spreadsheet is created from the vault menu', async ({ app }) => {
-  await openNavigation(app)
-  await app.getByRole('button', { name: 'New file', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'New spreadsheet', exact: true }).click()
+  if (await isMobileFrame(app)) {
+    // The phone's New is the three-step flow, and a spreadsheet is one of its kinds.
+    await app.getByTestId('object-bar').getByRole('button', { name: 'New document', exact: true }).click()
+    await app.getByTestId('create-kind:.arxs').click()
+    await app.getByTestId('create-name').fill(`sheet-${Date.now()}`)
+    await app.getByTestId('create-confirm').click()
+  } else {
+    await openNavigation(app)
+    await app.getByRole('button', { name: 'New file', exact: true }).click()
+    await app.getByRole('menuitem', { name: 'New spreadsheet', exact: true }).click()
+  }
   await expect(app.getByRole('grid', { name: 'Spreadsheet' })).toBeVisible()
   await input(app, 'A1', '=SUM(2,3)')
   await expect(cell(app, 'A1')).toHaveText('5')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
-  await expect(app.locator('.sheet-status')).toHaveText('Saved')
+  await viewerAction(app, 'Save')
+  await expectSheetState(app, 'Saved')
 })
 
 test('range paste is atomic, shifts formulas, and can be undone', async ({ app, vault }) => {
@@ -72,7 +92,7 @@ test('range paste is atomic, shifts formulas, and can be undone', async ({ app, 
   await expect(cell(app, 'B2')).toHaveText('6')
   await cell(app, 'B2').click()
   await expect(app.getByRole('textbox', { name: 'Cell value or formula' })).toHaveValue('=A2*2')
-  await app.getByRole('button', { name: 'Undo', exact: true }).click()
+  await viewerAction(app, 'Undo')
   await expect(cell(app, 'A2')).toHaveText('')
   await expect(cell(app, 'B2')).toHaveText('')
 })
@@ -111,12 +131,13 @@ test('large sheets virtualize both axes and keep touch input above the keyboard'
       .poll(() => app.locator('.sheet-formula').evaluate((element) => element.getBoundingClientRect().bottom))
       .toBeLessThanOrEqual(360)
     await expect.poll(() => grid.evaluate((element) => element.clientHeight)).toBeGreaterThanOrEqual(96)
-    await expect(app.getByRole('button', { name: 'Open documents', exact: true })).toBeHidden()
+    await expect(typeRow(app)).toBeHidden()
     expect((await cell(app, 'A1').boundingBox())?.height).toBe(48)
     await app.getByRole('button', { name: 'Cancel cell edit', exact: true }).tap()
     await expect(input).toHaveValue('=SUM(A1:A10000)')
     await expect(cell(app, 'B1')).toHaveText('2')
-    await expect(app.getByRole('button', { name: 'Save', exact: true })).toBeVisible()
+    // While typing into a cell the band steps aside (a workbook has no editing band) and the formula bar stays.
+    await expect(input).toBeVisible()
     await input.fill('=A1*3')
     await app.getByRole('button', { name: 'Apply cell', exact: true }).tap()
     await expect(cell(app, 'B1')).toHaveText('6')
@@ -127,7 +148,7 @@ test('large sheets virtualize both axes and keep touch input above the keyboard'
       Object.defineProperty(viewport, 'height', { configurable: true, value: window.innerHeight })
       viewport.dispatchEvent(new Event('resize'))
     })
-    await expect(app.getByRole('button', { name: 'Open documents', exact: true })).toBeVisible()
+    await expect(typeRow(app)).toBeVisible()
   }
   await app.screenshot({ path: test.info().outputPath('spreadsheet.png') })
 })
@@ -139,14 +160,17 @@ test('unsupported spreadsheet cannot be overwritten', async ({ app, vault }) => 
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   await expect(app.getByRole('alert')).toContainText('Unsupported spreadsheet')
-  await expect(app.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
+  if (await isMobileFrame(app)) {
+    await openDocumentTools(app)
+    await expect(app.getByRole('menuitem', { name: 'Save', exact: true })).toBeDisabled()
+    await app.goBack()
+  } else await expect(app.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
   await expect(app.getByRole('textbox', { name: 'Cell value or formula' })).toBeDisabled()
   expect(await vault.read(path)).toBe(original)
 })
 
 async function action(page: Page, name: string) {
-  await page.getByRole('button', { name: 'Spreadsheet actions', exact: true }).click()
-  await page.getByRole('menuitem', { name, exact: true }).click()
+  await viewerAction(page, name, { desktopMenu: 'Spreadsheet actions' })
 }
 
 test('CSV, range fill and address navigation work through the visible controls', async ({ app, vault }) => {
@@ -175,7 +199,7 @@ test('CSV, range fill and address navigation work through the visible controls',
   await app.getByRole('textbox', { name: 'Cell value or formula' }).fill('=SUM(B1:B3)')
   await app.getByRole('button', { name: 'Apply cell', exact: true }).click()
   await expect(cell(app, 'AA1900')).toHaveText('33')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await viewerAction(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('"AA1900":"=SUM(B1:B3)"')
 })
 
@@ -214,23 +238,23 @@ test('failed save refuses closing and retry drains edits made during an in-fligh
     await route.continue()
   })
   await input(app, 'A1', 'first edit')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
-  await expect(app.locator('.sheet-status')).toHaveText('Save failed')
+  await viewerAction(app, 'Save')
+  await expectSheetState(app, 'Save failed')
   await closeSheet(app)
   await expect.poll(() => rejectedWrites).toBeGreaterThanOrEqual(2)
-  await expect(app.locator('.sheet-status')).toHaveText('Save failed')
+  await expectSheetState(app, 'Save failed')
   await expect(app.getByRole('grid', { name: 'Spreadsheet' })).toBeVisible()
   expect(await vault.read(path)).toContain('original')
   fail = false
   const started = new Promise<void>((resolve) => {
     writeStarted = resolve
   })
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await viewerAction(app, 'Save')
   await started
   await input(app, 'A1', 'latest edit')
   releaseWrite?.()
   await expect.poll(() => vault.read(path)).toContain('latest edit')
-  await expect(app.locator('.sheet-status')).toHaveText('Saved')
+  await expectSheetState(app, 'Saved')
   await closeSheet(app)
   await expect(app.getByRole('grid', { name: 'Spreadsheet' })).toHaveCount(0)
 })
@@ -253,10 +277,10 @@ test('renaming and switching types retain the spreadsheet buffer and restart cal
   await app.getByRole('textbox', { name: 'New name', exact: true }).press('Enter')
   await app.getByRole('treeitem', { name: renamed, exact: true }).click()
   await expect(cell(app, 'B1')).toHaveText('21')
-  await app.getByRole('button', { name: 'Undo', exact: true }).click()
+  await viewerAction(app, 'Undo')
   await expect(cell(app, 'B1')).toHaveText('6')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
-  await expect(app.locator('.sheet-status')).toHaveText('Saved')
+  await viewerAction(app, 'Save')
+  await expectSheetState(app, 'Saved')
   await expect.poll(() => vault.read(renamed)).toContain('"A1":"2"')
   expect(await vault.read(path).catch(() => null)).toBeNull()
 })
@@ -268,7 +292,7 @@ test('a failed calculation worker preserves inputs and can be retried', async ({
   await openSheet(app, path)
   await expect(app.getByRole('alert')).toContainText('Calculation could not start')
   await input(app, 'A1', '=SUM(3,4)')
-  await app.getByRole('button', { name: 'Save', exact: true }).click()
+  await viewerAction(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('=SUM(3,4)')
   await app.unroute(workerUrl)
   await app.getByRole('button', { name: 'Retry calculation', exact: true }).click()
@@ -300,5 +324,5 @@ test('autosave catches edits after its debounce expires during a slow write', as
   await app.waitForTimeout(1400)
   release?.()
   await expect.poll(() => vault.read(path)).toContain('latest autosave')
-  await expect(app.locator('.sheet-status')).toHaveText('Saved')
+  await expectSheetState(app, 'Saved')
 })

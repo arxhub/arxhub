@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { expect, openNavigation, test } from './fixtures'
+import { expect, openDocumentTools, openNavigation, test } from './fixtures'
 
 test('publication exports standalone HTML and Markdown without publishing the source', async ({ app, vault }) => {
   const attachment = `attachments/export-${test.info().project.name}.txt`
@@ -27,7 +27,7 @@ test('publication exports standalone HTML and Markdown without publishing the so
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   await expect(app.locator('.ProseMirror:visible')).toContainText('Exported document')
   for (const format of ['HTML', 'Markdown']) {
-    await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+    await openDocumentTools(app)
     await expect(app.getByRole('menuitem', { name: 'Print / Save PDF', exact: true })).toBeEnabled()
     const pending = app.waitForEvent('download')
     await app.getByRole('menuitem', { name: `Export ${format}`, exact: true }).click()

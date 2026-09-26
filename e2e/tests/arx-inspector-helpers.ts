@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect, isMobileFrame } from './fixtures'
+import { documentTool, expect, isMobileFrame } from './fixtures'
 
 export async function openBlockSettings(page: Page, block: Locator, name: string) {
   const mobile = await isMobileFrame(page)
@@ -11,8 +11,7 @@ export async function openBlockSettings(page: Page, block: Locator, name: string
 }
 export async function openProperties(page: Page) {
   const mobile = await isMobileFrame(page)
-  await page.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await page.getByRole('menuitem', { name: 'Properties', exact: true }).click()
+  await documentTool(page, 'Properties')
   const panel = page.getByRole(mobile ? 'dialog' : 'complementary', { name: 'Properties', exact: true })
   await expect(panel).toBeVisible()
   return panel

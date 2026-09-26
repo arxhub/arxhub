@@ -1,11 +1,10 @@
 import { createHash } from 'node:crypto'
 import type { Locator, Page } from '@playwright/test'
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { documentTool, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 // The versions page stands in the editor's own column, in place of the document.
 async function versions(app: Page) {
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Saved versions', exact: true }).click()
+  await documentTool(app, 'Saved versions')
   const page = app.getByRole('region', { name: 'Saved versions', exact: true })
   await expect(page).toBeVisible()
   return page
@@ -36,8 +35,7 @@ test('restoring a version preserves the current draft, refuses a failed save and
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   const editor = app.locator('.ProseMirror:visible')
   await editor.fill('Second version')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(() => vault.read(path)).toContain('Second version')
   await expect(app.locator('.document-save-status')).toContainText('Saved')
   const identity = JSON.parse(await vault.read(path)).documentId
@@ -71,8 +69,7 @@ test('restoring a version preserves the current draft, refuses a failed save and
   expect(JSON.parse(await vault.read(path)).documentId).toBe(identity)
   await app.reload()
   await expect(editor).toContainText('First version')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Read only', exact: true }).click()
+  await documentTool(app, 'Read only')
   await expect(editor).toBeFocused()
   const reopened = await versions(app)
   const savedRows = reopened.getByRole('navigation', { name: 'Saved document versions' }).getByRole('button')
@@ -93,8 +90,7 @@ test('a copied document gets its own history identity', async ({ app, vault }) =
   await app.reload()
   await openNavigation(app)
   await app.getByRole('treeitem', { name: original, exact: true }).click()
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect(app.locator('.document-save-status')).toContainText('Saved')
   await expect.poll(async () => JSON.parse(await vault.read(original)).documentId).toBeTruthy()
   const saved = await vault.read(original)
@@ -103,8 +99,7 @@ test('a copied document gets its own history identity', async ({ app, vault }) =
   await openNavigation(app)
   await app.getByRole('treeitem', { name: copy, exact: true }).click()
   await expect(app.locator('.ProseMirror:visible')).toContainText('Original')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect.poll(async () => JSON.parse(await vault.read(copy)).documentId).not.toBe(JSON.parse(saved).documentId)
   expect(JSON.parse(await vault.read(original)).documentId).toBe(JSON.parse(saved).documentId)
 })
@@ -125,8 +120,7 @@ test('one block can be restored while a different edited block stays current', a
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   const editor = app.locator('.ProseMirror:visible')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect(app.locator('.document-save-status')).toContainText('Saved')
   await editor.locator('p').first().fill('First changed')
   await editor.locator('p').last().fill('Second changed')
@@ -183,8 +177,7 @@ test('the phone opens saved versions as a page with the diff band', async ({ app
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   const editor = app.locator('.ProseMirror:visible')
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await documentTool(app, 'Save')
   await expect(app.locator('.document-save-status')).toContainText('Saved')
   // No edit after the save: an autosave landing while the page opens would list a version still being written.
   const page = await versions(app)

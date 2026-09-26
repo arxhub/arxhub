@@ -2,6 +2,10 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 async function drag(page: Page, source: Locator, target: Locator) {
+  // The vault is every spec's, so these rows can sit below the fold; the fixtures name source and target
+  // alike, which keeps the two within one screen once they are scrolled to.
+  await target.scrollIntoViewIfNeeded()
+  await source.scrollIntoViewIfNeeded()
   const from = (await source.boundingBox())!
   const to = (await target.boundingBox())!
   await page.mouse.move(from.x + 60, from.y + from.height / 2)

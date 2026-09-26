@@ -1,4 +1,4 @@
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { documentTool, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 test('document search replaces marked text, undoes and navigates headings in protected modes', async ({ app, vault }) => {
   const path = await vault.write(
@@ -26,8 +26,7 @@ test('document search replaces marked text, undoes and navigates headings in pro
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   const editor = app.locator('.ProseMirror:visible')
   await expect(editor).toBeVisible()
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Find in document', exact: true }).click()
+  await documentTool(app, 'Find in document')
   const find = app.getByRole('search', { name: 'Find in document' })
   await find.getByRole('textbox', { name: 'Find text', exact: true }).fill('cat')
   await expect(find).toContainText('1 of 2')
@@ -46,8 +45,9 @@ test('document search replaces marked text, undoes and navigates headings in pro
   await app.keyboard.press('ControlOrMeta+z')
   await expect(editor.locator('p')).toHaveText('Cat cat')
   for (const mode of ['Read only', 'Interactive']) {
-    await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-    await app.getByRole('menuitem', { name: mode, exact: true }).click()
+    await documentTool(app, mode)
+    // On the phone a menu hands focus back to its key: the caret in the text would raise the keyboard.
+    if (await isMobileFrame(app)) await editor.focus()
     await expect(editor).toBeFocused()
     await app.keyboard.press('ControlOrMeta+f')
     await expect(find).toBeVisible()
@@ -58,8 +58,7 @@ test('document search replaces marked text, undoes and navigates headings in pro
     await expect(find).toContainText('2 of 2')
     await find.getByRole('button', { name: 'Close find' }).click()
   }
-  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
-  await app.getByRole('menuitem', { name: 'Document outline', exact: true }).click()
+  await documentTool(app, 'Document outline')
   await app.getByRole('navigation', { name: 'Document headings' }).getByRole('button', { name: 'Conclusion' }).click()
   await expect(app.getByRole('dialog', { name: 'Document outline' })).toHaveCount(0)
   await expect
