@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, useAttrs, useSlots } from 'vue'
 import { useShellFrame } from '../hooks/useShellFrame'
+import Icon from './Icon.vue'
 
 // One item of an enumeration: a tree node, a menu item, a settings section, a search result, a log entry.
 // Density is chosen by the FRAME, not by the consumer (AD-03 / .claude/rules/design.md): the frame is
@@ -27,13 +28,27 @@ const props = withDefaults(
     // A row that is only read, never activated — a log entry. Both the pointer cursor and the hover fill
     // promise a click, and a log has nothing to handle one with.
     plain?: boolean
+    // The common shape of a list entry — a glyph, a name and a quieter second line — drawn by the role
+    // itself, so a sheet of months and a sheet of sessions set their two lines the same way. Anything
+    // else still goes in the default slot, after the text.
+    icon?: string
+    label?: string
+    // A second line under the label. The row then grows down from its height: two lines never fit 28px.
+    detail?: string
+    // The pick marker: this is the one chosen. Separate from `selected`, which is where the owner IS —
+    // a list of choices marks its choice even while the selection wash means something else.
+    checked?: boolean
+    // The row leads one level further in (a list of tabs to the whole vault) rather than acting in place.
+    next?: boolean
   }>(),
-  { as: 'div', selected: false, disabled: false, depth: 0, tone: 'neutral', wrap: false, plain: false },
+  { as: 'div', selected: false, disabled: false, depth: 0, tone: 'neutral', wrap: false, plain: false, checked: false, next: false },
 )
 
 // inject() only runs during setup, and the frame never changes while the app is up — so this is read
 // once and is deliberately not reactive.
 const touch = useShellFrame() === 'mobile'
+const glyph = touch ? 16 : 14
+const wraps = computed(() => props.wrap || props.detail != null)
 const indent = computed(() => ({ paddingLeft: `calc(8px + ${props.depth} * var(--size-2xs-half))` }))
 const slots = useSlots()
 const attrs = useAttrs()
@@ -45,7 +60,7 @@ const rowAttrs = computed(() => {
 </script>
 
 <template>
-  <div v-if="slots.trailing" class="row has-trailing" :class="[tone, { selected, disabled, wrap, plain, touch }]" v-bind="boxAttrs">
+  <div v-if="slots.trailing" class="row has-trailing" :class="[tone, { selected, disabled, wrap: wraps, plain, touch }]" v-bind="boxAttrs">
     <component
       :is="as"
       class="row-main"
@@ -53,7 +68,14 @@ const rowAttrs = computed(() => {
       :disabled="as === 'button' && disabled ? true : undefined"
       v-bind="rowAttrs"
     >
+      <Icon v-if="icon" class="row-icon" :name="icon" :size="glyph" />
+      <span v-if="label != null" class="row-text">
+        <span class="row-label">{{ label }}</span>
+        <span v-if="detail" class="row-detail">{{ detail }}</span>
+      </span>
       <slot />
+      <Icon v-if="checked" class="row-check" name="lu:check" :size="glyph" />
+      <Icon v-if="next" class="row-check" name="lu:chevron-right" :size="glyph" />
     </component>
     <div class="row-trailing"><slot name="trailing" /></div>
   </div>
@@ -61,12 +83,19 @@ const rowAttrs = computed(() => {
     :is="as"
     v-else
     class="row"
-    :class="[tone, { selected, disabled, wrap, plain, touch }]"
+    :class="[tone, { selected, disabled, wrap: wraps, plain, touch }]"
     :style="indent"
     :disabled="as === 'button' && disabled ? true : undefined"
     v-bind="$attrs"
   >
+    <Icon v-if="icon" class="row-icon" :name="icon" :size="glyph" />
+    <span v-if="label != null" class="row-text">
+      <span class="row-label">{{ label }}</span>
+      <span v-if="detail" class="row-detail">{{ detail }}</span>
+    </span>
     <slot />
+    <Icon v-if="checked" class="row-check" name="lu:check" :size="glyph" />
+    <Icon v-if="next" class="row-check" name="lu:chevron-right" :size="glyph" />
   </component>
 </template>
 
@@ -209,6 +238,46 @@ const rowAttrs = computed(() => {
   align-items: center;
   flex-shrink: 0;
   align-self: stretch;
+}
+
+/* The glyph sits on the first line, not centred on two. */
+.row-icon {
+  flex-shrink: 0;
+}
+
+.row.wrap .row-icon,
+.row.wrap .row-check {
+  margin-top: 4px;
+}
+
+.row-text {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row-label,
+.row-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The mock's second line is the meta step in both frames: under a 16px touch label too. */
+.row-detail {
+  color: var(--gray-11);
+  font-size: var(--font-size-xs);
+}
+
+.row.selected .row-detail {
+  color: var(--accent-11);
+}
+
+.row-check {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* Flat, not faded — an unavailable row must not read as a dimmed available one. */

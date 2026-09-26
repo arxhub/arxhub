@@ -51,7 +51,20 @@ export interface OpenContextModal<P extends Record<string, unknown> = Record<str
 // biome-ignore lint/suspicious/noEmptyInterface: an interface is required so plugins can augment it
 export interface ArxhubModalsOverride {}
 
+// A layer that draws its own surface — a multi-step BottomSheet, whose title, back key and height change
+// from step to step. The registry only holds it open: a component mounted from a plain function (a key
+// in a band, a menu item) has no template of its own to put a sheet in, and ModalsProvider sits at the
+// root of both frames.
+export interface OpenSurface {
+  modalId?: string
+  component: Component
+  /** Props for `component`, which also receives `modalId` and closes itself with `modals.close(modalId)`. */
+  props?: Record<string, unknown>
+  onClose?: () => void
+}
+
 export type ModalState =
+  | { id: string; type: 'surface'; props: OpenSurface }
   | { id: string; type: 'content'; props: ModalSettings }
   | { id: string; type: 'confirm'; props: OpenConfirmModal }
   | { id: string; type: 'context'; ctx: string; props: OpenContextModal }
@@ -83,6 +96,12 @@ export const modals = {
     return id
   },
 
+  openSurface(props: OpenSurface): string {
+    const id = props.modalId ?? nextId()
+    openModals.value = [...openModals.value, { id, type: 'surface', props: { ...props, component: markRaw(props.component) } }]
+    return id
+  },
+
   openConfirmModal(props: OpenConfirmModal): string {
     const id = props.modalId ?? nextId()
     openModals.value = [...openModals.value, { id, type: 'confirm', props: freezeConfirm(props) }]
@@ -111,6 +130,8 @@ export const modals = {
 
   updateModal(payload: { modalId: string } & Partial<ModalSettings>): void {
     const { modalId, ...rest } = payload
-    openModals.value = openModals.value.map((m) => (m.id === modalId ? ({ ...m, props: { ...m.props, ...rest } } as ModalState) : m))
+    openModals.value = openModals.value.map((m) =>
+      m.id === modalId && m.type !== 'surface' ? ({ ...m, props: { ...m.props, ...rest } } as ModalState) : m,
+    )
   },
 }

@@ -9,5 +9,6 @@ export {
   modals,
   type OpenConfirmModal,
   type OpenContextModal,
+  type OpenSurface,
   openModals,
 } from './modals'

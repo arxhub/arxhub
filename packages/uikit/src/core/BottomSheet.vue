@@ -20,10 +20,15 @@ const props = withDefaults(
     // the thumb, which is the one the sheet was raised for.
     anchor?: 'start' | 'end'
     closeLabel?: string
+    // A footer that is a small form — a name and the button that confirms it — stands off the sheet's edges;
+    // one that is a band of its own (a flush SearchField) fills them.
+    footerInset?: boolean
   }>(),
   { restoreFocus: true, variant: 'auto', anchor: 'start', closeLabel: 'Close' },
 )
-const emit = defineEmits<{ close: [] }>()
+// `scroll` is the owner moving the body by hand — never a scroll the sheet made itself (the end anchor, a
+// focused row brought into view), so a consumer may take it as "done typing" and let the keyboard go.
+const emit = defineEmits<{ close: []; scroll: [] }>()
 const slots = useSlots()
 
 const keyboardInset = useKeyboardInset()
@@ -41,12 +46,21 @@ const finalFocus = () => (opener?.isConnected && opener.getClientRects().length 
 
 // ScrollArea exposes its viewport; a template ref reads it unwrapped.
 const body = ref<{ viewport: HTMLElement | null } | null>(null)
+// A sheet opened to type into puts the caret there: the field is what it was raised for.
+const top = ref<HTMLElement | null>(null)
+const footer = ref<HTMLElement | null>(null)
 const TABBABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 // Ark's default would land on the header's close button now that the header comes first; focus goes to
 // the content the sheet was opened for, and for an end-anchored list to its last entry, so the focus
 // does not scroll the list back to the top it was not opened at.
+// A field marked `autofocus` wins wherever it sits: a footer holding the one field of a small form (a
+// rename) is raised to type into, while a footer finder under a list is not.
 function initialFocus(): HTMLElement | null {
+  const marked = footer.value?.querySelector<HTMLElement>('[autofocus]') ?? body.value?.viewport?.querySelector<HTMLElement>('[autofocus]')
+  if (marked != null) return marked
+  const field = top.value?.querySelector<HTMLElement>('input:not([disabled]), textarea:not([disabled])')
+  if (field != null) return field
   const items = body.value?.viewport?.querySelectorAll<HTMLElement>(TABBABLE)
   if (items == null || items.length === 0) return null
   return (props.anchor === 'end' ? items[items.length - 1] : items[0]) ?? null
@@ -111,19 +125,24 @@ useBackStack(
               <IconButton size="xl" icon="lu:x" :aria-label="closeLabel" data-testid="sheet-close" @click="emit('close')" />
             </template>
           </Strip>
+          <!-- Pinned under the header and above what scrolls: a field the sheet is opened to type into. -->
+          <div v-if="slots.top" ref="top" class="sheet-top"><slot name="top" /></div>
+          <!-- A sheet that is only its footer form (a rename) has no body to scroll, nor a blank band for one. -->
           <ScrollArea
+            v-if="slots.default"
             ref="body"
             class="sheet-body"
             :class="{ 'has-footer': !!slots.footer }"
             content-class="sheet-body-content"
-            @wheel.passive="release"
+            @wheel.passive="release(); emit('scroll')"
             @touchstart.passive="release"
             @pointerdown="release"
             @keydown="release"
+            @touchmove.passive="emit('scroll')"
           >
             <slot />
           </ScrollArea>
-          <div v-if="slots.footer" class="sheet-footer" :class="{ lifted: keyboardInset > 0 }">
+          <div v-if="slots.footer" ref="footer" class="sheet-footer" :class="{ lifted: keyboardInset > 0, inset: footerInset }">
             <slot name="footer" />
           </div>
         </Dialog.Content>
@@ -179,6 +198,11 @@ useBackStack(
   font: inherit;
 }
 
+.sheet-top {
+  flex-shrink: 0;
+  box-shadow: inset 0 -1px 0 var(--gray-6);
+}
+
 .sheet-body {
   flex: 0 1 auto;
 }
@@ -199,6 +223,18 @@ useBackStack(
   flex-shrink: 0;
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: inset 0 1px 0 var(--gray-6);
+}
+
+/* The inset keeps its own bottom padding on top of the safe area: the confirm is not the screen's edge. */
+.sheet-footer.inset {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+}
+
+.sheet-footer.inset.lifted {
+  padding-bottom: 12px;
 }
 
 /* Over the keyboard the home indicator is covered anyway; its inset would only float the field. */

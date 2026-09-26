@@ -16,6 +16,9 @@ const props = defineProps<{
   ariaLabel?: string
   autofocus?: boolean
   disabled?: boolean
+  // A band of its own at the edge of a sheet (the vault's finder, a list's filter): no box, the sheet's
+  // whole width at the touch height, the sheet's own hairline as its only border.
+  flush?: boolean
 }>()
 
 const touch = useShellFrame() === 'mobile'
@@ -41,12 +44,13 @@ defineExpose({ focus })
 </script>
 
 <template>
-  <div ref="root" class="search-field" :class="{ touch }">
+  <div ref="root" class="search-field" :class="{ touch, flush }">
     <span class="search-icon" :class="{ disabled }"><Icon name="lu:search" :size="touch ? 16 : 14" /></span>
     <Input
       v-model="model"
       icon-start
       :icon-end="clearable"
+      :variant="flush ? 'flush' : 'default'"
       :placeholder="placeholder"
       :aria-label="ariaLabel"
       :disabled="disabled"
@@ -87,5 +91,9 @@ defineExpose({ focus })
 
 .search-field.touch .search-clear {
   right: 8px;
+}
+
+.search-field.flush .search-icon {
+  left: 16px;
 }
 </style>

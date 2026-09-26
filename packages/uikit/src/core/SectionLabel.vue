@@ -1,9 +1,11 @@
 <script setup lang="ts">
-defineProps<{ tone?: 'muted' | 'danger' }>()
+// `inset` is the heading of a group of rows in a list: it stands off the rows above it and lines up with the
+// Row's own text inset, so the sheets that group their entries all draw the same break.
+defineProps<{ tone?: 'muted' | 'danger'; inset?: boolean }>()
 </script>
 
 <template>
-  <div class="section-label" :class="tone ?? 'muted'">
+  <div class="section-label" :class="[tone ?? 'muted', { inset }]">
     <slot />
   </div>
 </template>
@@ -19,5 +21,7 @@ defineProps<{ tone?: 'muted' | 'danger' }>()
 }
 
 .muted { color: var(--gray-10); }
+.inset { padding: 12px 8px 4px; }
+.inset.muted { color: var(--gray-11); }
 .danger { color: var(--danger-10); }
 </style>

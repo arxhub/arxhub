@@ -9,7 +9,8 @@ defineProps<{
   disabled?: boolean
   // `inline` sits inside a Row (an inline rename, a draft tree node) and must fit inside it: a
   // default control is as tall as the touch row and taller than the desktop one.
-  variant?: 'default' | 'title' | 'inline'
+  // `flush` is a band rather than a box: no border or fill, the touch height, an inset focus ring.
+  variant?: 'default' | 'title' | 'inline' | 'flush'
   // Room for an icon a composing control draws over the box (SearchField): the box keeps its one
   // geometry, and the text starts clear of the icon instead of under it.
   iconStart?: boolean
@@ -22,7 +23,7 @@ const touch = useShellFrame() === 'mobile'
 <template>
   <input
     class="input"
-    :class="{ touch, title: variant === 'title', inline: variant === 'inline', 'icon-start': iconStart, 'icon-end': iconEnd }"
+    :class="{ touch, title: variant === 'title', inline: variant === 'inline', flush: variant === 'flush', 'icon-start': iconStart, 'icon-end': iconEnd }"
     :type="type || 'text'"
     :placeholder="placeholder"
     :disabled="disabled"
@@ -79,6 +80,23 @@ const touch = useShellFrame() === 'mobile'
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
   border-color: var(--accent-8);
+}
+
+.input.flush {
+  height: var(--size-xl);
+  padding-left: 16px;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  font-size: var(--font-size-md);
+}
+
+.input.flush.icon-start {
+  padding-left: 44px;
+}
+
+.input.flush:focus-visible {
+  outline-offset: -2px;
 }
 
 .input.title { height: auto; min-height: var(--size-xl); padding: 0; border: none; background: transparent; font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); }

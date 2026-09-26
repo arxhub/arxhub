@@ -33,8 +33,11 @@ const props = withDefaults(
     // something goes rather than what to open.
     mode?: TreeViewMode
     draft?: TreeViewDraft | null
+    // The same trailing check without pick mode's branches-only filter: a list of choices shown in a sheet
+    // (the phone's settings sections) marks its choice the way every other such sheet does.
+    markSelected?: boolean
   }>(),
-  { selectedId: null, expandedIds: () => [], mode: 'navigate', draft: null },
+  { selectedId: null, expandedIds: () => [], mode: 'navigate', draft: null, markSelected: false },
 )
 const emit = defineEmits<{
   activate: [node: TreeViewNode<T>]
@@ -178,7 +181,7 @@ function keydown(node: TreeViewNode<T>, event: KeyboardEvent) {
               <span v-if="entry.row.node.icon" class="glyph" aria-hidden="true"><Icon :name="entry.row.node.icon" :size="iconSize" /></span>
               <span class="tree-view-label"><slot name="label" :node="entry.row.node">{{ entry.row.node.label }}</slot></span>
               <slot name="actions" :node="entry.row.node" />
-              <span v-if="picking && entry.row.node.id === selectedId" class="glyph pick-mark" aria-hidden="true">
+              <span v-if="(picking || markSelected) && entry.row.node.id === selectedId" class="glyph pick-mark" aria-hidden="true">
                 <Icon name="lu:check" :size="iconSize" />
               </span>
             </Row>
