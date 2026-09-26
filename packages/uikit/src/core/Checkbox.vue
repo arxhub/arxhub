@@ -18,7 +18,7 @@ const touch = useShellFrame() === 'mobile'
 <template>
   <Checkbox.Root
     class="root"
-    :class="{ touch }"
+    :class="{ touch, bare: !label }"
     :checked="modelValue"
     :disabled="disabled"
     @checked-change="$emit('update:modelValue', $event.checked === true)"
@@ -45,6 +45,20 @@ const touch = useShellFrame() === 'mobile'
 .root.touch {
   min-width: var(--size-xl);
   min-height: var(--size-xl);
+}
+
+/* A checkbox with no label is a mark inside something else (a task in a note's text): its 48px touch target
+   overlaps what surrounds it instead of pushing it 12px away on every side. */
+.root.touch.bare {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.root.touch.bare::before {
+  content: '';
+  position: absolute;
+  inset: calc((var(--size-xl-half) - var(--size-xl)) / 2);
 }
 
 .root[data-disabled] {
