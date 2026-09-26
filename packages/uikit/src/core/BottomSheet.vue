@@ -23,6 +23,9 @@ const props = withDefaults(
     // A footer that is a small form — a name and the button that confirms it — stands off the sheet's edges;
     // one that is a band of its own (a flush SearchField) fills them.
     footerInset?: boolean
+    // A body of prose and controls rather than a list: it stands off the sheet's edges (16px, a 16px
+    // column gap) at the touch text size. A list of rows leaves it off and runs edge to edge.
+    inset?: boolean
   }>(),
   { restoreFocus: true, variant: 'auto', anchor: 'start', closeLabel: 'Close' },
 )
@@ -132,7 +135,7 @@ useBackStack(
             v-if="slots.default"
             ref="body"
             class="sheet-body"
-            :class="{ 'has-footer': !!slots.footer }"
+            :class="{ 'has-footer': !!slots.footer, inset }"
             content-class="sheet-body-content"
             @wheel.passive="release(); emit('scroll')"
             @touchstart.passive="release"
@@ -217,6 +220,18 @@ useBackStack(
 
 .sheet-body.has-footer :deep(.sheet-body-content) {
   padding-bottom: 8px;
+}
+
+.sheet-body.inset :deep(.sheet-body-content) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+  font-size: var(--font-size-md);
+}
+
+.sheet-body.inset.has-footer :deep(.sheet-body-content) {
+  padding-bottom: 16px;
 }
 
 .sheet-footer {

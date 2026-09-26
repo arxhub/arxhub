@@ -2,7 +2,6 @@ export {
   BLOB_LIMIT,
   copyBytes,
   extensionsOf,
-  formatBytes,
   MEDIA_KINDS,
   type MediaKind,
   type MediaSource,

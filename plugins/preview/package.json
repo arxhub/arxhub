@@ -39,6 +39,7 @@
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-search": "workspace:*",
     "@arxhub/plugin-vfs": "workspace:*",
+    "@arxhub/stdlib": "workspace:*",
     "@arxhub/uikit": "workspace:*",
     "@arxhub/vfs": "workspace:*"
   },

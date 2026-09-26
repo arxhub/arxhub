@@ -1,6 +1,5 @@
 import { type ArxHub, type BootFailure, bootFailures, type PluginInfo } from '@arxhub/core'
-import { SHELL_FRAME_KEY, type ShellFrame } from '@arxhub/uikit/hooks'
-import { createApp } from 'vue'
+import { mountGate, type ShellFrame } from '@arxhub/uikit/hooks'
 import type { BootLedger } from './boot-ledger'
 import type { BootPolicy } from './boot-policy'
 import { watchBoot } from './boot-screen'
@@ -29,25 +28,23 @@ export interface CrashScreenOptions {
 export function showCrashScreen(options: CrashScreenOptions): Promise<void> {
   const failures = bootFailures(options.error) ?? []
   return new Promise<void>((resolve) => {
-    const host = document.createElement('div')
-    document.body.appendChild(host)
-
-    const app = createApp(CrashScreen, {
-      error: options.error,
-      failures,
-      catalog: options.catalog,
-      ledger: options.ledger ?? null,
-      policy: options.policy,
-      maintenance: options.maintenance,
-      continuable: continuable(failures),
-      onContinue: () => {
-        app.unmount()
-        host.remove()
-        resolve()
+    const gate = mountGate(
+      CrashScreen,
+      {
+        error: options.error,
+        failures,
+        catalog: options.catalog,
+        ledger: options.ledger ?? null,
+        policy: options.policy,
+        maintenance: options.maintenance,
+        continuable: continuable(failures),
+        onContinue: () => {
+          gate.dispose()
+          resolve()
+        },
       },
-    })
-    app.provide(SHELL_FRAME_KEY, options.frame ?? 'desktop')
-    app.mount(host)
+      options.frame ?? 'desktop',
+    )
   })
 }
 

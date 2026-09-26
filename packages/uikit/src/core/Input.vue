@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useTemplateRef } from 'vue'
 import { useShellFrame } from '../hooks/useShellFrame'
 
 const model = defineModel<string>()
@@ -10,23 +11,44 @@ defineProps<{
   // `inline` sits inside a Row (an inline rename, a draft tree node) and must fit inside it: a
   // default control is as tall as the touch row and taller than the desktop one.
   // `flush` is a band rather than a box: no border or fill, the touch height, an inset focus ring.
-  variant?: 'default' | 'title' | 'inline' | 'flush'
+  // `bare` is the text of a box somebody else draws (a numbered word of a recovery phrase): no border,
+  // fill, padding or height of its own and no ring — the box shows focus with :focus-within.
+  variant?: 'default' | 'title' | 'inline' | 'flush' | 'bare'
+  // Monospaced, for text that is read character by character: a code, an address.
+  mono?: boolean
   // Room for an icon a composing control draws over the box (SearchField): the box keeps its one
   // geometry, and the text starts clear of the icon instead of under it.
   iconStart?: boolean
   iconEnd?: boolean
+  // The last value was refused (a wrong code): the danger border, and a shake that reduced motion drops.
+  invalid?: boolean
 }>()
 
 const touch = useShellFrame() === 'mobile'
+const el = useTemplateRef<HTMLInputElement>('el')
+// A screen restores the caret after a pause that disabled the field (and so blurred it).
+defineExpose({ focus: () => el.value?.focus() })
 </script>
 
 <template>
   <input
+    ref="el"
     class="input"
-    :class="{ touch, title: variant === 'title', inline: variant === 'inline', flush: variant === 'flush', 'icon-start': iconStart, 'icon-end': iconEnd }"
+    :class="{
+      touch,
+      title: variant === 'title',
+      inline: variant === 'inline',
+      flush: variant === 'flush',
+      bare: variant === 'bare',
+      mono,
+      invalid,
+      'icon-start': iconStart,
+      'icon-end': iconEnd,
+    }"
     :type="type || 'text'"
     :placeholder="placeholder"
     :disabled="disabled"
+    :aria-invalid="invalid || undefined"
     v-model="model"
   />
 </template>
@@ -100,6 +122,48 @@ const touch = useShellFrame() === 'mobile'
 }
 
 .input.title { height: auto; min-height: var(--size-xl); padding: 0; border: none; background: transparent; font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); }
+
+.input.bare {
+  height: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  font: inherit;
+}
+
+.input.bare:focus-visible {
+  outline: none;
+}
+
+.input.mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+.input.invalid {
+  border-color: var(--danger-8);
+  animation: input-shake 280ms;
+}
+
+@keyframes input-shake {
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
+}
+
+/* The colour and the message still say it; only the movement goes. */
+@media (prefers-reduced-motion: reduce) {
+  .input.invalid {
+    animation: none;
+  }
+}
 
 .input::placeholder {
   color: var(--gray-10);

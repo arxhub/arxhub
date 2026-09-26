@@ -7,7 +7,7 @@ defineProps<{
   icon?: string
   // Micro-label above the title, naming the class of card rather than its subject ("Irreversible").
   label?: string
-  variant?: 'default' | 'danger'
+  variant?: 'default' | 'warning' | 'danger'
 }>()
 </script>
 
@@ -25,7 +25,7 @@ defineProps<{
         <slot name="actions" />
       </div>
     </div>
-    <div class="card-content">
+    <div v-if="$slots.default" class="card-content">
       <slot />
     </div>
   </div>
@@ -41,6 +41,15 @@ defineProps<{
   border-radius: var(--radius-sm);
   background-color: var(--gray-2);
   font-family: var(--font-sans);
+}
+
+.card.warning {
+  border-color: var(--warning-6);
+  background-color: var(--warning-2);
+}
+
+.card.warning .title-wrapper {
+  color: var(--warning-12);
 }
 
 .card.danger {

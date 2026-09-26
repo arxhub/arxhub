@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { type BlockAnchor, DocumentsExtension } from '@arxhub/plugin-documents'
 import { VfsExtension } from '@arxhub/plugin-vfs'
+import { formatBytes } from '@arxhub/stdlib/format/bytes'
 // biome-ignore lint/style/useImportType: used in the template and as InstanceType<typeof ScrollArea>
 import { ScrollArea } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { getDocument, type PDFDocumentProxy, RenderingCancelledException, type RenderTask } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { computed, onBeforeUnmount, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { formatBytes } from '../media'
 import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, pageAtOffset, pageOfAnchor } from '../pdf'
 import { createPdfRangeLoadingTask, type PdfRangeLoadingTask } from '../pdf-range'
 import { configurePdfWorker } from '../pdf-worker'

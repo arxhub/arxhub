@@ -11,6 +11,9 @@
   --z-index-dropdown: 1000;
   --z-index-sticky: 1100;
   --z-index-banner: 1200;
+  /* A screen standing in for the app before it exists (unlock, first run, boot, crash): above any page
+     content, below the dialogs, sheets and toasts it raises itself. */
+  --z-index-gate: 1250;
   --z-index-overlay: 1300;
   --z-index-modal: 1400;
   --z-index-popover: 1500;

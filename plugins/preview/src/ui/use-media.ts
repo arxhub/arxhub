@@ -1,8 +1,9 @@
 import { basename } from '@arxhub/path'
+import { formatBytes } from '@arxhub/stdlib/format/bytes'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { canOpenExternally, openExternally, VaultVfs } from '@arxhub/vfs'
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { formatBytes, mediaOf, resolveMediaSource } from '../media'
+import { mediaOf, resolveMediaSource } from '../media'
 
 // Everything a media viewer knows about its file, shared by both frames' realizations: each draws its own
 // chrome around the one stage.

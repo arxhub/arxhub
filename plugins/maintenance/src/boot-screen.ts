@@ -1,6 +1,6 @@
 import type { ArxHub } from '@arxhub/core'
-import { SHELL_FRAME_KEY, type ShellFrame } from '@arxhub/uikit/hooks'
-import { createApp, reactive } from 'vue'
+import { type GateHandle, mountGate, type ShellFrame } from '@arxhub/uikit/hooks'
+import { reactive } from 'vue'
 import { type BootLedger, emptyLedger, followBoot } from './boot-ledger'
 import BootScreen from './ui/BootScreen.vue'
 
@@ -46,17 +46,12 @@ export function watchBoot(arxhub: ArxHub, frame: ShellFrame = 'desktop'): BootSc
   const ledger = reactive(emptyLedger()) as BootLedger
   const unfollow = followBoot(arxhub.boot, ledger)
 
-  let host: HTMLElement | null = null
-  let app: ReturnType<typeof createApp> | null = null
+  let gate: GateHandle | null = null
   let dismissed = false
 
   const timer = setTimeout(() => {
     if (dismissed) return
-    host = document.createElement('div')
-    document.body.appendChild(host)
-    app = createApp(BootScreen, { ledger })
-    app.provide(SHELL_FRAME_KEY, frame)
-    app.mount(host)
+    gate = mountGate(BootScreen, { ledger }, frame)
   }, SHOW_AFTER_MS)
 
   return {
@@ -65,10 +60,8 @@ export function watchBoot(arxhub: ArxHub, frame: ShellFrame = 'desktop'): BootSc
       dismissed = true
       clearTimeout(timer)
       unfollow()
-      app?.unmount()
-      host?.remove()
-      app = null
-      host = null
+      gate?.dispose()
+      gate = null
     },
   }
 }

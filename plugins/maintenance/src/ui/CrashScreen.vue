@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BootFailure, PluginInfo } from '@arxhub/core'
-import { Badge, Button, Row, ScrollArea, Switch } from '@arxhub/uikit/core'
+import { Badge, Button, GateLayout, Row, ScrollArea, Switch } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, reactive, ref } from 'vue'
 import type { BootLedger } from '../boot-ledger'
@@ -115,100 +115,95 @@ function copyReport(): void {
 </script>
 
 <template>
-  <!-- Deliberately not <main>: the app's own main landmark is what tells the rest of the suite (and a
-       screen reader) that the app itself came up, and a crash screen must not answer to that. -->
-  <!-- The fixed box is a wrapper, not the ScrollArea itself: Ark writes `position: relative` inline on its
-       root, which would put the screen back into the page flow and leave the document, not the area, to scroll. -->
-  <div class="crash" role="alertdialog" aria-labelledby="crash-title">
-    <ScrollArea class="crash-scroll" content-class="crash-content">
-      <div class="card">
-        <header class="head">
-          <h1 id="crash-title" class="title">ArxHub could not start</h1>
-          <p class="lede">
-            <template v-if="failures.length > 0">
-              {{ failures.length }} plugin{{ failures.length > 1 ? 's' : '' }} failed during startup. Turn the plugin off to boot
-              without it — your files are untouched.
-            </template>
-            <template v-else>The boot failed outside any plugin, so there is nothing specific to switch off.</template>
+  <!-- The gate is not <main> on purpose: the app's own main landmark is what tells the rest of the suite
+       (and a screen reader) that the app itself came up, and a crash screen must not answer to that. -->
+  <GateLayout class="crash" role="alertdialog" width="page">
+    <template #title>ArxHub could not start</template>
+    <template #text>
+      <template v-if="failures.length > 0">
+        {{ failures.length }} plugin{{ failures.length > 1 ? 's' : '' }} failed during startup. Turn the plugin off to boot
+        without it — your files are untouched.
+      </template>
+      <template v-else>The boot failed outside any plugin, so there is nothing specific to switch off.</template>
+    </template>
+
+    <div class="report">
+      <p v-if="maintenance" class="note">
+        This was already a maintenance boot: only essential plugins ran, and one of them is what broke.
+      </p>
+
+      <section class="block">
+        <h2 class="block-title">What broke</h2>
+        <div v-for="(failure, i) in failures" :key="i" class="failure">
+          <p class="failure-head">
+            <strong>{{ failure.plugin == null ? 'Boot' : pluginLabel(failure.plugin) }}</strong>
+            <span class="phase">{{ failure.phase }}()</span>
           </p>
-          <p v-if="maintenance" class="note">
-            This was already a maintenance boot: only essential plugins ran, and one of them is what broke.
-          </p>
-        </header>
+          <p class="failure-message">{{ message(failure.error) }}</p>
+          <details>
+            <summary>Stack trace</summary>
+            <ScrollArea class="trace"><pre class="trace-text">{{ trace(failure.error) }}</pre></ScrollArea>
+          </details>
+        </div>
+        <div v-if="failures.length === 0" class="failure">
+          <p class="failure-message">{{ message(error) }}</p>
+          <details>
+            <summary>Stack trace</summary>
+            <ScrollArea class="trace"><pre class="trace-text">{{ trace(error) }}</pre></ScrollArea>
+          </details>
+        </div>
+      </section>
 
-        <section class="block">
-          <h2 class="block-title">What broke</h2>
-          <div v-for="(failure, i) in failures" :key="i" class="failure">
-            <p class="failure-head">
-              <strong>{{ failure.plugin == null ? 'Boot' : pluginLabel(failure.plugin) }}</strong>
-              <span class="phase">{{ failure.phase }}()</span>
-            </p>
-            <p class="failure-message">{{ message(failure.error) }}</p>
-            <details>
-              <summary>Stack trace</summary>
-              <ScrollArea class="trace"><pre class="trace-text">{{ trace(failure.error) }}</pre></ScrollArea>
-            </details>
-          </div>
-          <div v-if="failures.length === 0" class="failure">
-            <p class="failure-message">{{ message(error) }}</p>
-            <details>
-              <summary>Stack trace</summary>
-              <ScrollArea class="trace"><pre class="trace-text">{{ trace(error) }}</pre></ScrollArea>
-            </details>
-          </div>
-        </section>
+      <!-- What the failure alone cannot say: the plugin it names is one of many, and which of the others
+           were already through is most of what tells a broken plugin apart from a broken order. -->
+      <section v-if="reached.length > 0" class="block">
+        <h2 class="block-title">How far it got</h2>
+        <ul class="ledger">
+          <Row v-for="entry in reached" :key="entry.name" as="li" plain :class="`ledger-row--${entry.state}`">
+            <span class="ledger-text">
+              <span class="ledger-name">{{ pluginLabel(entry.name) }}</span>
+              <span class="ledger-state">{{ ledgerState(entry) }}</span>
+            </span>
+          </Row>
+        </ul>
+      </section>
 
-        <!-- What the failure alone cannot say: the plugin it names is one of many, and which of the others
-             were already through is most of what tells a broken plugin apart from a broken order. -->
-        <section v-if="reached.length > 0" class="block">
-          <h2 class="block-title">How far it got</h2>
-          <ul class="ledger">
-            <Row v-for="entry in reached" :key="entry.name" as="li" plain :class="`ledger-row--${entry.state}`">
-              <span class="ledger-text">
-                <span class="ledger-name">{{ pluginLabel(entry.name) }}</span>
-                <span class="ledger-state">{{ ledgerState(entry) }}</span>
-              </span>
-            </Row>
-          </ul>
-        </section>
+      <section class="block">
+        <h2 class="block-title">Plugins</h2>
+        <p class="hint">
+          Unchecked plugins will not load on the next start. Essential ones keep the app and this screen working, so they
+          cannot be switched off.
+        </p>
+        <ul class="plugins" :class="{ touch }">
+          <li v-for="plugin in catalog" :key="plugin.name" class="plugin" :class="{ 'plugin--blamed': culprits.has(plugin.name) }">
+            <div class="plugin-label">
+              <Switch v-model="enabled[plugin.name]" :label="pluginLabel(plugin.name)" :disabled="plugin.essential || busy" />
+              <Badge v-if="plugin.essential">essential</Badge>
+              <Badge v-if="culprits.has(plugin.name)" variant="danger">failed</Badge>
+            </div>
+            <p v-if="plugin.description" class="plugin-description">{{ plugin.description }}</p>
+          </li>
+        </ul>
+      </section>
 
-        <section class="block">
-          <h2 class="block-title">Plugins</h2>
-          <p class="hint">
-            Unchecked plugins will not load on the next start. Essential ones keep the app and this screen working, so they
-            cannot be switched off.
-          </p>
-          <ul class="plugins" :class="{ touch }">
-            <li v-for="plugin in catalog" :key="plugin.name" class="plugin" :class="{ 'plugin--blamed': culprits.has(plugin.name) }">
-              <div class="plugin-label">
-                <Switch v-model="enabled[plugin.name]" :label="pluginLabel(plugin.name)" :disabled="plugin.essential || busy" />
-                <Badge v-if="plugin.essential">essential</Badge>
-                <Badge v-if="culprits.has(plugin.name)" variant="danger">failed</Badge>
-              </div>
-              <p v-if="plugin.description" class="plugin-description">{{ plugin.description }}</p>
-            </li>
-          </ul>
-        </section>
+      <footer class="actions">
+        <Button variant="primary" :disabled="busy" @click="apply()">
+          {{ changed.length > 0 ? `Apply and restart (${changed.length} changed)` : 'Restart' }}
+        </Button>
+        <Button v-if="continuable" variant="secondary" :disabled="busy" @click="onContinue">Continue anyway</Button>
+        <Button v-if="!maintenance" variant="secondary" :disabled="busy" @click="apply(true)">Restart in maintenance mode</Button>
+        <Button v-else variant="secondary" :disabled="busy" @click="apply(false)">Leave maintenance mode</Button>
+        <Button variant="ghost" :disabled="busy" @click="copyReport">
+          {{ copyState === 'copied' ? 'Report copied' : copyState === 'failed' ? 'Could not copy — shown below' : 'Copy report' }}
+        </Button>
+        <Button v-if="policy.disabled.length > 0 || maintenance" variant="ghost" :disabled="busy" @click="resetPolicy">
+          Reset all switches
+        </Button>
+      </footer>
 
-        <footer class="actions">
-          <Button variant="primary" :disabled="busy" @click="apply()">
-            {{ changed.length > 0 ? `Apply and restart (${changed.length} changed)` : 'Restart' }}
-          </Button>
-          <Button v-if="continuable" variant="secondary" :disabled="busy" @click="onContinue">Continue anyway</Button>
-          <Button v-if="!maintenance" variant="secondary" :disabled="busy" @click="apply(true)">Restart in maintenance mode</Button>
-          <Button v-else variant="secondary" :disabled="busy" @click="apply(false)">Leave maintenance mode</Button>
-          <Button variant="ghost" :disabled="busy" @click="copyReport">
-            {{ copyState === 'copied' ? 'Report copied' : copyState === 'failed' ? 'Could not copy — shown below' : 'Copy report' }}
-          </Button>
-          <Button v-if="policy.disabled.length > 0 || maintenance" variant="ghost" :disabled="busy" @click="resetPolicy">
-            Reset all switches
-          </Button>
-        </footer>
-
-        <ScrollArea v-if="copyState === 'failed'" class="trace"><pre class="trace-text">{{ report }}</pre></ScrollArea>
-      </div>
-    </ScrollArea>
-  </div>
+      <ScrollArea v-if="copyState === 'failed'" class="trace"><pre class="trace-text">{{ report }}</pre></ScrollArea>
+    </div>
+  </GateLayout>
 </template>
 
 <style scoped>
@@ -243,50 +238,12 @@ function copyReport(): void {
   color: var(--danger-11);
 }
 
-/* Self-sufficient by design, like the unlock gate: this screen renders when the app did not, so it
-   leans on nothing but the design tokens, which theme-preset's fallback layer guarantees even when no
-   theme has been applied yet. */
-.crash {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: var(--gray-1);
-  font-family: var(--font-sans);
-  color: var(--gray-12);
-  display: flex;
-  flex-direction: column;
-}
-
-.crash-scroll {
-  flex: 1 1 auto;
-}
-
-.crash :deep(.crash-content) {
-  padding: 32px 16px;
-}
-
-.card {
+.report {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  width: 100%;
-  max-width: 704px;
-  margin: 0 auto;
 }
 
-.head {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.title {
-  margin: 0;
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-medium);
-}
-
-.lede,
 .hint,
 .note {
   margin: 0;

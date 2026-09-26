@@ -42,20 +42,46 @@ const props = withDefaults(
     next?: boolean
     // What a search typed: its first occurrence in the label is marked, so a result says why it is there.
     match?: string
+    // One of the few answers to a screen that asks a single question — the first run's "Create a new
+    // vault" / "Connect to my vault". A bordered, taller target with its glyph on a plate and a second
+    // line that wraps, because the choice is the whole screen rather than one entry of a list.
+    choice?: boolean
+    // An entry point of a short page rather than one item of a dense list — Settings → Security's "Show
+    // recovery phrase". The glyph sits on a plate, the second line wraps (it explains, it is not meta),
+    // and a hairline separates it from the next entry: the page is three of these, not a list to scan.
+    plated?: boolean
+    // A row set on a page's own text edge rather than inside a list — a key/value fact of a gate or a
+    // page. The list inset is dropped on both sides, so its label lines up with the title above it.
+    flush?: boolean
   }>(),
-  { as: 'div', selected: false, disabled: false, depth: 0, tone: 'neutral', wrap: false, plain: false, checked: false, next: false },
+  {
+    as: 'div',
+    selected: false,
+    disabled: false,
+    depth: 0,
+    tone: 'neutral',
+    wrap: false,
+    plain: false,
+    checked: false,
+    next: false,
+    choice: false,
+    plated: false,
+    flush: false,
+  },
 )
 
 // inject() only runs during setup, and the frame never changes while the app is up — so this is read
 // once and is deliberately not reactive.
 const touch = useShellFrame() === 'mobile'
 const glyph = touch ? 16 : 14
-const wraps = computed(() => props.wrap || props.detail != null)
+const wraps = computed(() => props.wrap || props.detail != null || props.choice || props.plated)
 // The touch frame insets a row by 16 and nests by 12 — the chevron, glyph and name of a tree row then land
 // on the same 12px rhythm as their gaps, so a child's glyph sits under its parent's name.
-const indent = computed(() => ({
-  paddingLeft: touch ? `calc(16px + ${props.depth} * 12px)` : `calc(8px + ${props.depth} * var(--size-2xs-half))`,
-}))
+const indent = computed(() =>
+  props.choice || props.plated || props.flush
+    ? {}
+    : { paddingLeft: touch ? `calc(16px + ${props.depth} * 12px)` : `calc(8px + ${props.depth} * var(--size-2xs-half))` },
+)
 const lined = computed(() => props.detail != null && props.detail !== '')
 const marked = computed(() => {
   const needle = props.match?.trim().toLowerCase() ?? ''
@@ -73,7 +99,7 @@ const rowAttrs = computed(() => {
 </script>
 
 <template>
-  <div v-if="slots.trailing" class="row has-trailing" :class="[tone, { selected, disabled, wrap: wraps, lined, plain, touch }]" v-bind="boxAttrs">
+  <div v-if="slots.trailing" class="row has-trailing" :class="[tone, { selected, disabled, wrap: wraps, lined, plain, touch, choice, plated, flush }]" v-bind="boxAttrs">
     <component
       :is="as"
       class="row-main"
@@ -81,7 +107,8 @@ const rowAttrs = computed(() => {
       :disabled="as === 'button' && disabled ? true : undefined"
       v-bind="rowAttrs"
     >
-      <Icon v-if="icon" class="row-icon" :name="icon" :size="glyph" />
+      <span v-if="icon && (choice || plated)" class="row-plate"><Icon :name="icon" :size="glyph" /></span>
+      <Icon v-else-if="icon" class="row-icon" :name="icon" :size="glyph" />
       <span v-if="label != null" class="row-text">
         <span class="row-label"
           ><template v-if="marked">{{ marked.before }}<mark class="row-match">{{ marked.hit }}</mark>{{ marked.after }}</template
@@ -99,12 +126,13 @@ const rowAttrs = computed(() => {
     :is="as"
     v-else
     class="row"
-    :class="[tone, { selected, disabled, wrap: wraps, lined, plain, touch }]"
+    :class="[tone, { selected, disabled, wrap: wraps, lined, plain, touch, choice, plated, flush }]"
     :style="indent"
     :disabled="as === 'button' && disabled ? true : undefined"
     v-bind="$attrs"
   >
-    <Icon v-if="icon" class="row-icon" :name="icon" :size="glyph" />
+    <span v-if="icon && (choice || plated)" class="row-plate"><Icon :name="icon" :size="glyph" /></span>
+    <Icon v-else-if="icon" class="row-icon" :name="icon" :size="glyph" />
     <span v-if="label != null" class="row-text">
       <span class="row-label"
           ><template v-if="marked">{{ marked.before }}<mark class="row-match">{{ marked.hit }}</mark>{{ marked.after }}</template
@@ -335,10 +363,96 @@ const rowAttrs = computed(() => {
   margin-left: auto;
 }
 
+/* A choice: the control border and the input radius, because it is pressed like a button rather than
+   picked out of a list; it grows with a wrapping second line instead of clipping it. A choice always
+   wraps, and the extra class lets this outrank the touch and two-line rules above. */
+.row.choice.wrap {
+  gap: 12px;
+  min-height: var(--size-2xl);
+  padding: 12px 16px;
+  border: 1px solid var(--gray-7);
+  border-radius: var(--radius-sm);
+  background: var(--gray-1);
+  align-items: center;
+}
+
+.row.choice .row-label {
+  font-weight: var(--font-weight-medium);
+}
+
+.row.choice .row-detail {
+  white-space: normal;
+}
+
+.row.choice.wrap .row-check {
+  margin-top: 0;
+}
+
+/* A plated entry: the row's own padding carries the inset, so the plate lines up with the page's text
+   edge; the hairline is inside one region (a page), hence step 4. */
+.row.plated.wrap {
+  gap: 12px;
+  min-height: var(--size-2xl);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--gray-4);
+  border-radius: 0;
+  align-items: center;
+}
+
+.row.plated .row-label {
+  font-weight: var(--font-weight-medium);
+}
+
+.row.plated .row-detail {
+  white-space: normal;
+}
+
+.row.plated.wrap .row-check {
+  margin-top: 0;
+}
+
+.row-plate {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-md);
+  height: var(--size-md);
+  border-radius: var(--radius-sm);
+  background: var(--gray-3);
+  color: var(--gray-12);
+}
+
+/* On the page's own edge: no list inset either side. */
+.row.flush,
+.row.touch.flush,
+.row.flush > .row-main,
+.row.touch.flush > .row-main {
+  padding-right: 0;
+}
+
 /* Flat, not faded — an unavailable row must not read as a dimmed available one. */
 .row.disabled {
   background: var(--gray-3);
   color: var(--gray-9);
   cursor: not-allowed;
+}
+
+/* A choice keeps its box when unavailable, but flat: the fill of the disabled role and a border that no
+   longer promises a control. Written after the choice rule, which would otherwise keep its enabled look. */
+.row.choice.wrap.disabled {
+  background: var(--gray-3);
+  border-color: var(--gray-6);
+}
+
+/* A plated entry sits flush on the page's text edge, so a filled slab there would be a block the page
+   does not have: it only goes quiet (text and plate), as a muted entry. */
+.row.plated.wrap.disabled {
+  background: transparent;
+}
+
+.row.disabled .row-plate,
+.row.disabled .row-detail {
+  color: var(--gray-9);
 }
 </style>

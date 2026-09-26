@@ -33,6 +33,7 @@
     "@dnd-kit/collision": "catalog:client",
     "@dnd-kit/dom": "catalog:client",
     "@dnd-kit/vue": "catalog:client",
+    "jsqr": "catalog:client",
     "lucide-vue-next": "catalog:client",
     "vue": "catalog:client"
   },

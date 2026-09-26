@@ -14,7 +14,8 @@
     "./fs/*": "./src/fs/*.ts",
     "./record/*": "./src/record/*.ts",
     "./crypto/*": "./src/crypto/*.ts",
-    "./scheduling/*": "./src/scheduling/*.ts"
+    "./scheduling/*": "./src/scheduling/*.ts",
+    "./format/*": "./src/format/*.ts"
   },
   "files": [
     "dist"
@@ -52,6 +53,10 @@
       "./scheduling/*": {
         "import": "./dist/scheduling/*.js",
         "types": "./dist/scheduling/*.d.ts"
+      },
+      "./format/*": {
+        "import": "./dist/format/*.js",
+        "types": "./dist/format/*.d.ts"
       }
     }
   }

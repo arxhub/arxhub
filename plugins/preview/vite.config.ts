@@ -14,6 +14,7 @@ export default defineConfig((env) =>
       '@arxhub/plugin-panels/ui',
       '@arxhub/plugin-search',
       '@arxhub/plugin-vfs',
+      '@arxhub/stdlib/format/bytes',
       '@arxhub/uikit',
       '@arxhub/vfs',
       'pdfjs-dist',

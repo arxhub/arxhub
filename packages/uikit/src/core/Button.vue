@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useShellFrame } from '../hooks/useShellFrame'
+import Icon from './Icon.vue'
 
 const props = defineProps<{
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
@@ -13,12 +14,15 @@ const props = defineProps<{
   /** `start` reads its label from the leading edge and lets it shrink — a button that names a place (the
    * open object in the phone's band) rather than an action, whose name can be longer than its room. */
   align?: 'center' | 'start'
+  /** A leading glyph, sized by the frame (DS-8) so no call site picks the number itself. */
+  icon?: string
 }>()
 
 // Like Row, the frame decides the default height: a control on the phone is a touch target (48px). An
 // explicit size still wins, for the few places whose band dictates a smaller one.
 const touch = useShellFrame() === 'mobile'
 const resolvedSize = computed(() => props.size ?? (touch ? 'lg' : 'md'))
+const glyph = touch ? 16 : 14
 </script>
 
 <template>
@@ -28,6 +32,7 @@ const resolvedSize = computed(() => props.size ?? (touch ? 'lg' : 'md'))
     :type="type || 'button'"
     :disabled="disabled"
   >
+    <Icon v-if="icon" :name="icon" :size="glyph" />
     <slot />
   </button>
 </template>

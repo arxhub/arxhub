@@ -15,11 +15,7 @@ const order = computed(() => ({ relevance: 'Relevance', title: 'Title', modified
     <Icon name="lu:sliders-horizontal" :size="16" />
     Filters{{ active ? ` (${active})` : '' }} · {{ order }}
   </Button>
-  <BottomSheet :open="open" title="Search filters" @close="open = false">
-    <div class="content"><SearchFilterFields v-model="model" /><Button size="lg" @click="open = false">Done</Button></div>
+  <BottomSheet :open="open" title="Search filters" inset @close="open = false">
+    <SearchFilterFields v-model="model" /><Button size="lg" @click="open = false">Done</Button>
   </BottomSheet>
 </template>
-
-<style scoped>
-.content { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
-</style>

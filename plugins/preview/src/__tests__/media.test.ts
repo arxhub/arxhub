@@ -1,6 +1,6 @@
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { describe, expect, test } from 'vitest'
-import { BLOB_LIMIT, copyBytes, extensionsOf, formatBytes, mediaOf, resolveMediaSource } from '../media'
+import { BLOB_LIMIT, copyBytes, extensionsOf, mediaOf, resolveMediaSource } from '../media'
 
 describe('mediaOf', () => {
   test('recognises what a webview plays, case-insensitively', () => {
@@ -57,14 +57,5 @@ describe('resolveMediaSource', () => {
   test('without a URL a file over the limit is refused rather than loaded', async () => {
     const source = await resolveMediaSource(fakeVfs(BLOB_LIMIT + 1, null), 'film.mp4', 'video/mp4')
     expect(source).toEqual({ kind: 'too-large', size: BLOB_LIMIT + 1 })
-  })
-})
-
-describe('formatBytes', () => {
-  test('reads as a human would say it', () => {
-    expect(formatBytes(512)).toBe('512 B')
-    expect(formatBytes(1536)).toBe('1.5 KB')
-    expect(formatBytes(150 * 1024 * 1024)).toBe('150 MB')
-    expect(formatBytes(3 * 1024 ** 3)).toBe('3.0 GB')
   })
 })

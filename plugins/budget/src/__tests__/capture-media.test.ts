@@ -1,10 +1,11 @@
-import jsQR from 'jsqr'
+import { decodeQr } from '@arxhub/uikit/hooks'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { browserBudgetCapture } from '../capture-media'
 
-vi.mock('jsqr', () => ({ default: vi.fn() }))
+// The decoding itself is uikit's and tested there; this file covers what budget adds around it.
+vi.mock('@arxhub/uikit/hooks', () => ({ decodeQr: vi.fn() }))
 
-const mockedJsQr = vi.mocked(jsQR)
+const mockedDecodeQr = vi.mocked(decodeQr)
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -36,54 +37,18 @@ describe('browserBudgetCapture', () => {
     await expect(result).rejects.toMatchObject({ name: 'AbortError' })
   })
 
-  test('uses BarcodeDetector for a QR receipt without decoding the bitmap twice', async () => {
-    const detect = vi.fn().mockResolvedValue([{ rawValue: 't=20260919T1200&s=12.34&fn=1&i=2&fp=3&n=1' }])
-    class Detector {
-      static getSupportedFormats = vi.fn().mockResolvedValue(['qr_code'])
-      detect = detect
-    }
-    vi.stubGlobal('BarcodeDetector', Detector)
-    vi.stubGlobal('createImageBitmap', vi.fn())
+  test('reads the QR code of a receipt photo through the shared decoder', async () => {
+    mockedDecodeQr.mockResolvedValue('t=20260919T1200&s=12.34&fn=1&i=2&fp=3&n=1')
+    const photo = new Blob(['photo'], { type: 'image/jpeg' })
 
-    await expect(browserBudgetCapture.scanReceiptPhoto(new Blob(['photo'], { type: 'image/jpeg' }))).resolves.toContain('fn=1')
-    expect(detect).toHaveBeenCalledOnce()
-    expect(createImageBitmap).not.toHaveBeenCalled()
-    expect(mockedJsQr).not.toHaveBeenCalled()
+    await expect(browserBudgetCapture.scanReceiptPhoto(photo)).resolves.toContain('fn=1')
+    expect(mockedDecodeQr).toHaveBeenCalledWith(photo, { signal: undefined })
   })
 
-  test('falls back to bundled jsQR when BarcodeDetector cannot handle the image', async () => {
-    class Detector {
-      detect = vi.fn().mockRejectedValue(new Error('unsupported source'))
-    }
-    vi.stubGlobal('BarcodeDetector', Detector)
-    const close = vi.fn()
-    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 2, height: 1, close }))
-    const pixels = new Uint8ClampedArray(8)
-    const getImageData = vi.fn().mockReturnValue({ data: pixels, width: 2, height: 1 })
-    const drawImage = vi.fn()
-    vi.stubGlobal('document', {
-      createElement: vi.fn().mockReturnValue({ width: 0, height: 0, getContext: () => ({ drawImage, getImageData }) }),
-    })
-    mockedJsQr.mockReturnValue({ data: 'fiscal-qr', binaryData: [], chunks: [], location: {} } as never)
-
-    await expect(browserBudgetCapture.scanReceiptPhoto(new Blob(['photo']))).resolves.toBe('fiscal-qr')
-    expect(drawImage).toHaveBeenCalledOnce()
-    expect(mockedJsQr).toHaveBeenCalledWith(pixels, 2, 1, { inversionAttempts: 'attemptBoth' })
-    expect(close).toHaveBeenCalledOnce()
-  })
-
-  test('rejects an empty or oversized photo before invoking either decoder', async () => {
-    const detect = vi.fn()
-    class Detector {
-      detect = detect
-    }
-    vi.stubGlobal('BarcodeDetector', Detector)
-    vi.stubGlobal('createImageBitmap', vi.fn())
-
+  test('rejects an empty or oversized photo before decoding it', async () => {
     await expect(browserBudgetCapture.scanReceiptPhoto(new Blob([]))).rejects.toThrow(/must not be empty/)
     const oversized = { size: 10 * 1024 * 1024 + 1 } as Blob
     await expect(browserBudgetCapture.scanReceiptPhoto(oversized)).rejects.toThrow(/up to 10 MB/)
-    expect(detect).not.toHaveBeenCalled()
-    expect(createImageBitmap).not.toHaveBeenCalled()
+    expect(mockedDecodeQr).not.toHaveBeenCalled()
   })
 })
