@@ -226,7 +226,8 @@ test('a space keeps the slash menu open, and the insert hint follows the caret',
   await expect(editor.locator('p').nth(1)).toHaveAttribute('data-placeholder', 'Type / to insert a block')
   await app.keyboard.insertText('/heading 2')
   const menu = app.getByRole('listbox', { name: 'Insert block' })
-  await expect(menu.getByRole('option')).toHaveText(['Heading 2'])
+  // The row also names the markdown it can be typed as, so the label is matched by its start.
+  await expect(menu.getByRole('option')).toHaveText([/^Heading 2/])
   await app.keyboard.press('Enter')
   await expect(editor.locator('h2')).toHaveCount(1)
   // A sentence that only happens to start with a slash lets the menu go.
