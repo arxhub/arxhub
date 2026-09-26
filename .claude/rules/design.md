@@ -57,6 +57,24 @@ Every value below comes from a token. A literal in place of one of these is a vi
 - **Tab** — keeps its own component (it carries drag-and-drop and a close control) but matches the Strip it sits in
   (`var(--size-md)`, 40px) rather than the Row role — it fills the tab bar's own height edge to edge, the way a
   `size="lg"` icon does, instead of sitting centred inside it with a gap above and below.
+- **Type row** (phone only) — `MobileTypeRow`: at most four icon-only `NavItem touch` keys plus More, 20px glyphs,
+  no labels (the name and the tab count are the accessible name). The active type is the accent (`--accent-3` +
+  `--accent-11`); the tab counter is a neutral badge (`--gray-11` fill, `--gray-1` text), never the accent; More while
+  its sheet is up is the raised fill (`--gray-4` + `--gray-12`). It gives way to the keyboard.
+- **Object bar** (phone only) — the band above the type row: `MobileObjectBar`, a `Strip below flush` at the
+  mobile strip height (`var(--size-xl)`, 48px). Leading, the object's name at `var(--font-size-sm)` with a 16px
+  glyph — a plain label in `--gray-11`, or, for a composite object only, a ghost `Button` with a trailing
+  `lu:chevron-up` that opens its parts. Trailing, `OverflowActions` with `IconButton size="row"` keys (48px box,
+  16px glyph): `actions` while they fit, the rest and every `menu` entry in More, destructive last. A plugin
+  describes the band as data (`TabType.bar`) and never draws one — a second bottom band in a plugin is a DS-1
+  violation. It never hides on scroll; while typing it becomes the editing band (undo, redo, a separator, the
+  marks, then a separator and Hide keyboard).
+- **Sheet** — every overlay on the phone is `BottomSheet` (`--radius-md` top corners, `--scrim-modal` behind). No
+  grab handle and no drag. The header is one `Strip`: the title at the start and × (`IconButton size="xl"`, flush to
+  the edge through `Strip.flush`) at the top right; a multi-step sheet puts ‹ in the leading slot, never a second
+  header row. A finder sits in `#top` or `#footer` as a `SearchField flush` band; a small form in `#footer`
+  (`footer-inset`) stands off the edges. `variant="full"` for a place of its own (the vault, a picker); the rest
+  grow with their content. A heading inside the list is `SectionLabel inset`, and its entries are `Row`s.
 - **Scroll area** — every scroll container is `ScrollArea` from `@arxhub/uikit/core` (Ark's ScrollArea) and nothing
   else: no `overflow: auto|scroll`, no `::-webkit-scrollbar`, no `scrollbar-width` in a component. The bar is an
   overlay drawn over the content at the right and bottom edge; it takes no width or height, so content runs to the
