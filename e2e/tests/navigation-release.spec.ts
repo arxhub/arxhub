@@ -43,6 +43,8 @@ test('Welcome Find a note and New note work after a restored document', async ({
 })
 
 test('a search snippet selects its text on first and repeated opening', async ({ app, vault }) => {
+  // Two boots, each waiting for the index walk.
+  test.slow()
   for (const extension of ['md', 'arx']) {
     const text = `Find the unique${extension}needle in this paragraph.`
     await vault.write(`anchor.${extension}`, extension === 'arx' ? arx(text) : text)
@@ -51,7 +53,9 @@ test('a search snippet selects its text on first and repeated opening', async ({
       await openSearchApp(app)
       await app.getByRole('textbox', { name: 'Search', exact: true }).fill(`unique${extension}needle`)
       const snippet = app.getByRole('option').filter({ hasText: text })
-      await expect(snippet).toBeVisible()
+      // "N in index" is not "this file is in it": under a full run's load the .arx hit was measured landing
+      // ~5 s after the status line, right on the default bound.
+      await expect(snippet).toBeVisible({ timeout: 15_000 })
       await snippet.click()
       await expect(typeKey(app, 'Documents')).toHaveAttribute('aria-pressed', 'true')
       await expect.poll(() => app.evaluate(() => window.getSelection()?.toString())).toBe(`unique${extension}needle`)
