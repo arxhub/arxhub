@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { validation } from '@arxhub/errors'
+import { DOCUMENTS_TYPE_ID } from '@arxhub/plugin-documents'
 import type { ArxEditorControlProps } from '@arxhub/plugin-editor'
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
 import { ShellExtension } from '@arxhub/plugin-shell'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { Button, Dialog, IconButton, Input, ScrollArea, Strip } from '@arxhub/uikit/core'
@@ -132,7 +132,7 @@ function apply() {
 }
 async function open() {
   try {
-    await hub.extensions.get(ShellExtension).workspace.openObject(NOTES_TYPE_ID, { id: props.node.attrs.path })
+    await hub.extensions.get(ShellExtension).workspace.openObject(DOCUMENTS_TYPE_ID, { id: props.node.attrs.path })
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : String(cause)
   }

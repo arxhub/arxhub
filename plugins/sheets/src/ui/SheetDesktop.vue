@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DocumentName } from '@arxhub/plugin-notes/ui'
+import { DocumentName } from '@arxhub/plugin-documents/ui'
 import SheetBar from './SheetBar.vue'
 import SheetFormulaBar from './SheetFormulaBar.vue'
 import SheetFormulaHelp from './SheetFormulaHelp.vue'

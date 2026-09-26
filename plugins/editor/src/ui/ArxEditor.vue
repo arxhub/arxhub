@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { validation } from '@arxhub/errors'
 import { basename, dirname } from '@arxhub/path'
+import { type BlockAnchor, DocumentsExtension } from '@arxhub/plugin-documents'
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
-import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 // biome-ignore lint/style/useImportType: ScrollArea is also rendered in the template, not only read as a type
@@ -74,7 +74,7 @@ const { schema } = kit
 const vfs = arxhub.services.get(VaultVfs)
 const assets = createAssetSession(extension.assets ?? createAssetStore(vfs))
 provide(ARX_ASSETS, assets)
-const notes = arxhub.extensions.get(NotesExtension)
+const documents = arxhub.extensions.get(DocumentsExtension)
 const editorArea = ref<InstanceType<typeof ScrollArea> | null>(null)
 const editorEl = computed(() => editorArea.value?.viewport ?? undefined)
 const editorBody = ref<HTMLElement>()
@@ -336,7 +336,7 @@ async function copyBlockLink() {
   }
 }
 
-onUnmounted(notes.registerOpenView(() => props.path, reveal, beforeClose))
+onUnmounted(documents.registerOpenView(() => props.path, reveal, beforeClose))
 
 async function doSave() {
   if (!view.value || !canSave.value) return
@@ -436,7 +436,7 @@ async function resolveRecovery(action: 'draft' | 'saved' | 'both') {
       throw validation('The saved file changed again. Review the latest version.')
     }
     if (action === 'both') {
-      const copy = await notes.freePath(dirname(path), `${basename(path, '.arx')} recovered`, '.arx')
+      const copy = await documents.freePath(dirname(path), `${basename(path, '.arx')} recovered`, '.arx')
       const doc = withDocumentId(deserialize(schema, pending.draft.content, kit.format), crypto.randomUUID())
       await vfs.write(copy, new TextEncoder().encode(serialize(doc, kit.format)))
       extension.drafts?.remove(pending.draft.id)
@@ -467,7 +467,7 @@ async function resolveRecovery(action: 'draft' | 'saved' | 'both') {
   }
 }
 
-const displayName = computed(() => notes.displayName(props.path).text)
+const displayName = computed(() => documents.displayName(props.path).text)
 
 // The versions page stands in the editor's own column rather than over it, so the buffer it compares against and
 // restores into stays mounted underneath — unsaved text and undo survive the visit.

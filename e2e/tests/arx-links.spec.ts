@@ -3,7 +3,7 @@ import { expect, isMobileFrame, openNavigation, test } from './fixtures'
 const document = (...texts: string[]) =>
   JSON.stringify({ version: 1, doc: { type: 'doc', content: texts.map((text) => ({ type: 'paragraph', content: [{ type: 'text', text }] })) } })
 
-test('internal block links persist, open through Notes and appear as backlinks', async ({ app, vault }) => {
+test('internal block links persist, open through Documents and appear as backlinks', async ({ app, vault }) => {
   const target = await vault.write(`${test.info().project.name}-destination.arx`, document('First block', 'Chosen destination'))
   const source = await vault.write(`${test.info().project.name}-source.arx`, document('Visit destination'))
   await app.reload()

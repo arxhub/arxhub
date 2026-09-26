@@ -5,7 +5,7 @@ test('malformed saved tabs do not prevent opening and using the vault', async ({
   await app.evaluate(() => {
     localStorage.setItem(
       'arxhub.workspace',
-      JSON.stringify({ v: 1, workspace: { activeTypeId: 'arxhub.notes', types: [{ id: 'arxhub.notes', tabs: {} }] } }),
+      JSON.stringify({ v: 1, workspace: { activeTypeId: 'arxhub.documents', types: [{ id: 'arxhub.documents', tabs: {} }] } }),
     )
   })
   await app.reload()

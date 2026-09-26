@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { blockAnchorOf, noteSnapshotPath } from '../notes-type'
+import { blockAnchorOf, documentSnapshotPath } from '../documents-type'
 
 describe('the address of a place inside a note', () => {
   test('is read from the matched text', () => {
@@ -62,7 +62,7 @@ describe('the address of a place inside a note', () => {
 
 describe('a note snapshot', () => {
   test('yields the path', () => {
-    expect(noteSnapshotPath({ path: 'cases/contract.md' })).toBe('cases/contract.md')
+    expect(documentSnapshotPath({ path: 'cases/contract.md' })).toBe('cases/contract.md')
   })
 
   test.each([
@@ -71,6 +71,6 @@ describe('a note snapshot', () => {
     ['no path', { title: 'Contract' }],
     ['a path that is not a string', { path: 7 }],
   ])('%s — no path, and the tab is honestly marked as gone', (_name, value) => {
-    expect(noteSnapshotPath(value as never)).toBeNull()
+    expect(documentSnapshotPath(value as never)).toBeNull()
   })
 })

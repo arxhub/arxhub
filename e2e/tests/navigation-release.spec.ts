@@ -17,7 +17,7 @@ const arx = (text: string) =>
   JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] } })
 
 // UI-05: Welcome's New note / Find a note must work on screen — including after a restore that left
-// another Notes tab active (Welcome is still reachable; it is not forced to the front on boot).
+// another Documents tab active (Welcome is still reachable; it is not forced to the front on boot).
 test('Welcome Find a note and New note work after a restored document', async ({ app, vault }) => {
   const path = await vault.write(`${test.info().project.name}-ui05-restore.md`, 'restored buffer\n')
   await openNote(app, path)
@@ -32,10 +32,10 @@ test('Welcome Find a note and New note work after a restored document', async ({
 
   await openWelcome(app)
   await app.getByRole('button', { name: 'New note', exact: true }).click()
-  // Notes.create runs the explorer creator — a real .arx document, not the markdown fallback.
+  // Documents.create runs the explorer creator — a real .arx document, not the markdown fallback.
   const editor = app.locator('.ProseMirror:visible, .cm-content:visible')
   await expect(editor).toBeVisible()
-  await expect(typeKey(app, 'Notes')).toHaveAttribute('aria-pressed', 'true')
+  await expect(typeKey(app, 'Documents')).toHaveAttribute('aria-pressed', 'true')
   await expect(editor).not.toContainText('restored buffer')
 })
 
@@ -50,7 +50,7 @@ test('a search snippet selects its text on first and repeated opening', async ({
       const snippet = app.getByRole('option').filter({ hasText: text })
       await expect(snippet).toBeVisible()
       await snippet.click()
-      await expect(typeKey(app, 'Notes')).toHaveAttribute('aria-pressed', 'true')
+      await expect(typeKey(app, 'Documents')).toHaveAttribute('aria-pressed', 'true')
       await expect.poll(() => app.evaluate(() => window.getSelection()?.toString())).toBe(`unique${extension}needle`)
       await app.keyboard.press('ArrowRight')
     }
@@ -118,7 +118,7 @@ test('search returns to the same buffer and keeps its query', async ({ app, vaul
   const result = app.getByRole('option').filter({ hasText: path })
   await expect(result).toBeVisible()
   await result.click()
-  await expect(typeKey(app, 'Notes')).toHaveAttribute('aria-pressed', 'true')
+  await expect(typeKey(app, 'Documents')).toHaveAttribute('aria-pressed', 'true')
   await expect(app.locator('.cm-content')).toHaveCount(1)
   await expect(editor).toContainText('from-notes')
   await editor.click()
@@ -137,7 +137,7 @@ test('folders stay expanded after switching types and restarting', async ({ app,
   await openNavigation(app)
   await app.getByRole('treeitem', { name: folder, exact: true }).click()
   await openType(app, 'Settings', SETTINGS_TYPE)
-  await openType(app, 'Notes')
+  await openType(app, 'Documents')
   await openNavigation(app)
   await expect(app.getByRole('treeitem', { name: 'child.md', exact: true })).toBeVisible()
   await app.reload()
@@ -177,10 +177,10 @@ test('an unpinned tool can be closed and stays closed after restart', async ({ a
   await searchSheet(app).getByRole('button', { name: 'Close Search', exact: true }).click()
   await app.keyboard.press('Escape')
   await expect(typeKey(app, 'Search')).toHaveCount(0)
-  await expect(typeKey(app, 'Notes')).toHaveAttribute('aria-pressed', 'true')
+  await expect(typeKey(app, 'Documents')).toHaveAttribute('aria-pressed', 'true')
   await app.reload()
   await expect(typeKey(app, 'Search')).toHaveCount(0)
-  await expect(typeKey(app, 'Notes')).toHaveAttribute('aria-pressed', 'true')
+  await expect(typeKey(app, 'Documents')).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('a missing restored document stays visible as gone instead of an empty editor', async ({ app, vault }) => {

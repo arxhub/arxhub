@@ -1,7 +1,7 @@
 import { apiBaseUrl, Plugin, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner, signingMiddleware } from '@arxhub/crypto'
 import { createHttpClient } from '@arxhub/http'
-import { NOTES_TYPE_ID, NotesExtension } from '@arxhub/plugin-notes'
+import { DOCUMENTS_TYPE_ID, DocumentsExtension } from '@arxhub/plugin-documents'
 import { KeyringExtension } from '@arxhub/plugin-protection'
 import { RepositoryExtension } from '@arxhub/plugin-repository'
 import { ShellExtension } from '@arxhub/plugin-shell'
@@ -51,10 +51,10 @@ export class AiWorkspacePlugin extends Plugin {
     }
 
     const clearStaging = async (sessionId: string) => {
-      if (!ctx.extensions.has(NotesExtension)) return
-      const notes = ctx.extensions.get(NotesExtension)
+      if (!ctx.extensions.has(DocumentsExtension)) return
+      const documents = ctx.extensions.get(DocumentsExtension)
       try {
-        await notes.vfs.delete(`_ai-workspace/${sessionId}`, { recursive: true, force: true })
+        await documents.vfs.delete(`_ai-workspace/${sessionId}`, { recursive: true, force: true })
       } catch {
         // best-effort
       }
@@ -70,15 +70,15 @@ export class AiWorkspacePlugin extends Plugin {
         return views
       },
       accept: async (sessionId: string) => {
-        const notes = ctx.extensions.get(NotesExtension)
+        const documents = ctx.extensions.get(DocumentsExtension)
         const repository = ctx.extensions.get(RepositoryExtension)
         const view = await http().get(`/sessions/${sessionId}`).json<SessionView>()
         await applyAcceptWithMerge({
           changes: view.changes,
-          beforeClose: (pathname) => notes.beforeClose(pathname),
+          beforeClose: (pathname) => documents.beforeClose(pathname),
           readSide: async (pathname, side) => {
             if (side === 'main') {
-              const file = notes.vfs.file(pathname)
+              const file = documents.vfs.file(pathname)
               if (!(await file.exists())) return ''
               return file.readText()
             }
@@ -86,11 +86,11 @@ export class AiWorkspacePlugin extends Plugin {
             return new TextDecoder().decode(base64ToBytes(side === 'base' ? compared.left : compared.right))
           },
           writeVault: async (pathname, content) => {
-            await notes.vfs.file(pathname).writeText(content)
+            await documents.vfs.file(pathname).writeText(content)
           },
           deleteVault: async (pathname) => {
-            if (await notes.vfs.exists(pathname)) {
-              await notes.vfs.delete(pathname, { recursive: true, force: true })
+            if (await documents.vfs.exists(pathname)) {
+              await documents.vfs.delete(pathname, { recursive: true, force: true })
             }
           },
           mergeContent: (pathname, base, local, remote) => repository.mergeContent(pathname, base, local, remote),
@@ -109,23 +109,23 @@ export class AiWorkspacePlugin extends Plugin {
         return { ...wire, left: base64ToBytes(wire.left), right: base64ToBytes(wire.right) }
       },
       openOverlay: async (sessionId: string, pathname: string) => {
-        const notes = ctx.extensions.get(NotesExtension)
+        const documents = ctx.extensions.get(DocumentsExtension)
         const shell = ctx.extensions.get(ShellExtension)
         const content = await http().url(`/sessions/${sessionId}/files/read`).post({ pathname }).json<{ content: string }>()
         const staged = stagingPath(sessionId, pathname)
-        await notes.vfs.file(staged).writeText(content.content)
-        await shell.workspace.openObject(NOTES_TYPE_ID, { id: staged })
+        await documents.vfs.file(staged).writeText(content.content)
+        await shell.workspace.openObject(DOCUMENTS_TYPE_ID, { id: staged })
       },
       openSource: async (pathname: string, excerpt: string) => {
-        const notes = ctx.extensions.get(NotesExtension)
+        const documents = ctx.extensions.get(DocumentsExtension)
         const shell = ctx.extensions.get(ShellExtension)
         const path = pathname.replace(/^\/+/, '')
-        const file = notes.vfs.file(path)
+        const file = documents.vfs.file(path)
         if (!(await file.exists())) {
           throw new Error(`Source file is not available: ${path}`)
         }
         const text = excerpt.trim()
-        const opened = await shell.workspace.openObject(NOTES_TYPE_ID, text ? { id: path, at: { text } } : { id: path })
+        const opened = await shell.workspace.openObject(DOCUMENTS_TYPE_ID, text ? { id: path, at: { text } } : { id: path })
         if (opened == null) throw new Error(`Could not open source: ${path}`)
       },
     }))
@@ -143,10 +143,10 @@ export class AiWorkspacePlugin extends Plugin {
       dock: () => this.dockOf(ctx),
     })
 
-    if (ctx.services.has(VaultWatcher) && ctx.extensions.has(NotesExtension)) {
-      const notes = ctx.extensions.get(NotesExtension)
+    if (ctx.services.has(VaultWatcher) && ctx.extensions.has(DocumentsExtension)) {
+      const documents = ctx.extensions.get(DocumentsExtension)
       this.unwatch = ctx.services.get(VaultWatcher).subscribe((change: VfsChange) => {
-        void this.onVaultChange(ctx, notes, change)
+        void this.onVaultChange(ctx, documents, change)
       })
     }
   }
@@ -155,7 +155,7 @@ export class AiWorkspacePlugin extends Plugin {
     return ctx.extensions.get(AiWorkspaceExtension).dock.value
   }
 
-  private async onVaultChange(ctx: PluginContext, notes: NotesExtension, change: VfsChange): Promise<void> {
+  private async onVaultChange(ctx: PluginContext, documents: DocumentsExtension, change: VfsChange): Promise<void> {
     if (change.kind === 'deleted') return
     const path = change.pathname.replace(/^\/+/, '')
     if (!path.startsWith('_ai-workspace/')) return
@@ -173,7 +173,7 @@ export class AiWorkspacePlugin extends Plugin {
       const keyring = ctx.extensions.get(KeyringExtension).keyring
       if (keyring) signer.install(keyring)
       const http = createHttpClient(apiBaseUrl('', AI_WORKSPACE_NAMESPACE), { middlewares: [signingMiddleware(signer)] })
-      const text = await notes.vfs.file(path).readText()
+      const text = await documents.vfs.file(path).readText()
       await http.url(`/sessions/${sessionId}/files/write`).post({ pathname: relative, content: text }).res()
     } catch {
       // archived or unreachable — ignore

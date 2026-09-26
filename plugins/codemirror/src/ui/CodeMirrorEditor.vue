@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { type BlockAnchor, DocumentsExtension } from '@arxhub/plugin-documents'
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
-import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
@@ -37,7 +37,7 @@ const markdownKeymap = [
 
 const arxhub = useArxHub()
 const vfs = arxhub.services.get(VaultVfs)
-const notes = arxhub.extensions.get(NotesExtension)
+const documents = arxhub.extensions.get(DocumentsExtension)
 const editorEl = ref<HTMLDivElement>()
 // shallowRef so the markdown toolbar can reach the live view; the view is not reactive data.
 const view = shallowRef<EditorView | null>(null)
@@ -125,7 +125,7 @@ function reveal(anchor: BlockAnchor): boolean {
   return true
 }
 
-onUnmounted(notes.registerOpenView(() => props.path, reveal, beforeClose))
+onUnmounted(documents.registerOpenView(() => props.path, reveal, beforeClose))
 
 async function doSave() {
   if (!view.value || !canSave.value) return

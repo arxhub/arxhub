@@ -70,7 +70,7 @@ describe('displayName', () => {
   })
 
   // OR-03: never a hand-written list and never a copy of the rule — the extension only ever forwards to
-  // whatever the plugin wired (NotesExtension.displayName), so a plugin that stops claiming an extension
+  // whatever the plugin wired (DocumentsExtension.displayName), so a plugin that stops claiming an extension
   // is answered without this holding anything of its own that could go stale.
   test('forwards to whatever source is currently wired, not a snapshot taken at wiring time', () => {
     const explorer = extension()

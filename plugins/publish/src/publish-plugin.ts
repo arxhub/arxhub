@@ -2,8 +2,8 @@ import { PluginConfig } from '@arxhub/config'
 import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
 import { basename } from '@arxhub/path'
+import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { ExplorerExtension } from '@arxhub/plugin-explorer'
-import { NotesExtension } from '@arxhub/plugin-notes'
 import { KeyringExtension } from '@arxhub/plugin-protection'
 import { SettingsExtension } from '@arxhub/plugin-settings'
 import { ShellExtension } from '@arxhub/plugin-shell'
@@ -102,7 +102,7 @@ export class PublishPlugin extends Plugin {
 
     const publish = ctx.extensions.get(PublishExtension)
     publish.readFile = (path) => ctx.services.get(VaultVfs).read(path)
-    publish.beforeRead = (path) => ctx.extensions.get(NotesExtension).beforeClose(path)
+    publish.beforeRead = (path) => ctx.extensions.get(DocumentsExtension).beforeClose(path)
     const explorer = ctx.extensions.get(ExplorerExtension)
     // One reporter for the tree actions and the Publications page, so a failure reads the same wherever the
     // click came from and lands in this plugin's log.
@@ -237,7 +237,7 @@ export class PublishPlugin extends Plugin {
       remote,
       logger: this.logger,
       render: (raw, path) => ctx.extensions.get(PublishExtension).renderArx(raw, path),
-      beforeRead: (path) => ctx.extensions.get(NotesExtension).beforeClose(path),
+      beforeRead: (path) => ctx.extensions.get(DocumentsExtension).beforeClose(path),
       historyLimit: cfg['history.limit'],
     })
     try {

@@ -80,7 +80,7 @@ test.describe('the name of an open document', () => {
     await expect.poll(() => readOrNull(vault, path)).toContain('mine')
   })
 
-  // The tab is retargeted rather than re-opened (NotesPlugin's VaultWatcher subscription), so the live
+  // The tab is retargeted rather than re-opened (DocumentsPlugin's VaultWatcher subscription), so the live
   // buffer — and anything typed into it that has not reached disk yet — belongs to the new path.
   test('renaming an open note keeps its buffer', async ({ app, vault }) => {
     const path = await vault.write('buffered.md', 'first line\n')

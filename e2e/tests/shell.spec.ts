@@ -11,10 +11,10 @@ test.describe('the row of types', () => {
   // registration makes unrepresentable. Asked of BOTH frames deliberately — it is a claim about the
   // registry, and it used to be asked of the phone alone, which is the one place it could not fail.
   test('holds one key per type, and none for a type that is not open', async ({ app }) => {
-    // Notes is the only pinned type left: settings joined search and the log viewer behind the sheet
+    // Documents is the only pinned type left: settings joined search and the log viewer behind the sheet
     // (OR-05), because a permanent key is the frame's most reachable place and none of the three is
     // where the owner works.
-    await expect(typeKey(app, 'Notes')).toHaveCount(1)
+    await expect(typeKey(app, 'Documents')).toHaveCount(1)
 
     // `pinned: false` means no permanent key — not "hidden", which is what it replaced. The key
     // appears for as long as the type is open and there is never a second one beside it.
@@ -54,7 +54,7 @@ test.describe('the desk', () => {
     await app.reload()
     await waitForApp(app)
 
-    // A clean desk opens on Notes, so Settings can only have come from the record on the device.
+    // A clean desk opens on Documents, so Settings can only have come from the record on the device.
     await expect(typeKey(app, 'Settings')).toHaveAttribute('aria-pressed', 'true')
     // The sheet does not come back, and cannot: the record has four fields and none of them can hold a
     // layer. This is where a person would meet that if it ever stopped being true.

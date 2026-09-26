@@ -155,5 +155,5 @@ A rule nobody checks is a wish. Both levels run; each catches what the other can
 
 A general-purpose UI component used by more than two workspace packages (three or more) belongs
 in `@arxhub/uikit/core`; migrate its consumers to that shared implementation. Feature components
-remain with their domain owner even when widely embedded (for example the editor or Notes
+remain with their domain owner even when widely embedded (for example the editor or Documents
 DocumentName, which owns rename behaviour). The uikit must not depend on feature plugins.

@@ -9,7 +9,7 @@ const ARX_DOC = JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ typ
 // always claimed (the editor plugin), '.text' is claimed by nobody (tree.spec.ts's own case for "nothing
 // can open this"), and '.png' is claimed only while Preview is running.
 //
-// Serial, like settings-save.spec.ts's own describe: one test here stages the Notes section's SYNCED
+// Serial, like settings-save.spec.ts's own describe: one test here stages the Documents section's SYNCED
 // setting off before restoring it, and every other test in this file reads the tree assuming the
 // schema's own default (hide) — `fullyParallel` would otherwise let that one test's mid-flight "off" be
 // read by another as if it were the default.
@@ -71,15 +71,15 @@ test.describe('hiding a known extension in the tree', () => {
 })
 
 // The setting belongs to the type, not to the tree: every surface that names a file reads one answer
-// (NotesExtension.displayName), so it is the Notes section that carries it.
-test.describe('the Notes settings section', () => {
+// (DocumentsExtension.displayName), so it is the Documents section that carries it.
+test.describe('the Documents settings section', () => {
   test('defaults to hiding, and switching it off shows every extension again — live, no restart', async ({ app, vault }) => {
     const path = await vault.write('brief.arx', 'irrelevant\n')
     await app.reload()
     await openNavigation(app)
     await expect(app.getByRole('treeitem', { name: path }).locator('.tree-view-label')).toHaveText(withoutExtension(path, '.arx'))
 
-    await openSettingsSection(app, 'Notes')
+    await openSettingsSection(app, 'Documents')
     const toggle = app.getByRole('checkbox', { name: 'Hide known extensions' })
     await expect(toggle).toBeChecked()
 
@@ -92,7 +92,7 @@ test.describe('the Notes settings section', () => {
 
     // Applied live, through the same PluginConfig.watch every other section's Save goes through — no
     // reload, and the row updates where it already is.
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
     await openNavigation(app)
     await expect(app.getByRole('treeitem', { name: path }).locator('.tree-view-label')).toHaveText(path)
 
@@ -100,11 +100,32 @@ test.describe('the Notes settings section', () => {
     // outlives this test in the one stand the whole project shares, and a later test's "defaults to
     // hiding" would otherwise be answered by whatever this test left behind rather than the schema's
     // own default.
-    await openSettingsSection(app, 'Notes')
+    await openSettingsSection(app, 'Documents')
     await expect(toggle).not.toBeChecked()
     await toggle.click({ force: true })
     await expect(toggle).toBeChecked()
     await app.getByRole('button', { name: 'Save & apply' }).click()
+  })
+})
+
+// The setting the build before the rename saved under storage/Notes/ — the bucket PluginVfs names by the
+// plugin's old manifest name. It is moved on the first boot of the renamed plugin and read from there.
+test.describe('a setting saved before Notes became Documents', () => {
+  test('is moved to the Documents folder and still applies', async ({ app, vault }) => {
+    const path = await vault.write('legacy.arx', 'irrelevant\n')
+    await vault.removeData('storage/Documents')
+    await vault.writeData('storage/Notes/config.toml', '"names.hideKnownExtensions" = false\n')
+    try {
+      await app.reload()
+      await openNavigation(app)
+      await expect(app.getByRole('treeitem', { name: path }).locator('.tree-view-label')).toHaveText(path)
+      await expect.poll(() => vault.readData('storage/Documents/config.toml').catch(() => '')).toContain('false')
+      await expect.poll(() => vault.readData('storage/Notes/config.toml').catch(() => null)).toBeNull()
+    } finally {
+      // Back to the schema's default for every later test on this stand (the setting is synced).
+      await vault.removeData('storage/Notes')
+      await vault.removeData('storage/Documents')
+    }
   })
 })
 
@@ -121,7 +142,7 @@ test.describe('the known set is never a snapshot', () => {
     await app.getByTestId('plugin-switch-Preview').click()
     await app.getByRole('button', { name: 'Restart now' }).click()
 
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
     await openNavigation(app)
     await expect(app.getByRole('treeitem', { name: path }).locator('.tree-view-label')).toHaveText(path)
   })

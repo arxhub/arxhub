@@ -1,5 +1,5 @@
 import { ConsoleLogger } from '@arxhub/logger'
-import { NotesExtension } from '@arxhub/plugin-notes'
+import { DocumentsExtension } from '@arxhub/plugin-documents'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { describe, expect, test } from 'vitest'
 import { CODEMIRROR_VIEWER } from '../codemirror-plugin'
@@ -15,36 +15,36 @@ const noVfs = new Proxy(
   },
 ) as VirtualFileSystem
 
-function registry(): NotesExtension {
-  const notes = new NotesExtension({ logger: new ConsoleLogger(), vfs: noVfs, root: '/' })
-  notes.registerViewer(CODEMIRROR_VIEWER)
-  return notes
+function registry(): DocumentsExtension {
+  const documents = new DocumentsExtension({ logger: new ConsoleLogger(), vfs: noVfs, root: '/' })
+  documents.registerViewer(CODEMIRROR_VIEWER)
+  return documents
 }
 
 describe('codemirror as a viewer of a note', () => {
   test('markdown and plain text are answered', () => {
-    const notes = registry()
+    const documents = registry()
 
     for (const path of ['vault/contract.md', 'vault/contract.markdown', 'vault/notes.txt']) {
-      expect(notes.viewerFor(path)?.id, path).toBe(CODEMIRROR_VIEWER.id)
+      expect(documents.viewerFor(path)?.id, path).toBe(CODEMIRROR_VIEWER.id)
     }
   })
 
   test('code is answered too — the same editor, since the formatting bar is the note-only part', () => {
-    const notes = registry()
+    const documents = registry()
 
     for (const path of ['src/main.ts', 'src/App.tsx', 'package.json', 'config.toml', 'style.css', 'run.sh', 'lib.rs']) {
-      expect(notes.viewerFor(path)?.id, path).toBe(CODEMIRROR_VIEWER.id)
+      expect(documents.viewerFor(path)?.id, path).toBe(CODEMIRROR_VIEWER.id)
     }
   })
 
   // The lookup the tree and search go through folds the case; the panel store's own match did not, so
   // a note saved as 'README.MD' used to be a file nothing could open.
   test('the case the name was written in does not decide whether it opens', () => {
-    const notes = registry()
+    const documents = registry()
 
     for (const path of ['vault/README.md', 'vault/README.MD', 'vault/Notes.TXT', 'src/Main.TS']) {
-      expect(notes.viewerFor(path)?.id, path).toBe(CODEMIRROR_VIEWER.id)
+      expect(documents.viewerFor(path)?.id, path).toBe(CODEMIRROR_VIEWER.id)
     }
   })
 
@@ -61,10 +61,10 @@ describe('codemirror as a viewer of a note', () => {
   })
 
   test('a format nothing here reads is answered with nothing, not with a text editor', () => {
-    const notes = registry()
+    const documents = registry()
 
-    expect(notes.viewerFor('vault/scan.pdf')).toBeUndefined()
-    expect(notes.viewerFor('vault/photo.png')).toBeUndefined()
-    expect(notes.viewerFor('vault/LICENSE')).toBeUndefined()
+    expect(documents.viewerFor('vault/scan.pdf')).toBeUndefined()
+    expect(documents.viewerFor('vault/photo.png')).toBeUndefined()
+    expect(documents.viewerFor('vault/LICENSE')).toBeUndefined()
   })
 })

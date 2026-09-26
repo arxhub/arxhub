@@ -104,7 +104,7 @@ export class RepositoryExtension extends Extension {
     this.pending.value = vaultPaths
   }
 
-  // What NotesExtension's preparer calls before a pending object opens. A no-op off the pending set;
+  // What DocumentsExtension's preparer calls before a pending object opens. A no-op off the pending set;
   // an actionable refusal when there is no remote to fetch from, rather than opening a truncated file.
   async materializeIfPending(vaultPath: string): Promise<void> {
     if (!(await this.isPending(vaultPath))) return
@@ -151,7 +151,7 @@ export class RepositoryExtension extends Extension {
   }
 
   // The store migration, the previous-owner discard and the empty-snapshot seed — memoised, so every
-  // caller (FileHistory's `ready`, the Notes preparer via the plugin's own bring-up, a second racing
+  // caller (FileHistory's `ready`, the Documents preparer via the plugin's own bring-up, a second racing
   // call) awaits the SAME promise and the work underneath runs exactly once.
   ready(): Promise<void> {
     this.preparation ??= this.prepare()

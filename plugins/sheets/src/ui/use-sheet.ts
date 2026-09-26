@@ -1,6 +1,6 @@
 import { validation } from '@arxhub/errors'
+import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { useHotkeyLayer, useHotkeys } from '@arxhub/plugin-hotkeys/ui'
-import { NotesExtension } from '@arxhub/plugin-notes'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
@@ -19,7 +19,7 @@ import type { XlsxRequest } from '../xlsx.worker'
 export function createSheetSession(props: { path: string }) {
   const hub = useArxHub(),
     vfs = hub.services.get(VaultVfs),
-    notes = hub.extensions.get(NotesExtension)
+    documents = hub.extensions.get(DocumentsExtension)
   const root = ref<HTMLElement>(),
     inputRoot = ref<HTMLElement>(),
     grid = ref<HTMLElement>()
@@ -798,7 +798,7 @@ export function createSheetSession(props: { path: string }) {
     await beforeClose()
   }
   onUnmounted(
-    notes.registerOpenView(
+    documents.registerOpenView(
       () => props.path,
       () => false,
       beforeClose,

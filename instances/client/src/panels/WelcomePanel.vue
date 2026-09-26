@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
+import { DOCUMENTS_TYPE_ID } from '@arxhub/plugin-documents'
 import { SEARCH_TYPE_ID } from '@arxhub/plugin-search'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
@@ -22,9 +22,9 @@ const SHORTCUTS = [
   { chord: 'F2', does: 'Rename in the file tree' },
 ]
 
-async function createNote(): Promise<void> {
+async function createDocument(): Promise<void> {
   try {
-    await shell.types.get(NOTES_TYPE_ID)?.create?.run()
+    await shell.types.get(DOCUMENTS_TYPE_ID)?.create?.run()
   } catch (error) {
     toaster.create({ title: 'Could not create the note', description: String(error), type: 'error' })
   }
@@ -40,7 +40,7 @@ async function createNote(): Promise<void> {
       </p>
 
       <div class="welcome-actions">
-        <Button :size="mobile ? 'lg' : 'md'" @click="createNote">New note</Button>
+        <Button :size="mobile ? 'lg' : 'md'" @click="createDocument">New note</Button>
         <Button v-if="shell.types.has(SEARCH_TYPE_ID)" :size="mobile ? 'lg' : 'md'" variant="secondary" @click="shell.workspace.activateType(SEARCH_TYPE_ID)">Find a note</Button>
       </div>
       <p class="next">Use Vault to browse files, or Open or switch to to reach all your tools.</p>

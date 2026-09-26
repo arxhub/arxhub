@@ -21,11 +21,11 @@ export interface BlockAnchor {
 // The type's id. In a module of its own that imports no components: the explorer, search and the
 // instance all name it, and importing the whole plugin with its viewers for the sake of one string
 // would drag the editors into everything that merely opens a note.
-export const NOTES_TYPE_ID = 'arxhub.notes'
+export const DOCUMENTS_TYPE_ID = 'arxhub.documents'
 
 // What the type puts into the workspace. The path and nothing else: a snapshot survives a restart as
 // JSON, and everything else — title, viewer, position — is derived from the path again.
-export interface NoteSnapshot {
+export interface DocumentSnapshot {
   path: string
 }
 
@@ -45,7 +45,7 @@ export function blockAnchorOf(at: Json | undefined): BlockAnchor | null {
 // A snapshot arrived from the previous session, which means from the previous build: it is read as
 // data, not as a promise. Not understood — then there is simply no tab, which beats a restore that
 // throws.
-export function noteSnapshotPath(snapshot: Json): string | null {
+export function documentSnapshotPath(snapshot: Json): string | null {
   if (snapshot == null || typeof snapshot !== 'object' || Array.isArray(snapshot)) return null
   const path = (snapshot as Record<string, Json>).path
   return typeof path === 'string' && path !== '' ? path : null

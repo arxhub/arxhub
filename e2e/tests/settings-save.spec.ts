@@ -60,7 +60,7 @@ test.describe('applying settings', () => {
     // Leaving settings must not drop the drafts. The desktop frame keeps them in the status bar; the
     // mobile frame files every status widget behind the row's own immobile key, so only desktop shows
     // one here.
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
     if (!(await isMobileFrame(app))) {
       await expect(app.getByRole('button', { name: /unsaved setting/ })).toBeVisible()
     }
@@ -93,7 +93,7 @@ test.describe('applying settings', () => {
     await openSettingsSection(app, 'Sync')
     await expect(app.locator('input[aria-label="Server URL"]:visible')).toHaveValue(staged)
 
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
     await openSettingsSection(app, 'Sync')
     await expect(app.locator('input[aria-label="Server URL"]:visible')).toHaveValue(staged)
 
@@ -121,7 +121,7 @@ test.describe('applying settings', () => {
     await expect(app.getByRole('button', { name: 'Save & apply' })).toBeVisible()
 
     // Out of settings, then the chord. Nothing must happen — not the apply, and not a swallowed key.
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
     await app.keyboard.press('ControlOrMeta+s')
 
     // Still staged is the whole assertion: an applied set empties the bar, so a bar that is still

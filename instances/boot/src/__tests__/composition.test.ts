@@ -10,7 +10,7 @@ const CLIENT_ROSTER: RegisteredPlugin[] = [
   { name: 'Hotkeys', essential: true },
   { name: 'Shell', essential: true },
   { name: 'Panels', essential: true },
-  { name: 'Notes', essential: true },
+  { name: 'Documents', essential: true },
   { name: 'Explorer', essential: false },
   { name: 'CodeMirror', essential: false },
   { name: 'Preview', essential: false },
@@ -54,7 +54,7 @@ describe('checkComposition', () => {
   })
 
   test('names the essential plugin nobody registered', () => {
-    expect(problems(without('Notes'))).toContain("'Notes' is missing")
+    expect(problems(without('Documents'))).toContain("'Documents' is missing")
   })
 
   test('refuses a name registered twice', () => {
@@ -83,9 +83,9 @@ describe('checkComposition', () => {
   })
 
   test('reports everything wrong at once', () => {
-    const message = problems(without('Notes').filter((it) => it.name !== 'keystore'))
+    const message = problems(without('Documents').filter((it) => it.name !== 'keystore'))
 
-    expect(message).toContain("'Notes' is missing")
+    expect(message).toContain("'Documents' is missing")
     expect(message).toContain("'keystore' is missing")
   })
 

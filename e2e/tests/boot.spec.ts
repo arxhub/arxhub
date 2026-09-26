@@ -5,8 +5,8 @@ test.describe('application boot', () => {
     // The first level of navigation, and the same one in both frames: a rail down the left of a window,
     // a row along the bottom of a phone. A type is named the same in both — there is one registration,
     // so there is nothing left for the two frames to disagree about.
-    await expect(typeRow(app).getByRole('button', { name: /^Notes(,|$)/ })).toBeVisible()
-    // Notes is the only pinned type: settings, search and the log viewer are reached from the sheet
+    await expect(typeRow(app).getByRole('button', { name: /^Documents(,|$)/ })).toBeVisible()
+    // Documents is the only pinned type: settings, search and the log viewer are reached from the sheet
     // (OR-05), so the row carries no key for them until one is open.
     await expect(typeRow(app).getByRole('button', { name: /^Settings(,|$)/ })).toHaveCount(0)
   })
@@ -69,7 +69,7 @@ test('slow plugin bring-up does not hold the first paint', async ({ app }) => {
   try {
     await apiHeld
     await waitForApp(app)
-    await expect(typeRow(app).getByRole('button', { name: /^Notes(,|$)/ })).toBeVisible()
+    await expect(typeRow(app).getByRole('button', { name: /^Documents(,|$)/ })).toBeVisible()
     await expect(app.getByRole('status', { name: 'Starting ArxHub' })).toHaveCount(0)
 
     // Paint is useful, not decorative: the app-layer chord and its registered surfaces already work.

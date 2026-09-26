@@ -2,7 +2,7 @@
 import { Input } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref } from 'vue'
-import { NotesExtension } from '../notes-extension'
+import { DocumentsExtension } from '../documents-extension'
 
 // What an open object is called, at the top of whatever is showing it (OR-02). It lives with the type
 // rather than in each viewer because a viewer's business is the content — five copies of "the name,
@@ -13,13 +13,13 @@ import { NotesExtension } from '../notes-extension'
 const props = defineProps<{ path: string; inline?: boolean; disabled?: boolean }>()
 
 const arxhub = useArxHub()
-const notes = arxhub.extensions.get(NotesExtension)
+const documents = arxhub.extensions.get(DocumentsExtension)
 const touch = useShellFrame() === 'mobile'
 
 // OR-03: the name as every other surface shows it — the tree hid a known extension while this strip
 // spelled it out, which is the product contradicting itself about one file on one screen. The field
 // therefore holds exactly what is on screen, and `fullName` glues the hidden tail back on.
-const name = computed(() => notes.displayName(props.path))
+const name = computed(() => documents.displayName(props.path))
 
 const renaming = ref(false)
 const draft = ref('')
@@ -51,8 +51,8 @@ function commit(): void {
   // A rename started by a click has to report its own failure: a rejected write with only a log entry
   // behind it is indistinguishable from a name that simply did not change. It names the whole file,
   // extension and all — what was typed is only part of it while one is hidden.
-  notes.renameObject(props.path, renamed).catch((error: unknown) => {
-    arxhub.logger.error(`[notes] failed to rename ${props.path} to ${renamed}:`, error)
+  documents.renameObject(props.path, renamed).catch((error: unknown) => {
+    arxhub.logger.error(`[documents] failed to rename ${props.path} to ${renamed}:`, error)
     const message = error instanceof Error ? error.message : String(error ?? '')
     toaster.create({
       type: 'error',

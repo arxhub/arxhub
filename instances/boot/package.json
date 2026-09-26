@@ -19,7 +19,7 @@
     "@arxhub/errors": "workspace:*",
     "@arxhub/plugin-keystore": "workspace:*",
     "@arxhub/plugin-maintenance": "workspace:*",
-    "@arxhub/plugin-notes": "workspace:*",
+    "@arxhub/plugin-documents": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",

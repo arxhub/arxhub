@@ -1,6 +1,6 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { DocumentsExtension, type DocumentViewer } from '@arxhub/plugin-documents'
 import { HotkeysExtension } from '@arxhub/plugin-hotkeys'
-import { NotesExtension, type NoteViewer } from '@arxhub/plugin-notes'
 import { PanelStoreExtension } from '@arxhub/plugin-panels'
 import { declareCodeMirrorChords } from './hotkeys'
 import { manifest } from './manifest'
@@ -52,13 +52,13 @@ export const CODEMIRROR_HANDLES = [
 const CODEMIRROR_PANEL_ID = 'arxhub.codemirror.editor'
 
 // An editor is a way to show an object, not a place of its own — so what it can show is declared as a
-// viewer of the "Notes" type, and picking one by extension stops being the panel layout's business.
+// viewer of the "Documents" type, and picking one by extension stops being the panel layout's business.
 //
 // One viewer for markdown and code alike, where the reference model splits them in two: the split
 // exists there to give a note a formatting bar and a `.tsx` none, and here that bar already lives
 // inside the editor component, keyed off the path. Splitting now would buy a distinction nothing
 // renders — the `dock` role has no consumer until a frame reads the type registry (F-14/F-16).
-export const CODEMIRROR_VIEWER: NoteViewer = {
+export const CODEMIRROR_VIEWER: DocumentViewer = {
   id: CODEMIRROR_PANEL_ID,
   // The panel this viewer opens through while the frames still open through the panel store. Stated
   // rather than derived from `id`: the two strings are equal today, and a lookup that relied on that
@@ -90,7 +90,7 @@ export class CodeMirrorPlugin extends Plugin {
       component: CodeMirrorEditor,
     })
 
-    ctx.extensions.get(NotesExtension).registerViewer(CODEMIRROR_VIEWER)
+    ctx.extensions.get(DocumentsExtension).registerViewer(CODEMIRROR_VIEWER)
 
     // Beside the viewer, and for the same reason: both say what this editor IS, independently of
     // whether a panel showing one is open.

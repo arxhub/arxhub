@@ -37,9 +37,11 @@ export {
   type ColumnState,
   clampColumnWidth,
   type StorageLike,
+  type StoredWorkspace,
   WORKSPACE_BACKUP_KEY,
   WORKSPACE_KEY,
   WORKSPACE_VERSION,
+  type WorkspaceMigration,
   WorkspaceStorage,
   type WorkspaceStorageOptions,
 } from './ui/workspace-storage'

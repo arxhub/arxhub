@@ -8,9 +8,9 @@ import { ShellExtension } from '@arxhub/plugin-shell'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { VaultVfs } from '@arxhub/vfs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { NotesConfig } from '../notes-config'
-import { NotesExtension } from '../notes-extension'
-import { NotesPlugin } from '../notes-plugin'
+import type { DocumentsConfig } from '../documents-config'
+import { DocumentsExtension } from '../documents-extension'
+import { DocumentsPlugin } from '../documents-plugin'
 
 function silentLogger(): Logger {
   const logger: Logger = {
@@ -49,7 +49,7 @@ function gatedTryRead(savedHide: boolean) {
     settledResolve = resolve
   })
 
-  let onSave: ((cfg: NotesConfig) => void) | null = null
+  let onSave: ((cfg: DocumentsConfig) => void) | null = null
 
   const config = {
     tryRead: async () => {
@@ -60,7 +60,7 @@ function gatedTryRead(savedHide: boolean) {
       settledResolve = null
       return { 'names.hideKnownExtensions': savedHide }
     },
-    watch: vi.fn((_schema: unknown, listener: (cfg: NotesConfig) => void) => {
+    watch: vi.fn((_schema: unknown, listener: (cfg: DocumentsConfig) => void) => {
       onSave = listener
       return () => {
         onSave = null
@@ -74,23 +74,23 @@ function gatedTryRead(savedHide: boolean) {
     reached,
     settled,
     finish: () => openGate?.(),
-    simulateSave: (cfg: NotesConfig) => onSave?.(cfg),
+    simulateSave: (cfg: DocumentsConfig) => onSave?.(cfg),
   }
 }
 
 const vfsStub = {} as VirtualFileSystem
 
 let ctx: PluginContext
-let plugin: NotesPlugin
-let notes: NotesExtension
+let plugin: DocumentsPlugin
+let documents: DocumentsExtension
 
 function startLoadConfig(): Promise<void> {
   const boot = plugin as unknown as {
     bootConfigPending: boolean
-    loadConfig: (context: PluginContext, notes: NotesExtension) => Promise<void>
+    loadConfig: (context: PluginContext, documents: DocumentsExtension) => Promise<void>
   }
   boot.bootConfigPending = true
-  return boot.loadConfig(ctx, notes)
+  return boot.loadConfig(ctx, documents)
 }
 
 function build(gate: ReturnType<typeof gatedTryRead>): void {
@@ -103,14 +103,14 @@ function build(gate: ReturnType<typeof gatedTryRead>): void {
   services.bind(VaultVfs, () => vfsStub)
 
   ctx = { extensions, events: createEventBus<EventMap>(), services }
-  plugin = new NotesPlugin({ logger })
+  plugin = new DocumentsPlugin({ logger })
   plugin.create(ctx)
   plugin.configure(ctx)
-  notes = extensions.get(NotesExtension)
+  documents = extensions.get(DocumentsExtension)
 }
 
 beforeEach(() => {
-  notes = undefined as unknown as NotesExtension
+  documents = undefined as unknown as DocumentsExtension
 })
 
 afterEach(async () => {
@@ -126,13 +126,13 @@ describe('loadConfig vs early settings save (TH-24-01)', () => {
     await gate.reached
 
     gate.simulateSave({ 'names.hideKnownExtensions': false })
-    expect(notes.hideKnownExtensions.value).toBe(false)
+    expect(documents.hideKnownExtensions.value).toBe(false)
 
     gate.finish()
     await gate.settled
     await bringUp
 
-    expect(notes.hideKnownExtensions.value).toBe(false)
+    expect(documents.hideKnownExtensions.value).toBe(false)
   })
 
   it('applies saved config when nothing was saved before tryRead lands', async () => {
@@ -141,12 +141,12 @@ describe('loadConfig vs early settings save (TH-24-01)', () => {
 
     const bringUp = startLoadConfig()
     await gate.reached
-    expect(notes.hideKnownExtensions.value).toBe(true)
+    expect(documents.hideKnownExtensions.value).toBe(true)
 
     gate.finish()
     await gate.settled
     await bringUp
 
-    expect(notes.hideKnownExtensions.value).toBe(false)
+    expect(documents.hideKnownExtensions.value).toBe(false)
   })
 })

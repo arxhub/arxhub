@@ -37,7 +37,7 @@ const controller = useDiffController(() => diff.result.value)
             <Row as="button" type="button" class="change" :selected="selectedPath === change.pathname" @click="state.selectChange(change.pathname)">
               {{ changeLabel(change) }}
             </Row>
-            <Button size="sm" variant="ghost" :disabled="busy || archived" @click.stop="state.openInNotes(change.pathname)">Открыть</Button>
+            <Button size="sm" variant="ghost" :disabled="busy || archived" @click.stop="state.openInDocuments(change.pathname)">Открыть</Button>
           </li>
         </ul>
         <div v-if="selectedChange" class="diff-panel">
@@ -45,7 +45,7 @@ const controller = useDiffController(() => diff.result.value)
           <p v-if="comparing || diff.loading.value" role="status">Loading diff…</p>
           <p v-if="diff.error.value" role="alert">{{ diff.error.value }}</p>
           <div v-if="diff.result.value" class="diff-frame" data-testid="ai-workspace-diff">
-            <DiffView class="diff" :result="diff.result.value" :controller="controller" :title="selectedName" :open-document="() => state.openInNotes()" />
+            <DiffView class="diff" :result="diff.result.value" :controller="controller" :title="selectedName" :open-document="() => state.openInDocuments()" />
           </div>
         </div>
         <h2>Sources</h2>

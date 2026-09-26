@@ -85,11 +85,26 @@ function sanitizeColumns(raw: Record<string, unknown>): Record<string, ColumnSta
   return out
 }
 
+// A record as it was read, before anything in it is trusted: a previous build wrote it. A migration
+// renames what a newer build calls differently (a type id, a navigation key) and hands the rest on as is.
+export interface StoredWorkspace {
+  activeTypeId: unknown
+  types: unknown[]
+  nav: Record<string, Json>
+  column: Record<string, unknown>
+}
+
+export type WorkspaceMigration = (record: StoredWorkspace) => StoredWorkspace
+
 export interface WorkspaceStorageOptions {
   workspace: Workspace
   // Defaults to the browser's `localStorage`, and to memory where there is none.
   storage?: StorageLike
   key?: string
+  // Applied on every restore rather than once behind a marker: the first save after a restore writes the
+  // migrated record back, so from then on there is nothing left for it to rename. The shell takes it as a
+  // value because it cannot know which plugin was renamed — only the composition root holds both names.
+  migrate?: WorkspaceMigration
 }
 
 // The third channel of state in the application, and calling it a subsystem is deliberate. The two
@@ -103,6 +118,7 @@ export class WorkspaceStorage {
   private readonly workspace: Workspace
   private readonly storage: StorageLike
   private readonly key: string
+  private readonly migrate: WorkspaceMigration
   private attached = true
 
   private nav: Record<string, Json> = {}
@@ -115,6 +131,7 @@ export class WorkspaceStorage {
     this.workspace = options.workspace
     this.storage = options.storage ?? browserStorage()
     this.key = options.key ?? WORKSPACE_KEY
+    this.migrate = options.migrate ?? ((record) => record)
   }
 
   // Hand this to `Workspace`'s `emit`. It is a `WorkspaceEmit` rather than a bus subscription because
@@ -197,19 +214,32 @@ export class WorkspaceStorage {
       return false
     }
 
+    let record: StoredWorkspace
+    try {
+      record = this.migrate({
+        activeTypeId: state.activeTypeId,
+        types: state.types,
+        nav: isRecord(parsed.nav) ? (parsed.nav as Record<string, Json>) : {},
+        column: isRecord(parsed.column) ? parsed.column : {},
+      })
+    } catch {
+      this.keepAside(raw)
+      return false
+    }
+
     // The fields are read one at a time: a person may have edited the record, or a previous build wrote
     // it, and one value nobody understands must not cost the rest.
-    this.nav = isRecord(parsed.nav) ? (parsed.nav as Record<string, Json>) : {}
+    this.nav = record.nav
     // The width is clamped on READ, not only on write: the record may hold anything — a width from a
     // previous version of the application, from another monitor, or a negative number typed into
     // devtools. A column −40px wide must not be expressible after a restart.
-    this.column = isRecord(parsed.column) ? sanitizeColumns(parsed.column) : {}
+    this.column = sanitizeColumns(record.column)
 
     this.restoring = true
     try {
       await this.workspace.restore({
-        activeTypeId: typeof state.activeTypeId === 'string' ? state.activeTypeId : null,
-        types: state.types as WorkspaceState['types'],
+        activeTypeId: typeof record.activeTypeId === 'string' ? record.activeTypeId : null,
+        types: record.types as WorkspaceState['types'],
       })
     } catch {
       // A host or layout can fail after restoring some tabs. Keep the original record and recover

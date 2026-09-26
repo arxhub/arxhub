@@ -241,7 +241,7 @@ test('renaming and switching types retain the spreadsheet buffer and restart cal
   await input(app, 'A1', '7')
   await expect(cell(app, 'B1')).toHaveText('21')
   await openType(app, 'Settings', SETTINGS_TYPE)
-  await openType(app, 'Notes')
+  await openType(app, 'Documents')
   await expect(cell(app, 'B1')).toHaveText('21')
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path, exact: true }).click({ button: 'right' })

@@ -4,15 +4,15 @@ import { basename, extname, join } from '@arxhub/path'
 import { renameEntry, type VirtualFileSystem } from '@arxhub/vfs'
 import { type Component, markRaw, ref, shallowRef } from 'vue'
 import { type DisplayName, displayNameOf } from './display-name'
-import { DEFAULT_HIDE_KNOWN_EXTENSIONS } from './notes-config'
-import type { BlockAnchor } from './notes-type'
+import { DEFAULT_HIDE_KNOWN_EXTENSIONS } from './documents-config'
+import type { BlockAnchor } from './documents-type'
 import { renameTarget } from './rename'
 
 // What opens an object of this type. The viewer registry belongs to the TYPE, not to the shell: the
 // shell has no business knowing what opens a `.md`, and it did know — `PanelDefinition.handles` lived
 // in the panel store, and picking a viewer by file extension was the store's job
 // (`getPanelsForFile`).
-export interface NoteViewer {
+export interface DocumentViewer {
   id: string
   // The panel definition this viewer is opened through, named rather than assumed. `store.openPanel`
   // takes a panel DEFINITION id, and every viewer today happens to carry the same string as its own
@@ -46,24 +46,24 @@ type Creator = () => Promise<string | null>
 // Runs before an object opens, with its path and selected viewer. What sync uses to bring a file this
 // device left in the cloud onto disk first — the viewer that mounts next reads from disk and knows
 // nothing about clouds, unless it explicitly declares a range read mode.
-type Preparer = (path: string, viewer?: NoteViewer) => Promise<void>
+type Preparer = (path: string, viewer?: DocumentViewer) => Promise<void>
 
-export interface NotesExtensionArgs extends ExtensionArgs {
+export interface DocumentsExtensionArgs extends ExtensionArgs {
   vfs: VirtualFileSystem
   // Where a note created without a place lands.
   root: string
 }
 
-// The owner of the "Notes" type: the viewer registry plus the two points the explorer plugs itself
+// The owner of the "Documents" type: the viewer registry plus the two points the explorer plugs itself
 // into — navigation and creation. Both are points rather than imports, because the explorer is
 // switchable and the type is not, and the type has to survive its absence.
-export class NotesExtension extends Extension {
+export class DocumentsExtension extends Extension {
   readonly vfs: VirtualFileSystem
   readonly root: string
 
   // shallowRef: the entries hold components, which need no reactive proxy and whose identity
   // comparison a proxy breaks.
-  private readonly viewers = shallowRef<NoteViewer[]>([])
+  private readonly viewers = shallowRef<DocumentViewer[]>([])
   // The type's navigation. Reactive because the explorer sets it in its own `configure()` — after the
   // type is already registered — and the wrapper component has to see that.
   readonly nav = shallowRef<Component | null>(null)
@@ -72,7 +72,7 @@ export class NotesExtension extends Extension {
   private creator: Creator | null = null
   private readonly preparers = new Set<Preparer>()
   // OR-03: whether a name hides an extension a viewer claims. Applied live by the plugin's own
-  // PluginConfig.watch (notes-plugin.ts), so a saved change reaches every surface with no restart.
+  // PluginConfig.watch (documents-plugin.ts), so a saved change reaches every surface with no restart.
   readonly hideKnownExtensions = ref<boolean>(DEFAULT_HIDE_KNOWN_EXTENSIONS)
   private readonly openViews = new Set<{ path: () => string; reveal: (anchor: BlockAnchor) => boolean; beforeClose?: () => Promise<boolean> }>()
 
@@ -92,22 +92,22 @@ export class NotesExtension extends Extension {
     return [...this.openViews].find((entry) => entry.path() === path)?.beforeClose?.() ?? Promise.resolve(true)
   }
 
-  constructor(args: NotesExtensionArgs) {
+  constructor(args: DocumentsExtensionArgs) {
     super(args)
     this.vfs = args.vfs
     this.root = args.root
   }
 
-  registerViewer(viewer: NoteViewer): void {
+  registerViewer(viewer: DocumentViewer): void {
     if (this.viewers.value.some((it) => it.id === viewer.id)) {
-      this.logger.warn(`Note viewer already registered, skipping the second registration: ${viewer.id}`)
+      this.logger.warn(`Document viewer already registered, skipping the second registration: ${viewer.id}`)
       return
     }
     const entry = markRaw({
       ...viewer,
       component: markRaw(viewer.component),
       extensions: viewer.extensions.map((it) => it.toLowerCase()),
-    }) as NoteViewer
+    }) as DocumentViewer
     this.viewers.value = [...this.viewers.value, entry].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
   }
 
@@ -115,7 +115,7 @@ export class NotesExtension extends Extension {
     this.viewers.value = this.viewers.value.filter((it) => it.id !== id)
   }
 
-  viewerFor(path: string): NoteViewer | undefined {
+  viewerFor(path: string): DocumentViewer | undefined {
     const ext = extname(path).toLowerCase()
     if (ext === '') return undefined
     return this.viewers.value.find((it) => it.extensions.includes(ext))
@@ -150,7 +150,7 @@ export class NotesExtension extends Extension {
   // file is a valid markdown note, while an empty '.arx' is a broken document, and the seed that makes
   // one valid belongs with whoever owns the format — which is the explorer's creator below, not a
   // second copy here.
-  async createNote(): Promise<string | null> {
+  async createDocument(): Promise<string | null> {
     if (this.creator != null) return this.creator()
     const path = await this.freePath(this.root, 'New note', '.md')
     await this.vfs.file(path).writeText('')
@@ -199,7 +199,7 @@ export class NotesExtension extends Extension {
   // and not each viewer's: what a name may be, and that a rename never silently eats the file already
   // holding that name. Five copies of them would be five places to fix.
   //
-  // Nothing here touches what is open: the write reaches `VaultWatcher`, and `NotesPlugin` retargets
+  // Nothing here touches what is open: the write reaches `VaultWatcher`, and `DocumentsPlugin` retargets
   // the tab from there — the same road a rename from the tree already travels, so a buffer with unsaved
   // text survives either one.
   async renameObject(path: string, name: string): Promise<string> {

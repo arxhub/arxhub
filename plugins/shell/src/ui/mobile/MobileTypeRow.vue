@@ -6,7 +6,7 @@ const props = defineProps<{ row: TypeRowItem[]; sheetOpen: boolean; navTitle: st
 const emit = defineEmits<{ select: [typeId: string]; peek: [typeId: string]; sheet: []; nav: [] }>()
 
 // A count is part of what the key says, so it belongs in the accessible name and not only in the
-// badge — "Notes" and "Notes, 3 open" are different controls to someone who cannot see the dot.
+// badge — "Documents" and "Documents, 3 open" are different controls to someone who cannot see the dot.
 function label(item: TypeRowItem): string {
   return item.count > 0 ? `${item.type.title}, ${item.count} open` : item.type.title
 }
@@ -46,7 +46,7 @@ function tap(item: TypeRowItem): void {
       </button>
     </ScrollArea>
 
-    <!-- The active type's own navigation: the tree under Notes, the sections under Settings. It used
+    <!-- The active type's own navigation: the tree under Documents, the sections under Settings. It used
          to be the only thing in the band above the row, which spent 48px of the shortest screen there
          is on one button. The left-edge swipe still does the same thing, but a gesture is invisible
          and the road to the tree has no right to be. -->

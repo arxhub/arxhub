@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 
 export default defineConfig((env) =>
   createVueConfig(__dirname, env, {
-    entries: ['src/index.ts', 'src/ui.ts', 'src/manifest.ts', 'src/notes-type.ts'],
+    entries: ['src/index.ts', 'src/ui.ts', 'src/manifest.ts', 'src/documents-type.ts'],
     external: [
       '@arxhub/config',
       '@arxhub/core',

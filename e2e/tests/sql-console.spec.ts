@@ -5,7 +5,7 @@ import { expect, openSearchApp, sqlConsoleAction, test, waitForApp } from './fix
 // without being able to break anything doing it. Both halves matter — an answer, and a refusal that leaves
 // the index and the console alike still working.
 
-// The visible one. Every type entered this session keeps its stage mounted (F-05) and both Notes and
+// The visible one. Every type entered this session keeps its stage mounted (F-05) and both Documents and
 // Search still draw the ONE application panel store — the debt AGENTS.md files under "one shared panel
 // store for every type" — so the console is in the document once per stage and only one of them is on
 // screen.

@@ -1,10 +1,10 @@
 import { ArxHub, type Logger } from '@arxhub/core'
 import { type Keyring, MutableRequestSigner } from '@arxhub/crypto'
+import { DOCUMENTS_TYPE_ID, migrateWorkspaceRecord } from '@arxhub/plugin-documents'
 import type { KeyStore } from '@arxhub/plugin-keystore'
 import { resolveKeyStore } from '@arxhub/plugin-keystore/ui'
 import { BootPolicy } from '@arxhub/plugin-maintenance'
 import { startWithCrashScreen } from '@arxhub/plugin-maintenance/ui'
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
 import { PanelStoreExtension, restoreNavigationWorkspace, StorePanelHost } from '@arxhub/plugin-panels'
 import { loadOrCreateKeyring } from '@arxhub/plugin-protection'
 import { ShellExtension, Workspace, WorkspaceStorage } from '@arxhub/plugin-shell'
@@ -98,17 +98,18 @@ export async function bootClient(options: BootClientOptions): Promise<BootedClie
   const workspace = new Workspace({
     types: shell.types,
     goneView: markRaw(ObjectGonePage),
-    // Notes owns documents; the same host also carries Welcome and the SQL console.
+    // Documents owns the vault objects; the same host also carries Welcome and the SQL console.
     createPanels: () => new StorePanelHost(panels.store),
     emit: (event, payload) => desk.observe(event, payload),
   })
-  const desk = new WorkspaceStorage({ workspace })
+  // A desk saved before Notes became Documents still names the old type; it is renamed on read.
+  const desk = new WorkspaceStorage({ workspace, migrate: migrateWorkspaceRecord })
   shell.attachWorkspace(workspace, desk)
   // Restored after every plugin has declared its types and before anything is on screen. Silently — a
   // restore is the initial state, not news. It also has no right to keep a person out of the
   // application: it reads storage, storage can be unavailable, and an unhandled rejection here would
   // fail BEFORE app.mount() and leave a blank white page instead of a shell.
-  await restoreNavigationWorkspace(panels, workspace, desk, NOTES_TYPE_ID)
+  await restoreNavigationWorkspace(panels, workspace, desk, DOCUMENTS_TYPE_ID)
 
   const Shell = await options.loadShell()
 

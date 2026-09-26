@@ -166,7 +166,7 @@ test.describe('finding a note by a word in its text', () => {
     // Leaving the type and coming back finds the switch as it was left: the setting is device-local and
     // does not live in the component that showed it. Away is the same place in both frames now — Search
     // is a type of its own, so leaving it means going to another one.
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
     await openSearch(app)
     await withFilters(app, async () => {
       await expect(app.getByRole('checkbox', { name: 'Titles only' })).toBeChecked()
@@ -283,7 +283,7 @@ test.describe('finding a note by a word in its text', () => {
       })
       .toEqual({ live: 0, control: 1 })
 
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
 
     await app.locator('.cm-content:visible .cm-line').last().click()
     await app.keyboard.press('End')
@@ -303,7 +303,7 @@ test.describe('finding a note by a word in its text', () => {
 
     // Deleted through the app, not behind its back: the watcher wraps the vault view every writer goes
     // through, and a bare unlink on disk is not a write the app ever made.
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
     await openNavigation(app)
     await app.getByRole('treeitem', { name: live }).click({ button: 'right' })
     await app.getByRole('menuitem', { name: 'Delete' }).click()

@@ -54,7 +54,7 @@ test('the Publications type lists what is public, and a roll back serves the ear
   const firstShort = first.hash.slice(0, 8)
   await expect(history.getByRole('listitem').filter({ hasText: firstShort })).toBeVisible()
 
-  await openType(app, 'Notes')
+  await openType(app, 'Documents')
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path }).click()
   const editor = app.locator('.ProseMirror:visible')

@@ -25,6 +25,7 @@ export interface Vault {
   // Anything outside vault/ — plugin storage, local state. Relative to the data root.
   readData(relative: string): Promise<string>
   writeData(relative: string, content: string): Promise<void>
+  removeData(relative: string): Promise<void>
 }
 
 // Each project drives its own stand and its own data dir (playwright.config.ts), keyed by project name
@@ -71,6 +72,9 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
       },
       async remove(relative) {
         rmSync(join(vaultRoot(testInfo), relative), { force: true })
+      },
+      async removeData(relative) {
+        rmSync(join(dataRoot(testInfo), relative), { force: true, recursive: true })
       },
     }
     await use(vault)
@@ -260,7 +264,7 @@ export async function isMobileFrame(page: Page): Promise<boolean> {
 // A type's own navigation. On the mobile frame it is a panel summoned from the bottom row, not a column
 // that is always there; on the desktop it is the column beside the content and there is nothing to
 // summon. Reached by test id because the key is named by whichever type owns the navigation — "Vault"
-// under Notes, "Sections" under Settings — so there is no one label to click.
+// under Documents, "Sections" under Settings — so there is no one label to click.
 export async function openNavigation(page: Page): Promise<void> {
   if (!(await isMobileFrame(page))) return
   const panel = page.getByRole('region', { name: /navigation$/ })
@@ -303,7 +307,7 @@ export const SHEET_LABEL = 'Open or switch to'
 // it has to name the type so the helper can reach it through the sheet instead.
 export const SETTINGS_TYPE = 'arxhub.settings'
 
-// What a surface that NAMES a file shows: a known extension is hidden there (plugins/notes/display-name.ts),
+// What a surface that NAMES a file shows: a known extension is hidden there (plugins/documents/src/display-name.ts),
 // and every spec below writes files whose extension the app claims. The whole name survives where it is an
 // identity rather than a label — the file on disk, a tree row's aria-label — so locating a row still uses
 // the path.
@@ -322,7 +326,7 @@ export function typeRow(page: Page): Locator {
   return page.getByRole('navigation', { name: 'Types' })
 }
 
-// A type's key in the row. Its accessible name carries the count when it has one ("Notes, 3 open"), so
+// A type's key in the row. Its accessible name carries the count when it has one ("Documents, 3 open"), so
 // this matches the title at the start rather than whole.
 export function typeKey(page: Page, title: string): Locator {
   return typeRow(page).getByRole('button', { name: new RegExp(`^${title}(,|$)`) })
@@ -384,18 +388,18 @@ export async function openSearchApp(page: Page): Promise<void> {
 // the type you are already in; on the desktop both levels are on screen at once and the tab strip is
 // that list, so this is mobile-only the way the tab strip is desktop-only.
 export async function openDocumentList(page: Page): Promise<Locator> {
-  await openType(page, 'Notes')
+  await openType(page, 'Documents')
   // The second tap, which is what opens it.
-  await typeKey(page, 'Notes').click()
+  await typeKey(page, 'Documents').click()
   const list = page.getByRole('menu', { name: 'Open documents' })
   await expect(list).toBeVisible()
   return list
 }
 
-// Welcome is a utility panel on the Notes host — restored sessions often leave a document active
+// Welcome is a utility panel on the Documents host — restored sessions often leave a document active
 // instead, which is intentional. Bring the panel forward before asserting its on-screen actions.
 export async function openWelcome(page: Page): Promise<void> {
-  await openType(page, 'Notes')
+  await openType(page, 'Documents')
   const find = page.getByRole('button', { name: 'Find a note', exact: true })
   if (await find.isVisible()) return
 

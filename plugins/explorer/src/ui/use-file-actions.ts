@@ -1,5 +1,5 @@
 import { basename, dirname } from '@arxhub/path'
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
+import { DOCUMENTS_TYPE_ID } from '@arxhub/plugin-documents'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { useNavHost } from '@arxhub/plugin-shell/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
@@ -50,7 +50,7 @@ export function useFileActions() {
   // panel, which names the file and stays put. The toast that used to refuse here vanished in seconds
   // and left the tree looking as if the click had done nothing.
   async function openPath(path: string): Promise<void> {
-    await shell.workspace.openObject(NOTES_TYPE_ID, { id: path })
+    await shell.workspace.openObject(DOCUMENTS_TYPE_ID, { id: path })
     navHost?.navigated?.()
   }
 

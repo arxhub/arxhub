@@ -1,4 +1,4 @@
-import type { BlockAnchor } from '@arxhub/plugin-notes'
+import type { BlockAnchor } from '@arxhub/plugin-documents'
 import type { SearchExtension } from '@arxhub/plugin-search'
 import type { Ref } from 'vue'
 

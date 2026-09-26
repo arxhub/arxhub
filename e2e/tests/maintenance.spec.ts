@@ -23,10 +23,10 @@ test.describe('maintenance mode', () => {
     })
 
     // Explorer is not essential, so a maintenance boot leaves it out — and the tree it contributes is
-    // the navigation of the Notes type, not a place of its own. The type is still there (notes is
+    // the navigation of the Documents type, not a place of its own. The type is still there (documents is
     // essential); its navigation says in as many words that there is no tree, rather than showing an
     // empty column.
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
     await openNavigation(app)
     await expect(app.getByText('The explorer is switched off')).toBeVisible()
     await expect(app.getByRole('tree', { name: 'Files' })).toHaveCount(0)
@@ -42,8 +42,8 @@ test.describe('maintenance mode', () => {
     await withShellChrome(app, async (chrome) => {
       await expect(chrome.getByRole('button', { name: 'Maintenance mode', exact: true })).toHaveCount(0)
     })
-    // And the vault tree is back where it belongs: inside the Notes type's navigation.
-    await openType(app, 'Notes')
+    // And the vault tree is back where it belongs: inside the Documents type's navigation.
+    await openType(app, 'Documents')
     await openNavigation(app)
     await expect(app.getByRole('tree', { name: 'Files' })).toBeVisible()
   })

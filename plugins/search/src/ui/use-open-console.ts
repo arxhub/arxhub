@@ -1,4 +1,4 @@
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
+import { DOCUMENTS_TYPE_ID } from '@arxhub/plugin-documents'
 import { PanelStoreExtension } from '@arxhub/plugin-panels'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { useNavHost } from '@arxhub/plugin-shell/ui'
@@ -20,7 +20,7 @@ export function useOpenConsole(): OpenConsole {
   const navHost = useNavHost()
 
   function open(): void {
-    shell.workspace.activateType(NOTES_TYPE_ID)
+    shell.workspace.activateType(DOCUMENTS_TYPE_ID)
     navHost?.navigated?.()
     store.openPanel(SQL_CONSOLE_PANEL, {}, 'SQL console', undefined, () => true)
   }

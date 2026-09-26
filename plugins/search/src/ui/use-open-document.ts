@@ -1,4 +1,4 @@
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
+import { DOCUMENTS_TYPE_ID } from '@arxhub/plugin-documents'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 
@@ -27,7 +27,7 @@ export function useOpenDocument(): OpenDocument {
       at == null || (!at.text && !at.blockId)
         ? undefined
         : { text: at.text ?? '', ...(at.blockId ? { blockId: at.blockId } : {}), ...(at.occurrence ? { skip: at.occurrence } : {}) }
-    shell.workspace.openObject(NOTES_TYPE_ID, { id: path, ...(anchor ? { at: anchor } : {}) }).catch((error) => {
+    shell.workspace.openObject(DOCUMENTS_TYPE_ID, { id: path, ...(anchor ? { at: anchor } : {}) }).catch((error) => {
       arxhub.logger.error(`[search] failed to open ${path}`, error)
       toaster.create({ title: 'Could not open the note', description: path, type: 'error' })
     })

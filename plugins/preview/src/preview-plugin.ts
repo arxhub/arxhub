@@ -1,5 +1,5 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { NotesExtension } from '@arxhub/plugin-notes'
+import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { PanelStoreExtension } from '@arxhub/plugin-panels'
 import { markRaw } from 'vue'
 import { manifest } from './manifest'
@@ -32,9 +32,9 @@ export class PreviewPlugin extends Plugin {
     // element `mediaOf` can name, and the panel store maps one definition to one component.
     store.registerPanel({ id: PDF_PANEL_ID, title: 'PDF', component: markRaw(PdfPanel) })
 
-    const notes = ctx.extensions.get(NotesExtension)
+    const documents = ctx.extensions.get(DocumentsExtension)
     for (const kind of MEDIA_KINDS) {
-      notes.registerViewer({
+      documents.registerViewer({
         id: `${PREVIEW_PANEL_ID}.${kind}`,
         panelId: PREVIEW_PANEL_ID,
         title: TITLES[kind],
@@ -46,7 +46,7 @@ export class PreviewPlugin extends Plugin {
       })
     }
 
-    notes.registerViewer({
+    documents.registerViewer({
       id: PDF_PANEL_ID,
       panelId: PDF_PANEL_ID,
       title: 'PDF',

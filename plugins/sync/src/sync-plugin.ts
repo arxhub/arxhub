@@ -165,7 +165,7 @@ export class SyncPlugin extends Plugin {
           const engine = new SyncEngine({ local: repository.repo, remote })
           syncExt.engine = engine
           // The one registration point for the remote half — cleared in stop() and on the next config
-          // change. Everything that reads a pending file (FileHistory, the Notes preparer) goes through
+          // change. Everything that reads a pending file (FileHistory, the Documents preparer) goes through
           // this from now on.
           repository.setRemote({
             fetchFile: (snapshot, path) => engine.fetchFile(snapshot, path),

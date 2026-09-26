@@ -41,7 +41,7 @@
     "@arxhub/path": "workspace:*",
     "@arxhub/plugin-diff": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
-    "@arxhub/plugin-notes": "workspace:*",
+    "@arxhub/plugin-documents": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-repository": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",

@@ -1,5 +1,5 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { NotesExtension } from '@arxhub/plugin-notes'
+import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { RepositoryExtension } from '@arxhub/plugin-repository'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { markRaw, type WatchStopHandle } from 'vue'
@@ -36,29 +36,29 @@ export class ExplorerPlugin extends Plugin {
     super.configure(ctx)
 
     const explorer = ctx.extensions.get(ExplorerExtension)
-    const notes = ctx.extensions.get(NotesExtension)
+    const documents = ctx.extensions.get(DocumentsExtension)
     // A pending path is a phantom node under its directory (23-storage-model F-06) — read straight off
     // the repository's own extension, never its internals. Repository is essential (A-50) — no has()
     // guard needed: version history and pending nodes stand on it whether or not sync is switched on.
     this.stopPendingWatch = explorer.setPendingSource(ctx.extensions.get(RepositoryExtension))
 
     // OR-03: a row is named by whoever owns "what can open this" — the setting and the rule both live
-    // with the type (NotesExtension.displayName), so the tree and the strip above an open document
+    // with the type (DocumentsExtension.displayName), so the tree and the strip above an open document
     // cannot disagree about one file. Asked on every render rather than snapshotted here, so a plugin
     // switched off (its viewer never registered) loses its claim without this needing to know why.
-    explorer.setDisplayNames((path) => notes.displayName(path))
+    explorer.setDisplayNames((path) => documents.displayName(path))
 
-    // The tree is the navigation of the "Notes" type, not a place of its own — and now that both
+    // The tree is the navigation of the "Documents" type, not a place of its own — and now that both
     // frames read the type registry, that is the ONLY way it reaches the screen. The mini-app
     // registration that stood beside it is gone with them (F-21): a second "Explorer" in the type row,
     // whose content was the same tree beside the same panels, would have been the old model wearing
     // the new row.
-    notes.setNav(markRaw(FileTreeView))
+    documents.setNav(markRaw(FileTreeView))
 
     // Creation is intercepted here because the tree knows the place and the type does not: a note has
     // to land in the selected folder, and after the write the tree has to show it. The type on its own
     // creates in the root and knows about no refresh — the right fallback, not a breakage.
-    notes.setCreator(async () => {
+    documents.setCreator(async () => {
       const parent = explorer.selectedPath.value ?? explorer.root
       // '.arx' is the primary format (A-29) and `createFile` is what seeds it — an '.arx' reader
       // rejects a bare file.

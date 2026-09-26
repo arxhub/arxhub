@@ -22,7 +22,7 @@
     "@arxhub/plugin-keystore": "workspace:*",
     "@arxhub/plugin-logger": "workspace:*",
     "@arxhub/plugin-maintenance": "workspace:*",
-    "@arxhub/plugin-notes": "workspace:*",
+    "@arxhub/plugin-documents": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-preview": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",

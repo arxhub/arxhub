@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { basename, dirname, posix } from '@arxhub/path'
-import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
+import { DOCUMENTS_TYPE_ID } from '@arxhub/plugin-documents'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { actionMenu, Icon, type TreeDragDropOptions, TreeView, type TreeViewNode } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
@@ -82,7 +82,7 @@ function keydown({ data: node }: TreeViewNode<TreeNode>, event: KeyboardEvent) {
 }
 
 const storage = arxhub.extensions.get(ShellExtension).workspaceStorage
-const saved = storage.navOf(NOTES_TYPE_ID)
+const saved = storage.navOf(DOCUMENTS_TYPE_ID)
 const expanded = Array.isArray(saved) ? saved.filter((path): path is string => typeof path === 'string') : []
 let restored = false
 onMounted(() => {
@@ -101,7 +101,7 @@ onMounted(() => {
 watch(
   () => explorer.expandedPaths(),
   (paths) => {
-    if (restored) storage.setNav(NOTES_TYPE_ID, paths)
+    if (restored) storage.setNav(DOCUMENTS_TYPE_ID, paths)
   },
   { deep: true },
 )

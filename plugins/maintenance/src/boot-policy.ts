@@ -13,6 +13,10 @@ interface BootPolicyState {
 
 const EMPTY: BootPolicyState = { disabled: [], maintenance: false }
 
+// Manifest names a later build changed. Renaming a plugin must not re-enable one the owner disabled to
+// recover a boot, so a stored switch follows the plugin to its new name.
+const RENAMED: Readonly<Record<string, string>> = { Editor: 'ArxEditor', Notes: 'Documents' }
+
 function parse(raw: string | null): BootPolicyState {
   if (raw == null) return EMPTY
   try {
@@ -20,10 +24,7 @@ function parse(raw: string | null): BootPolicyState {
     if (parsed == null || typeof parsed !== 'object') return EMPTY
     const { disabled, maintenance } = parsed as Partial<BootPolicyState>
     return {
-      // Renaming the editor must not re-enable a plugin the owner disabled to recover a boot.
-      disabled: Array.isArray(disabled)
-        ? [...new Set(disabled.filter((it) => typeof it === 'string').map((it) => (it === 'Editor' ? 'ArxEditor' : it)))]
-        : [],
+      disabled: Array.isArray(disabled) ? [...new Set(disabled.filter((it) => typeof it === 'string').map((it) => RENAMED[it] ?? it))] : [],
       maintenance: maintenance === true,
     }
   } catch {
@@ -46,7 +47,11 @@ export class BootPolicy {
 
   constructor(storage: StorageLike = localStorage) {
     this.storage = storage
-    this.state = parse(storage.getItem(BOOT_POLICY_KEY))
+    const raw = storage.getItem(BOOT_POLICY_KEY)
+    this.state = parse(raw)
+    // Written back when the stored form differs from what was read — a renamed plugin above all — so an
+    // old name is read exactly once.
+    if (raw != null && this.state !== EMPTY && JSON.stringify(this.state) !== raw) this.rewrite()
   }
 
   // Manifest names of plugins to skip on the next boot. Essential plugins ignore this — core keeps
@@ -77,6 +82,14 @@ export class BootPolicy {
   clear(): void {
     this.state = EMPTY
     this.storage.removeItem(BOOT_POLICY_KEY)
+  }
+
+  private rewrite(): void {
+    try {
+      this.storage.setItem(BOOT_POLICY_KEY, JSON.stringify(this.state))
+    } catch {
+      // A policy that cannot be stored is still the one this boot reads; the rename happens next time.
+    }
   }
 
   private write(state: BootPolicyState): void {

@@ -1,5 +1,5 @@
 import { ConsoleLogger } from '@arxhub/logger'
-import { NotesExtension } from '@arxhub/plugin-notes'
+import { DocumentsExtension } from '@arxhub/plugin-documents'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { describe, expect, test } from 'vitest'
 import { defineComponent } from 'vue'
@@ -16,10 +16,10 @@ const noVfs = new Proxy(
   },
 ) as VirtualFileSystem
 
-function registry(): NotesExtension {
-  const notes = new NotesExtension({ logger: new ConsoleLogger(), vfs: noVfs, root: '/' })
-  notes.registerViewer(EDITOR_VIEWER)
-  return notes
+function registry(): DocumentsExtension {
+  const documents = new DocumentsExtension({ logger: new ConsoleLogger(), vfs: noVfs, root: '/' })
+  documents.registerViewer(EDITOR_VIEWER)
+  return documents
 }
 
 describe('the document editor as a viewer of a note', () => {
@@ -48,8 +48,8 @@ describe('the document editor as a viewer of a note', () => {
   // The plain text editor claims every extension it can render, this one claims the single format it
   // understands — so the order, not the accident of which plugin configured first, is what decides.
   test('it wins the format it owns against a viewer that merely also reads it', () => {
-    const notes = registry()
-    notes.registerViewer({
+    const documents = registry()
+    documents.registerViewer({
       id: 'test.plain',
       panelId: 'test.plain',
       title: 'Plain',
@@ -58,7 +58,7 @@ describe('the document editor as a viewer of a note', () => {
       order: 10,
     })
 
-    expect(notes.viewerFor('vault/contract.arx')?.id).toBe(EDITOR_VIEWER.id)
-    expect(notes.viewerFor('vault/contract.md')?.id).toBe('test.plain')
+    expect(documents.viewerFor('vault/contract.arx')?.id).toBe(EDITOR_VIEWER.id)
+    expect(documents.viewerFor('vault/contract.md')?.id).toBe('test.plain')
   })
 })

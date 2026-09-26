@@ -69,7 +69,7 @@ const band: Component = markRaw(() =>
     partsTitle: 'Изменения',
     activePart: selectedPath.value ?? undefined,
     actions: bandActions.value,
-    openDocument: () => void state.openInNotes(),
+    openDocument: () => void state.openInDocuments(),
     'onUpdate:activePart': (id: string) => state.selectChange(id),
   }),
 )
@@ -152,7 +152,7 @@ watch(active, (session) => {
         <p v-if="comparing || diff.loading.value" role="status">Loading diff…</p>
         <p v-if="diff.error.value" role="alert">{{ diff.error.value }}</p>
         <div v-if="diff.result.value" class="diff-frame" data-testid="ai-workspace-diff">
-          <DiffView class="diff" :result="diff.result.value" :controller="controller" :title="selectedName" :open-document="() => state.openInNotes()" />
+          <DiffView class="diff" :result="diff.result.value" :controller="controller" :title="selectedName" :open-document="() => state.openInDocuments()" />
         </div>
       </div>
     </template>

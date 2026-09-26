@@ -1,9 +1,9 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { basename, dirname, join } from '@arxhub/path'
 import { DiffExtension } from '@arxhub/plugin-diff'
+import { DOCUMENTS_TYPE_ID, DocumentsExtension, type DocumentViewer } from '@arxhub/plugin-documents'
 import { ExplorerExtension, type TreeNode } from '@arxhub/plugin-explorer'
 import { HotkeysExtension } from '@arxhub/plugin-hotkeys'
-import { NOTES_TYPE_ID, NotesExtension, type NoteViewer } from '@arxhub/plugin-notes'
 import { PanelStoreExtension } from '@arxhub/plugin-panels'
 import { KeyringExtension } from '@arxhub/plugin-protection'
 import { PublishExtension } from '@arxhub/plugin-publish'
@@ -34,11 +34,11 @@ import ArxEditor from './ui/ArxEditor.vue'
 const PANEL_ID = 'arxhub.editor'
 
 // An editor is a way to show an object, not a place of its own: what it can show is declared as a
-// viewer of the "Notes" type, so picking one by extension stops being the panel layout's business.
+// viewer of the "Documents" type, so picking one by extension stops being the panel layout's business.
 //
 // No `dock`: this editor's tool bar carries Save and the edit history and lives inside the component,
 // above the document's own text.
-export const EDITOR_VIEWER: NoteViewer = {
+export const EDITOR_VIEWER: DocumentViewer = {
   id: PANEL_ID,
   // The panel this viewer opens through while the frames still open through the panel store. Stated
   // rather than derived from `id`: the two strings are equal today, and a lookup that relied on that
@@ -126,13 +126,13 @@ export class ArxEditorPlugin extends Plugin {
       ctx.services.get(VaultVfs),
       () => editor.kit.schema,
       async (path, anchor) => {
-        await ctx.extensions.get(ShellExtension).workspace.openObject(NOTES_TYPE_ID, {
+        await ctx.extensions.get(ShellExtension).workspace.openObject(DOCUMENTS_TYPE_ID, {
           id: path,
           ...(anchor ? { at: { ...anchor } } : {}),
         })
       },
       ctx.extensions.has(SearchExtension) ? ctx.extensions.get(SearchExtension) : undefined,
-      (path) => ctx.extensions.get(NotesExtension).beforeClose(path),
+      (path) => ctx.extensions.get(DocumentsExtension).beforeClose(path),
       () => editor.kit.format,
     )
 
@@ -147,7 +147,7 @@ export class ArxEditorPlugin extends Plugin {
       component: ArxEditor,
     })
 
-    ctx.extensions.get(NotesExtension).registerViewer(EDITOR_VIEWER)
+    ctx.extensions.get(DocumentsExtension).registerViewer(EDITOR_VIEWER)
 
     // Beside the viewer, and for the same reason: both say what this editor IS, independently of
     // whether a panel showing one is open.
@@ -208,14 +208,14 @@ export class ArxEditorPlugin extends Plugin {
     // one would have the tab write the pre-conversion state straight back over the conversion. Closing
     // it first cancels that pending write (the panel cancels its autosave on unmount); it is reopened
     // on the fresh file below, so the tab ends up where it was, showing what was just written.
-    shell.workspace.closeObject(NOTES_TYPE_ID, target, { discard: true })
+    shell.workspace.closeObject(DOCUMENTS_TYPE_ID, target, { discard: true })
     await nextTick()
 
     await vault.write(target, new TextEncoder().encode(serialize(doc)))
     await explorer.refreshDir(dirname(target))
 
     const name = basename(target)
-    await shell.workspace.openObject(NOTES_TYPE_ID, { id: target })
+    await shell.workspace.openObject(DOCUMENTS_TYPE_ID, { id: target })
 
     // What markdown said and the document format cannot say is the user's to know about — the toast
     // carries the count so it stays one line, the log carries what each one was.
@@ -275,7 +275,7 @@ export class ArxEditorPlugin extends Plugin {
       await vault.write(cardPath, new TextEncoder().encode(JSON.stringify({ version: 1, doc })))
       await explorer.refreshDir(dirname(cardPath))
     }
-    await shell.workspace.openObject(NOTES_TYPE_ID, { id: cardPath })
+    await shell.workspace.openObject(DOCUMENTS_TYPE_ID, { id: cardPath })
   }
 }
 

@@ -1,8 +1,8 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { DiffExtension } from '@arxhub/plugin-diff'
+import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { ArxEditorExtension } from '@arxhub/plugin-editor'
 import { ExplorerExtension } from '@arxhub/plugin-explorer'
-import { NotesExtension } from '@arxhub/plugin-notes'
 import { PanelStoreExtension } from '@arxhub/plugin-panels'
 import { RepositoryExtension } from '@arxhub/plugin-repository'
 import { sheetContribution } from './embed'
@@ -25,7 +25,9 @@ export class SheetsPlugin extends Plugin {
     super.configure(ctx)
     if (ctx.extensions.has(ArxEditorExtension)) ctx.extensions.get(ArxEditorExtension).register(sheetContribution)
     const id = 'arxhub.sheets'
-    ctx.extensions.get(NotesExtension).registerViewer({ id, panelId: id, title: 'Spreadsheet', extensions: ['.arxs'], component: SheetEditor })
+    ctx.extensions
+      .get(DocumentsExtension)
+      .registerViewer({ id, panelId: id, title: 'Spreadsheet', extensions: ['.arxs'], component: SheetEditor })
     ctx.extensions.get(PanelStoreExtension).store.registerPanel({ id, title: 'Spreadsheet', component: SheetEditor })
     if (ctx.extensions.has(ExplorerExtension)) {
       ctx.extensions.get(ExplorerExtension).registerFileTemplate({

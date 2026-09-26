@@ -10,6 +10,7 @@ import {
   WORKSPACE_BACKUP_KEY,
   WORKSPACE_KEY,
   WORKSPACE_VERSION,
+  type WorkspaceMigration,
   WorkspaceStorage,
 } from '../ui/workspace-storage'
 import { FakePanelHost } from './fake-panel-host'
@@ -85,7 +86,7 @@ interface Bench {
   saved: WorkspaceStorage
 }
 
-function build(storage: MemoryStorage = new MemoryStorage()): Bench {
+function build(storage: MemoryStorage = new MemoryStorage(), migrate?: WorkspaceMigration): Bench {
   const registry = new TabTypeRegistry()
   registry.register(notesType())
   registry.register(settingsType())
@@ -98,7 +99,7 @@ function build(storage: MemoryStorage = new MemoryStorage()): Bench {
     createPanels: () => new FakePanelHost(),
     emit: (event, payload) => saved.observe(event, payload),
   })
-  saved = new WorkspaceStorage({ workspace, storage })
+  saved = new WorkspaceStorage({ workspace, storage, migrate })
   return { workspace, storage, saved }
 }
 
@@ -396,5 +397,53 @@ describe('WorkspaceStorage: a layer has nowhere to go', () => {
         expect(Object.keys(tab).sort()).toEqual(['key', 'object', 'title'])
       }
     }
+  })
+})
+
+describe('WorkspaceStorage: a migration renames what a previous build stored', () => {
+  const renameLegacy: WorkspaceMigration = (stored) => ({
+    activeTypeId: stored.activeTypeId === 'legacy' ? 'notes' : stored.activeTypeId,
+    types: stored.types.map((type) => ((type as { id?: string }).id === 'legacy' ? { ...(type as object), id: 'notes' } : type)),
+    nav: Object.fromEntries(Object.entries(stored.nav).map(([key, value]) => [key === 'legacy' ? 'notes' : key, value])),
+    column: Object.fromEntries(Object.entries(stored.column).map(([key, value]) => [key === 'legacy' ? 'notes' : key, value])),
+  })
+
+  test('the renamed type restores its tabs, navigation and column, and the record is written back renamed', async () => {
+    const bench = build(new MemoryStorage(), renameLegacy)
+    bench.storage.setItem(
+      WORKSPACE_KEY,
+      JSON.stringify({
+        v: WORKSPACE_VERSION,
+        workspace: {
+          activeTypeId: 'legacy',
+          types: [{ id: 'legacy', activeKey: 'note:a.md', tabs: [{ key: 'note:a.md', title: 'a.md', object: { path: 'a.md' } }] }],
+        },
+        nav: { legacy: { expanded: ['/'] } },
+        column: { legacy: { width: 320 } },
+      }),
+    )
+
+    expect(await bench.saved.restore()).toBe(true)
+    expect(bench.workspace.activeTypeId.value).toBe('notes')
+    expect(bench.workspace.tabsOf('notes').map((it) => it.key)).toEqual(['note:a.md'])
+    expect(bench.saved.navOf('notes')).toEqual({ expanded: ['/'] })
+    expect(bench.saved.columnOf('notes')).toEqual({ width: 320 })
+
+    bench.saved.save()
+    const written = record(bench.storage) as { workspace: { types: { id: string }[] }; nav: object; column: object }
+    expect(written.workspace.types.map((it) => it.id)).toEqual(['notes'])
+    expect(Object.keys(written.nav)).toEqual(['notes'])
+    expect(Object.keys(written.column)).toEqual(['notes'])
+  })
+
+  test('a migration that throws is a record that cannot be read: kept aside, clean desk', async () => {
+    const bench = build(new MemoryStorage(), () => {
+      throw new Error('bad migration')
+    })
+    const raw = JSON.stringify({ v: WORKSPACE_VERSION, workspace: { activeTypeId: null, types: [] } })
+    bench.storage.setItem(WORKSPACE_KEY, raw)
+
+    expect(await bench.saved.restore()).toBe(false)
+    expect(bench.storage.getItem(WORKSPACE_BACKUP_KEY)).toBe(raw)
   })
 })

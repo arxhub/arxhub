@@ -30,7 +30,7 @@ export interface PendingSource {
 const NO_PENDING: ReadonlySet<string> = new Set()
 
 // OR-03: what a row shows, and the tail it keeps off screen. The answer is the one the whole product
-// gives (NotesExtension owns it — its viewer registry is what "known" means), reached through this
+// gives (DocumentsExtension owns it — its viewer registry is what "known" means), reached through this
 // delegate rather than an import, wired by the plugin in configure() exactly like setPendingSource below
 // (extensions are the only inter-plugin channel). Kept as this narrow shape for the same reason
 // PendingSource is. Asking on every render, never caching, is what keeps a plugin switched off losing
@@ -237,7 +237,7 @@ export class ExplorerExtension extends Extension {
   private tick = 0
   private refreshTimer: ReturnType<typeof setTimeout> | null = null
 
-  // Wired by the plugin during configure(), against `NotesExtension.displayName` — see the
+  // Wired by the plugin during configure(), against `DocumentsExtension.displayName` — see the
   // `DisplayNameSource` note above.
   setDisplayNames(source: DisplayNameSource): void {
     this.displayNames = source

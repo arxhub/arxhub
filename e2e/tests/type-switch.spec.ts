@@ -16,7 +16,7 @@ test.describe('coming back to a type shows what was there', () => {
     await expect(app.locator('.cm-content:visible')).toContainText('kept and typed')
 
     await openType(app, 'Settings', SETTINGS_TYPE)
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
 
     await expect(app.locator('.cm-content:visible')).toContainText('kept and typed')
     // The file was never saved, so what came back is the editor's own buffer — a remounted editor would
@@ -38,7 +38,7 @@ test.describe('coming back to a type shows what was there', () => {
     await expect.poll(() => scroller.evaluate((el) => el.scrollTop)).toBeGreaterThan(400)
 
     await openType(app, 'Settings', SETTINGS_TYPE)
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
 
     expect(await scroller.evaluate((el) => el.scrollTop)).toBeGreaterThan(400)
   })

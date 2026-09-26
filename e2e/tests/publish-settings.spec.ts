@@ -37,7 +37,7 @@ test('saving a server URL turns on Publish; clearing it turns it off — both wi
   await app.getByRole('button', { name: 'Save & apply' }).click()
   await expect(app.getByRole('button', { name: 'Save & apply' })).toBeHidden()
 
-  await openType(app, 'Notes')
+  await openType(app, 'Documents')
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path }).click({ button: 'right' })
   await expect(app.getByRole('menuitem', { name: 'Publish', exact: true })).toBeVisible()
@@ -48,7 +48,7 @@ test('saving a server URL turns on Publish; clearing it turns it off — both wi
   await app.getByRole('button', { name: 'Save & apply' }).click()
   await expect(app.getByRole('button', { name: 'Save & apply' })).toBeHidden()
 
-  await openType(app, 'Notes')
+  await openType(app, 'Documents')
   await openNavigation(app)
   await app.getByRole('treeitem', { name: path }).click({ button: 'right' })
   await expect(app.getByRole('menuitem', { name: 'Publish', exact: true })).toHaveCount(0)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DocumentName } from '@arxhub/plugin-notes/ui'
+import { DocumentName } from '@arxhub/plugin-documents/ui'
 import { Button, Strip } from '@arxhub/uikit/core'
 import type { EditorView } from '@codemirror/view'
 import MarkdownToolbar from './MarkdownToolbar.vue'

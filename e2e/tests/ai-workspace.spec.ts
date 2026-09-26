@@ -91,8 +91,8 @@ test.describe('ai workspace agent channel', () => {
     await expect(sources).toBeVisible()
     await expect(sources.getByText(note, { exact: false })).toBeVisible()
     await sources.getByRole('button', { name: new RegExp(note.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }).click()
-    // Jump opens Notes on the main vault file (not the AI workspace staging path).
-    await expect(app.getByRole('button', { name: /^Notes(,|$)/ })).toHaveAttribute('aria-pressed', 'true')
+    // Jump opens Documents on the main vault file (not the AI workspace staging path).
+    await expect(app.getByRole('button', { name: /^Documents(,|$)/ })).toHaveAttribute('aria-pressed', 'true')
     await expect(app.getByText(marker, { exact: false }).first()).toBeVisible()
   })
 })

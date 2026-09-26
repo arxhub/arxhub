@@ -12,13 +12,13 @@ import { BudgetPlugin } from '@arxhub/plugin-budget'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror'
 import { ConfigPlugin } from '@arxhub/plugin-config'
 import { DiffPlugin } from '@arxhub/plugin-diff'
+import { DocumentsPlugin } from '@arxhub/plugin-documents'
 import { ArxEditorPlugin } from '@arxhub/plugin-editor'
 import { ExplorerPlugin } from '@arxhub/plugin-explorer'
 import { HotkeysPlugin } from '@arxhub/plugin-hotkeys'
 import { KeyStorePlugin } from '@arxhub/plugin-keystore'
 import { LoggerPlugin } from '@arxhub/plugin-logger'
 import { MaintenancePlugin } from '@arxhub/plugin-maintenance'
-import { NotesPlugin } from '@arxhub/plugin-notes'
 import { PanelStoreExtension, PanelsPlugin } from '@arxhub/plugin-panels'
 import { PreviewPlugin } from '@arxhub/plugin-preview'
 import { ProtectionPlugin } from '@arxhub/plugin-protection'
@@ -72,10 +72,10 @@ await bootClient({
     arxhub.plugins.register(HotkeysPlugin)
     arxhub.plugins.register(ShellPlugin)
     arxhub.plugins.register(PanelsPlugin)
-    // The "Notes" type owns the vault objects and the registry of what opens them; the explorer below
+    // The "Documents" type owns the vault objects and the registry of what opens them; the explorer below
     // contributes the navigation into it. Essential, because there is no `dependsOn`: a boot with one of
     // the two switched off is a state nobody has designed.
-    arxhub.plugins.register(NotesPlugin, () => ({ root: '' }))
+    arxhub.plugins.register(DocumentsPlugin, () => ({ root: '' }))
     arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
     arxhub.plugins.register(CodeMirrorPlugin)
     arxhub.plugins.register(PreviewPlugin)

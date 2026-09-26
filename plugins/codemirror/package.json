@@ -40,7 +40,7 @@
   "peerDependencies": {
     "@arxhub/core": "workspace:*",
     "@arxhub/plugin-hotkeys": "workspace:*",
-    "@arxhub/plugin-notes": "workspace:*",
+    "@arxhub/plugin-documents": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
     "@arxhub/stdlib": "workspace:*",

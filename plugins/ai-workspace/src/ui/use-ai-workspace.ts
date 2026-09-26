@@ -149,7 +149,7 @@ export function useAiWorkspace(props: AiWorkspaceProps) {
     return done
   }
 
-  async function openInNotes(pathname = selectedPath.value): Promise<void> {
+  async function openInDocuments(pathname = selectedPath.value): Promise<void> {
     const session = active.value
     if (session == null || pathname == null) return
     await guarded(() => props.openOverlay(session.sessionId, pathname))
@@ -197,7 +197,7 @@ export function useAiWorkspace(props: AiWorkspaceProps) {
     selectChange,
     refresh,
     run,
-    openInNotes,
+    openInDocuments,
     openSource,
     toggleMode,
   }

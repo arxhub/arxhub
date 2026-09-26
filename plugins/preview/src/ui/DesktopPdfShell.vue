@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DocumentName } from '@arxhub/plugin-notes/ui'
+import { DocumentName } from '@arxhub/plugin-documents/ui'
 import { Strip, ZoomControl } from '@arxhub/uikit/core'
 import { DEFAULT_ZOOM, MAX_ZOOM, MIN_ZOOM, ZOOM_STEP } from '../pdf'
 

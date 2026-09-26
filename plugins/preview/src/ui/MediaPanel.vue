@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { basename } from '@arxhub/path'
-import { DocumentName } from '@arxhub/plugin-notes/ui'
+import { DocumentName } from '@arxhub/plugin-documents/ui'
 import { IconButton, ScrollArea, Strip } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { canOpenExternally, openExternally, VaultVfs } from '@arxhub/vfs'

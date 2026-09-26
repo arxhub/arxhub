@@ -14,7 +14,7 @@ test.describe('open or switch to', () => {
 
     // "Open new" is the whole registry, not the row: the log viewer holds no place in the row at all,
     // and the sheet is the thing that makes it reachable.
-    await expect(sheet.getByTestId('sheet:new:arxhub.notes')).toBeVisible()
+    await expect(sheet.getByTestId('sheet:new:arxhub.documents')).toBeVisible()
     await expect(sheet.getByTestId('sheet:new:arxhub.settings')).toBeVisible()
     await expect(sheet.getByTestId('sheet:new:arxhub.logs')).toBeVisible()
   })

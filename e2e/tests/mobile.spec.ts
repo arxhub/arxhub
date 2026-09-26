@@ -18,7 +18,7 @@ test.describe('the frame is chosen once, by the bundle', () => {
     // of a window, and it answers to the same name in both — which is what stops a type from reaching
     // one frame and not the other.
     await expect(typeRow(app)).toBeVisible()
-    await expect(typeRow(app).getByRole('button', { name: /^Notes(,|$)/ })).toBeVisible()
+    await expect(typeRow(app).getByRole('button', { name: /^Documents(,|$)/ })).toBeVisible()
 
     if (await isMobileFrame(app)) {
       await expect(app.locator('.type-rail')).toHaveCount(0)
@@ -118,7 +118,7 @@ test.describe('mobile navigation', () => {
     await expect(app.getByRole('textbox', { name: 'Search', exact: true })).toBeVisible()
     await expect(panel).toBeHidden()
     await expect(app.getByTestId('arxhub.shell.rail')).toHaveCount(0)
-    await openType(app, 'Notes')
+    await openType(app, 'Documents')
     await openNavigation(app)
     await expect(panel.getByRole('tree')).toHaveCount(1)
     await expect(panel.locator('.settings-nav')).toHaveCount(0)

@@ -31,7 +31,7 @@ export const CLIENT_COMPOSITION: CompositionRules = {
     'Hotkeys',
     'Shell',
     'Panels',
-    'Notes',
+    'Documents',
     'settings',
     'keystore',
     'protection',
