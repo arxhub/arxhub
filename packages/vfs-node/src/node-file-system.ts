@@ -30,6 +30,25 @@ import AsyncLock from 'async-lock'
 // product runs one server per store, and a file lock across processes is a different mechanism.
 const swapLocks = new AsyncLock()
 
+// A replacement is written beside its target and renamed over it, because `fs.writeFile` truncates
+// first: a reader landing mid-write got an empty or half-written file. The repository's head pointer
+// and its snapshots are read without any lock, so that read was a broken chain, a failed save, or a
+// copied document that kept the original's history identity. The rename is atomic within one
+// directory, so the temporary lives in the target's own; it is never listed or reported.
+const REPLACING = /\.arxhub-replace-[0-9a-f-]{36}$/
+
+async function replaceFile(filePath: string, content: Uint8Array): Promise<void> {
+  await fs.mkdir(dirname(filePath), { recursive: true })
+  const temporary = `${filePath}.arxhub-replace-${crypto.randomUUID()}`
+  try {
+    await fs.writeFile(temporary, content)
+    await fs.rename(temporary, filePath)
+  } catch (error) {
+    await fs.rm(temporary, { force: true })
+    throw error
+  }
+}
+
 export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCapable, RangeCapable, NativeWatchCapable, CompareAndSwapCapable {
   private readonly rootDir: string
   private readonly logger: Logger
@@ -78,6 +97,7 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
       return result
     }
     for (const entry of entries) {
+      if (REPLACING.test(entry.name)) continue
       // Build the LOGICAL ('/') pathname from the normalized prefix + bare filename — never by
       // slicing the OS path, whose separator is '\' on Windows and would leak into the VFS namespace.
       const relPath = norm === '' ? entry.name : `${norm}/${entry.name}`
@@ -113,9 +133,7 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
   }
 
   async write(pathname: string, content: Uint8Array): Promise<void> {
-    const filePath = this.toOsPath(pathname)
-    await fs.mkdir(dirname(filePath), { recursive: true })
-    await fs.writeFile(filePath, content)
+    await replaceFile(this.toOsPath(pathname), content)
   }
 
   async writable(pathname: string): Promise<WritableStream<Uint8Array>> {
@@ -230,8 +248,7 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
         current = null
       }
       if (!sameBytes(current, expected)) return false
-      await fs.mkdir(dirname(filePath), { recursive: true })
-      await fs.writeFile(filePath, next)
+      await replaceFile(filePath, next)
       return true
     })
   }
@@ -248,7 +265,7 @@ export class NodeFileSystem extends GenericVirtualFileSystem implements RenameCa
     await fs.mkdir(absDir, { recursive: true })
 
     const onEvent = (_event: string, filename: string | Buffer | null) => {
-      if (filename == null) return
+      if (filename == null || REPLACING.test(filename.toString())) return
       const relPath = filename.toString().split(sep).join('/')
       void this.reportNativeChange(absDir, relPath, listener)
     }
