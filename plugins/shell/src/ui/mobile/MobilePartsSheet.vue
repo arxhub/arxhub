@@ -33,6 +33,7 @@ function add(): void {
         :selected="part.selected"
         :checked="part.selected"
         :tone="part.tone"
+        :depth="part.depth"
         :aria-current="part.selected ? 'true' : undefined"
         :data-testid="`part:${part.id}`"
         @click="pick(part.id)"

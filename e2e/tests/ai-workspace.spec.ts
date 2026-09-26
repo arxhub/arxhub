@@ -59,15 +59,22 @@ test.describe('ai workspace agent channel', () => {
     await expect(app.getByTestId('ai-workspace-diff')).toBeVisible()
     await expect(app.getByTestId('diff-view').filter({ visible: true })).toBeVisible()
     if (await isMobileFrame(app)) {
-      // The phone swaps the proposal for the diff and docks the diff's controls above the type row.
+      // The phone swaps the proposal for the diff, and the one object band above the type row carries the
+      // diff: the file's name, where the reader is, and the two steps — no second band of the diff's own.
       await expect(proposal).toBeHidden()
-      const band = app.getByTestId('diff-band')
-      await expect(band).toBeVisible()
-      await band.getByTestId('diff-more').click()
-      await app.getByTestId('diff-options').getByRole('button', { name: 'Back to proposal' }).click()
+      await expect(app.getByTestId('diff-band')).toHaveCount(0)
+      const bar = app.getByTestId('object-bar')
+      await expect(bar).toContainText(note)
+      await expect(bar).toContainText('1 правка')
+      await bar.getByRole('button', { name: 'Следующая правка', exact: true }).click()
+      await expect(bar).toContainText('1 из 1')
+      await expect(bar.getByRole('button', { name: 'Предыдущая правка', exact: true })).toBeVisible()
+      await bar.getByRole('button', { name: 'More actions', exact: true }).click()
+      await app.getByRole('menuitem', { name: 'Back to proposal' }).click()
       await expect(proposal).toBeVisible()
       // Hidden, not unmounted: the diff layer is kept (v-show) so going back to it keeps its place.
-      await expect(band).toBeHidden()
+      await expect(app.getByTestId('ai-workspace-diff')).toBeHidden()
+      await expect(bar).not.toContainText('1 из 1')
     }
     // The phone keeps the session's commands in the band above the type row, the desktop under the proposal.
     const commands = (await isMobileFrame(app)) ? app.getByTestId('object-bar') : proposal

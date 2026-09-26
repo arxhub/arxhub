@@ -121,6 +121,9 @@ export interface ObjectBarPart {
   icon?: string
   selected?: boolean
   tone?: 'neutral' | 'danger'
+  // One level down under the part before it: a workbook's sheets under the proposal file that is that
+  // workbook. Unset — a part of the object itself.
+  depth?: number
 }
 
 export interface ObjectBarParts {

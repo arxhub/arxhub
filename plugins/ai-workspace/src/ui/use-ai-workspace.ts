@@ -1,7 +1,7 @@
 import { illegalState } from '@arxhub/errors'
 import { posix } from '@arxhub/path'
 import type { DiffRequest } from '@arxhub/plugin-diff'
-import { type DiffPart, useDiff } from '@arxhub/plugin-diff/ui'
+import { type DiffController, type DiffPart, useDiff } from '@arxhub/plugin-diff/ui'
 import { computed, effectScope, onMounted, ref, shallowRef, watch } from 'vue'
 import type { ChangeKind, CompareMode } from '../session-store'
 import type { CompareResult, SessionChange, SessionView } from '../session-view'
@@ -71,6 +71,9 @@ export function createAiWorkspaceState(props: AiWorkspaceProps) {
   })
   // The phone reads one change at a time: the diff takes the screen the proposal had.
   const diffOpen = ref(false)
+  // The open diff's controller, published by the phone's page while it is mounted: the diff is computed
+  // there (it needs the component's app), and the type's band steps the same one.
+  const diffController = shallowRef<DiffController | null>(null)
   const selectedName = computed(() => (selectedPath.value == null ? '' : posix.basename(selectedPath.value)))
 
   async function loadCompare(): Promise<void> {
@@ -200,6 +203,7 @@ export function createAiWorkspaceState(props: AiWorkspaceProps) {
     comparing,
     request,
     diffOpen,
+    diffController,
     selectSession,
     selectChange,
     openChange,

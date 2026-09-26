@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { DiffBand, type DiffController, DiffView, useDiffController } from '@arxhub/plugin-diff/ui'
-import { type ActionItem, EmptyState, PageLayout, Row, ScrollArea, SectionLabel, Strip } from '@arxhub/uikit/core'
+import { type DiffController, DiffView, useDiffController } from '@arxhub/plugin-diff/ui'
+import { EmptyState, PageLayout, Row, ScrollArea, SectionLabel } from '@arxhub/uikit/core'
 import { useBackStack } from '@arxhub/uikit/hooks'
-import { computed } from 'vue'
-import { type AiWorkspaceCore, type AiWorkspaceProps, changeLabel, MODE_OPTIONS, sessionDetail, useAiWorkspace } from './use-ai-workspace'
+import { onUnmounted } from 'vue'
+import { type AiWorkspaceCore, type AiWorkspaceProps, changeLabel, sessionDetail, useAiWorkspace } from './use-ai-workspace'
 
-// The session's own commands (accept, reject, refresh) are in the band above the type row (`aiWorkspaceBar`),
-// not at the foot of the proposal: nothing on the phone is pressed at the top or in the middle of a scroll.
+// Every command of the session and of its open diff is in the band above the type row (`aiWorkspaceBar`), not
+// in the page: nothing on the phone is pressed at the top or in the middle of a scroll.
 const props = defineProps<AiWorkspaceProps & { state?: AiWorkspaceCore }>()
 const state = useAiWorkspace(props, props.state)
-const { sessions, active, selectedPath, selectedName, diffMode, busy, error, archived, comparing, diff, parts, diffOpen } = state
+const { sessions, active, selectedPath, selectedName, busy, error, comparing, diff, diffOpen } = state
 const controller: DiffController = useDiffController(() => diff.result.value)
+// The band is described by the type, outside this component; it steps the diff through the same controller.
+state.diffController.value = controller
+onUnmounted(() => {
+  if (state.diffController.value === controller) state.diffController.value = null
+})
 
 useBackStack(
   () => diffOpen.value,
@@ -18,40 +23,6 @@ useBackStack(
     diffOpen.value = false
   },
 )
-
-// An action picked in the band's sheet runs while that sheet is still closing over a history entry of its own;
-// dropping the diff layer in the same task would unwind two entries at once, which history does not do reliably.
-function afterSheet(work: () => void): void {
-  let done = false
-  const once = () => {
-    if (done) return
-    done = true
-    window.removeEventListener('popstate', once)
-    work()
-  }
-  window.addEventListener('popstate', once)
-  window.setTimeout(once, 400)
-}
-
-async function finish(action: 'accept' | 'reject'): Promise<void> {
-  if (await state.run(action)) diffOpen.value = false
-}
-
-const modeLabel = computed(() => MODE_OPTIONS.find((option) => option.value !== diffMode.value)?.label ?? '')
-
-const bandActions = computed((): ActionItem[] => [
-  { id: 'ai.accept', label: 'Accept all', icon: 'lu:check', disabled: busy.value || archived.value, onSelect: () => void finish('accept') },
-  {
-    id: 'ai.reject',
-    label: 'Reject',
-    icon: 'lu:x',
-    tone: 'danger',
-    disabled: busy.value || archived.value,
-    onSelect: () => void finish('reject'),
-  },
-  { id: 'ai.mode', label: `Mode: ${modeLabel.value}`, icon: 'lu:git-compare', onSelect: state.toggleMode },
-  { id: 'ai.back', label: 'Back to proposal', icon: 'lu:arrow-left', onSelect: () => afterSheet(() => (diffOpen.value = false)) },
-])
 </script>
 
 <template>
@@ -114,20 +85,6 @@ const bandActions = computed((): ActionItem[] => [
         <div v-if="diff.result.value" class="diff-frame" data-testid="ai-workspace-diff">
           <DiffView class="diff" :result="diff.result.value" :controller="controller" :title="selectedName" :open-document="() => state.openInDocuments()" />
         </div>
-        <!-- The diff's controls sit under it, where the thumb is. The type's own band steps aside while the
-             diff is open (`aiWorkspaceBar` answers null), so this is the one band on screen. -->
-        <Strip v-if="diff.result.value" below flush>
-          <DiffBand
-            :controller="controller"
-            :title="selectedName"
-            :parts="parts"
-            parts-title="Changes"
-            :active-part="selectedPath ?? undefined"
-            :actions="bandActions"
-            :open-document="() => void state.openInDocuments()"
-            @update:active-part="state.selectChange"
-          />
-        </Strip>
       </div>
     </template>
   </div>
