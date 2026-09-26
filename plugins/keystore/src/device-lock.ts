@@ -1,5 +1,13 @@
-import { CHECK_ENTRY, EncryptedKeyStore, hasVerifier, SALT_ENTRY } from './encrypted-key-store'
-import { unlockCodeNotNumeric, unlockCodeTooShort, unlockFailed } from './errors'
+import {
+  CHECK_ENTRY,
+  CODE_SHAPE_DIGITS_6,
+  CODE_SHAPE_ENTRY,
+  EncryptedKeyStore,
+  hasVerifier,
+  isReservedEntry,
+  SALT_ENTRY,
+} from './encrypted-key-store'
+import { unlockCodeLength, unlockCodeNotNumeric, unlockFailed } from './errors'
 import type { KeyStore } from './keystore'
 
 // Every name a migration below stages gets this prefix on the SAME underlying store, so a full
@@ -42,8 +50,11 @@ function stagingView(inner: KeyStore): KeyStore {
 async function promoteStaged(inner: KeyStore, order: 'ordinary-first' | 'verifier-first'): Promise<void> {
   const staging = stagingView(inner)
   const names = await staging.list()
-  const ordinary = names.filter((name) => name !== SALT_ENTRY && name !== CHECK_ENTRY)
-  const reserved = [SALT_ENTRY, CHECK_ENTRY].filter((name) => names.includes(name))
+  const ordinary = names.filter((name) => !isReservedEntry(name))
+  // The shape marker goes after the verifier in both directions: a marker ahead of its verifier would
+  // make the screen submit an older, longer code at its sixth digit, and that device could then never
+  // be opened. A verifier ahead of its marker only costs the confirm key until the next unlock.
+  const reserved = [SALT_ENTRY, CHECK_ENTRY, CODE_SHAPE_ENTRY].filter((name) => names.includes(name))
 
   const promote = async (name: string) => {
     const value = await staging.get(name)
@@ -65,11 +76,12 @@ async function clearStaging(inner: KeyStore): Promise<void> {
   for (const name of await staging.list()) await staging.delete(name)
 }
 
-// Six is the floor, not a recommendation. A six-digit PIN costs an attacker who already holds a copy
-// of the storage ~36 core-hours at the KDF's parameters (see the scrypt note in @arxhub/crypto kdf) —
-// enough to deter someone who stumbles onto a synced browser profile, not someone who came for this
-// vault.
-export const MIN_UNLOCK_CODE_LENGTH = 6
+// Exactly six, the owner's decision (12-keystore, 2026-09-26): with one length for everyone the screen
+// can submit on the sixth digit, and the length never has to sit in the clear beside the ciphertext.
+// A six-digit code costs an attacker who already holds a copy of the storage ~36 core-hours at the KDF's
+// parameters (see the scrypt note in @arxhub/crypto kdf) — enough to deter someone who stumbles onto a
+// synced browser profile, not someone who came for this vault.
+export const UNLOCK_CODE_LENGTH = 6
 
 // Digits only, because the keypad is the only input the code is ever entered on — on a phone there is
 // no other one. A stored code carrying anything else could never be typed back in, so accepting one
@@ -79,7 +91,17 @@ const DIGITS_ONLY = /^\d+$/
 // What a screen asks before it offers to set a code. It is not the enforcement — enableDeviceLock and
 // changeUnlockCode refuse on their own, so a caller that never renders anything cannot get past it.
 export function isUnlockCodeValid(code: string): boolean {
-  return code.length >= MIN_UNLOCK_CODE_LENGTH && DIGITS_ONLY.test(code)
+  return code.length === UNLOCK_CODE_LENGTH && DIGITS_ONLY.test(code)
+}
+
+// How the unlock screen takes a code. 'digits-6' submits itself on the sixth digit; 'legacy' is a lock
+// set under the old "six or more" rule, whose length nothing records — auto-submitting there would
+// count every longer code as a wrong attempt and start the backoff, so it keeps a confirm key.
+export type CodeShape = 'digits-6' | 'legacy'
+
+export async function getCodeShape(inner: KeyStore): Promise<CodeShape> {
+  if (!(await hasVerifier(inner))) return 'digits-6'
+  return (await inner.get(CODE_SHAPE_ENTRY)) === CODE_SHAPE_DIGITS_6 ? 'digits-6' : 'legacy'
 }
 
 // Whether this store is locked, i.e. its values are ciphertext and a code is needed to read them.
@@ -89,10 +111,21 @@ export function isDeviceLocked(inner: KeyStore): Promise<boolean> {
 
 // Open a locked store. Rejects with unlockFailed on a wrong code — never returns a store that cannot
 // actually decrypt, so callers can boot on the result without a second failure mode later.
+//
+// A legacy lock opened with a code that already follows the rule is marked here, silently, so the next
+// unlock submits on the sixth digit. Only a code that just opened the store is ever recorded — the
+// marker must never claim a shape its verifier does not have.
 export async function unlockDeviceKeyStore(inner: KeyStore, code: string): Promise<KeyStore> {
   const store = new EncryptedKeyStore(inner, code)
   if (!(await store.verifyCode())) throw unlockFailed()
+  if (isUnlockCodeValid(code) && (await getCodeShape(inner)) === 'legacy') await inner.set(CODE_SHAPE_ENTRY, CODE_SHAPE_DIGITS_6)
   return store
+}
+
+// Whether `code` opens this device, without keeping the opened view. Settings asks for the code again
+// before it hands out the vault key, and the answer is all it needs.
+export async function verifyUnlockCode(inner: KeyStore, code: string): Promise<boolean> {
+  return new EncryptedKeyStore(inner, code).verifyCode()
 }
 
 // Encrypt an until-now-plaintext store in place and return the locked view of it. Every new value is
@@ -103,10 +136,13 @@ export async function enableDeviceLock(inner: KeyStore, code: string): Promise<K
   if (await hasVerifier(inner)) throw unlockFailed(undefined, 'This device is already locked.')
 
   await clearStaging(inner)
-  const values = await readAll(inner)
+  // A stray marker left in a plaintext store is not a secret to carry over: encrypted, it would read as
+  // "no marker" and the fresh six-digit lock would come up as legacy.
+  const values = (await readAll(inner)).filter(([name]) => !isReservedEntry(name))
   const staged = new EncryptedKeyStore(stagingView(inner), code)
   for (const [name, value] of values) await staged.set(name, value)
   await staged.writeVerifier()
+  await stagingView(inner).set(CODE_SHAPE_ENTRY, CODE_SHAPE_DIGITS_6)
 
   await promoteStaged(inner, 'verifier-first')
   return new EncryptedKeyStore(inner, code)
@@ -126,6 +162,7 @@ export async function changeUnlockCode(inner: KeyStore, currentCode: string, new
   const staged = new EncryptedKeyStore(stagingView(inner), newCode)
   for (const [name, value] of values) await staged.set(name, value)
   await staged.writeVerifier()
+  await stagingView(inner).set(CODE_SHAPE_ENTRY, CODE_SHAPE_DIGITS_6)
 
   await promoteStaged(inner, 'ordinary-first')
   return new EncryptedKeyStore(inner, newCode)
@@ -149,6 +186,9 @@ export async function disableDeviceLock(inner: KeyStore, code: string): Promise<
   // here removes the real verifier/salt outright instead of promoting a staged one over them. Order
   // doesn't matter for this call: staged names are never SALT_ENTRY/CHECK_ENTRY for a disable.
   await promoteStaged(inner, 'ordinary-first')
+  // The marker goes first: a lock interrupted here, still holding its verifier, then only comes up
+  // with the confirm key rather than as a six-digit lock it may no longer be.
+  await inner.delete(CODE_SHAPE_ENTRY)
   await inner.delete(SALT_ENTRY)
   await inner.delete(CHECK_ENTRY)
   return inner
@@ -173,6 +213,6 @@ async function readAll(store: KeyStore): Promise<[string, string][]> {
 // locked with and answer unlockFailed on a mismatch: a device locked before the keypad existed still
 // has to report a wrong code as a wrong code, not as a rule it was never given a chance to follow.
 function requireValidCode(code: string): void {
-  if (code.length < MIN_UNLOCK_CODE_LENGTH) throw unlockCodeTooShort(MIN_UNLOCK_CODE_LENGTH)
-  if (!DIGITS_ONLY.test(code)) throw unlockCodeNotNumeric()
+  if (!/^\d*$/.test(code)) throw unlockCodeNotNumeric()
+  if (code.length !== UNLOCK_CODE_LENGTH) throw unlockCodeLength(UNLOCK_CODE_LENGTH)
 }

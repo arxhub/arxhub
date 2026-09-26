@@ -4,12 +4,15 @@ import {
   changeUnlockCode,
   disableDeviceLock,
   enableDeviceLock,
+  getCodeShape,
   isDeviceLocked,
   isUnlockCodeValid,
-  MIN_UNLOCK_CODE_LENGTH,
   resetDeviceKeyStore,
+  UNLOCK_CODE_LENGTH,
   unlockDeviceKeyStore,
+  verifyUnlockCode,
 } from '../device-lock'
+import { CHECK_ENTRY, CODE_SHAPE_ENTRY, EncryptedKeyStore } from '../encrypted-key-store'
 import { type KeyStore, MemoryKeyStore } from '../keystore'
 
 const MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
@@ -90,13 +93,21 @@ describe('device lock', () => {
     expect(hasErrorCode(error, 'UnlockFailedError')).toBe(true)
   })
 
-  it('refuses a code below the minimum length', async () => {
+  it.each([UNLOCK_CODE_LENGTH - 1, UNLOCK_CODE_LENGTH + 1, 0])('refuses a code of %i digits', async (length) => {
     const inner = await seeded()
-    const short = '1'.repeat(MIN_UNLOCK_CODE_LENGTH - 1)
 
-    const error = await enableDeviceLock(inner, short).catch((e) => e)
-    expect(hasErrorCode(error, 'UnlockCodeTooShortError')).toBe(true)
+    const error = await enableDeviceLock(inner, '1'.repeat(length)).catch((e) => e)
+    expect(hasErrorCode(error, 'UnlockCodeLengthError')).toBe(true)
     expect(await isDeviceLocked(inner)).toBe(false)
+  })
+
+  it('refuses a new code that is not six digits and leaves the current one working', async () => {
+    const inner = await seeded()
+    await enableDeviceLock(inner, CODE)
+
+    const error = await changeUnlockCode(inner, CODE, '12345678').catch((e) => e)
+    expect(hasErrorCode(error, 'UnlockCodeLengthError')).toBe(true)
+    expect(await (await unlockDeviceKeyStore(inner, CODE)).get('identity.mnemonic')).toBe(MNEMONIC)
   })
 
   // The keypad is the only input a code is ever entered on, so a stored code carrying anything else
@@ -139,7 +150,9 @@ describe('device lock', () => {
 
   it.each([
     ['314159', true],
-    ['00000000000000', true],
+    ['000000', true],
+    ['00000000000000', false],
+    ['1234567', false],
     ['12345', false],
     ['1234a6', false],
     ['1234 56', false],
@@ -203,10 +216,11 @@ describe('device lock', () => {
   })
 
   describe('staged migration', () => {
-    // Both enable and changeUnlockCode, seeded with the same two entries, write exactly 4 real `set()`
-    // calls to fully stage a new generation (salt, value 1, value 2, verifier) before promotion starts —
-    // interrupting at budget 4 lands squarely between "fully staged" and "promotion has begun".
-    const SETS_TO_FULLY_STAGE = 4
+    // Both enable and changeUnlockCode, seeded with the same two entries, write exactly 5 real `set()`
+    // calls to fully stage a new generation (salt, value 1, value 2, verifier, shape marker) before
+    // promotion starts — interrupting at budget 5 lands squarely between "fully staged" and "promotion
+    // has begun".
+    const SETS_TO_FULLY_STAGE = 5
 
     it('enable interrupted right after staging leaves every real entry exactly as it was', async () => {
       const inner = await seeded()
@@ -264,6 +278,147 @@ describe('device lock', () => {
       if (!(await isDeviceLocked(inner))) {
         const mnemonic = await inner.get('identity.mnemonic')
         if (mnemonic !== MNEMONIC) expect(mnemonic).not.toMatch(/^[0-9a-f]+$/) // not raw ciphertext hex either
+      }
+    })
+  })
+  describe('code shape', () => {
+    // A lock set under the old "six or more" rule: a verifier and ciphertext, and no marker, which is
+    // exactly what enableDeviceLock wrote before the rule changed.
+    async function legacyLock(code: string): Promise<MemoryKeyStore> {
+      const inner = await seeded()
+      const store = new EncryptedKeyStore(inner, code)
+      for (const name of ['identity.mnemonic', 'server.token']) {
+        const value = await inner.get(name)
+        if (value != null) await store.set(name, value)
+      }
+      await store.writeVerifier()
+      return inner
+    }
+
+    it('reads an unlocked store as six digits, since any lock set from now on is', async () => {
+      expect(await getCodeShape(await seeded())).toBe('digits-6')
+    })
+
+    it('marks a lock on enable and on change, and drops the mark on disable', async () => {
+      const inner = await seeded()
+      await enableDeviceLock(inner, CODE)
+      expect(await getCodeShape(inner)).toBe('digits-6')
+
+      await changeUnlockCode(inner, CODE, OTHER)
+      expect(await getCodeShape(inner)).toBe('digits-6')
+
+      await disableDeviceLock(inner, OTHER)
+      expect(await inner.has(CODE_SHAPE_ENTRY)).toBe(false)
+      expect(await inner.list()).toEqual(expect.not.arrayContaining([CODE_SHAPE_ENTRY]))
+    })
+
+    // The marker is plaintext on purpose; the unlocked view must never try to decrypt it.
+    it('keeps the marker out of the unlocked view', async () => {
+      const inner = await seeded()
+      await enableDeviceLock(inner, CODE)
+
+      const unlocked = await unlockDeviceKeyStore(inner, CODE)
+      expect((await unlocked.list()).sort()).toEqual(['identity.mnemonic', 'server.token'])
+    })
+
+    it('reports a lock without the marker as legacy and still opens it with a longer code', async () => {
+      const inner = await legacyLock('31415926')
+      expect(await getCodeShape(inner)).toBe('legacy')
+
+      const unlocked = await unlockDeviceKeyStore(inner, '31415926')
+      expect(await unlocked.get('identity.mnemonic')).toBe(MNEMONIC)
+      // A longer code is not the rule, so the device stays on the confirm key.
+      expect(await getCodeShape(inner)).toBe('legacy')
+    })
+
+    it('marks a legacy lock the first time it opens with a code that already is six digits', async () => {
+      const inner = await legacyLock(CODE)
+
+      await unlockDeviceKeyStore(inner, CODE)
+      expect(await getCodeShape(inner)).toBe('digits-6')
+    })
+
+    it('never marks a lock on a failed unlock', async () => {
+      const inner = await legacyLock('31415926')
+
+      await expect(unlockDeviceKeyStore(inner, CODE)).rejects.toThrow()
+      expect(await getCodeShape(inner)).toBe('legacy')
+    })
+
+    it('changes a legacy lock onto the rule', async () => {
+      const inner = await legacyLock('31415926')
+
+      await changeUnlockCode(inner, '31415926', OTHER)
+      expect(await getCodeShape(inner)).toBe('digits-6')
+      expect(await (await unlockDeviceKeyStore(inner, OTHER)).get('identity.mnemonic')).toBe(MNEMONIC)
+    })
+
+    it('does not carry a stray marker from a plaintext store into a new lock as ciphertext', async () => {
+      const inner = await seeded()
+      await inner.set(CODE_SHAPE_ENTRY, 'garbage')
+
+      await enableDeviceLock(inner, CODE)
+      expect(await getCodeShape(inner)).toBe('digits-6')
+    })
+
+    it('verifies a code without changing anything', async () => {
+      const inner = await legacyLock(CODE)
+
+      expect(await verifyUnlockCode(inner, CODE)).toBe(true)
+      expect(await verifyUnlockCode(inner, OTHER)).toBe(false)
+      expect(await getCodeShape(inner)).toBe('legacy')
+    })
+
+    // Every stop point of a change from a legacy code to a six-digit one. The one state that must never
+    // exist is a marker beside a verifier that is not six digits: the screen would then submit the
+    // longer code at its sixth digit and the device could not be opened at all.
+    // One scrypt-backed change per interruption point, so it runs well past the default timeout.
+    it('an interrupted change never leaves the marker without a matching verifier', { timeout: 60_000 }, async () => {
+      const LEGACY = '31415926'
+      let checked = 0
+      let finished = false
+      for (let budget = 0; budget < 16; budget++) {
+        const inner = await legacyLock(LEGACY)
+        const verifierBefore = await inner.get(CHECK_ENTRY)
+        const done = await changeUnlockCode(new InterruptingKeyStore(inner, budget), LEGACY, OTHER).then(
+          () => true,
+          () => false,
+        )
+
+        if ((await getCodeShape(inner)) === 'digits-6') {
+          expect(await inner.get(CHECK_ENTRY)).not.toBe(verifierBefore)
+          expect(await verifyUnlockCode(inner, OTHER)).toBe(true)
+          checked++
+        }
+        if (done) {
+          finished = true
+          break
+        }
+      }
+      // The loop reached an uninterrupted change, and the marker was actually looked at on the way.
+      expect(finished).toBe(true)
+      expect(checked).toBeGreaterThan(0)
+    })
+
+    it('an interrupted disable never leaves the marker on a store it no longer describes', async () => {
+      for (let deletes = 0; deletes < 3; deletes++) {
+        const inner = await seeded()
+        await enableDeviceLock(inner, CODE)
+        // Stop the disable after `deletes` of its final removals by failing the next delete.
+        let left = deletes
+        const flaky: KeyStore = {
+          get: (name) => inner.get(name),
+          set: (name, value) => inner.set(name, value),
+          has: (name) => inner.has(name),
+          list: () => inner.list(),
+          delete: async (name) => {
+            if ([CODE_SHAPE_ENTRY, CHECK_ENTRY, '__vault_salt__'].includes(name) && left-- <= 0) throw new Error('interrupted')
+            await inner.delete(name)
+          },
+        }
+        await disableDeviceLock(flaky, CODE).catch(() => undefined)
+
+        if (!(await isDeviceLocked(inner))) expect(await inner.has(CODE_SHAPE_ENTRY)).toBe(false)
       }
     })
   })

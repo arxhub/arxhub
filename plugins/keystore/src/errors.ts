@@ -13,16 +13,16 @@ export const unlockFailed = (originalError?: unknown, message = 'That code did n
     originalError,
   )
 
-// Raised when enabling or changing the lock is asked for a code that is too short to be worth the
-// ceremony. The minimum is enforced at the edge as well; this guards the programmatic path.
-export const unlockCodeTooShortSchema = defineAppError('UnlockCodeTooShortError', 400)
+// Raised when enabling or changing the lock is asked for a code of any length but six. The screens only
+// ever produce six; this guards the programmatic path.
+export const unlockCodeLengthSchema = defineAppError('UnlockCodeLengthError', 400)
 
-export const unlockCodeTooShort = (minLength: number) =>
-  new AppError<Static<typeof unlockCodeTooShortSchema>>({
-    code: 'UnlockCodeTooShortError',
+export const unlockCodeLength = (length: number) =>
+  new AppError<Static<typeof unlockCodeLengthSchema>>({
+    code: 'UnlockCodeLengthError',
     statusCode: 400,
-    title: 'Unlock code too short',
-    message: `An unlock code must be at least ${minLength} digits.`,
+    title: 'Unlock code has the wrong length',
+    message: `An unlock code is exactly ${length} digits.`,
   })
 
 // Raised when a code that is not digits is offered to the lock. The keypad cannot produce one, so

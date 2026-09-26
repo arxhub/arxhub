@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { Icon } from '@arxhub/uikit/core'
 import { computed } from 'vue'
-import { MIN_UNLOCK_CODE_LENGTH } from '../device-lock'
+import { UNLOCK_CODE_LENGTH } from '../device-lock'
 import type { PinEntryProps } from './pin-entry'
 import { usePinEntry } from './use-pin-entry'
 
 const props = defineProps<PinEntryProps>()
 const emit = defineEmits<{ 'update:modelValue': [string]; submit: [] }>()
-const { onInput, press, MAX_LENGTH, PAD_KEYS, focus } = usePinEntry(props, (value) => emit('update:modelValue', value))
-// Six is the minimum, not a fixed length. Longer existing codes remain visible as masked dots and
-// submission stays explicit so entering the sixth digit never submits a partially entered code.
-const dotCount = computed(() => Math.max(MIN_UNLOCK_CODE_LENGTH, props.modelValue.length))
-const letters: Record<string, string> = { '2': 'ABC', '3': 'DEF', '4': 'GHI', '5': 'JKL', '6': 'MNO', '7': 'PQRS', '8': 'TUV', '9': 'WXYZ' }
+const { onInput, press, confirm, fixed, maxLength, PAD_KEYS, focus } = usePinEntry(
+  props,
+  (value) => emit('update:modelValue', value),
+  () => emit('submit'),
+)
+// A free-length entry is a lock set before the six-digit rule, whose code may be longer: its dots grow
+// with what is typed, and the confirm key submits, so the sixth digit never submits a partial code.
+const dotCount = computed(() => props.length ?? Math.max(UNLOCK_CODE_LENGTH, props.modelValue.length))
+const confirmKey = computed(() => !fixed.value && props.confirmLabel != null)
 // Focus may be on any keypad button after Tab. Keep typed digits local to this control without
 // moving that focus; Enter and Space still activate the focused button through native click.
 function onKeypadKeydown(event: KeyboardEvent): void {
@@ -41,22 +45,36 @@ defineExpose({ focus })
           inputmode="none"
           tabindex="-1"
           :value="modelValue"
-          :maxlength="MAX_LENGTH"
+          :maxlength="maxLength"
           :disabled="disabled"
           :autocomplete="autocomplete"
           :aria-label="label"
           :data-testid="testId"
           @input="onInput"
-          @keydown.enter.prevent="emit('submit')"
+          :aria-invalid="invalid || undefined"
+          @keydown.enter.prevent="confirm"
         />
-        <span class="dots" aria-hidden="true">
+        <span class="dots" :class="{ invalid }" aria-hidden="true">
           <span v-for="dot in dotCount" :key="dot" class="dot" :class="{ filled: dot <= modelValue.length }" />
         </span>
       </span>
+      <!-- Always in the layout, so a message appearing does not move the keypad under the thumb. -->
+      <span class="error" role="alert">{{ error }}</span>
     </label>
     <div class="pad" role="group" aria-label="Numeric keypad" @keydown="onKeypadKeydown">
       <template v-for="(key, index) in PAD_KEYS" :key="index">
-        <span v-if="key === ''" aria-hidden="true" />
+        <button
+          v-if="key === '' && confirmKey"
+          class="key confirm"
+          type="button"
+          :disabled="disabled || !modelValue"
+          :aria-label="confirmLabel"
+          data-testid="pin-key-confirm"
+          @click="confirm"
+        >
+          <Icon name="lu:check" :size="20" />
+        </button>
+        <span v-else-if="key === ''" aria-hidden="true" />
         <button
           v-else
           class="key"
@@ -68,10 +86,7 @@ defineExpose({ focus })
           @click="press(key, $event.detail !== 0)"
         >
           <Icon v-if="key === 'delete'" name="lu:delete" :size="20" />
-          <template v-else>
-            <span class="digit">{{ key }}</span>
-            <span v-if="letters[key]" class="letters" aria-hidden="true">{{ letters[key] }}</span>
-          </template>
+          <span v-else class="digit">{{ key }}</span>
         </button>
       </template>
     </div>
@@ -80,6 +95,7 @@ defineExpose({ focus })
 
 <style scoped>
 .pin {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -147,25 +163,63 @@ defineExpose({ focus })
   background: var(--gray-12);
 }
 
-.pad {
-  display: grid;
-  grid-template-columns: repeat(3, var(--size-2xl));
-  justify-items: center;
-  gap: 8px var(--size-2xl-half);
+.dots.invalid {
+  animation: shake 280ms;
 }
 
-/* DS-1: a PIN keypad is a spatial input, not a row of form actions. Circular targets use the
-   shared 64px step so a four-row keypad leaves room for the primary action on short phones. */
+.dots.invalid .dot {
+  border-color: var(--danger-9);
+}
+
+.dots.invalid .dot.filled {
+  background: var(--danger-9);
+}
+
+@keyframes shake {
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
+}
+
+/* The colour and the message still say it; only the movement goes. */
+@media (prefers-reduced-motion: reduce) {
+  .dots.invalid {
+    animation: none;
+  }
+}
+
+.error {
+  min-height: var(--size-md-half);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  text-align: center;
+  color: var(--danger-11);
+}
+
+/* In a gate the keypad sits at the foot of the body, just above the actions — the thumb's reach. It
+   takes the column's full width, three keys to a row (the 2026-09-26 mock, which replaced the round
+   keys of M-16). */
+.pad {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+/* DS-1: a PIN keypad is a spatial input, not a row of form actions, so its keys are not Buttons. */
 .key {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  width: var(--size-2xl);
   height: var(--size-2xl);
   border: 0;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   background: var(--gray-3);
   color: var(--gray-12);
   font-family: var(--font-sans);
@@ -176,24 +230,29 @@ defineExpose({ focus })
 }
 
 .digit {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-normal);
+  font-variant-numeric: tabular-nums;
   line-height: var(--line-height-none);
-}
-
-.letters {
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-none);
-  letter-spacing: var(--letter-spacing-widest);
 }
 
 .key.delete {
   background: transparent;
+  color: var(--gray-11);
+}
+
+.key.confirm {
+  background: var(--accent-9);
+  color: var(--accent-contrast);
 }
 
 @media (hover: hover) {
   .key:hover:not(:disabled) {
     background: var(--gray-4);
+  }
+
+  .key.confirm:hover:not(:disabled) {
+    background: var(--accent-10);
   }
 }
 

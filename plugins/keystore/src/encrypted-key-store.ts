@@ -13,7 +13,18 @@ export const SALT_ENTRY = '__vault_salt__'
 export const CHECK_ENTRY = '__vault_check__'
 const CHECK_VALUE = 'arxhub-device-lock-v1'
 
-const RESERVED = new Set([SALT_ENTRY, CHECK_ENTRY])
+// Reserved entry, written in the clear, saying the lock was set under the exactly-six-digit rule. It has
+// to be readable before unlock — the screen decides from it whether to submit on the sixth digit — so it
+// holds a flag and never the length: all it tells whoever reads it is "six" or "set before the rule".
+// Tampering with it changes only how the screen submits, never what opens the store.
+export const CODE_SHAPE_ENTRY = '__vault_code_shape__'
+export const CODE_SHAPE_DIGITS_6 = 'digits-6'
+
+const RESERVED = new Set([SALT_ENTRY, CHECK_ENTRY, CODE_SHAPE_ENTRY])
+
+export function isReservedEntry(name: string): boolean {
+  return RESERVED.has(name)
+}
 
 // Whether `inner` holds a lock that must be opened before its values can be read.
 export async function hasVerifier(inner: KeyStore): Promise<boolean> {
