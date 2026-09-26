@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { readText } from '@arxhub/i18n'
-import { Button, Dropdown, Input, MenuItem, Row, ScrollArea } from '@arxhub/uikit/core'
+import { Button, Dropdown, Input, MenuItem, Row, ScrollArea, SearchField } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Node } from 'prosemirror-model'
 import type { Command } from 'prosemirror-state'
 import { toggleHeaderRow } from 'prosemirror-tables'
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { CODE_LANGUAGES } from '../code-highlighting'
 import { arrangeColumns } from '../columns'
 import { type ArxDataSource, isLayout } from '../data-sources'
@@ -30,6 +30,12 @@ const choices = computed(() => CODE_LANGUAGES.filter((language) => language.toLo
 const source = computed(() => props.sources[String(props.node.attrs.source)])
 const layoutLabel = (layout: unknown) => (isLayout(layout) ? t(`data.layouts.${layout}`) : String(layout))
 const calloutStyles = ['info', 'warning', 'success', 'danger'] as const
+const languages = ref<HTMLElement>()
+// The list is alphabetical and long; the language the block already has is the one to see on open.
+onMounted(async () => {
+  await nextTick()
+  languages.value?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' })
+})
 </script>
 <template>
   <div class="block-settings">
@@ -50,11 +56,20 @@ const calloutStyles = ['info', 'warning', 'success', 'danger'] as const
       <label>{{ t('settings.filter') }}<Input :model-value="String(node.attrs.query)" :aria-label="t('settings.filterAria')" :placeholder="t('settings.filterPlaceholder')" @update:model-value="change({ query: $event })" /></label>
     </template>
     <template v-else-if="node.type.name === 'code_block'">
-      <Input v-model="query" :aria-label="t('settings.searchLanguagesAria')" :placeholder="t('settings.searchLanguages')" />
+      <SearchField v-model="query" :aria-label="t('settings.searchLanguagesAria')" :placeholder="t('settings.searchLanguages')" />
       <ScrollArea class="language-list">
-        <nav :aria-label="t('settings.codeLanguages')">
-          <Row as="button" type="button" :selected="!node.attrs.language" @click="change({ language: '' })">{{ t('settings.plainText') }}</Row>
-          <Row v-for="language in choices" :key="language" as="button" type="button" :selected="node.attrs.language === language" @click="change({ language })">{{ language }}</Row>
+        <nav ref="languages" :aria-label="t('settings.codeLanguages')">
+          <Row as="button" type="button" :label="t('settings.plainText')" :checked="!node.attrs.language" :aria-current="!node.attrs.language || undefined" @click="change({ language: '' })" />
+          <Row
+            v-for="language in choices"
+            :key="language"
+            as="button"
+            type="button"
+            :label="language"
+            :checked="node.attrs.language === language"
+            :aria-current="node.attrs.language === language || undefined"
+            @click="change({ language })"
+          />
         </nav>
       </ScrollArea>
     </template>
