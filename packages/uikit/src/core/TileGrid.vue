@@ -91,7 +91,7 @@ function onKeydown(event: KeyboardEvent, index: number): void {
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);
   background: var(--gray-1);
-  color: var(--gray-12);
+  color: var(--gray-11);
   font: inherit;
   cursor: pointer;
 }

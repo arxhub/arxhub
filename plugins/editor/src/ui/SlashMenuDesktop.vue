@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { readText } from '@arxhub/i18n'
-import { EmptyState, Icon, placeFloating, Row, ScrollArea, Separator } from '@arxhub/uikit/core'
+import { EmptyState, placeFloating, Row, ScrollArea, Separator } from '@arxhub/uikit/core'
 import type { EditorView } from 'prosemirror-view'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { t } from '../i18n/messages'
@@ -86,10 +86,11 @@ watch(
       :aria-disabled="disabled || undefined"
       :selected="index === menu.index"
       :disabled="disabled"
+      :icon="command.icon"
+      :label="readText(command.label)"
+      :hint="command.shortcut"
       @click="runSlashCommand(view.state, view.dispatch, command); view.focus()"
-    >
-      <Icon :name="command.icon" />{{ readText(command.label) }}
-    </Row>
+    />
     <EmptyState v-if="!matches.length" compact icon="lu:search-x" :text="t('slash.empty')" />
   </div>
   </ScrollArea>

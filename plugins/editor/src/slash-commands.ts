@@ -18,6 +18,8 @@ export interface BlockCommand {
   label: Text
   icon: string
   keywords: string
+  // The markdown that turns a fresh line into this block as it is typed (editor-input-rules.ts).
+  shortcut?: string
   run: Command
 }
 
@@ -67,6 +69,7 @@ export function buildBlockCommands(schema: Schema): BlockCommand[] {
       label: () => t(`blocks.heading${level as 1 | 2 | 3}`),
       icon: `lu:heading-${level}`,
       keywords: `h${level} заголовок`,
+      shortcut: '#'.repeat(level),
       run: setBlockType(schema.nodes.heading, { level }),
     })),
     {
@@ -74,6 +77,7 @@ export function buildBlockCommands(schema: Schema): BlockCommand[] {
       label: () => t('blocks.bulletList'),
       icon: 'lu:list',
       keywords: 'ul список',
+      shortcut: '-',
       run: wrapInList(schema.nodes.bullet_list),
     },
     {
@@ -81,6 +85,7 @@ export function buildBlockCommands(schema: Schema): BlockCommand[] {
       label: () => t('blocks.orderedList'),
       icon: 'lu:list-ordered',
       keywords: 'ol список',
+      shortcut: '1.',
       run: wrapInList(schema.nodes.ordered_list),
     },
     {
@@ -90,9 +95,23 @@ export function buildBlockCommands(schema: Schema): BlockCommand[] {
       keywords: 'todo checkbox задачи галочка',
       run: wrapInList(schema.nodes.task_list),
     },
-    { id: 'quote', label: () => t('blocks.quote'), icon: 'lu:quote', keywords: 'blockquote цитата', run: wrapIn(schema.nodes.blockquote) },
+    {
+      id: 'quote',
+      label: () => t('blocks.quote'),
+      icon: 'lu:quote',
+      keywords: 'blockquote цитата',
+      shortcut: '>',
+      run: wrapIn(schema.nodes.blockquote),
+    },
     { id: 'callout', label: () => t('blocks.callout'), icon: 'lu:info', keywords: 'info выноска', run: wrapIn(schema.nodes.callout) },
-    { id: 'code', label: () => t('blocks.code'), icon: 'lu:code', keywords: 'код', run: setBlockType(schema.nodes.code_block) },
+    {
+      id: 'code',
+      label: () => t('blocks.code'),
+      icon: 'lu:code',
+      keywords: 'код',
+      shortcut: '```',
+      run: setBlockType(schema.nodes.code_block),
+    },
     {
       id: 'section',
       label: () => t('blocks.section'),
