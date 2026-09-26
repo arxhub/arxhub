@@ -19,7 +19,7 @@ export function useSheetBar(path: () => string, session: SheetSession): void {
   const documents = useArxHub().extensions.get(DocumentsExtension)
   onUnmounted(
     documents.registerViewBar(path, () => {
-      const { book, sheetId, sheetName, editable, selectingRange, selectionLabel } = session
+      const { book, sheetId, sheetName, editable, selectingRange, selectionLabel, status } = session
       const sheets = book.value?.sheets ?? []
       const locked = (items: ActionItem[]) => items.map((item) => ({ ...item, disabled: item.disabled === true || !editable.value }))
       const newSheet: ActionItem = {
@@ -32,7 +32,15 @@ export function useSheetBar(path: () => string, session: SheetSession): void {
       const tools = () => actionMenu.open(locked(toolActions(session)), { title: 'Spreadsheet tools' })
       return {
         icon: 'lu:table-2',
-        sub: selectingRange.value ? `${sheetName.value} · ${selectionLabel.value}` : sheetName.value || undefined,
+        // The save state rides after the sheet, as the desktop bar's status line carries it — silent while
+        // saved, the way the editor's band is: the one word that matters must not drown in a constant one.
+        sub:
+          [
+            selectingRange.value ? `${sheetName.value} · ${selectionLabel.value}` : sheetName.value,
+            status.value === 'Saved' ? '' : status.value,
+          ]
+            .filter((part) => part !== '')
+            .join(' · ') || undefined,
         parts: {
           title: 'Sheets',
           items: sheets.map((entry) => ({
