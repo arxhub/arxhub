@@ -25,6 +25,9 @@ export interface DocumentViewer {
   title: string
   // Extensions with the dot, lower case: '.md', '.arx'.
   extensions: string[]
+  // The glyph of what this viewer opens, wherever one of its files is listed (a tab, a tree row). Unset —
+  // the surface's own glyph for a file.
+  icon?: string
   component: Component
   // A range-capable viewer reads the pending file through the repository instead of first asking
   // sync to materialize the whole object. The default keeps the ordinary open path unchanged.
@@ -155,6 +158,10 @@ export class DocumentsExtension extends Extension {
 
   unregisterViewer(id: string): void {
     this.viewers.value = this.viewers.value.filter((it) => it.id !== id)
+  }
+
+  iconFor(path: string): string | undefined {
+    return this.viewerFor(path)?.icon
   }
 
   viewerFor(path: string): DocumentViewer | undefined {

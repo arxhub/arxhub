@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { dirname } from '@arxhub/path'
-import { EmptyState, Icon, IconButton, Strip } from '@arxhub/uikit/core'
-import { computed } from 'vue'
+import { EmptyState } from '@arxhub/uikit/core'
 import type { PanelStore } from '../../types'
 import PanelView from '../PanelView.vue'
 import { useOpenTabsList } from '../use-open-tabs'
@@ -9,8 +7,8 @@ import { useOpenTabsList } from '../use-open-tabs'
 const props = withDefaults(
   defineProps<{
     store: PanelStore
-    // 'single' is one page at a time switched from the mini-app's rail: no context strip, because the
-    // rail is already that list and a settings section has nothing to close.
+    // 'single' is one page at a time switched from the mini-app's rail; 'tiled' is the workspace of
+    // documents, whose name, location and Close are the shell's object band now, not a strip of our own.
     mode?: 'tiled' | 'single'
   }>(),
   { mode: 'tiled' },
@@ -19,13 +17,7 @@ const props = withDefaults(
 // A narrow screen shows one document at a time. The layout tree built on a wide screen is left
 // untouched — every open instance is still there, so the same vault opened on a desktop still has the
 // arrangement it was given.
-const { openTabs, current, pathOf } = useOpenTabsList(props.store)
-const location = computed(() => {
-  const path = current.value ? pathOf(current.value.instance) : null
-  if (path == null) return null
-  const parent = dirname(path)
-  return parent === '.' || parent === '/' ? 'Vault' : parent
-})
+const { openTabs, current } = useOpenTabsList(props.store)
 </script>
 
 <template>
@@ -40,21 +32,8 @@ const location = computed(() => {
         :group-id="tab.groupId"
         :is-active="tab.instance.instanceId === current?.instance.instanceId"
       />
-      <EmptyState v-if="!current" fill icon="lu:file-text" text="No documents open." />
+      <EmptyState v-if="!current" icon="lu:file-text" text="No document open" hint="Pick a file in the vault or create one with +." />
     </div>
-
-    <!-- The viewer owns the document name. This band keeps only its location and the thumb-reachable close. -->
-    <Strip v-if="current && mode === 'tiled'" class="context-strip" :bordered="false" flush-actions>
-      <span v-if="location" class="entry-path" :title="location"><Icon name="lu:folder" :size="16" /><span class="location">{{ location }}</span></span>
-      <template #actions>
-      <IconButton
-        icon="lu:x"
-        size="xl"
-        ariaLabel="Close document"
-        @click="props.store.requestClosePanel(current.instance.instanceId, current.groupId)"
-      />
-      </template>
-    </Strip>
   </div>
 </template>
 
@@ -72,27 +51,5 @@ const location = computed(() => {
   min-height: 0;
   position: relative;
   overflow: hidden;
-}
-
-.context-strip {
-  border-top: 1px solid var(--gray-4);
-}
-
-.location {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.entry-path {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--gray-11);
-  font-size: var(--font-size-sm);
 }
 </style>

@@ -50,6 +50,7 @@ export class ExplorerPlugin extends Plugin {
     // cannot disagree about one file. Asked on every render rather than snapshotted here, so a plugin
     // switched off (its viewer never registered) loses its claim without this needing to know why.
     explorer.setDisplayNames((path) => documents.displayName(path))
+    explorer.registerNodeIcon((node) => (node.entry.kind === 'file' && !node.pending ? documents.iconFor(node.entry.pathname) : undefined))
 
     // The tree is the navigation of the "Documents" type, not a place of its own — and now that both
     // frames read the type registry, that is the ONLY way it reaches the screen. The mini-app

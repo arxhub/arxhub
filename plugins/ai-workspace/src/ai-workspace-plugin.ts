@@ -145,6 +145,10 @@ export class AiWorkspacePlugin extends Plugin {
       order: 80,
       content: markRaw(AiWorkspaceHost),
       bar: () => aiWorkspaceBar(aiWorkspaceState(ctx.extensions.get(AiWorkspaceExtension))),
+      summary: () => {
+        const count = aiWorkspaceState(ctx.extensions.get(AiWorkspaceExtension)).sessions.value.length
+        return `${count} ${count === 1 ? 'session' : 'sessions'}`
+      },
       sheet: { title: 'Sessions', content: markRaw(AiSessionsSheet) },
     })
 

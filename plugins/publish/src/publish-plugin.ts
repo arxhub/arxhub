@@ -94,6 +94,7 @@ export class PublishPlugin extends Plugin {
       pinned: false,
       content: markRaw(PublicationsPage),
       bar: () => publicationsBar(ctx.extensions.get(PublishExtension)),
+      summary: () => 'Shared by link',
       sheet: { title: 'Paths', content: markRaw(PublishedPathsSheet) },
     })
 

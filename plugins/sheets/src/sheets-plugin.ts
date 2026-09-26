@@ -30,13 +30,14 @@ export class SheetsPlugin extends Plugin {
     const id = 'arxhub.sheets'
     ctx.extensions
       .get(DocumentsExtension)
-      .registerViewer({ id, panelId: id, title: 'Spreadsheet', extensions: ['.arxs'], component: SheetEditor })
+      .registerViewer({ id, panelId: id, title: 'Spreadsheet', extensions: ['.arxs'], icon: 'lu:table-2', component: SheetEditor })
     ctx.extensions.get(PanelStoreExtension).store.registerPanel({ id, title: 'Spreadsheet', component: SheetEditor })
     if (ctx.extensions.has(ExplorerExtension)) {
       ctx.extensions.get(ExplorerExtension).registerFileTemplate({
         extension: '.arxs',
         label: 'New spreadsheet',
         icon: 'lu:table-2',
+        hint: '.arxs — sheets and formulas',
         seed: () => JSON.stringify(emptySheet()),
       })
     }

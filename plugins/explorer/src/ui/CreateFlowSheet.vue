@@ -61,7 +61,8 @@ function back(): void {
 
 function choose(next: CreateKind): void {
   kind.value = next
-  name.value = ''
+  // Filled in rather than left as a placeholder: the confirm names a real file, and the field shows it.
+  name.value = 'Untitled'
 }
 
 // The system's own chooser comes first, straight from the tap — a browser opens it only from inside a
@@ -119,8 +120,9 @@ const picked = computed(() => files.value.map((file) => file.name).join(', '))
         as="button"
         type="button"
         :icon="option.icon"
-        :label="option.label"
+        :label="capitalize(option.noun)"
         :detail="option.hint"
+        next
         :data-testid="`create-kind:${option.extension}`"
         @click="choose(option)"
       />
@@ -130,6 +132,7 @@ const picked = computed(() => files.value.map((file) => file.name).join(', '))
         icon="lu:file-up"
         label="Upload from phone"
         detail="Photos, PDFs, any files"
+        next
         data-testid="create-kind:upload"
         @click="upload"
       />

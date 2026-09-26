@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { DocumentsExtension, folderOf } from '@arxhub/plugin-documents'
 import { type SearchDocument, type SearchSnippet, snippetSegments } from '@arxhub/sql'
-// biome-ignore lint/correctness/noUnusedImports: Row and ScrollArea are used in the template
-import { EmptyState, Row, ScrollArea } from '@arxhub/uikit/core'
-import { useShellFrame } from '@arxhub/uikit/hooks'
+// biome-ignore lint/correctness/noUnusedImports: Row, ScrollArea and SectionLabel are used in the template
+import { EmptyState, Row, ScrollArea, SectionLabel } from '@arxhub/uikit/core'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, useId, watch } from 'vue'
 import { useOpenDocument } from './use-open-document'
 
@@ -13,6 +14,9 @@ const props = withDefaults(
     answered: string
     // Off where the list is a finder of documents rather than of places inside them.
     snippets?: boolean
+    // Put before a finder row's folder ("Documents · Work"), where the list has to say which type a hit
+    // belongs to.
+    context?: string
   }>(),
   { snippets: true },
 )
@@ -28,8 +32,15 @@ const emit = defineEmits<{
 }>()
 
 const workspace = useOpenDocument()
+const viewers = useArxHub().extensions.get(DocumentsExtension)
 const touch = useShellFrame() === 'mobile'
+
 const idPrefix = useId()
+
+function placeOf(path: string): string {
+  const folder = folderOf(path) ?? 'Vault'
+  return props.context == null ? folder : `${props.context} · ${folder}`
+}
 
 // One flat list of what the arrow keys move over: a row per document, then a row per snippet under it.
 // Flat because that is what a listbox is — the grouping is what the rows look like, not how they nest.
@@ -144,9 +155,27 @@ defineExpose({ enter })
       @keydown.enter.prevent="openSelected"
       @keydown.esc.prevent="escapeList"
     >
+      <!-- A finder lists documents the way the vault does — kind, name, folder — rather than as a path to
+           read: the folder is what tells two "Budget 2026" apart. -->
+      <SectionLabel v-if="!snippets" inset>Results · {{ documents.length }}</SectionLabel>
       <template v-for="(entry, index) in entries" :key="entry.key">
         <Row
-          v-if="entry.kind === 'document'"
+          v-if="entry.kind === 'document' && !snippets"
+          :id="optionId(index)"
+          as="button"
+          type="button"
+          tabindex="-1"
+          :icon="viewers.iconFor(entry.path) ?? 'lu:file-text'"
+          :label="entry.title"
+          :detail="placeOf(entry.path)"
+          :match="answered"
+          :selected="index === selected"
+          role="option"
+          :aria-selected="index === selected"
+          @click="selectAndOpen(index)"
+        />
+        <Row
+          v-else-if="entry.kind === 'document'"
           :id="optionId(index)"
           as="button"
           type="button"
@@ -274,11 +303,12 @@ defineExpose({ enter })
   color: var(--gray-11);
 }
 
-/* The accent is spent on selection, so a match inside a snippet is weight and a wash, not another colour
-   competing with the selected row. */
+/* The accent is spent on selection (design.md <Colour>), so a match takes the warning wash — the same
+   one Row draws for a matched label. */
 .snippet .match {
-  background: var(--accent-4);
-  color: var(--accent-11);
+  border-radius: var(--radius-xs);
+  background: var(--warning-4);
+  color: var(--gray-12);
   font-weight: var(--font-weight-medium);
 }
 

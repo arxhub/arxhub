@@ -35,7 +35,7 @@ function mapNode(node: TreeNode): TreeViewNode<TreeNode | null> {
     id,
     label: folderLabel(id),
     icon: 'lu:folder',
-    description: id === props.from && id !== ROOT ? "This document's folder" : undefined,
+    detail: id === props.from && id !== ROOT ? "This document's folder" : undefined,
     branch: node.entry.kind === 'dir',
     // A folder left in the cloud has no disk behind it to write into yet.
     disabled: node.pending,
@@ -45,7 +45,7 @@ function mapNode(node: TreeNode): TreeViewNode<TreeNode | null> {
 }
 
 const nodes = computed<TreeViewNode<TreeNode | null>[]>(() => [
-  { id: ROOT, label: 'Vault', icon: 'lu:folder', description: 'Root', branch: true, children: explorer.tree.value.map(mapNode), data: null },
+  { id: ROOT, label: 'Vault', icon: 'lu:folder', detail: 'Root', branch: true, children: explorer.tree.value.map(mapNode), data: null },
 ])
 
 const expanded = ref<string[]>([ROOT])

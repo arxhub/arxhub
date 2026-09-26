@@ -59,7 +59,11 @@ function move(source: TreeViewNode<TreeNode>, target: TreeViewNode<TreeNode> | n
 
 function activate({ data: node }: TreeViewNode<TreeNode>) {
   if (explorer.renamingPath.value === node.entry.pathname) return
-  explorer.selectedPath.value = node.entry.kind === 'dir' ? node.entry.pathname : dirname(node.entry.pathname)
+  // Where the tree is opened on the document you are in (revealActive), the selection says THAT: a folder
+  // tapped there is only being opened, and the next folder to create in is the create flow's own choice.
+  if (navHost?.revealActive === true) {
+    if (node.entry.kind === 'file') explorer.selectedPath.value = node.entry.pathname
+  } else explorer.selectedPath.value = node.entry.kind === 'dir' ? node.entry.pathname : dirname(node.entry.pathname)
   if (node.entry.kind === 'file') actions.openFile(node)
 }
 
@@ -97,7 +101,10 @@ onMounted(() => {
         if (navHost?.revealActive !== true) return
         const active = shell.attachedWorkspace?.activeTab(DOCUMENTS_TYPE_ID)
         const path = active == null ? null : shell.attachedWorkspace?.objectOf(DOCUMENTS_TYPE_ID, active.key)?.props.path
-        if (typeof path === 'string') await explorer.reveal(path)
+        if (typeof path === 'string') {
+          await explorer.reveal(path)
+          explorer.selectedPath.value = path
+        }
       } finally {
         restored = true
       }

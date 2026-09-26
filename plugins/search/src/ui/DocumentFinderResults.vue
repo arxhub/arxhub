@@ -12,6 +12,8 @@ import { DEFAULT_SEARCH_PREFERENCES } from './search-preferences'
 // Documents; what it finds belongs here, so the question is asked exactly the way the Search rail asks it.
 const props = defineProps<{
   query: string
+  // The type the finder speaks for, where the host says it (TabTypeFind.results).
+  context?: string
 }>()
 
 const emit = defineEmits<{
@@ -75,6 +77,7 @@ defineExpose({ enter })
       :documents="controller.documents.value"
       :answered="controller.answered.value"
       :snippets="false"
+      :context="props.context"
       @leave="leave"
       @opened="emit('opened')"
     />

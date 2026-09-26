@@ -19,7 +19,7 @@ import { ReceiptPhotoStore } from './receipt-photo-store'
 import { BudgetStore } from './store'
 import BudgetMonthsSheet from './ui/BudgetMonthsSheet.vue'
 import BudgetPage from './ui/BudgetPage.vue'
-import { budgetBar } from './ui/budget-view'
+import { budgetBar, budgetSummary } from './ui/budget-view'
 
 export interface BudgetPluginArgs extends PluginArgs {
   capture?: BudgetCapture
@@ -111,6 +111,7 @@ export class BudgetPlugin extends Plugin {
       pinned: false,
       content: markRaw(BudgetPage),
       bar: () => budgetBar(budget, this.logger),
+      summary: () => budgetSummary(budget),
       sheet: { title: 'Months', content: markRaw(BudgetMonthsSheet) },
     })
     this.unwatch = watch(repository.storageRevision, () => {

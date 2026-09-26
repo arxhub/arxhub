@@ -64,6 +64,11 @@ export async function refreshBudget(budget: BudgetExtension, logger: Logger, ann
 // The phone's band: the month on screen and what it cost, and the two things done to a budget most often.
 // No band until the budget is open — a New purchase key over "Budget could not be opened" would be a
 // control for data that is not there.
+// The month the page stands on, as the second line of Budget's row in "Open or switch to".
+export function budgetSummary(budget: BudgetExtension): string | undefined {
+  return budget.status.value === 'ready' ? monthName(budgetView(budget).month.value) : undefined
+}
+
 export function budgetBar(budget: BudgetExtension, logger: Logger): ObjectBar | null {
   if (budget.status.value !== 'ready') return null
   const view = budgetView(budget)

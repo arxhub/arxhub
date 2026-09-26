@@ -100,10 +100,11 @@ export class DocumentsPlugin extends Plugin {
 
     shell.types.register({
       id: DOCUMENTS_TYPE_ID,
-      icon: 'lu:file-text',
+      icon: 'lu:folder',
       title: 'Documents',
       order: 0,
       objects: {
+        icon: 'lu:file-text',
         open,
         // The object may be gone by now: the file was renamed, or deleted from another device. Then
         // `objectGone` — and the tab stays, marked, instead of disappearing silently.
@@ -117,10 +118,10 @@ export class DocumentsPlugin extends Plugin {
           const path = typeof object.props.path === 'string' ? object.props.path : object.key
           // The path as a second line — what tells one "Contract.md" from another. At the root there
           // is no second line: it would repeat the first.
-          return { title: object.title, subtitle: folderOf(path) ?? undefined }
+          return { title: object.title, subtitle: folderOf(path) ?? undefined, icon: documents.iconFor(path) }
         },
       },
-      nav: { component: markRaw(DocumentsNav), title: 'Vault' },
+      nav: { component: markRaw(DocumentsNav), title: 'Vault', detail: 'All documents · search' },
       create: { title: 'New note', icon: 'lu:file-plus', run: createDocument },
       open: { title: 'Open documents' },
       find: () => {

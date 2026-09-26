@@ -39,6 +39,7 @@ export class SettingsPlugin extends Plugin {
       pinned: false,
       content: markRaw(SettingsLayout),
       nav: { component: markRaw(SettingsNav), title: 'Sections' },
+      summary: () => 'App and device',
       bar: () => settingsBar(settings),
       sheet: { title: 'Sections', content: markRaw({ render: () => h(SettingsSectionList, { marked: true }) }) },
     })

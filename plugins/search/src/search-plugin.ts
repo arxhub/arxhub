@@ -64,6 +64,7 @@ export class SearchPlugin extends Plugin {
       order: 10,
       pinned: false,
       content: markRaw(SearchLayout),
+      summary: () => 'Full text and SQL',
     })
 
     // The console is a content panel on the workspace store, not a screen of its own: the owner opens it

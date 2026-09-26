@@ -54,6 +54,7 @@ export class LoggerPlugin extends Plugin {
       pinned: false,
       content: markRaw(LogViewerPanel),
       bar: () => logBar(logView(ctx.extensions.get(LoggerExtension), this.logger)),
+      summary: () => 'App events',
       sheet: { title: 'Levels', content: markRaw(LogLevelsSheet), footer: markRaw(LogFilterField) },
     })
     // A state, not an action: it says what the session's log holds — a dot at the worst level present
