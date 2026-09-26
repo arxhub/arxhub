@@ -65,6 +65,19 @@ test('offline checkpoints survive restart, rename and deletion without duplicate
   expect(await contents(aHistory)).toEqual(['second', 'second', 'first'])
 })
 
+// A version is named by the snapshot it was saved in, not by the newest one that still carries it: a
+// checkpoint of ANY other file moves the head, and a latest version renamed by that move was
+// "unavailable" to whoever had listed it a moment earlier — an opened copy then kept the original's
+// document identity.
+test('a version keeps its id and time while other files move the head', async () => {
+  await aHistory.record({ identity, path: 'vault/note.arx', content: encode('note'), savedAt: 1_000_000_000_000 })
+  const listed = await aHistory.list(query)
+  await aHistory.record({ identity: 'other-document', path: 'vault/other.arx', content: encode('other'), savedAt: 1_000_000_100_000 })
+  expect(await aHistory.list(query)).toEqual(listed)
+  expect(listed[0].savedAt).toBe(1_000_000_000_000)
+  expect(decode(await aHistory.read(query, listed[0]))).toBe('note')
+})
+
 test('publishes all offline versions and downloads historical chunks on demand with integrity checks', async () => {
   await save('first')
   await save('second')

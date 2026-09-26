@@ -75,7 +75,18 @@ export class FileHistory {
       }
       paths.add(file.pathname)
       const key = `${file.pathname}:${file.hash}`
-      if (key === previous) continue
+      if (key === previous) {
+        // The walk is newest-first, so a run of unchanged entries is named by its OLDEST snapshot — the
+        // one it was saved in. Naming it by the newest renamed the version every time any other file
+        // moved the head, and a reader holding the old name found it gone. Only while `read()` would
+        // still accept that snapshot: an entry from before the file had this identity is not its version.
+        const last = result[result.length - 1]
+        if ('path' in query || file.identity === query.identity) {
+          last.id = snapshot.hash
+          last.savedAt = snapshot.timestamp * 1000
+        }
+        continue
+      }
       previous = key
       result.push({ id: snapshot.hash, savedAt: snapshot.timestamp * 1000, hash: file.hash, path: file.pathname })
     }
