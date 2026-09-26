@@ -1,10 +1,11 @@
+import { baseKeymap } from 'prosemirror-commands'
 import type { Node } from 'prosemirror-model'
 import { EditorState, NodeSelection, Selection, TextSelection, type Transaction } from 'prosemirror-state'
 import { describe, expect, it } from 'vitest'
 import { documentHeadings, documentSearchKey, documentSearchPlugin } from '../document-search'
 import { serialize } from '../editor-format'
 import { schema } from '../editor-schema'
-import { echoesName, renameTitleEcho, selectionAfterEcho, titleEcho, titleEchoKey, titleEchoRange } from '../title-echo'
+import { echoesName, joinsIntoEcho, renameTitleEcho, selectionAfterEcho, titleEcho, titleEchoKey, titleEchoRange } from '../title-echo'
 
 const heading = (text: string, level = 1) => schema.node('heading', { level }, text ? schema.text(text) : undefined)
 const paragraph = (text: string) => schema.node('paragraph', null, text ? schema.text(text) : undefined)
@@ -103,6 +104,28 @@ describe('title echo', () => {
     let state = open(doc(heading('Other'), paragraph('body')), 'Plan')
     state = run(state, (tr) => tr.setSelection(TextSelection.create(state.doc, 2)))
     expect(state.selection.from).toBe(2)
+  })
+
+  it('keeps Backspace at the start of the body from joining it into the hidden heading', () => {
+    let state = open(doc(heading('Plan'), paragraph('body')), 'Plan')
+    expect(state.selection.from).toBe(7)
+    expect(joinsIntoEcho(state)).toBe(true)
+    // What the key would do unguarded: the body's first line lands in a heading nobody can see.
+    let joined = state
+    baseKeymap.Backspace(state, (tr) => (joined = joined.apply(tr)))
+    expect(joined.doc.firstChild?.textContent).toBe('Planbody')
+    state = run(state, (tr) => tr.setSelection(TextSelection.create(state.doc, 9)))
+    expect(joinsIntoEcho(state)).toBe(false)
+  })
+
+  it('lets Backspace remove an empty first line without touching the hidden heading', () => {
+    let state = open(doc(heading('Plan'), paragraph(''), paragraph('body')), 'Plan')
+    expect(joinsIntoEcho(state)).toBe(false)
+    baseKeymap.Backspace(state, (tr) => (state = state.applyTransaction(tr).state))
+    expect(state.doc.firstChild?.textContent).toBe('Plan')
+    expect(state.doc.childCount).toBe(2)
+    expect(hidden(state)).toBe(true)
+    expect(state.selection.from).toBe(7)
   })
 
   it('never changes what is saved', () => {

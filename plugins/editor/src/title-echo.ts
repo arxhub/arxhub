@@ -65,6 +65,12 @@ function guardSelection(state: EditorState): Transaction | null {
   return state.tr.setSelection(TextSelection.between(state.doc.resolve(anchor), state.doc.resolve(head))).setMeta('addToHistory', false)
 }
 
+export function joinsIntoEcho(state: EditorState): boolean {
+  const { $from, empty } = state.selection
+  if (!empty || !titleEchoRange(state)) return false
+  return $from.depth === 1 && $from.index(0) === 1 && $from.parentOffset === 0 && $from.parent.content.size > 0
+}
+
 export function titleEcho(name: string): Plugin<TitleEcho> {
   return new Plugin<TitleEcho>({
     key: titleEchoKey,
@@ -82,6 +88,13 @@ export function titleEcho(name: string): Plugin<TitleEcho> {
     },
     appendTransaction: (_trs, _old, state) => guardSelection(state),
     props: {
+      // Backspace at the very start of the body would join that line into the hidden heading: the words
+      // disappear into a block nobody can see, and the file's heading is rewritten. The page has nothing
+      // above its first line, so the key does nothing there. An empty first line still goes (the join
+      // leaves the heading's text as it was), and so does a list's or a quote's lift.
+      handleKeyDown(view, event) {
+        return event.key === 'Backspace' && joinsIntoEcho(view.state)
+      },
       decorations(state) {
         const range = titleEchoRange(state)
         return range ? DecorationSet.create(state.doc, [Decoration.node(range.from, range.to, { class: 'arx-title-echo' })]) : null
