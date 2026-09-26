@@ -53,6 +53,8 @@ const props = withDefaults(
     // A row set on a page's own text edge rather than inside a list — a key/value fact of a gate or a
     // page. The list inset is dropped on both sides, so its label lines up with the title above it.
     flush?: boolean
+    // A quiet fact at the end of the row — the markdown a block can also be typed as, a key chord.
+    hint?: string
   }>(),
   {
     as: 'div',
@@ -117,6 +119,7 @@ const rowAttrs = computed(() => {
         <span v-if="detail" class="row-detail">{{ detail }}</span>
       </span>
       <slot />
+      <span v-if="hint" class="row-hint">{{ hint }}</span>
       <Icon v-if="checked" class="row-check" name="lu:check" :size="glyph" />
       <Icon v-if="next" class="row-check" name="lu:chevron-right" :size="glyph" />
     </component>
@@ -141,6 +144,7 @@ const rowAttrs = computed(() => {
       <span v-if="detail" class="row-detail">{{ detail }}</span>
     </span>
     <slot />
+    <span v-if="hint" class="row-hint">{{ hint }}</span>
     <Icon v-if="checked" class="row-check" name="lu:check" :size="glyph" />
     <Icon v-if="next" class="row-check" name="lu:chevron-right" :size="glyph" />
   </component>
@@ -344,6 +348,14 @@ const rowAttrs = computed(() => {
 /* The mock's second line is the meta step in both frames: under a 16px touch label too. */
 .row-detail {
   color: var(--gray-11);
+  font-size: var(--font-size-xs);
+}
+
+.row-hint {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--gray-10);
+  font-family: var(--font-mono);
   font-size: var(--font-size-xs);
 }
 
