@@ -7,6 +7,8 @@ export default defineConfig((env) =>
     external: [
       '@arxhub/core',
       '@arxhub/errors',
+      '@arxhub/plugin-diff',
+      '@arxhub/plugin-diff/ui',
       '@arxhub/plugin-explorer/ui',
       '@arxhub/plugin-explorer',
       '@arxhub/plugin-editor/ui',

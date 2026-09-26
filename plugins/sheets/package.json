@@ -43,7 +43,8 @@
     "@arxhub/stdlib": "workspace:*",
     "@arxhub/uikit": "workspace:*",
     "@arxhub/vfs": "workspace:*",
-    "@arxhub/plugin-editor": "workspace:*"
+    "@arxhub/plugin-editor": "workspace:*",
+    "@arxhub/plugin-diff": "workspace:*"
   },
   "publishConfig": {
     "exports": {

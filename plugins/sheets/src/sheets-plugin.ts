@@ -1,4 +1,5 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
+import { DiffExtension } from '@arxhub/plugin-diff'
 import { ArxEditorExtension } from '@arxhub/plugin-editor'
 import { ExplorerExtension } from '@arxhub/plugin-explorer'
 import { NotesExtension } from '@arxhub/plugin-notes'
@@ -9,10 +10,12 @@ import { manifest } from './manifest'
 import { emptySheet } from './model'
 import SheetEditor from './ui/SheetEditor.vue'
 import { parseWorkbook, serializeWorkbook } from './workbook'
+import { diffWorkbookSources } from './workbook-differ'
 import { mergeWorkbooks } from './workbook-merge'
 
 export class SheetsPlugin extends Plugin {
   private unregisterMerger: (() => void) | null = null
+  private unregisterDiffer: (() => void) | null = null
 
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -30,6 +33,13 @@ export class SheetsPlugin extends Plugin {
         label: 'New spreadsheet',
         icon: 'lu:table-2',
         seed: () => JSON.stringify(emptySheet()),
+      })
+    }
+    if (ctx.extensions.has(DiffExtension)) {
+      this.unregisterDiffer = ctx.extensions.get(DiffExtension).registerDiffer({
+        id: 'sheets',
+        matches: (path) => path.toLowerCase().endsWith('.arxs'),
+        diff: (left, right) => (left.text == null || right.text == null ? null : diffWorkbookSources(left.text, right.text)),
       })
     }
     // The plugin that owns the format owns its conflicts (Repository is essential — no has() guard). A
@@ -62,6 +72,8 @@ export class SheetsPlugin extends Plugin {
   override stop(ctx: PluginContext): Promise<void> {
     this.unregisterMerger?.()
     this.unregisterMerger = null
+    this.unregisterDiffer?.()
+    this.unregisterDiffer = null
     return super.stop(ctx)
   }
 }

@@ -9,7 +9,7 @@ const touch = useShellFrame() === 'mobile'
 const buttonSize = touch ? 'lg' : 'sm'
 const iconSize = touch ? 'xl' : 'lg'
 const { book, sheetId, switchSheet, addSheet, editable, tool } = useSheet()
-const options = computed(() => book.value?.sheets.map(({ id, name }) => ({ value: id, label: name })) ?? [])
+const options = computed(() => book.value?.sheets.map(({ id, name }) => ({ value: id, label: name, icon: 'lu:table-2' })) ?? [])
 function manage(event: MouseEvent) {
   actionMenu.open(
     [
