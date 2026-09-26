@@ -119,6 +119,10 @@ export const publishTest = test.extend<{ publishStore: undefined }>({
       const lock = join(dataRoot(testInfo), 'publish.e2e-lock')
       const started = Date.now()
       const deadline = started + 180_000
+      const budget = testInfo.timeout
+      // Raised before the wait, not only after it: the test's own clock runs through fixture setup, so a queue
+      // longer than the test's budget would time it out here, before the correction below ever ran.
+      testInfo.setTimeout(budget + 180_000)
       for (;;) {
         try {
           mkdirSync(lock)
@@ -131,7 +135,7 @@ export const publishTest = test.extend<{ publishStore: undefined }>({
       }
       // The wait is the queue's, not this test's: three files take the store in turn, and the last in line
       // would otherwise spend its whole budget in this fixture and time out before its first step.
-      testInfo.setTimeout(testInfo.timeout + (Date.now() - started))
+      testInfo.setTimeout(budget + (Date.now() - started))
       try {
         await use(undefined)
       } finally {
