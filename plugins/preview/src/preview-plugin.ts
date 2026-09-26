@@ -1,9 +1,11 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { PanelStoreExtension } from '@arxhub/plugin-panels'
+import { SearchExtension } from '@arxhub/plugin-search'
 import { markRaw } from 'vue'
 import { manifest } from './manifest'
 import { extensionsOf, MEDIA_KINDS, type MediaKind } from './media'
+import { pdfExtractor } from './pdf-extract'
 import MediaPanel from './ui/MediaPanel.vue'
 import PdfPanel from './ui/PdfPanel.vue'
 
@@ -17,6 +19,8 @@ const TITLES: Record<MediaKind, string> = { image: 'Image', audio: 'Audio', vide
 // one with every extension, so the registry — and whoever reads it — can say "an Image viewer" instead
 // of "the media viewer".
 export class PreviewPlugin extends Plugin {
+  private unregisterExtractor: (() => void) | null = null
+
   constructor(args: PluginArgs) {
     super(args, manifest)
   }
@@ -55,5 +59,14 @@ export class PreviewPlugin extends Plugin {
       readMode: 'range',
       order: 5,
     })
+
+    // Search is optional; without it there is no index to feed, and the viewer works the same.
+    if (ctx.extensions.has(SearchExtension)) this.unregisterExtractor = ctx.extensions.get(SearchExtension).registerExtractor(pdfExtractor)
+  }
+
+  override stop(ctx: PluginContext): Promise<void> {
+    this.unregisterExtractor?.()
+    this.unregisterExtractor = null
+    return super.stop(ctx)
   }
 }

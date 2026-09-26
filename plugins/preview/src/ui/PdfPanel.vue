@@ -1,35 +1,24 @@
 <script setup lang="ts">
+import { type BlockAnchor, DocumentsExtension } from '@arxhub/plugin-documents'
 import { VfsExtension } from '@arxhub/plugin-vfs'
 // biome-ignore lint/style/useImportType: used in the template and as InstanceType<typeof ScrollArea>
 import { ScrollArea } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
-import {
-  GlobalWorkerOptions,
-  getDocument,
-  type PDFDocumentProxy,
-  RenderingCancelledException,
-  type RenderTask,
-} from 'pdfjs-dist/legacy/build/pdf.mjs'
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { getDocument, type PDFDocumentProxy, RenderingCancelledException, type RenderTask } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { formatBytes } from '../media'
-import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount } from '../pdf'
+import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, pageOfAnchor } from '../pdf'
 import { createPdfRangeLoadingTask, type PdfRangeLoadingTask } from '../pdf-range'
+import { configurePdfWorker } from '../pdf-worker'
 import PdfShell from './PdfShell.vue'
 
-// pdf.js parses off the main thread. Vite recognises `new URL(specifier, import.meta.url)` and resolves
-// it to the built worker asset — a plain relative path here would resolve against this .vue file's own
-// URL instead of the worker's, which is the one thing pdf.js cannot fall back from.
-//
-// The `legacy` build, on both sides, not the default one: pdf.js 5.7 reaches for
-// `Map.prototype.getOrInsertComputed`, which WKWebView (Safari 18 — the desktop app on macOS, and every
-// iOS webview) does not have yet; Chromium does, which is why the e2e never saw it. The legacy build
-// carries the polyfills, and the worker runs in the same engine as the page.
-GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url).toString()
+configurePdfWorker()
 
-const props = defineProps<{ path: string }>()
+const props = defineProps<{ path: string; anchor?: BlockAnchor }>()
 
 const arxhub = useArxHub()
 const vfs = arxhub.extensions.get(VfsExtension)
+const documents = arxhub.extensions.get(DocumentsExtension)
 
 const loading = ref(false)
 const error = ref('')
@@ -57,6 +46,12 @@ let doc: PDFDocumentProxy | null = null
 let ticket = 0
 let stageObserver: ResizeObserver | null = null
 let pageObserver: IntersectionObserver | null = null
+// An anchor that arrived before the page count did — the mount's own, or a reveal while loading.
+let pendingAnchor: BlockAnchor | null = props.anchor ?? null
+// A page asked for before it can be measured: the wrappers are still behind the loading state, or the
+// panel is hidden (v-show) because Workspace activates its type and tab only after the reveal returns.
+// Measuring a hidden box reads zeros and a scrollTop set on it is dropped, so it waits for a laid-out one.
+const pendingPage = ref<number | null>(null)
 
 const pageSize = computed(() => (baseSize.value && stageWidth.value > 0 ? fitWidthSize(baseSize.value, stageWidth.value, zoom.value) : null))
 const meta = computed(() => (size.value == null ? '' : `${formatPageCount(pages.length)} · ${formatBytes(size.value)}`))
@@ -104,6 +99,7 @@ async function load() {
   size.value = null
   baseSize.value = null
   pages.length = 0
+  pendingPage.value = null
   loading.value = true
   try {
     // One reader is one storage snapshot. Pending repository files may advance their manifest while a
@@ -131,6 +127,9 @@ async function load() {
     baseSize.value = { width: viewport.width, height: viewport.height }
     pages.push(...Array.from({ length: opened.numPages }, (_, i) => ({ index: i + 1, rendered: false })))
     size.value = fileSize
+    const anchor = pendingAnchor
+    pendingAnchor = null
+    if (anchor != null) pendingPage.value = pageOfAnchor(anchor, opened.numPages)
   } catch (cause) {
     if (current !== ticket) return
     const failedTask = loadingTask
@@ -147,6 +146,44 @@ async function load() {
     if (current === ticket) loading.value = false
   }
 }
+
+// The viewport is scrolled directly rather than through scrollIntoView, which would also scroll every
+// ancestor — a stage the frame is keeping hidden included. The content's top padding is read so the page
+// lands with the same inset it has at the top of the document.
+function goToPage(index: number): boolean {
+  const stage = stageArea.value?.viewport
+  const target = stage?.querySelector<HTMLElement>(`[data-page-index="${index}"]`)
+  if (stage == null || target == null || stage.clientHeight === 0) return false
+  const content = stage.firstElementChild
+  const inset = content == null ? 0 : Number.parseFloat(getComputedStyle(content).paddingTop) || 0
+  stage.scrollTop += target.getBoundingClientRect().top - stage.getBoundingClientRect().top - inset
+  return true
+}
+
+// pageSize is null while the stage measures zero wide, and the stage's ResizeObserver moves it the moment
+// a hidden panel is shown — so this re-runs exactly when a waiting page first has somewhere to land.
+watch(
+  [pendingPage, loading, pageSize],
+  ([page]) => {
+    if (page == null || loading.value || pageSize.value == null) return
+    if (goToPage(page)) pendingPage.value = null
+  },
+  { flush: 'post' },
+)
+
+function reveal(anchor: BlockAnchor): boolean {
+  if (pages.length === 0) {
+    if (anchor.part == null) return false
+    pendingAnchor = anchor
+    return true
+  }
+  const page = pageOfAnchor(anchor, pages.length)
+  if (page == null) return false
+  pendingPage.value = page
+  return true
+}
+
+onUnmounted(documents.registerOpenView(() => props.path, reveal))
 
 // A wrapper comes within one viewport of view → it starts rendering and stays rendered, so scrolling
 // past a page and back never re-triggers work already done.

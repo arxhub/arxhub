@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { canvasPixelSize, clampZoom, fitWidthSize, formatPageCount, MAX_ZOOM, MIN_ZOOM } from '../pdf'
+import { canvasPixelSize, clampZoom, fitWidthSize, formatPageCount, MAX_ZOOM, MIN_ZOOM, pageOfAnchor } from '../pdf'
 
 describe('clampZoom', () => {
   test('holds the bounds', () => {
@@ -44,5 +44,26 @@ describe('formatPageCount', () => {
     expect(formatPageCount(1)).toBe('1 page')
     expect(formatPageCount(0)).toBe('0 pages')
     expect(formatPageCount(42)).toBe('42 pages')
+  })
+})
+
+describe('pageOfAnchor', () => {
+  test('reads the page number from the part', () => {
+    expect(pageOfAnchor({ part: '3' }, 10)).toBe(3)
+  })
+
+  test('a page past the end lands on the last one', () => {
+    expect(pageOfAnchor({ part: '12' }, 5)).toBe(5)
+  })
+
+  test('no part, a non-number or page zero is no address', () => {
+    expect(pageOfAnchor({}, 5)).toBeNull()
+    expect(pageOfAnchor({ part: 'Sheet1' }, 5)).toBeNull()
+    expect(pageOfAnchor({ part: '0' }, 5)).toBeNull()
+    expect(pageOfAnchor({ part: '2.5' }, 5)).toBeNull()
+  })
+
+  test('a document with no pages has nowhere to go', () => {
+    expect(pageOfAnchor({ part: '1' }, 0)).toBeNull()
   })
 })

@@ -33,3 +33,13 @@ export function canvasPixelSize(cssWidth: number, cssHeight: number, devicePixel
 export function formatPageCount(count: number): string {
   return `${count} ${count === 1 ? 'page' : 'pages'}`
 }
+
+// A search hit names its page as the anchor's `part` ('12'). The file may have lost pages since it was
+// indexed, so a page past the end lands on the last one rather than nowhere; anything that is not a
+// page number at all is not an address this viewer can follow.
+export function pageOfAnchor(anchor: { readonly part?: string }, numPages: number): number | null {
+  if (numPages < 1 || anchor.part == null || !/^\d+$/.test(anchor.part)) return null
+  const page = Number.parseInt(anchor.part, 10)
+  if (page < 1) return null
+  return Math.min(page, numPages)
+}

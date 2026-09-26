@@ -18,6 +18,8 @@ export {
   MAX_ZOOM,
   MIN_ZOOM,
   type PageSize,
+  pageOfAnchor,
   ZOOM_STEP,
 } from './pdf'
+export { PDF_EXTRACTOR_ID, type PdfTextItem, pageText, pdfExtractor } from './pdf-extract'
 export { PDF_PANEL_ID, PREVIEW_PANEL_ID, PreviewPlugin } from './preview-plugin'

@@ -12,6 +12,7 @@ export default defineConfig((env) =>
       '@arxhub/plugin-documents/ui',
       '@arxhub/plugin-panels',
       '@arxhub/plugin-panels/ui',
+      '@arxhub/plugin-search',
       '@arxhub/plugin-vfs',
       '@arxhub/uikit',
       '@arxhub/vfs',
