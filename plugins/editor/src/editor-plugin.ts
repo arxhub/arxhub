@@ -1,5 +1,6 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { basename, dirname, join } from '@arxhub/path'
+import { DiffExtension } from '@arxhub/plugin-diff'
 import { ExplorerExtension, type TreeNode } from '@arxhub/plugin-explorer'
 import { HotkeysExtension } from '@arxhub/plugin-hotkeys'
 import { NOTES_TYPE_ID, NotesExtension, type NoteViewer } from '@arxhub/plugin-notes'
@@ -13,6 +14,7 @@ import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { PluginVfs, VaultVfs, VaultWatcher, type VirtualFileSystem } from '@arxhub/vfs'
 import { nextTick } from 'vue'
+import { arxDiffTexts } from './arx-diff'
 import { mergeArx } from './arx-merge'
 import { createAssetStore } from './assets'
 import { searchDataSources } from './data-sources'
@@ -51,6 +53,7 @@ export const EDITOR_VIEWER: NoteViewer = {
 
 export class ArxEditorPlugin extends Plugin {
   private unregisterMerger: (() => void) | null = null
+  private unregisterDiffer: (() => void) | null = null
 
   constructor(args: PluginArgs) {
     super(args, manifest)
@@ -70,6 +73,8 @@ export class ArxEditorPlugin extends Plugin {
     ctx.extensions.get(ArxEditorExtension).documentIcons?.dispose()
     this.unregisterMerger?.()
     this.unregisterMerger = null
+    this.unregisterDiffer?.()
+    this.unregisterDiffer = null
     return super.stop(ctx)
   }
 
@@ -108,6 +113,15 @@ export class ArxEditorPlugin extends Plugin {
         return { merged: new TextEncoder().encode(merged), conflicts }
       },
     })
+    // Diff is optional (not essential), so a build without it simply shows no comparison. The kit is read at
+    // call time: it is sealed in start(), and a call before that throws, which the registry treats as a decline.
+    if (ctx.extensions.has(DiffExtension))
+      this.unregisterDiffer = ctx.extensions.get(DiffExtension).registerDiffer({
+        id: 'arx',
+        matches: (path) => path.toLowerCase().endsWith('.arx'),
+        diff: (left, right) =>
+          left.text == null || right.text == null ? null : arxDiffTexts(editor.kit.schema, left.text, right.text, editor.kit.format),
+      })
     editor.links ??= createDocumentLinkStore(
       ctx.services.get(VaultVfs),
       () => editor.kit.schema,

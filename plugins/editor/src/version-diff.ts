@@ -9,6 +9,9 @@ export interface BlockDifference {
   after: Node | null
   oldIndex: number
   index: number
+  // Matched, but outside the preserved relative order: set for every 'moved' block and for a 'changed' one that
+  // was also moved (the edit wins the kind, but the block still left its old place).
+  displaced?: boolean
 }
 
 // Content equality that ignores identity (arxId) — two blocks are "the same" for diff/merge purposes
@@ -54,7 +57,10 @@ export function versionDifferences(current: Node, previous: Node): BlockDifferen
   for (const match of matches) {
     const { before, after, oldIndex, index } = match
     const kind = !after ? 'removed' : comparable(before) !== comparable(after) ? 'changed' : !ordered.has(oldIndex) ? 'moved' : null
-    if (kind) result.push({ ...match, key: `before:${before.attrs.arxId || oldIndex}`, kind })
+    if (!kind) continue
+    const difference: BlockDifference = { ...match, key: `before:${before.attrs.arxId || oldIndex}`, kind }
+    if (after && !ordered.has(oldIndex)) difference.displaced = true
+    result.push(difference)
   }
   current.children.forEach((after, index) => {
     if (!used.has(index)) result.push({ key: `after:${after.attrs.arxId || index}`, kind: 'added', before: null, after, oldIndex: -1, index })

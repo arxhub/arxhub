@@ -66,7 +66,8 @@
     "@arxhub/plugin-protection": "workspace:*",
     "@arxhub/plugin-publish": "workspace:*",
     "@arxhub/plugin-repository": "workspace:*",
-    "@arxhub/sync": "workspace:*"
+    "@arxhub/sync": "workspace:*",
+    "@arxhub/plugin-diff": "workspace:*"
   },
   "publishConfig": {
     "exports": {

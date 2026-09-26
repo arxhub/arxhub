@@ -16,6 +16,8 @@ export default defineConfig((env) =>
       '@arxhub/stdlib/collections/container',
       '@arxhub/stdlib/scheduling/debounced-task',
       '@arxhub/path',
+      '@arxhub/plugin-diff',
+      '@arxhub/plugin-diff/ui',
       '@arxhub/plugin-explorer/ui',
       '@arxhub/plugin-explorer',
       '@arxhub/plugin-hotkeys',
