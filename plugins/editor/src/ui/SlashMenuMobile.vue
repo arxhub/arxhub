@@ -12,6 +12,10 @@ const props = defineProps<{ view: EditorView; menu: SlashMenuState; menuId: stri
 const filter = ref(props.menu.query)
 const open = ref(false)
 const highlighted = ref<string>()
+// Enter in the field always takes the highlighted tile, but it is only drawn once the owner has steered —
+// typed a filter or moved with the arrows. A sheet that opens with one kind already lit reads as a choice made.
+const steered = ref(false)
+const shown = computed(() => (steered.value || filter.value !== '' ? highlighted.value : undefined))
 
 const matches = computed(() =>
   matchingCommands(filter.value, props.commands).map((command) => ({ command, disabled: !canRunSlashCommand(props.view.state, command) })),
@@ -63,6 +67,7 @@ function onFieldKeydown(event: KeyboardEvent): void {
     select(highlighted.value)
   } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault()
+    steered.value = true
     if (list.length) highlighted.value = list[(at + (event.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length]?.id
   }
 }
@@ -70,7 +75,7 @@ function onFieldKeydown(event: KeyboardEvent): void {
 
 <template>
   <BottomSheet :open="open" :title="t('blockMenu.insert')" :restore-focus="false" @close="dismiss">
-    <TileGrid v-if="tiles.length" :id="menuId" :items="tiles" :active-id="highlighted" :label="t('blockMenu.insert')" @select="select" @highlight="highlighted = $event" />
+    <TileGrid v-if="tiles.length" :id="menuId" :items="tiles" :active-id="shown" :label="t('blockMenu.insert')" @select="select" @highlight="highlighted = $event" />
     <EmptyState v-else compact icon="lu:search-x" :text="t('slash.empty')" />
     <template #footer>
       <SearchField v-model="filter" flush aria-label="Filter blocks" placeholder="Filter blocks" @keydown="onFieldKeydown" />
