@@ -1,4 +1,5 @@
-import { expect, openSettingsSection, test } from './fixtures'
+import { attributes, firstPaint, STORAGE_KEY, seedSavedTheme, THEME_CONFIG } from './first-paint'
+import { expect, IDENTITY_KEY, openSettingsSection, SEEDED_MNEMONIC, test, waitForApp } from './fixtures'
 
 const themeAttr = () => document.documentElement.getAttribute('data-arxhub-theme')
 const baseAttr = () => document.documentElement.getAttribute('data-theme')
@@ -116,4 +117,76 @@ test.describe('themes', () => {
     await app.getByTestId('theme-default').click()
     await expect.poll(() => app.evaluate(themeAttr)).toBe('default')
   })
+})
+
+// The theme-boot script's side (see theme-boot.spec.ts) as far as it meets the configured theme. These live
+// here, in the serial file, because they pick or read the one theme config the tests above write too — in
+// a file of their own they ran beside those and each saw the other's theme.
+
+test('a chosen theme is on the first paint and stays through the boot', async ({ app, vault }) => {
+  await openSettingsSection(app, 'Appearance')
+  await app.getByTestId('theme-catppuccin-mocha').click()
+  try {
+    await expect.poll(() => attributes(app)).toEqual({ theme: 'catppuccin-mocha', base: 'dark' })
+    await expect
+      .poll(() => app.evaluate((key) => JSON.parse(window.localStorage.getItem(key) ?? 'null'), STORAGE_KEY))
+      .toEqual({ id: 'catppuccin-mocha', base: 'dark' })
+    // The reload below boots from config, so the choice has to have landed there first.
+    await expect.poll(() => vault.readData(THEME_CONFIG).catch(() => '')).toContain('catppuccin-mocha')
+
+    // The system says the opposite, so a dark first paint can only come from the saved choice.
+    await app.emulateMedia({ colorScheme: 'light' })
+    expect(await firstPaint(app)).toEqual({ theme: 'catppuccin-mocha', base: 'dark', scheme: 'dark' })
+
+    // Every value the root's theme attributes take during a full boot — a flash to another theme and
+    // back would show up here even though the end state is right.
+    await app.addInitScript(() => {
+      const seen: string[] = []
+      ;(window as unknown as { __themeSeen: string[] }).__themeSeen = seen
+      const record = () => {
+        const root = document.documentElement
+        if (root == null) return
+        const value = `${root.getAttribute('data-arxhub-theme')}/${root.getAttribute('data-theme')}`
+        if (seen[seen.length - 1] !== value) seen.push(value)
+      }
+      new MutationObserver(record).observe(document, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['data-arxhub-theme', 'data-theme'],
+      })
+    })
+    await app.goto('/')
+    await waitForApp(app)
+    await expect.poll(() => attributes(app)).toEqual({ theme: 'catppuccin-mocha', base: 'dark' })
+    const seen = await app.evaluate(() => (window as unknown as { __themeSeen: string[] }).__themeSeen)
+    expect(seen.filter((value) => value !== 'null/null')).toEqual(['catppuccin-mocha/dark'])
+  } finally {
+    await openSettingsSection(app, 'Appearance')
+    await app.getByTestId('theme-default').click()
+    await expect.poll(() => vault.readData(THEME_CONFIG).catch(() => '')).toContain('"default"')
+  }
+})
+
+// The saved record is this device's memory of what it applied, not a second source of the choice: a
+// boot whose config names another theme applies that one and overwrites the record.
+test('the configured theme replaces a stale saved record once the app is up', async ({ page, vault }) => {
+  await page.addInitScript(
+    ([key, mnemonic]) => {
+      if (window.localStorage.getItem(key) == null) window.localStorage.setItem(key, mnemonic)
+    },
+    [IDENTITY_KEY, SEEDED_MNEMONIC] as const,
+  )
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await seedSavedTheme(page, JSON.stringify({ id: 'slate-dark', base: 'dark' }))
+  await page.goto('/')
+  await waitForApp(page)
+
+  // With no theme in config, the plugin follows the dark base the saved record put on the document.
+  const configured = /^theme\s*=\s*"([^"]+)"/m.exec(await vault.readData(THEME_CONFIG).catch(() => ''))?.[1] ?? 'default-dark'
+  expect(configured).not.toBe('slate-dark')
+  await expect.poll(() => attributes(page)).toEqual({ theme: configured, base: expect.any(String) })
+  await expect
+    .poll(() => page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) ?? 'null')?.id ?? null, STORAGE_KEY))
+    .toBe(configured)
 })
