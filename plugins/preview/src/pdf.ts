@@ -11,13 +11,6 @@ export function clampZoom(zoom: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom))
 }
 
-// Rounded to the step's own precision so repeated clicks land on 0.5, 0.75, 1 … rather than drifting
-// off it from floating-point addition (0.1 + 0.2 territory).
-export function stepZoom(current: number, direction: 1 | -1): number {
-  const stepped = Math.round((current + direction * ZOOM_STEP) / ZOOM_STEP) * ZOOM_STEP
-  return clampZoom(Math.round(stepped * 100) / 100)
-}
-
 export interface PageSize {
   readonly width: number
   readonly height: number

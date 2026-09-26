@@ -1,29 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { canvasPixelSize, clampZoom, DEFAULT_ZOOM, fitWidthSize, formatPageCount, MAX_ZOOM, MIN_ZOOM, stepZoom } from '../pdf'
+import { canvasPixelSize, clampZoom, fitWidthSize, formatPageCount, MAX_ZOOM, MIN_ZOOM } from '../pdf'
 
 describe('clampZoom', () => {
   test('holds the bounds', () => {
     expect(clampZoom(0)).toBe(MIN_ZOOM)
     expect(clampZoom(10)).toBe(MAX_ZOOM)
     expect(clampZoom(1)).toBe(1)
-  })
-})
-
-describe('stepZoom', () => {
-  test('moves by one step, in and out', () => {
-    expect(stepZoom(DEFAULT_ZOOM, 1)).toBe(1.25)
-    expect(stepZoom(DEFAULT_ZOOM, -1)).toBe(0.75)
-  })
-
-  test('never crosses the bounds', () => {
-    expect(stepZoom(MIN_ZOOM, -1)).toBe(MIN_ZOOM)
-    expect(stepZoom(MAX_ZOOM, 1)).toBe(MAX_ZOOM)
-  })
-
-  test('a run of steps lands on exact quarters, not float drift', () => {
-    let zoom = MIN_ZOOM
-    for (let i = 0; i < 10; i++) zoom = stepZoom(zoom, 1)
-    expect(zoom).toBe(MAX_ZOOM)
   })
 })
 

@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { DocumentName } from '@arxhub/plugin-notes/ui'
-import { Strip } from '@arxhub/uikit/core'
-import PdfZoomButtons from './PdfZoomButtons.vue'
+import { Strip, ZoomControl } from '@arxhub/uikit/core'
+import { DEFAULT_ZOOM, MAX_ZOOM, MIN_ZOOM, ZOOM_STEP } from '../pdf'
 
 defineProps<{
   path: string
   meta: string
   zoom: number
-  onZoomOut: () => void
-  onZoomIn: () => void
+  onZoom: (value: number) => void
 }>()
 </script>
 
@@ -18,7 +17,7 @@ defineProps<{
       <DocumentName :path="path" />
       <span v-if="meta" class="pdf-meta">{{ meta }}</span>
       <template #actions>
-        <PdfZoomButtons :zoom="zoom" :on-zoom-out="onZoomOut" :on-zoom-in="onZoomIn" />
+        <ZoomControl :model-value="zoom" :min="MIN_ZOOM" :max="MAX_ZOOM" :step="ZOOM_STEP" :reset-to="DEFAULT_ZOOM" @update:model-value="onZoom" />
       </template>
     </Strip>
     <slot />

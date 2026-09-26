@@ -18,7 +18,6 @@ export {
   MAX_ZOOM,
   MIN_ZOOM,
   type PageSize,
-  stepZoom,
   ZOOM_STEP,
 } from './pdf'
 export { PDF_PANEL_ID, PREVIEW_PANEL_ID, PreviewPlugin } from './preview-plugin'

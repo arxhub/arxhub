@@ -12,7 +12,7 @@ import {
 } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { formatBytes } from '../media'
-import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, MAX_ZOOM, MIN_ZOOM, stepZoom } from '../pdf'
+import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount } from '../pdf'
 import { createPdfRangeLoadingTask, type PdfRangeLoadingTask } from '../pdf-range'
 import PdfShell from './PdfShell.vue'
 
@@ -268,8 +268,7 @@ onBeforeUnmount(() => {
       :path="path"
       :meta="meta"
       :zoom="zoom"
-      :on-zoom-out="() => (zoom = stepZoom(zoom, -1))"
-      :on-zoom-in="() => (zoom = stepZoom(zoom, 1))"
+      :on-zoom="(value: number) => (zoom = value)"
     >
       <ScrollArea ref="stageArea" axis="both" class="pdf-stage" content-class="pdf-stage-inner">
         <p v-if="loading" class="media-state">Loading…</p>
