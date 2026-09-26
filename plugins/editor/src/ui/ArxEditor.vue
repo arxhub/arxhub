@@ -6,7 +6,7 @@ import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
 // biome-ignore lint/style/useImportType: ScrollArea is also rendered in the template, not only read as a type
-import { Button, ScrollArea } from '@arxhub/uikit/core'
+import { actionMenu, Button, ScrollArea } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument, usePanelChrome, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { closeHistory, history } from 'prosemirror-history'
@@ -15,7 +15,7 @@ import { keymap } from 'prosemirror-keymap'
 import { EditorState, Selection } from 'prosemirror-state'
 import { columnResizing, tableEditing } from 'prosemirror-tables'
 import { EditorView } from 'prosemirror-view'
-import { computed, nextTick, onMounted, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
+import { computed, h, markRaw, nextTick, onMounted, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
 import { ARX_ASSETS, createAssetSession } from '../asset-session'
 import { createAssetStore } from '../assets'
 import { blockIdentityPlugin, identifyBlocks } from '../block-identity'
@@ -26,6 +26,7 @@ import { codeHighlighting } from '../code-highlighting'
 import { columnsView } from '../columns-view'
 import { createControlViews } from '../control-views'
 import { type DocumentAppearance as Appearance, changeAppearance, documentAppearance } from '../document-appearance'
+import { documentBarMenu, documentBarSub, editorModeMenu } from '../document-bar'
 import type { ArxDraft } from '../document-drafts'
 import { documentId, withDocumentId } from '../document-history'
 import { documentBlocks, documentHref, documentLinksPlugin, revealBlock } from '../document-links'
@@ -41,6 +42,7 @@ import { insertHint } from '../insert-hint'
 import { slashCommands, slashKey } from '../slash-commands'
 import { restoreVersionBlock } from '../version-diff'
 import ArxComponentHost from './ArxComponentHost.vue'
+import ArxEditingToolbar from './ArxEditingToolbar.vue'
 import BlockHandle from './BlockHandle.vue'
 import BlockSettingsHandle from './BlockSettingsHandle.vue'
 import DocumentAppearance from './DocumentAppearance.vue'
@@ -53,6 +55,7 @@ import DocumentRecovery from './DocumentRecovery.vue'
 import DocumentTools from './DocumentTools.vue'
 import DocumentVersionsPage from './DocumentVersionsPage.vue'
 import EditorInspector from './EditorInspector.vue'
+import LinkDialog from './LinkDialog.vue'
 import SelectionFormatting from './SelectionFormatting.vue'
 import SlashMenu from './SlashMenu.vue'
 import 'prosemirror-view/style/prosemirror.css'
@@ -566,6 +569,89 @@ function applyAppearance(value: Appearance) {
   if (view.value && canSave.value && mode.value === 'editable') changeAppearance(view.value, value)
   appearanceOpen.value = false
 }
+// The phone's object band: the type draws it, the editor describes what only it knows. The desktop frame
+// never reads it, so the same description is registered in both frames rather than branched on one.
+//
+// The editing toolbar belongs to the caret in THIS document. A field that is not the document — find, a
+// dialog, a control's own input — raises the keyboard too, and formatting keys aimed at the text would be
+// a lie there, so the band steps aside instead.
+const documentFocused = ref(false)
+function trackFocus(event: FocusEvent): void {
+  const target = event.type === 'focusin' ? event.target : event.relatedTarget
+  documentFocused.value = target instanceof Node && view.value != null && view.value.dom.contains(target)
+}
+onMounted(() => {
+  document.addEventListener('focusin', trackFocus)
+  document.addEventListener('focusout', trackFocus)
+})
+onUnmounted(() => {
+  document.removeEventListener('focusin', trackFocus)
+  document.removeEventListener('focusout', trackFocus)
+})
+// Hosted here and not in the toolbar: opening it takes focus out of the document, which takes the
+// toolbar off the band — and a dialog inside the toolbar would go with it.
+const bandLinkOpen = ref(false)
+// One component for the life of this editor: the band compares it by identity, and a new one per render
+// would remount the toolbar on every keystroke.
+const editing = markRaw({
+  name: 'ArxEditingBar',
+  render: () =>
+    view.value == null
+      ? null
+      : h(ArxEditingToolbar, { view: view.value, revision: revision.value, mode: mode.value, onLink: () => (bandLinkOpen.value = true) }),
+})
+function pickMode(current: EditorMode): void {
+  actionMenu.open(
+    editorModeMenu(current, (next) => {
+      mode.value = next
+    }),
+    { title: 'Editor mode' },
+  )
+}
+const barMenu = computed(() =>
+  documentBarMenu(
+    {
+      mode: mode.value,
+      canSave: canSave.value,
+      busy: assets.pending.value > 0,
+      hasLinks: extension.links != null,
+      hasHistory: extension.history != null,
+      publication: extension.publicationActions?.(props.path) ?? [],
+    },
+    {
+      outline: () => (outlineOpen.value = true),
+      find: () => (findOpen.value = true),
+      properties: () => {
+        if (view.value) inspect(view.value, { kind: 'page' })
+      },
+      versions: () => (versionsOpen.value = true),
+      mode: pickMode,
+      appearance: () => (appearanceOpen.value = true),
+      save: () => void save(),
+      backlinks: () => (backlinksOpen.value = true),
+      copyLink: () => void copyBlockLink(),
+    },
+  ),
+)
+onUnmounted(
+  documents.registerViewBar(
+    () => props.path,
+    () => ({
+      sub: documentBarSub({
+        canSave: canSave.value,
+        loadError: loadError.value != null,
+        saveError: saveError.value,
+        saving: saving.value,
+        uploading: assets.pending.value > 0,
+        unsaved: edits.value !== savedEdits.value,
+        mode: mode.value,
+      }),
+      menu: barMenu.value,
+      editing: documentFocused.value && mode.value !== 'readonly' ? editing : undefined,
+    }),
+  ),
+)
+
 const chromeTarget = usePanelChrome(() => ({
   icon: appearance.value.icon ?? undefined,
   status: loadError.value
@@ -617,6 +703,7 @@ const chromeTarget = usePanelChrome(() => ({
     <DocumentChrome v-show="!(touch && versionsOpen)" :target="chromeTarget" :status="assets.pending.value ? 'Uploading attachment…' : saveStatus" :mode="mode">
       <DocumentTools v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" :on-appearance="() => appearanceOpen = true" @properties="view && inspect(view, { kind: 'page' })" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
     </DocumentChrome>
+    <LinkDialog v-if="bandLinkOpen && view" :view="view" :links="extension.links" :path="path" @close="bandLinkOpen = false" />
     <Teleport v-for="control in controls.values()" :key="control.id" :to="control.host">
       <ArxComponentHost :control="control" />
     </Teleport>

@@ -53,3 +53,11 @@ export const HISTORY: { label: string; icon: string; run: Command }[] = [
   { label: 'Undo', icon: 'lu:undo', run: undo },
   { label: 'Redo', icon: 'lu:redo', run: redo },
 ]
+
+// The block commands the phone's editing band offers: what a line of text turns into while writing. The
+// rest of the slash menu inserts things (a table, columns, an image) and stays in the slash menu.
+const editingBlocks = new Set(['heading-1', 'heading-2', 'heading-3', 'paragraph', 'bullet-list', 'ordered-list', 'task-list', 'quote', 'code'])
+export const EDITING_BLOCKS: CommandAction[] = BLOCK_COMMANDS.filter((command) => editingBlocks.has(command.id)).map(toolbarCommand)
+
+// What earns a key of its own on that band; the rest wait behind its More key.
+export const PRIMARY_EDITING: ReadonlySet<string> = new Set(['Bold', 'Italic', 'Heading 1', 'Bulleted list', 'Task list'])

@@ -23,11 +23,13 @@
   },
   "dependencies": {
     "codemirror": "catalog:client",
+    "@codemirror/commands": "catalog:client",
     "@codemirror/language": "catalog:client",
     "@codemirror/language-data": "catalog:client",
     "@codemirror/state": "catalog:client",
     "vue": "catalog:client",
     "@codemirror/lang-markdown": "catalog:client",
+    "@codemirror/search": "catalog:client",
     "@codemirror/view": "catalog:client",
     "@lezer/highlight": "catalog:client"
   },

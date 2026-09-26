@@ -3,20 +3,23 @@ import { type BlockAnchor, DocumentsExtension } from '@arxhub/plugin-documents'
 import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
+import type { ActionItem } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
+import { openSearchPanel } from '@codemirror/search'
 import { EditorState, Prec } from '@codemirror/state'
 import { keymap } from '@codemirror/view'
 import { basicSetup, EditorView } from 'codemirror'
-import { computed, onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
+import { computed, h, markRaw, onMounted, onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
 import { findOccurrence } from '../document-reveal'
 import { editorTheme } from '../editor-theme'
 import { CODEMIRROR_LAYER } from '../hotkeys'
 import { insertLink, toggleBold, toggleInlineCode, toggleItalic } from '../markdown-commands'
 import { isMarkdown, markdownProfile } from '../markdown-profile'
 import CodeMirrorShell from './CodeMirrorShell.vue'
+import EditingToolbar from './EditingToolbar.vue'
 
 // Fires this long after the last keystroke, mirroring the search plugin's index-queue debounce shape
 // (a burst of edits coalesces into one write, not one per keystroke) and the ProseMirror editor's own
@@ -126,6 +129,49 @@ function reveal(anchor: BlockAnchor): boolean {
 }
 
 onUnmounted(documents.registerOpenView(() => props.path, reveal, beforeClose))
+
+// The band's editing toolbar belongs to the caret in THIS text. A field that is not the text — the find
+// panel's input — raises the keyboard too, and formatting keys aimed at the document would be a lie there,
+// so the band steps aside instead.
+const textFocused = ref(false)
+function trackFocus(event: FocusEvent): void {
+  const target = event.type === 'focusin' ? event.target : event.relatedTarget
+  textFocused.value = target instanceof Node && view.value != null && view.value.contentDOM.contains(target)
+}
+onMounted(() => {
+  document.addEventListener('focusin', trackFocus)
+  document.addEventListener('focusout', trackFocus)
+})
+onUnmounted(() => {
+  document.removeEventListener('focusin', trackFocus)
+  document.removeEventListener('focusout', trackFocus)
+})
+
+// One component for the life of this editor: the band compares it by identity, and a new one per render
+// would remount the toolbar on every keystroke.
+const editing = markRaw({
+  name: 'CodeMirrorEditingBar',
+  render: () => h(EditingToolbar, { view: view.value, revision: revision.value, note: note.value }),
+})
+const menu = computed((): ActionItem[] => [
+  {
+    id: 'codemirror.find',
+    label: 'Find in document',
+    icon: 'lu:search',
+    disabled: view.value == null || !canSave.value,
+    onSelect: () => {
+      if (view.value != null) openSearchPanel(view.value)
+    },
+  },
+  // doSave has already logged and toasted a failed write; the rejection has nobody left to tell.
+  { id: 'codemirror.save', label: 'Save', icon: 'lu:save', disabled: !canSave.value, onSelect: () => void save().catch(() => {}) },
+])
+onUnmounted(
+  documents.registerViewBar(
+    () => props.path,
+    () => ({ menu: menu.value, editing: textFocused.value ? editing : undefined }),
+  ),
+)
 
 async function doSave() {
   if (!view.value || !canSave.value) return

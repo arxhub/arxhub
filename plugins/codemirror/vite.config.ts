@@ -18,6 +18,8 @@ export default defineConfig((env) =>
       '@codemirror/language',
       '@codemirror/language-data',
       '@codemirror/state',
+      '@codemirror/commands',
+      '@codemirror/search',
       'vue',
       '@arxhub/plugin-shell/ui',
     ],

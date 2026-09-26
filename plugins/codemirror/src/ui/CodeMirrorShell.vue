@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { EditorView } from '@codemirror/view'
+import CodeMirrorBody from './CodeMirrorBody.vue'
 import DesktopCodeMirrorShell from './DesktopCodeMirrorShell.vue'
-import MobileCodeMirrorShell from './MobileCodeMirrorShell.vue'
 
 defineProps<{
   path: string
@@ -15,7 +15,7 @@ defineProps<{
   onRetry: () => void
 }>()
 
-const impl = useShellFrame() === 'mobile' ? MobileCodeMirrorShell : DesktopCodeMirrorShell
+const impl = useShellFrame() === 'mobile' ? CodeMirrorBody : DesktopCodeMirrorShell
 </script>
 
 <template>

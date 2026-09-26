@@ -15,6 +15,9 @@ catalogs:
     '@atlaskit/pragmatic-drag-and-drop-hitbox':
       specifier: ^1.0.3
       version: 1.1.0
+    '@codemirror/commands':
+      specifier: ^6.9.1
+      version: 6.10.3
     '@codemirror/lang-markdown':
       specifier: ^6.5.0
       version: 6.5.0
@@ -24,6 +27,9 @@ catalogs:
     '@codemirror/language-data':
       specifier: ^6.5.1
       version: 6.5.2
+    '@codemirror/search':
+      specifier: ^6.7.0
+      version: 6.7.0
     '@codemirror/state':
       specifier: ^6.6.0
       version: 6.6.0
@@ -1600,6 +1606,9 @@ importers:
       '@arxhub/vfs':
         specifier: workspace:*
         version: link:../../packages/vfs
+      '@codemirror/commands':
+        specifier: catalog:client
+        version: 6.10.3
       '@codemirror/lang-markdown':
         specifier: catalog:client
         version: 6.5.0
@@ -1609,6 +1618,9 @@ importers:
       '@codemirror/language-data':
         specifier: catalog:client
         version: 6.5.2
+      '@codemirror/search':
+        specifier: catalog:client
+        version: 6.7.0
       '@codemirror/state':
         specifier: catalog:client
         version: 6.6.0

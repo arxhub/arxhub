@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { type ActionItem, Dropdown, IconButton, MenuItem } from '@arxhub/uikit/core'
-import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Command } from 'prosemirror-state'
 import type { EditorView } from 'prosemirror-view'
 import { computed, nextTick } from 'vue'
+import { EDITOR_MODES } from '../document-bar'
 import type { ArxDocumentLinks } from '../document-links'
 import { focusDocument } from '../document-navigation'
 import type { EditorMode } from '../editor-mode'
@@ -23,13 +23,9 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ find: []; outline: []; backlinks: []; copyLink: []; versions: []; properties: [] }>()
 const mode = defineModel<EditorMode>('mode', { default: 'editable' })
-const placement = useShellFrame() === 'mobile' ? 'top-end' : 'bottom-end'
-const iconSize = useShellFrame() === 'mobile' ? 'xl' : 'lg'
-const modes: { value: EditorMode; label: string; description: string }[] = [
-  { value: 'readonly', label: 'Read only', description: 'Read and copy; no changes' },
-  { value: 'editable', label: 'Editable', description: 'Write, format and arrange blocks' },
-  { value: 'interactive', label: 'Interactive', description: 'Change control values; protect text' },
-]
+// The desktop's tools, in the tab strip. The phone lists the same tools in its object band's More
+// (`document-bar.ts`), so this menu is only ever drawn by the desktop frame.
+const modes = EDITOR_MODES
 const modeLabel = computed(() => modes.find((item) => item.value === mode.value)?.label)
 
 async function selectMode(value: EditorMode) {
@@ -50,9 +46,9 @@ function cmd(command: Command) {
 </script>
 
 <template>
-  <Dropdown :placement="placement">
+  <Dropdown placement="bottom-end">
     <template #trigger>
-      <IconButton :size="iconSize" icon="lu:ellipsis" tooltip="Document tools" :title="`Editor mode: ${modeLabel}`" />
+      <IconButton size="lg" icon="lu:ellipsis" tooltip="Document tools" :title="`Editor mode: ${modeLabel}`" />
     </template>
     <MenuItem v-for="item in modes" :key="item.value" :value="item.value" :disabled="busy" :title="item.description" :aria-current="mode === item.value ? 'true' : undefined" @select="selectMode(item.value)">{{ item.label }}</MenuItem>
     <MenuItem value="properties" :disabled="!canSave" @select="emit('properties')">Properties</MenuItem>
