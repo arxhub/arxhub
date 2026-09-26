@@ -158,6 +158,8 @@ test.describe('asking the base a question in SQL', () => {
   })
 
   test('closing the console does not cost the query that was typed in it', async ({ app }) => {
+    // Boots the app and waits for the index walk twice — once more after the reload.
+    test.slow()
     await openConsole(app)
 
     const typed = "SELECT count(*) FROM block WHERE type = 'heading'"

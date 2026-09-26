@@ -361,9 +361,11 @@ export async function openType(page: Page, title: string, typeId?: string): Prom
 // line the Search rail already renders to say the walk is done: "N in index". Read from the rail, so it is
 // called while that rail is on screen — on a phone the console closes the panel it was opened from.
 export async function waitForIndex(page: Page): Promise<void> {
-  // Longer than the default expect timeout, shorter than the test's own: a cold PGlite boots a WASM payload
-  // and then walks the vault, and four workers per project can do that at once.
-  await expect(page.locator('.index-state-text')).toContainText(/\d+ in index/, { timeout: 20_000 })
+  // Longer than the default expect timeout: a cold PGlite boots a WASM payload and then walks the vault,
+  // and four workers per project can do that at once. The walk grows with the vault, which every spec
+  // writes into — measured at ~20 s for 400 notes on an idle stand — so the bound is the test's own
+  // timeout rather than a second, shorter one.
+  await expect(page.locator('.index-state-text')).toContainText(/\d+ in index/, { timeout: 40_000 })
 }
 
 // Search is a type of its own in both frames now, and an unpinned one: it is reached through the sheet
