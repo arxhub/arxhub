@@ -1,11 +1,14 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { RepositoryExtension } from '@arxhub/plugin-repository'
+import { modals } from '@arxhub/uikit/core'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { markRaw, type WatchStopHandle } from 'vue'
 import { ExplorerExtension } from './explorer-extension'
 import { manifest } from './manifest'
+import CreateFlowSheet from './ui/CreateFlowSheet.vue'
 import FileTreeView from './ui/FileTreeView.vue'
+import { pickFiles } from './ui/pick-files'
 
 type ExplorerPluginArgs = PluginArgs & {
   root?: string
@@ -63,6 +66,30 @@ export class ExplorerPlugin extends Plugin {
       // '.arx' is the primary format (A-29) and `createFile` is what seeds it — an '.arx' reader
       // rejects a bare file.
       return explorer.createFile(parent, 'New note.arx')
+    })
+
+    // The phone's New asks what and where before it writes anything, and "where" is a picker over this
+    // plugin's folders — so the flow is contributed from here, like the tree itself.
+    documents.setCreateFlow({
+      start: (folder) => void modals.openSurface({ component: CreateFlowSheet, props: { folder: folder ?? '' } }),
+      menu: (folder) => [
+        {
+          id: 'explorer.new-folder',
+          label: 'New folder',
+          icon: 'lu:folder-plus',
+          onSelect: () => void modals.openSurface({ component: CreateFlowSheet, props: { folder: folder ?? '', folderOnly: true } }),
+        },
+        {
+          id: 'explorer.add-files',
+          label: 'Add files…',
+          icon: 'lu:file-up',
+          // The chooser opens from the tap itself (pick-files.ts); the flow then only asks where.
+          onSelect: () =>
+            void pickFiles().then((files) => {
+              if (files.length > 0) modals.openSurface({ component: CreateFlowSheet, props: { folder: folder ?? '', files } })
+            }),
+        },
+      ],
     })
   }
 

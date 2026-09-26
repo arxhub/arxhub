@@ -1,7 +1,14 @@
 export { type DisplayName, displayNameOf } from './display-name'
 export { DEFAULT_HIDE_KNOWN_EXTENSIONS, DOCUMENTS_SETTINGS_SECTION, DocumentsConfigSchema, toHideKnownExtensions } from './documents-config'
-export { type DocumentFinder, DocumentsExtension, type DocumentsExtensionArgs, type DocumentViewer } from './documents-extension'
+export {
+  type DocumentBar,
+  type DocumentCreateFlow,
+  type DocumentFinder,
+  DocumentsExtension,
+  type DocumentsExtensionArgs,
+  type DocumentViewer,
+} from './documents-extension'
 export { DocumentsPlugin, type DocumentsPluginArgs } from './documents-plugin'
-export { type BlockAnchor, blockAnchorOf, DOCUMENTS_TYPE_ID, type DocumentSnapshot, documentSnapshotPath } from './documents-type'
+export { type BlockAnchor, blockAnchorOf, DOCUMENTS_TYPE_ID, type DocumentSnapshot, documentSnapshotPath, folderOf } from './documents-type'
 export { LEGACY_MANIFEST_NAME, LEGACY_SETTINGS_SECTION, LEGACY_TYPE_ID, migrateHomeFolders, migrateWorkspaceRecord } from './notes-migration'
 export { renameTarget } from './rename'

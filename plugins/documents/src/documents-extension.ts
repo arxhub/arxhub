@@ -1,6 +1,8 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { validation } from '@arxhub/errors'
 import { basename, extname, join } from '@arxhub/path'
+import type { ObjectBar } from '@arxhub/plugin-shell'
+import type { ActionItem } from '@arxhub/uikit/core'
 import { renameEntry, type VirtualFileSystem } from '@arxhub/vfs'
 import { type Component, markRaw, ref, shallowRef } from 'vue'
 import { type DisplayName, displayNameOf } from './display-name'
@@ -46,6 +48,24 @@ export interface DocumentFinder {
   results: Component
 }
 
+// What an open viewer says about its own object on the phone's band. The type keeps the name and its own
+// actions (New, Close) and the viewer adds only what it alone knows: its tools, its parts, the toolbar that
+// takes the band while the keyboard is up. The band is the type's — `TabType.bar` — and one type holds many
+// viewers, so this is the road from the mounted viewer to it.
+//
+// Read on every render of the band, so whatever it reads must be reactive.
+export type DocumentBar = Partial<Pick<ObjectBar, 'icon' | 'sub' | 'parts' | 'actions' | 'menu' | 'editing'>>
+
+// The phone's way to make something: what (a document, a spreadsheet, files from the phone) → where (a
+// folder picker) → confirm. Contributed by the explorer, which has the tree the picker is drawn from; while
+// nothing has set one, New creates straight into the vault's root.
+export interface DocumentCreateFlow {
+  // `folder` is where the picker starts: the open document's own folder, or null for the root.
+  start(folder: string | null): void
+  // What the band's More offers while nothing is open.
+  menu?(folder: string | null): ActionItem[]
+}
+
 type Creator = () => Promise<string | null>
 // Runs before an object opens, with its path and selected viewer. What sync uses to bring a file this
 // device left in the cloud onto disk first — the viewer that mounts next reads from disk and knows
@@ -75,6 +95,7 @@ export class DocumentsExtension extends Extension {
   // What creates a note when somebody knows the place better. The explorer does: it has a selected
   // folder and a tree that has to show the result.
   private creator: Creator | null = null
+  readonly createFlow = shallowRef<DocumentCreateFlow | null>(null)
   private readonly preparers = new Set<Preparer>()
   // OR-03: whether a name hides an extension a viewer claims. Applied live by the plugin's own
   // PluginConfig.watch (documents-plugin.ts), so a saved change reaches every surface with no restart.
@@ -87,6 +108,22 @@ export class DocumentsExtension extends Extension {
     return () => {
       this.openViews.delete(entry)
     }
+  }
+
+  // A ref, unlike `openViews`: the band is a computed over it, and a viewer mounting after the band was
+  // first drawn has to redraw it.
+  private readonly viewBars = shallowRef<{ path: () => string; bar: () => DocumentBar | null }[]>([])
+
+  registerViewBar(path: () => string, bar: () => DocumentBar | null): () => void {
+    const entry = { path, bar }
+    this.viewBars.value = [...this.viewBars.value, entry]
+    return () => {
+      this.viewBars.value = this.viewBars.value.filter((it) => it !== entry)
+    }
+  }
+
+  viewBar(path: string): DocumentBar | null {
+    return this.viewBars.value.find((entry) => entry.path() === path)?.bar() ?? null
   }
 
   reveal(path: string, anchor: BlockAnchor): boolean {
@@ -136,6 +173,16 @@ export class DocumentsExtension extends Extension {
 
   setCreator(creator: Creator): void {
     this.creator = creator
+  }
+
+  // Remove an object from the vault. Whoever has it open closes it first and without saving — a save
+  // landing after the delete would write the file straight back.
+  async deleteObject(path: string): Promise<void> {
+    await this.vfs.delete(path, { recursive: true, force: true })
+  }
+
+  setCreateFlow(flow: DocumentCreateFlow | null): void {
+    this.createFlow.value = flow == null ? null : markRaw(flow)
   }
 
   registerPreparer(preparer: Preparer): () => void {

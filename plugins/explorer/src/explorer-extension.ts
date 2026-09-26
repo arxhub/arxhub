@@ -194,6 +194,9 @@ export interface FileTemplate {
   extension: string
   label: string
   icon: string
+  // A line under the label where there is room for one (the phone's "what to create"): what the format is
+  // for. Unset — the extension itself.
+  hint?: string
   seed(): string
 }
 
@@ -420,6 +423,39 @@ export class ExplorerExtension extends Extension {
     }
   }
 
+  // Lists a folder without opening it in the tree: a picker walks folders the vault's own tree has closed,
+  // and opening them there too would make choosing where something goes rearrange the vault.
+  async load(node: TreeNode): Promise<void> {
+    if (node.pending || node.entry.kind !== 'dir') return
+    const entries = await this.listDir(node.entry.pathname)
+    node.children = pairCards(mergePendingNodes(reconcile(entries, node.children ?? []), node.entry.pathname, this.currentPending()))
+  }
+
+  // The folders from the top of the vault down to `folder`, each listed on the way — what a picker opens to
+  // show where a document is. A folder that is gone by now simply ends the walk.
+  async loadFolderChain(folder: string): Promise<string[]> {
+    const parts = dirKey(folder).split('/').filter(Boolean)
+    const chain: string[] = []
+    for (let i = 1; i <= parts.length; i++) {
+      const node = findByKey(this.tree.value, parts.slice(0, i).join('/'))
+      if (node?.entry.kind !== 'dir') break
+      if (node.children == null) await this.load(node)
+      chain.push(node.entry.pathname)
+    }
+    return chain
+  }
+
+  // Opens the folders a path sits in, so the row it stands for is on screen: the vault shows where the open
+  // document lives rather than a collapsed root.
+  async reveal(path: string): Promise<void> {
+    const parts = dirKey(dirname(path)).split('/').filter(Boolean)
+    for (let i = 1; i <= parts.length; i++) {
+      const node = findByKey(this.tree.value, parts.slice(0, i).join('/'))
+      if (node?.entry.kind !== 'dir') return
+      if (!node.expanded) await this.expand(node)
+    }
+  }
+
   collapse(node: TreeNode): void {
     node.expanded = false
   }
@@ -491,13 +527,17 @@ export class ExplorerExtension extends Extension {
     return added
   }
 
-  async createDir(parentPath: string, name: string): Promise<void> {
-    await this.serializeCreation(async () => {
+  // Answers where the folder landed: a second "Drafts" becomes "Drafts 2", and a caller choosing the new
+  // folder has to choose that one.
+  async createDir(parentPath: string, name: string): Promise<string> {
+    const path = await this.serializeCreation(async () => {
       let candidate = join(parentPath, name)
       for (let n = 2; await this.vfs.exists(candidate); n++) candidate = join(parentPath, `${name} ${n}`)
       await this.vfs.file(join(candidate, '.keep')).write(new Uint8Array())
+      return candidate
     })
     await this.refreshDir(parentPath)
+    return path
   }
 
   async deleteEntry(path: string): Promise<void> {
@@ -567,6 +607,16 @@ function reconcile(entries: VirtualEntry[], previous: TreeNode[]): TreeNode[] {
 
 function isVisible(entry: VirtualEntry): boolean {
   return basename(entry.pathname) !== '.keep'
+}
+
+// A backend may answer a listing with or without the leading separator; a walk built from path segments
+// has to find the node either way.
+function findByKey(nodes: TreeNode[], key: string): TreeNode | null {
+  for (const node of nodes) {
+    if (dirKey(node.entry.pathname) === key) return node
+    if (node.children && key.startsWith(`${dirKey(node.entry.pathname)}/`)) return findByKey(node.children, key)
+  }
+  return null
 }
 
 function findNode(nodes: TreeNode[], path: string): TreeNode | null {

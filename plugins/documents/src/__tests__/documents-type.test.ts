@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { blockAnchorOf, documentSnapshotPath } from '../documents-type'
+import { blockAnchorOf, documentSnapshotPath, folderOf } from '../documents-type'
 
 describe('the address of a place inside a note', () => {
   test('is read from the matched text', () => {
@@ -80,5 +80,16 @@ describe('a note snapshot', () => {
     ['a path that is not a string', { path: 7 }],
   ])('%s — no path, and the tab is honestly marked as gone', (_name, value) => {
     expect(documentSnapshotPath(value as never)).toBeNull()
+  })
+})
+
+describe('the folder a document sits in', () => {
+  test('is its directory', () => {
+    expect(folderOf('work/2026/plan.arx')).toBe('work/2026')
+  })
+
+  test('is none at the root, however the root is spelled', () => {
+    expect(folderOf('plan.arx')).toBeNull()
+    expect(folderOf('/plan.arx')).toBeNull()
   })
 })

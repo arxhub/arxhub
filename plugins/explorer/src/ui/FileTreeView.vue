@@ -2,6 +2,7 @@
 import { basename, dirname, posix } from '@arxhub/path'
 import { DOCUMENTS_TYPE_ID } from '@arxhub/plugin-documents'
 import { ShellExtension } from '@arxhub/plugin-shell'
+import { useNavHost } from '@arxhub/plugin-shell/ui'
 import { actionMenu, Icon, type TreeDragDropOptions, TreeView, type TreeViewNode } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -81,9 +82,11 @@ function keydown({ data: node }: TreeViewNode<TreeNode>, event: KeyboardEvent) {
   actions.startRename(node)
 }
 
-const storage = arxhub.extensions.get(ShellExtension).workspaceStorage
+const shell = arxhub.extensions.get(ShellExtension)
+const storage = shell.workspaceStorage
 const saved = storage.navOf(DOCUMENTS_TYPE_ID)
 const expanded = Array.isArray(saved) ? saved.filter((path): path is string => typeof path === 'string') : []
+const navHost = useNavHost()
 let restored = false
 onMounted(() => {
   actions.runAction(
@@ -91,6 +94,10 @@ onMounted(() => {
       try {
         await explorer.loadRoot()
         await explorer.restoreExpanded(expanded)
+        if (navHost?.revealActive !== true) return
+        const active = shell.attachedWorkspace?.activeTab(DOCUMENTS_TYPE_ID)
+        const path = active == null ? null : shell.attachedWorkspace?.objectOf(DOCUMENTS_TYPE_ID, active.key)?.props.path
+        if (typeof path === 'string') await explorer.reveal(path)
       } finally {
         restored = true
       }

@@ -1,6 +1,5 @@
 import { PluginConfig } from '@arxhub/config'
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
-import { dirname } from '@arxhub/path'
 import { RepositoryExtension } from '@arxhub/plugin-repository'
 import { SettingsExtension } from '@arxhub/plugin-settings'
 import { type ObjectBar, type ObjectGone, type ObjectRef, type OpenedObject, objectGone, ShellExtension } from '@arxhub/plugin-shell'
@@ -8,11 +7,12 @@ import { RootVfs, VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { markRaw } from 'vue'
 import { DOCUMENTS_SETTINGS_SECTION, DocumentsConfigSchema, toHideKnownExtensions } from './documents-config'
 import { DocumentsExtension } from './documents-extension'
-import { blockAnchorOf, DOCUMENTS_TYPE_ID, documentSnapshotPath } from './documents-type'
+import { blockAnchorOf, DOCUMENTS_TYPE_ID, documentSnapshotPath, folderOf } from './documents-type'
 import { manifest } from './manifest'
 import { migrateHomeFolders } from './notes-migration'
 import DocumentsNav from './ui/DocumentsNav.vue'
 import DocumentUnsupported from './ui/DocumentUnsupported.vue'
+import { documentActions } from './ui/document-actions'
 
 export interface DocumentsPluginArgs extends PluginArgs {
   // Where documents live in the vault. The instance decides — it is what knows how the vault is mounted.
@@ -115,37 +115,42 @@ export class DocumentsPlugin extends Plugin {
         },
         label: (object) => {
           const path = typeof object.props.path === 'string' ? object.props.path : object.key
-          const dir = dirname(path)
           // The path as a second line — what tells one "Contract.md" from another. At the root there
           // is no second line: it would repeat the first.
-          return { title: object.title, subtitle: dir === '' || dir === '.' || dir === '/' ? undefined : dir }
+          return { title: object.title, subtitle: folderOf(path) ?? undefined }
         },
       },
       nav: { component: markRaw(DocumentsNav), title: 'Vault' },
       create: { title: 'New note', icon: 'lu:file-plus', run: createDocument },
       open: { title: 'Open documents' },
-      // The band above the phone's type row. The least it has to say until each viewer describes its own
-      // object (its parts, its editing toolbar): where you are, New, and Close.
+      find: () => {
+        const finder = documents.finder.value
+        return finder == null ? null : { placeholder: 'Find a document…', results: finder.results }
+      },
+      // The band above the phone's type row: where you are, New and Close are the type's; the open viewer
+      // adds its own tools after Rename and Close, its parts and its editing toolbar (`registerViewBar`).
       bar: (active): ObjectBar => {
+        const path = active == null ? null : typeof active.props.path === 'string' ? active.props.path : active.key
+        // New starts where you are: in the open document's folder, or the root while nothing is open.
+        const folder = path == null ? null : folderOf(path)
+        const flow = documents.createFlow.value
         const create = {
           id: 'documents.new',
           label: 'New document',
           icon: 'lu:plus',
-          onSelect: () => void createDocument(),
+          onSelect: () => (flow != null ? flow.start(folder) : void createDocument()),
         }
-        if (active == null) return { icon: 'lu:folder', name: 'Vault', actions: [create] }
+        if (active == null || path == null) return { icon: 'lu:folder', name: 'Vault', actions: [create], menu: flow?.menu?.(null) ?? [] }
+        const view = documents.viewBar(path)
+        const own = documentActions(documents, shell.workspace, this.logger, path, active.key)
         return {
-          icon: 'lu:file-text',
+          icon: view?.icon ?? 'lu:file-text',
           name: shell.workspace.activeTab(DOCUMENTS_TYPE_ID)?.title ?? active.title,
-          actions: [create],
-          menu: [
-            {
-              id: 'documents.close',
-              label: 'Close',
-              icon: 'lu:x',
-              onSelect: () => void shell.workspace.closeObject(DOCUMENTS_TYPE_ID, active.key),
-            },
-          ],
+          sub: view?.sub,
+          parts: view?.parts,
+          editing: view?.editing,
+          actions: [create, ...(view?.actions ?? [])],
+          menu: [own.rename, own.close, ...(view?.menu ?? []), own.remove],
         }
       },
     })

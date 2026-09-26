@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Input } from '@arxhub/uikit/core'
-import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref } from 'vue'
 import { DocumentsExtension } from '../documents-extension'
+import { renameDocument } from './rename-document'
 
 // What an open object is called, at the top of whatever is showing it (OR-02). It lives with the type
 // rather than in each viewer because a viewer's business is the content — five copies of "the name,
@@ -44,22 +45,8 @@ function cancel(): void {
 // committing through the blur its own unmount fires.
 function commit(): void {
   if (!renaming.value) return
-  const typed = draft.value.trim()
   renaming.value = false
-  if (typed === '' || typed === name.value.text) return
-  const renamed = name.value.fullName(typed)
-  // A rename started by a click has to report its own failure: a rejected write with only a log entry
-  // behind it is indistinguishable from a name that simply did not change. It names the whole file,
-  // extension and all — what was typed is only part of it while one is hidden.
-  documents.renameObject(props.path, renamed).catch((error: unknown) => {
-    arxhub.logger.error(`[documents] failed to rename ${props.path} to ${renamed}:`, error)
-    const message = error instanceof Error ? error.message : String(error ?? '')
-    toaster.create({
-      type: 'error',
-      title: `Could not rename to ${renamed}`,
-      description: message.trim() || 'The reason was not reported — see the log.',
-    })
-  })
+  renameDocument(documents, arxhub.logger, props.path, draft.value)
 }
 </script>
 

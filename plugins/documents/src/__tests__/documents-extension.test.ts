@@ -235,3 +235,32 @@ describe('renaming an open object', () => {
     expect(renames).toEqual([])
   })
 })
+
+describe('the view bar', () => {
+  test('answers the bar of the view open on that path, and nothing once it unmounts', () => {
+    const documents = extension()
+    const unregister = documents.registerViewBar(
+      () => 'a.arx',
+      () => ({ sub: 'Saving…' }),
+    )
+
+    expect(documents.viewBar('a.arx')).toEqual({ sub: 'Saving…' })
+    expect(documents.viewBar('b.arx')).toBeNull()
+
+    unregister()
+    expect(documents.viewBar('a.arx')).toBeNull()
+  })
+
+  test('follows the view to its new path after a rename', () => {
+    const documents = extension()
+    let path = 'a.arx'
+    documents.registerViewBar(
+      () => path,
+      () => ({ sub: 'Read only' }),
+    )
+
+    path = 'b.arx'
+    expect(documents.viewBar('a.arx')).toBeNull()
+    expect(documents.viewBar('b.arx')).toEqual({ sub: 'Read only' })
+  })
+})

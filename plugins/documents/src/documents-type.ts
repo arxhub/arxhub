@@ -1,3 +1,4 @@
+import { dirname } from '@arxhub/path'
 import type { Json } from '@arxhub/plugin-shell'
 
 // An address of a place inside a note. It is the TEXT that matched, not an ordinal: `${path}#${n}`
@@ -53,4 +54,11 @@ export function documentSnapshotPath(snapshot: Json): string | null {
   if (snapshot == null || typeof snapshot !== 'object' || Array.isArray(snapshot)) return null
   const path = (snapshot as Record<string, Json>).path
   return typeof path === 'string' && path !== '' ? path : null
+}
+
+// The folder an object sits in, or null at the vault's root — where a new document lands by default, and
+// the second line of a tab. `dirname` answers '.' at the top, and a root has no name worth repeating.
+export function folderOf(path: string): string | null {
+  const dir = dirname(path)
+  return dir === '' || dir === '.' || dir === '/' ? null : dir
 }
