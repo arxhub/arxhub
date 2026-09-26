@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CodeEditor } from '@arxhub/plugin-codemirror/ui'
 // biome-ignore lint/correctness/noUnusedImports: ScrollArea is used in template
-import { modals, ScrollArea, Strip } from '@arxhub/uikit/core'
+import { EmptyState, modals, ScrollArea, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { SearchExtension } from '../search-extension'
@@ -116,9 +116,13 @@ const summary = computed(() => {
       <SqlSchemaReference v-if="schemaOpen" />
 
       <div v-if="table" class="result">
-        <div v-if="table.rows.length === 0" class="empty" data-testid="sql-console-empty">
-          The query ran and matched nothing. Not a refusal — there is simply no row like that.
-        </div>
+        <EmptyState
+          v-if="table.rows.length === 0"
+          icon="lu:table"
+          text="The query ran and matched nothing."
+          hint="Not a refusal — there is simply no row like that."
+          data-testid="sql-console-empty"
+        />
         <ScrollArea v-else axis="x" class="table-scroll">
           <table class="result-table">
             <thead>
@@ -140,7 +144,7 @@ const summary = computed(() => {
           </table>
         </ScrollArea>
       </div>
-      <div v-else-if="!controller.answered.value" class="idle">Write a query and run it. Nothing has been asked yet.</div>
+      <EmptyState v-else-if="!controller.answered.value" icon="lu:database" text="Write a query and run it." hint="Nothing has been asked yet." />
 
       <!-- The page frame used to carry this in a pinned footer. A panel has no footer, and the run
            summary belongs next to the result it describes rather than at the bottom of the panel. -->
@@ -291,16 +295,6 @@ const summary = computed(() => {
 .blank {
   color: var(--gray-9);
   font-style: italic;
-}
-
-.empty,
-.idle {
-  padding: 16px;
-  border: 1px dashed var(--gray-6);
-  border-radius: var(--radius-sm);
-  color: var(--gray-11);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-relaxed);
 }
 
 .summary {

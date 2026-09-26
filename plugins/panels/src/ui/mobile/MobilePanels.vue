@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { dirname } from '@arxhub/path'
-import { Icon, IconButton, Strip } from '@arxhub/uikit/core'
+import { EmptyState, Icon, IconButton, Strip } from '@arxhub/uikit/core'
 import { computed } from 'vue'
 import type { PanelStore } from '../../types'
 import PanelView from '../PanelView.vue'
@@ -40,9 +40,7 @@ const location = computed(() => {
         :group-id="tab.groupId"
         :is-active="tab.instance.instanceId === current?.instance.instanceId"
       />
-      <div v-if="!current" class="panels-empty">
-        <p>No documents open</p>
-      </div>
+      <EmptyState v-if="!current" fill icon="lu:file-text" text="No documents open." />
     </div>
 
     <!-- The viewer owns the document name. This band keeps only its location and the thumb-reachable close. -->
@@ -74,15 +72,6 @@ const location = computed(() => {
   min-height: 0;
   position: relative;
   overflow: hidden;
-}
-
-.panels-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--gray-10);
-  font-size: var(--font-size-md);
 }
 
 .context-strip {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BottomSheet, Icon, Row } from '@arxhub/uikit/core'
+import { BottomSheet, EmptyState, IconButton, Row } from '@arxhub/uikit/core'
 import { computed } from 'vue'
 import type { TabType } from '../tab-type'
 import type { Workspace } from '../workspace'
@@ -27,19 +27,18 @@ function drop(key: string): void {
 <template>
   <BottomSheet :open="props.open" :label="props.type?.open?.title ?? 'Open'" @close="emit('close')">
     <div class="open-list" role="menu" aria-label="Open documents">
-      <p v-if="tabs.length === 0" class="empty">Nothing is open in this type yet.</p>
-      <div v-for="tab in tabs" :key="tab.key" class="entry" :data-testid="`open:${tab.typeId}:${tab.key}`">
-        <Row as="button" type="button" role="menuitem" wrap class="entry-main" @click="pick(tab.key)">
-          <span class="entry-body">
-            <span class="entry-title">{{ tab.title }}</span>
-            <span v-if="tab.subtitle" class="entry-subtitle">{{ tab.subtitle }}</span>
-          </span>
-          <span v-if="tab.gone" class="entry-note">Gone</span>
-        </Row>
-        <button type="button" class="entry-close" :aria-label="`Close ${tab.title}`" @click="drop(tab.key)">
-          <Icon name="lu:x" :size="16" />
-        </button>
-      </div>
+      <EmptyState v-if="tabs.length === 0" compact icon="lu:layers" text="Nothing is open in this type yet." />
+      <Row v-for="tab in tabs" :key="tab.key" as="button" type="button" role="menuitem" wrap
+        :data-testid="`open:${tab.typeId}:${tab.key}`" @click="pick(tab.key)">
+        <span class="entry-body">
+          <span class="entry-title">{{ tab.title }}</span>
+          <span v-if="tab.subtitle" class="entry-subtitle">{{ tab.subtitle }}</span>
+        </span>
+        <span v-if="tab.gone" class="entry-note">Gone</span>
+        <template #trailing>
+          <IconButton size="row" icon="lu:x" :aria-label="`Close ${tab.title}`" @click="drop(tab.key)" />
+        </template>
+      </Row>
     </div>
   </BottomSheet>
 </template>
@@ -49,23 +48,6 @@ function drop(key: string): void {
   display: flex;
   flex-direction: column;
   padding: 0 8px;
-}
-
-.empty {
-  margin: 0;
-  padding: 16px;
-  color: var(--gray-10);
-  font-size: var(--font-size-sm);
-}
-
-.entry {
-  display: flex;
-  align-items: stretch;
-}
-
-.entry-main {
-  flex: 1;
-  min-width: 0;
 }
 
 .entry-body {
@@ -94,23 +76,5 @@ function drop(key: string): void {
   margin-left: auto;
   color: var(--gray-10);
   font-size: var(--font-size-xs);
-}
-
-.entry-close {
-  display: flex;
-  width: var(--size-xl);
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--gray-11);
-  cursor: pointer;
-}
-
-.entry-close:focus-visible {
-  outline: 2px solid var(--accent-8);
-  outline-offset: -1px;
 }
 </style>

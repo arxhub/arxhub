@@ -105,7 +105,7 @@ useHotkeys(hotkeys, [
         <main class="content">
           <!-- Switching type is the row's basic operation, and it unmounts nothing: every type entered
                this session stays on its own stage and only the active one is shown (F-05). -->
-          <TypeStage :workspace="workspace" :types="types" empty="Nothing is open. Pick a type on the left." />
+          <TypeStage :workspace="workspace" :types="types" hint="Pick a type on the left." />
         </main>
       </div>
     </div>

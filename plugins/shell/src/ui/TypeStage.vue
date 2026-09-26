@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { EmptyState } from '@arxhub/uikit/core'
 import { computed, ref, watch } from 'vue'
 import TypeStageView from './TypeStageView.vue'
 import type { TabTypeRegistry } from './tab-type-registry'
@@ -8,9 +9,9 @@ import type { Workspace } from './workspace'
 const props = defineProps<{
   workspace: Workspace
   types: TabTypeRegistry
-  // What to say when the active type has nothing to draw — where to look differs per frame, and this is
-  // the only thing about the stage that does.
-  empty: string
+  // Where to look when the active type has nothing to draw — that differs per frame, and it is the only
+  // thing about the stage that does.
+  hint: string
 }>()
 
 const activeTypeId = computed(() => props.workspace.activeTypeId.value)
@@ -44,14 +45,5 @@ const nothing = computed(() => !stages.value.some((it) => it.typeId === activeTy
 
 <template>
   <TypeStageView v-for="stage in stages" :key="stage.typeId" :view="stage.view" :type-id="stage.typeId" :visible="stage.typeId === activeTypeId" />
-  <p v-if="nothing" class="nothing">{{ empty }}</p>
+  <EmptyState v-if="nothing" fill icon="lu:layers" text="Nothing is open." :hint="hint" />
 </template>
-
-<style scoped>
-.nothing {
-  margin: 0;
-  padding: 24px 16px;
-  color: var(--gray-10);
-  text-align: center;
-}
-</style>

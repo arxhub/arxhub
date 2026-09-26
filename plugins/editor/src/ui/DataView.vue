@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { validation } from '@arxhub/errors'
-import { Button, Input, Row } from '@arxhub/uikit/core'
+import { Button, EmptyState, Input, Row } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
@@ -85,10 +85,10 @@ async function open(item: ArxDataItem) {
     <template v-else-if="layout === 'calendar'">
       <Input v-model="month" type="month" aria-label="Calendar month" />
       <section v-for="group in groups" :key="group.title"><h3>{{ group.title }}</h3><Row v-for="item in group.items" :key="item.id" as="button" type="button" wrap @click="open(item)">{{ item.title }}</Row></section>
-      <p v-if="!busy && !error && !groups.length">No dated items in this month.</p>
+      <EmptyState v-if="!busy && !error && !groups.length" compact icon="lu:calendar" text="No dated items in this month." />
     </template>
     <component :is="list" v-else :items="items" @open="open" />
-    <p v-if="!busy && !error && !items.length">No matching items.</p>
+    <EmptyState v-if="!busy && !error && !items.length" compact icon="lu:search-x" text="No matching items." />
     <p v-if="truncated">Showing the first 200 items. Narrow the filter to see more.</p>
     <p class="data-help">Results open their source documents.</p><p v-if="layout === 'calendar' && node.attrs.source === 'documents'" class="data-help">Dates show when documents were last modified.</p>
   </section>

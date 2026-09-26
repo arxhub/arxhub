@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Badge, Button, IconButton, modals, Row } from '@arxhub/uikit/core'
+import { Badge, Button, EmptyState, IconButton, modals, Row } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { BudgetExtension } from '../budget-extension'
@@ -84,13 +84,10 @@ async function remove(transaction: BudgetTransaction): Promise<void> {
       </div>
     </div>
 
-    <div v-if="!canAdd" class="empty">
-      <span>Create at least one account and one category before adding a transaction.</span>
-    </div>
-    <div v-else-if="transactions.length === 0" class="empty">
-      <span>No transactions in this month.</span>
-      <Button :size="buttonSize" @click="emit('add')">Add the first one</Button>
-    </div>
+    <EmptyState v-if="!canAdd" icon="lu:receipt" text="Create at least one account and one category before adding a transaction." />
+    <EmptyState v-else-if="transactions.length === 0" icon="lu:receipt" text="No transactions in this month.">
+      <template #actions><Button :size="buttonSize" @click="emit('add')">Add the first one</Button></template>
+    </EmptyState>
     <ul v-else class="list">
       <Row
         v-for="transaction in transactions"
@@ -248,18 +245,5 @@ h2 {
   align-items: center;
   flex-shrink: 0;
   gap: 4px;
-}
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 24px;
-  border: 1px solid var(--gray-6);
-  border-radius: var(--radius-sm);
-  background: var(--gray-2);
-  color: var(--gray-11);
-  font-size: var(--font-size-sm);
 }
 </style>

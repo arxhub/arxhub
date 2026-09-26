@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Row, ScrollArea } from '@arxhub/uikit/core'
+import { EmptyState, Row, ScrollArea } from '@arxhub/uikit/core'
 import type { PanelStore } from '../../types'
 import { useOpenTabsList } from '../use-open-tabs'
 
@@ -27,9 +27,7 @@ const { openTabs, pathOf, select } = useOpenTabsList(props.store)
           <span v-if="pathOf(tab.instance)" class="entry-path">{{ pathOf(tab.instance) }}</span>
         </span>
       </Row>
-      <div v-if="openTabs.length === 0" class="tabs-empty">
-        <p>No documents open</p>
-      </div>
+      <EmptyState v-if="openTabs.length === 0" compact icon="lu:file-text" text="No documents open." />
     </div>
   </ScrollArea>
 </template>
@@ -67,14 +65,5 @@ const { openTabs, pathOf, select } = useOpenTabsList(props.store)
   color: var(--gray-10);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
-}
-
-.tabs-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--size-xl);
-  color: var(--gray-10);
-  font-size: var(--font-size-md);
 }
 </style>

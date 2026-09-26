@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Input, Row, ScrollArea } from '@arxhub/uikit/core'
+import { Button, EmptyState, Row, ScrollArea, SearchField } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { EditorView } from 'prosemirror-view'
 import { ref, watch } from 'vue'
@@ -77,10 +77,10 @@ async function choose(anchor?: BlockDestination['anchor']) {
           <Row v-for="(block, index) in blocks" :key="index" as="button" type="button" wrap :disabled="busy" @click="choose(block.anchor)">{{ block.label }}</Row>
         </div>
       </ScrollArea>
-      <p v-if="!busy && !error && !blocks.length">No text blocks available.</p>
+      <EmptyState v-if="!busy && !error && !blocks.length" compact text="No text blocks available." />
     </template>
     <template v-else>
-      <Input v-model="query" aria-label="Search link destinations" placeholder="Search documents" />
+      <SearchField v-model="query" aria-label="Search link destinations" placeholder="Search documents" />
       <ScrollArea class="destination-list">
         <div aria-label="Documents">
           <Row v-for="document in documents" :key="document.path" as="button" type="button" wrap @click="selected = document">
@@ -88,7 +88,7 @@ async function choose(anchor?: BlockDestination['anchor']) {
           </Row>
         </div>
       </ScrollArea>
-      <p v-if="!busy && !error && !documents.length">No documents found.</p>
+      <EmptyState v-if="!busy && !error && !documents.length" compact icon="lu:search-x" text="No documents found." />
     </template>
     <p v-if="busy" role="status">Loading destinations…</p>
     <p v-if="error" role="alert">{{ error }} <Button :size="buttonSize" variant="secondary" @click="retry++">Retry destinations</Button></p>

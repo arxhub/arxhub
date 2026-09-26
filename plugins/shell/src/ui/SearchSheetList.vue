@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon, IconButton, Row, SectionLabel } from '@arxhub/uikit/core'
+import { EmptyState, Icon, IconButton, Row, SectionLabel } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useSheetLayer } from './hotkeys'
@@ -63,7 +63,7 @@ function choose(entry: SheetEntry): void {
   <div ref="listEl" class="sheet-list" @keydown.down.prevent="step(1)" @keydown.up.prevent="step(-1)">
     <section v-for="section in sections" :key="section.id" class="sheet-section">
       <SectionLabel class="sheet-heading">{{ section.title }}</SectionLabel>
-      <p v-if="section.entries.length === 0" class="sheet-empty">{{ section.empty }}</p>
+      <EmptyState v-if="section.entries.length === 0" compact :text="section.empty" />
       <div v-for="entry in section.entries" :key="entry.id" class="sheet-entry">
         <Row
           as="button"
@@ -107,13 +107,6 @@ function choose(entry: SheetEntry): void {
 
 .sheet-heading {
   padding: 0 8px 8px;
-}
-
-.sheet-empty {
-  margin: 0;
-  padding: 0 8px 4px;
-  color: var(--gray-10);
-  font-size: var(--font-size-sm);
 }
 
 .sheet-row-title {

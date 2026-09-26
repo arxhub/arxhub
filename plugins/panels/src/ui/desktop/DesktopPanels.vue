@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { EmptyState } from '@arxhub/uikit/core'
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
 import { computed, onMounted, onUnmounted, provide, shallowReactive, useId } from 'vue'
@@ -91,9 +92,7 @@ onUnmounted(() => {
       :group-id="page.groupId"
       :is-active="page.instance.instanceId === current?.instance.instanceId"
     />
-    <div v-if="!current" class="panels-empty">
-      <p>Nothing open</p>
-    </div>
+    <EmptyState v-if="!current" fill icon="lu:layers" text="Nothing is open." />
   </template>
   <template v-else>
     <div :id="parkingId" hidden />
@@ -105,20 +104,6 @@ onUnmounted(() => {
         :is-active="page.instance.instanceId === store.groups.value[page.groupId]?.activeInstanceId"
       />
     </Teleport>
-    <div v-if="!layout" class="panels-empty">
-      <p>No panels open</p>
-    </div>
+    <EmptyState v-if="!layout" fill icon="lu:layers" text="No panels open." />
   </template>
 </template>
-
-<style scoped>
-.panels-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  color: var(--gray-10);
-  font-size: var(--font-size-sm);
-}
-</style>

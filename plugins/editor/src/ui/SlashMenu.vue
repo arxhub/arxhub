@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon, Row, ScrollArea } from '@arxhub/uikit/core'
+import { EmptyState, Icon, Row, ScrollArea } from '@arxhub/uikit/core'
 import type { EditorView } from 'prosemirror-view'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { type BlockCommand, canRunSlashCommand, matchingCommands, runSlashCommand, type SlashMenuState } from '../slash-commands'
@@ -67,7 +67,7 @@ watch(
     >
       <Icon :name="command.icon" />{{ command.label }}
     </Row>
-    <span v-if="!matches.length" class="slash-empty">No matching blocks</span>
+    <EmptyState v-if="!matches.length" compact icon="lu:search-x" text="No matching blocks" />
   </div>
   </ScrollArea>
   </div>
@@ -89,5 +89,4 @@ watch(
   box-shadow: var(--shadow-md);
 }
 .slash-list { padding: 4px; }
-.slash-empty { display: block; padding: 8px; color: var(--gray-11); font-size: var(--font-size-sm); }
 </style>

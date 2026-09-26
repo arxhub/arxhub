@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ShellExtension } from '@arxhub/plugin-shell'
+import { EmptyState } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted, watch } from 'vue'
 import { SETTINGS_TYPE_ID } from '../contributions'
@@ -33,7 +34,7 @@ onMounted(() => {
       <div v-for="id in settings.openedIds.value" v-show="id === settings.activeId.value" :key="id" class="settings-page">
         <SettingsPageHost :section-id="id" />
       </div>
-      <p v-if="settings.openedIds.value.length === 0" class="settings-empty">No plugin has registered a settings section.</p>
+      <EmptyState v-if="settings.openedIds.value.length === 0" fill icon="lu:settings" text="No plugin has registered a settings section." />
     </div>
     <SettingsChangesBar />
   </div>
@@ -57,15 +58,5 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-}
-
-.settings-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  margin: 0;
-  color: var(--gray-10);
-  font-size: var(--font-size-sm);
 }
 </style>

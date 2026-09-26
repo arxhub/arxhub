@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, IconButton, modals, Row } from '@arxhub/uikit/core'
+import { Button, EmptyState, IconButton, modals, Row } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { BudgetExtension } from '../budget-extension'
@@ -62,10 +62,9 @@ async function remove(account: BudgetAccount): Promise<void> {
       <Button :size="buttonSize" variant="secondary" :disabled="budget.busy.value" @click="create">New account</Button>
     </div>
 
-    <div v-if="accounts.length === 0" class="empty">
-      <span>No accounts yet.</span>
-      <Button :size="buttonSize" @click="create">Create your first account</Button>
-    </div>
+    <EmptyState v-if="accounts.length === 0" icon="lu:wallet" text="No accounts yet.">
+      <template #actions><Button :size="buttonSize" @click="create">Create your first account</Button></template>
+    </EmptyState>
     <ul v-else class="list">
       <Row v-for="account in accounts" :key="account.id" as="li" plain wrap :data-account-id="account.id">
         <div class="row-main">
@@ -166,18 +165,5 @@ h2 {
   align-items: center;
   flex-shrink: 0;
   gap: 4px;
-}
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 24px;
-  border: 1px solid var(--gray-6);
-  border-radius: var(--radius-sm);
-  background: var(--gray-2);
-  color: var(--gray-11);
-  font-size: var(--font-size-sm);
 }
 </style>

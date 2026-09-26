@@ -96,7 +96,7 @@ useOpenSheetKey(() => {
         <!-- Switching type is the most frequent operation on this frame, and it must not unmount what is
              open: a return to Documents would otherwise be a freshly mounted editor — scroll at the top,
              undo history gone, selection lost (F-05). -->
-        <TypeStage :workspace="workspace" :types="types" empty="Nothing is open. Pick a type in the row below." />
+        <TypeStage :workspace="workspace" :types="types" hint="Pick a type in the row below." />
         <MobileEdgeGestures
           :left="navTitle != null && layer == null && !keyboardInset"
           :right="hasOpen && layer == null && !keyboardInset"

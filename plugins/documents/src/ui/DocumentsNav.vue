@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { EmptyState } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { DocumentsExtension } from '../documents-extension'
 
@@ -13,16 +14,5 @@ const documents = useArxHub().extensions.get(DocumentsExtension)
   <component :is="documents.nav.value" v-if="documents.nav.value != null" />
   <!-- No tree means the explorer is off. That state is reachable (the plugin is switchable) and
        staying quiet about it is not an option: an empty column reads as broken. -->
-  <p v-else class="documents-nav-empty">The explorer is switched off, so there is no vault tree here. Documents open from search.</p>
+  <EmptyState v-else icon="lu:folder-x" text="The explorer is switched off, so there is no vault tree here." hint="Documents open from search." />
 </template>
-
-<style scoped>
-.documents-nav-empty {
-  margin: 0;
-  padding: 16px;
-  color: var(--gray-10);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-relaxed);
-}
-</style>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { LogRecord } from '@arxhub/logger'
 // biome-ignore lint/style/useImportType: ScrollArea is used in template and as a type
-import { Button, IconButton, Input, Row, ScrollArea } from '@arxhub/uikit/core'
+import { Button, EmptyState, IconButton, Row, ScrollArea, SearchField } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import dayjs from 'dayjs'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
@@ -139,7 +139,7 @@ onBeforeUnmount(() => listening?.removeEventListener('scroll', onScroll))
       </template>
       <template #search>
       <div class="search">
-        <Input v-model="search" placeholder="Filter logs…" aria-label="Filter logs" />
+        <SearchField v-model="search" placeholder="Filter logs…" aria-label="Filter logs" />
       </div>
       </template>
       <template #session>
@@ -151,7 +151,7 @@ onBeforeUnmount(() => listening?.removeEventListener('scroll', onScroll))
     </LogToolbar>
 
     <ScrollArea ref="area" class="rows" content-class="rows-content">
-      <div v-if="visible.length === 0" class="empty">No log entries.</div>
+      <EmptyState v-if="visible.length === 0" icon="lu:scroll-text" text="No log entries." />
       <!-- An entry is read and copied, never activated, and a long message grows the line downwards. -->
       <Row v-for="(r, i) in visible" :key="i" plain wrap class="log-row" :tone="levelTone(r.level)">
         <span class="time">{{ dayjs(r.time).format('HH:mm:ss.SSS') }}</span>
@@ -219,12 +219,6 @@ onBeforeUnmount(() => listening?.removeEventListener('scroll', onScroll))
 
 .rows :deep(.rows-content) {
   padding: 4px 0;
-}
-
-.empty {
-  padding: 16px;
-  color: var(--gray-10);
-  text-align: center;
 }
 
 .log-row {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { EmptyState } from '@arxhub/uikit/core'
 import { computed } from 'vue'
 import type { DiffSheetTab } from '../model'
-import DiffEmpty from './DiffEmpty.vue'
 import { DIFF_LABELS, sheetAddedLabel, sheetRemovedLabel, sheetRenamedLabel } from './labels'
 import SheetGrid from './SheetGrid.vue'
 import SheetList from './SheetList.vue'
@@ -29,7 +29,7 @@ const empty = computed(() => (banner.value == null ? DIFF_LABELS.noChangesOnShee
 <template>
   <div class="sheet-body" :class="{ touch }">
     <div v-if="banner" class="banner">{{ banner }}</div>
-    <DiffEmpty v-if="tab.stops.length === 0" :label="empty" />
+    <EmptyState v-if="tab.stops.length === 0" icon="lu:check" :text="empty" data-testid="diff-empty" />
     <SheetGrid v-else-if="controller.sheetView.value === 'grid'" :tab="tab" />
     <SheetList v-else :tab="tab" />
   </div>

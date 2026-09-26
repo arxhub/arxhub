@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { type SearchDocument, type SearchSnippet, snippetSegments } from '@arxhub/sql'
 // biome-ignore lint/correctness/noUnusedImports: Row and ScrollArea are used in the template
-import { Row, ScrollArea } from '@arxhub/uikit/core'
+import { EmptyState, Row, ScrollArea } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, useId, watch } from 'vue'
 import { useOpenDocument } from './use-open-document'
@@ -195,9 +195,9 @@ defineExpose({ enter })
 
   <!-- Outside the list rather than a row inside it: a listbox holds options, and "nothing matches" is not
        something to select. It says what was searched, not what is currently in the field. -->
-  <p v-else-if="answered !== ''" class="empty">
+  <EmptyState v-else-if="answered !== ''" fill icon="lu:search-x" data-testid="search-empty">
     Nothing matches <span class="term">{{ answered }}</span>
-  </p>
+  </EmptyState>
 </template>
 
 <style scoped>
@@ -282,16 +282,7 @@ defineExpose({ enter })
   font-weight: var(--font-weight-medium);
 }
 
-.empty {
-  flex: 1;
-  min-height: 0;
-  margin: 8px;
-  color: var(--gray-11);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-relaxed);
-}
-
-.empty .term {
+.term {
   font-family: var(--font-mono);
   color: var(--gray-12);
 }

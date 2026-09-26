@@ -225,7 +225,7 @@ test.describe('finding a note by a word in its text', () => {
     await openSearch(app)
     await field(app).fill('птеродактиль-которого-нет')
 
-    await expect(app.locator('.empty')).toContainText('птеродактиль-которого-нет')
+    await expect(app.getByTestId('search-empty')).toContainText('птеродактиль-которого-нет')
   })
 
   test('the index says what it holds, in both frames, and rebuilds on request', async ({ app }) => {

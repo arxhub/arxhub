@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Dialog, Row } from '@arxhub/uikit/core'
+import { Button, Dialog, EmptyState, Row } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { ref, watch } from 'vue'
 import type { ArxDocumentLinks, DocumentDestination } from '../document-links'
@@ -49,7 +49,7 @@ async function open(path: string) {
     <p v-if="error" role="alert">{{ error }} <Button :size="buttonSize" variant="secondary" @click="retry++">Retry backlinks</Button></p>
     <nav v-else aria-label="Documents linking here">
       <Row v-for="document in results" :key="document.path" as="button" type="button" wrap @click="open(document.path)"><span>{{ document.title || document.path }}<small>{{ document.path }}</small></span></Row>
-      <p v-if="!busy && !results.length">No indexed documents link here yet.</p>
+      <EmptyState v-if="!busy && !results.length" compact icon="lu:link" text="No indexed documents link here yet." />
     </nav>
     </div>
   </Dialog>

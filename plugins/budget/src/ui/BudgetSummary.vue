@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Card, Row } from '@arxhub/uikit/core'
+import { Card, EmptyState, Row } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { accountBalance, type BudgetData, categoryTotals, monthlyTotals } from '../model'
@@ -45,12 +45,12 @@ function categoryName(id: string): string {
           </dl>
         </Card>
       </div>
-      <p v-else class="empty-copy">No activity in this month.</p>
+      <EmptyState v-else icon="lu:calendar" text="No activity in this month." />
     </section>
 
     <section class="section" aria-labelledby="budget-balances-heading">
       <h2 id="budget-balances-heading">Account balances</h2>
-      <p v-if="data.accounts.length === 0" class="empty-copy">Create an account to start tracking money.</p>
+      <EmptyState v-if="data.accounts.length === 0" icon="lu:wallet" text="Create an account to start tracking money." />
       <ul v-else class="list">
         <Row v-for="account in data.accounts" :key="account.id" as="li" plain>
           <span class="row-title">{{ account.name }}</span>
@@ -61,7 +61,7 @@ function categoryName(id: string): string {
 
     <section class="section" aria-labelledby="budget-spending-heading">
       <h2 id="budget-spending-heading">Spending by category</h2>
-      <p v-if="spending.length === 0" class="empty-copy">No expenses in this month.</p>
+      <EmptyState v-if="spending.length === 0" icon="lu:chart-pie" text="No expenses in this month." />
       <ul v-else class="list">
         <Row v-for="entry in spending" :key="`${entry.categoryId}:${entry.currency}`" as="li" plain>
           <span class="row-title">{{ categoryName(entry.categoryId) }}</span>
@@ -92,7 +92,6 @@ function categoryName(id: string): string {
 }
 
 h2,
-.empty-copy,
 dl,
 dd {
   margin: 0;
@@ -132,8 +131,7 @@ h2 {
   justify-content: space-between;
 }
 
-dt,
-.empty-copy {
+dt {
   color: var(--gray-11);
   font-size: var(--font-size-sm);
 }
