@@ -5,6 +5,7 @@ import { Decoration, DecorationSet, type EditorView } from 'prosemirror-view'
 import { expandDocumentPosition } from './document-navigation'
 import { editorMode } from './editor-mode'
 import { t } from './i18n/messages'
+import { type TitleEchoRange, titleEchoKey, titleEchoRange } from './title-echo'
 
 export interface DocumentMatch {
   from: number
@@ -18,11 +19,14 @@ export interface DocumentSearch {
 }
 export const documentSearchKey = new PluginKey<DocumentSearch>('document-search')
 
-export function findDocumentMatches(doc: Node, query: string, matchCase = false): DocumentMatch[] {
+// `skip` is the heading hidden as the page's title (title-echo.ts): a match there would be a jump to text
+// nobody can see, and the same words are already on screen as the name.
+export function findDocumentMatches(doc: Node, query: string, matchCase = false, skip: TitleEchoRange | null = null): DocumentMatch[] {
   if (!query) return []
   const matches: DocumentMatch[] = []
   const pattern = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), matchCase ? 'gu' : 'giu')
   doc.descendants((node, pos) => {
+    if (skip && pos >= skip.from && pos < skip.to) return false
     if (!node.isTextblock) return true
     const text = node.textBetween(0, node.content.size, undefined, '\ufffc')
     pattern.lastIndex = 0
@@ -37,14 +41,16 @@ export function documentSearchPlugin(open: () => void): Plugin<DocumentSearch> {
     key: documentSearchKey,
     state: {
       init: () => ({ query: '', matchCase: false, matches: [], index: 0 }),
-      apply: (tr, previous) => {
+      // The title echo's plugin sits before this one, so its new state is already on `state` here.
+      apply: (tr, previous, _old, state) => {
         const change: Partial<Pick<DocumentSearch, 'query' | 'matchCase' | 'index'>> | undefined = tr.getMeta(documentSearchKey)
-        if (!change && !tr.docChanged) return previous
+        const renamed = tr.getMeta(titleEchoKey) !== undefined
+        if (!change && !tr.docChanged && !renamed) return previous
         const query = change?.query ?? previous.query
         const matchCase = change?.matchCase ?? previous.matchCase
         const matches =
-          tr.docChanged || query !== previous.query || matchCase !== previous.matchCase
-            ? findDocumentMatches(tr.doc, query, matchCase)
+          tr.docChanged || renamed || query !== previous.query || matchCase !== previous.matchCase
+            ? findDocumentMatches(tr.doc, query, matchCase, titleEchoRange(state))
             : previous.matches
         const index = matches.length ? Math.max(0, Math.min(change?.index ?? previous.index, matches.length - 1)) : 0
         return { query, matchCase, matches, index }
@@ -101,7 +107,13 @@ export const replaceDocumentMatch =
       const tr = state.tr
       const matches = all ? search.matches : [search.matches[search.index]]
       for (const match of [...matches].reverse()) tr.insertText(replacement, match.from, match.to)
-      const next = findDocumentMatches(tr.doc, search.query, search.matchCase)
+      const hidden = titleEchoRange(state)
+      const next = findDocumentMatches(
+        tr.doc,
+        search.query,
+        search.matchCase,
+        hidden && { from: tr.mapping.map(hidden.from), to: tr.mapping.map(hidden.to) },
+      )
       const index = all
         ? 0
         : Math.max(
@@ -113,9 +125,10 @@ export const replaceDocumentMatch =
     return true
   }
 
-export function documentHeadings(doc: Node): { pos: number; level: number; title: string }[] {
+export function documentHeadings(doc: Node, skip: TitleEchoRange | null = null): { pos: number; level: number; title: string }[] {
   const headings: { pos: number; level: number; title: string }[] = []
   doc.descendants((node, pos) => {
+    if (skip && pos >= skip.from && pos < skip.to) return false
     if (node.type.name === 'heading') headings.push({ pos: pos + 1, level: node.attrs.level, title: node.textContent || t('outline.untitled') })
     return !node.isTextblock
   })

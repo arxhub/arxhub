@@ -40,6 +40,7 @@ import { type EditorMode, editorModeKey, modePlugin } from '../editor-mode'
 import { PROSEMIRROR_LAYER } from '../hotkeys'
 import { insertHint } from '../insert-hint'
 import { slashCommands, slashKey } from '../slash-commands'
+import { renameTitleEcho, selectionAfterEcho, titleEcho } from '../title-echo'
 import { restoreVersionBlock } from '../version-diff'
 import ArxComponentHost from './ArxComponentHost.vue'
 import ArxEditingToolbar from './ArxEditingToolbar.vue'
@@ -151,8 +152,9 @@ function historyChord(event: KeyboardEvent) {
   if (view.value && interactiveKeys(view.value, event)) event.preventDefault()
 }
 
-function buildPlugins() {
+function buildPlugins(name: string) {
   return [
+    titleEcho(name),
     modePlugin(mode.value, kit.controls, [
       ...Object.keys(kit.components),
       'image_block',
@@ -207,7 +209,8 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
     }
   }
   doc = identifyBlocks(withDocumentId(doc, id ?? crypto.randomUUID()))
-  const state = EditorState.create({ schema, doc, plugins: buildPlugins() })
+  const name = documents.displayName(path).text
+  const state = EditorState.create({ schema, doc, plugins: buildPlugins(name), selection: selectionAfterEcho(doc, name) })
   loadedStates.set(state, new TextDecoder().decode(bytes))
   return state
 }
@@ -471,6 +474,10 @@ async function resolveRecovery(action: 'draft' | 'saved' | 'both') {
 }
 
 const displayName = computed(() => documents.displayName(props.path).text)
+watch(displayName, (name) => {
+  const current = view.value
+  if (current && !current.isDestroyed) current.dispatch(renameTitleEcho(current.state.tr, name))
+})
 
 // The versions page stands in the editor's own column rather than over it, so the buffer it compares against and
 // restores into stays mounted underneath — unsaved text and undo survive the visit.
@@ -772,6 +779,8 @@ const chromeTarget = usePanelChrome(() => ({
   box-sizing: border-box;
   z-index: 1;
 }
+/* The first heading that repeats the document's name (title-echo.ts): the name above the body is the title. */
+.editor-scroll :deep(.arx-title-echo) { display: none; }
 .editor-scroll :deep(.arx-find-match) { background: var(--warning-4); }
 .editor-scroll :deep(.arx-find-current) { outline: 2px solid var(--accent-8); outline-offset: 1px; }
 .editor-scroll :deep(.arx-columns-desktop) { display: grid; gap: 24px; align-items: start; }

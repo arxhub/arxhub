@@ -6,12 +6,13 @@ import { computed, nextTick } from 'vue'
 import { focusDocument } from '../document-navigation'
 import { documentHeadings } from '../document-search'
 import { t } from '../i18n/messages'
+import { titleEchoRange } from '../title-echo'
 
 const props = defineProps<{ view: EditorView; revision: number }>()
 const emit = defineEmits<{ close: [] }>()
 const headings = computed(() => {
   void props.revision
-  return documentHeadings(props.view.state.doc)
+  return documentHeadings(props.view.state.doc, titleEchoRange(props.view.state))
 })
 async function reveal(pos: number) {
   emit('close')
