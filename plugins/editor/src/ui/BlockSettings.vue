@@ -34,7 +34,7 @@ const languages = ref<HTMLElement>()
 // The list is alphabetical and long; the language the block already has is the one to see on open.
 onMounted(async () => {
   await nextTick()
-  languages.value?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' })
+  languages.value?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'center' })
 })
 </script>
 <template>
