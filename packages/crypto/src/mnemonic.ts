@@ -21,3 +21,5 @@ export function validateMnemonic(mnemonic: string): boolean {
 export function mnemonicToSeed(mnemonic: string): Uint8Array {
   return mnemonicToSeedSync(mnemonic)
 }
+
+export const bip39Wordlist: readonly string[] = wordlist

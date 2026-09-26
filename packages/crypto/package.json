@@ -47,6 +47,7 @@
     "@arxhub/errors": "workspace:*",
     "@arxhub/events": "workspace:*",
     "@noble/ciphers": "catalog:shared",
+    "@noble/curves": "catalog:shared",
     "@noble/hashes": "catalog:shared",
     "@scure/bip32": "catalog:shared",
     "@scure/bip39": "catalog:shared",

@@ -54,6 +54,7 @@ catalogs:
   shared:
     '@electric-sql/pglite': ^0.5.4
     '@noble/ciphers': ^2.2.0
+    '@noble/curves': ^2.2.0
     '@noble/hashes': ^2.2.0
     '@scure/bip32': ^2.2.0
     '@scure/bip39': ^2.2.0
@@ -95,6 +96,7 @@ catalogs:
   tauri:
     '@tauri-apps/api': ^2.11.0
     '@tauri-apps/cli': ^2.11.0
+    '@tauri-apps/plugin-barcode-scanner': ^2.4.0
     '@tauri-apps/plugin-fs': ^2.5.0
     '@tauri-apps/plugin-geolocation': ^2.3.2
     '@tauri-apps/plugin-opener': ^2
