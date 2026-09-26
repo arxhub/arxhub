@@ -63,7 +63,7 @@ export interface OwnerRegistryArgs {
 // The marker is NOT rewritten on every boot. It is written when it is absent, and again when a
 // deliberate identity replacement it recorded has been reported. A marker that is present and
 // disagrees with the current identity is LEFT ALONE: after a reinstall the key store is empty and
-// `loadOrCreateKeyring` mints a fresh random identity, and overwriting the marker with that would
+// the first run creates a fresh random identity, and overwriting the marker with that would
 // destroy the only record of who the files on disk belong to — the record the Security page needs to
 // tell a reinstall apart from a stranger's phrase.
 export class OwnerRegistry {

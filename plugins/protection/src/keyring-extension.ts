@@ -1,10 +1,15 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import type { Keyring } from '@arxhub/crypto'
+import type { EntryRecord } from './entry/entry-record'
 import type { OwnerRegistry, OwnerVerdict } from './owner-marker'
 
 export interface KeyringExtensionArgs extends ExtensionArgs {
   keyring?: Keyring
   owners?: OwnerRegistry
+  entry?: EntryRecord | null
+  // Forgets the record where it is kept. Left out (a test, a headless composition), completing only
+  // clears the value held here.
+  clearEntry?: () => void
 }
 
 // Publishes the device's derived keyring to other plugins via the extension registry — e.g. sync reads
@@ -16,12 +21,25 @@ export interface KeyringExtensionArgs extends ExtensionArgs {
 // here, once, and sync only acts on it.
 export class KeyringExtension extends Extension {
   keyring: Keyring | null
+  // What the first run left for the plugins to finish — the server a new vault chose, or the one a
+  // joining device is downloading from. Sync reads it on its first start and completes it; protection
+  // cannot write sync's config itself, because sync depends on protection and not the other way round.
+  entry: EntryRecord | null
   private readonly owners: OwnerRegistry | null
+  private readonly clearEntry: (() => void) | null
 
   constructor(args: KeyringExtensionArgs) {
     super(args)
     this.keyring = args.keyring ?? null
     this.owners = args.owners ?? null
+    this.entry = args.entry ?? null
+    this.clearEntry = args.clearEntry ?? null
+  }
+
+  // The first run's last loose end is tied: the next boot has nothing left to finish.
+  completeEntry(): void {
+    this.entry = null
+    this.clearEntry?.()
   }
 
   // Memoised inside the registry: whoever asks first performs the read, and everyone else gets that

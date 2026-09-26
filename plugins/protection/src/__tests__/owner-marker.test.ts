@@ -53,7 +53,7 @@ describe('OwnerRegistry', () => {
   it('LEAVES a marker that disagrees with the current identity', async () => {
     await boot().read(OWNER)
 
-    // The reinstall: the key store is empty, loadOrCreateKeyring mints a random identity. Overwriting
+    // The reinstall: the key store is empty and the first run creates a random identity. Overwriting
     // the marker with it would destroy the only record of who the files on disk belong to.
     expect(await boot().read(MINTED)).toEqual({ previousOwner: OWNER, current: MINTED, changed: true })
     expect(await marker()).toEqual({ owner: OWNER })

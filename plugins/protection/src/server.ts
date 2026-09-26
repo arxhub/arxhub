@@ -5,8 +5,13 @@ import { GatewayServerExtension } from '@arxhub/plugin-gateway'
 import Elysia, { type AnyElysia } from 'elysia'
 import { RequestAuthenticator, type RequestAuthenticatorOptions } from './authenticator'
 import { serverManifest } from './manifest'
+import { pairingRoutes } from './pairing/pairing-routes'
+import { PairingRelay } from './pairing/relay'
+import { MAX_JOIN_BODY_BYTES, PAIR_TOKEN_HEADER, PAIRING_JOIN_PREFIX } from './pairing/wire'
 
 export { RequestAuthenticator, type RequestAuthenticatorOptions } from './authenticator'
+export { type PairingApp, pairingRoutes } from './pairing/pairing-routes'
+export { PairingRelay, type PairingRelayOptions } from './pairing/relay'
 
 function readAuthHeaders(headers: Headers): SignedRequestHeaders | null {
   const timestamp = headers.get(AUTH_HEADERS.timestamp)
@@ -88,6 +93,11 @@ export interface AuthGuardOptions {
     pathPrefix: string
     resolveToken: () => string | null | Promise<string | null>
   }[]
+  // The SECOND deliberate hole, and the only one open to writes: requests under these prefixes skip
+  // authentication in every method, with the body capped at MAX_JOIN_BODY_BYTES. It exists for a
+  // device joining the vault, which by definition has no identity to sign with yet. Internal — only
+  // ProtectionServerPlugin sets it, to the pairing join routes, whose relay does its own gatekeeping.
+  anonymousPrefixes?: string[]
 }
 
 function bearerMatches(expected: string, provided: string): boolean {
@@ -112,11 +122,21 @@ async function acceptBearer(request: Request, pathname: string, options: AuthGua
   return false
 }
 
+function underPrefix(pathname: string, prefixes: string[]): boolean {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`))
+}
+
+// Declared length first (cheap), then a bounded read, since a client can omit or understate the header.
+async function anonymousBodyFits(request: Request): Promise<boolean> {
+  if (Number(request.headers.get('content-length') ?? '0') > MAX_JOIN_BODY_BYTES) return false
+  return (await readBodyBounded(request, MAX_JOIN_BODY_BYTES)) != null
+}
+
 function isPublicRead(method: string, pathname: string, prefixes: string[]): boolean {
   if (method !== 'GET' && method !== 'HEAD') return false
   // FR-43: liveness probes must not depend on each composition root remembering the prefix.
   if (pathname === '/healthcheck') return true
-  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`))
+  return underPrefix(pathname, prefixes)
 }
 
 // Headers the signed-request client attaches; the browser must be told they're allowed on cross-origin
@@ -126,6 +146,7 @@ const CORS_ALLOWED_HEADERS = [
   AUTH_HEADERS.nonce,
   AUTH_HEADERS.signature,
   AUTH_HEADERS.publicKey,
+  PAIR_TOKEN_HEADER,
   'content-type',
   'authorization',
   'mcp-session-id',
@@ -150,6 +171,7 @@ export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Lo
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES
   const corsOrigins = options.corsOrigins
   const bearerAuth = options.bearerAuth
+  const anonymousPrefixes = options.anonymousPrefixes ?? []
   return new Elysia({ name: 'protection-guard' }).onRequest(async ({ request, set }) => {
     const url = new URL(request.url)
 
@@ -181,6 +203,12 @@ export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Lo
     }
 
     if (isPublicRead(request.method.toUpperCase(), url.pathname, publicGetPrefixes)) return
+    if (underPrefix(url.pathname, anonymousPrefixes)) {
+      if (await anonymousBodyFits(request)) return
+      logger?.warn(`Rejected oversized request body to ${url.pathname}`)
+      set.status = 413
+      return 'Payload Too Large'
+    }
     if (await acceptBearer(request, url.pathname, bearerAuth)) return
     const desc = await describe(request, maxBodyBytes)
     if (desc == null) {
@@ -203,7 +231,10 @@ export function createAuthGuard(authenticator: RequestAuthenticator, logger?: Lo
   })
 }
 
-export interface ProtectionServerPluginArgs extends PluginArgs, RequestAuthenticatorOptions, AuthGuardOptions {}
+export interface ProtectionServerPluginArgs extends PluginArgs, RequestAuthenticatorOptions, Omit<AuthGuardOptions, 'anonymousPrefixes'> {}
+
+// Expired invitations are also dropped lazily on access; the sweep only bounds what idle ones hold.
+const PAIRING_SWEEP_MS = 30_000
 
 // Mounts the auth guard onto the gateway during configure(). Register alongside GatewayServerPlugin and
 // before/after VfsHttpServerPlugin — the guard is a global onRequest hook, so mount order does not
@@ -214,6 +245,8 @@ export class ProtectionServerPlugin extends Plugin {
   private readonly maxBodyBytes?: number
   private readonly corsOrigins?: string[] | '*'
   private readonly bearerAuth?: AuthGuardOptions['bearerAuth']
+  private readonly relay = new PairingRelay()
+  private sweepTimer: ReturnType<typeof setInterval> | null = null
 
   constructor(args: ProtectionServerPluginArgs) {
     super(args, serverManifest)
@@ -244,7 +277,21 @@ export class ProtectionServerPlugin extends Plugin {
         maxBodyBytes: this.maxBodyBytes,
         corsOrigins: this.corsOrigins,
         bearerAuth: this.bearerAuth,
+        anonymousPrefixes: [PAIRING_JOIN_PREFIX],
       }),
     )
+    ctx.extensions.get(GatewayServerExtension).forPlugin(this).use(pairingRoutes(this.relay))
+  }
+
+  override start(ctx: PluginContext): Promise<void> {
+    this.sweepTimer = setInterval(() => this.relay.sweep(), PAIRING_SWEEP_MS)
+    this.sweepTimer.unref?.()
+    return super.start(ctx)
+  }
+
+  override async stop(ctx: PluginContext): Promise<void> {
+    if (this.sweepTimer != null) clearInterval(this.sweepTimer)
+    this.sweepTimer = null
+    await super.stop(ctx)
   }
 }

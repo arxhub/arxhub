@@ -1,38 +1,44 @@
 <script setup lang="ts">
 import { keyringFromMnemonic, validateMnemonic } from '@arxhub/crypto'
-import { hasErrorCode, illegalState } from '@arxhub/errors'
+import { illegalState } from '@arxhub/errors'
 import {
+  type CodeShape,
   changeUnlockCode,
+  deviceCodeBackoff,
   disableDeviceLock,
   enableDeviceLock,
+  getCodeShape,
   isDeviceLocked,
-  isUnlockCodeValid,
   KeyStoreExtension,
   LocalStorageKeyStore,
-  MIN_UNLOCK_CODE_LENGTH,
+  verifyUnlockCode,
 } from '@arxhub/plugin-keystore'
-import { PinEntry } from '@arxhub/plugin-keystore/ui'
-import { Badge, Button, Card, modals, PageLayout } from '@arxhub/uikit/core'
+import { SettingsExtension } from '@arxhub/plugin-settings'
+import { Button, Card, modals, PageLayout, Row } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
-import { computed, markRaw, onMounted, ref } from 'vue'
+import { computed, markRaw, onMounted, ref, shallowRef } from 'vue'
 import { IDENTITY_MNEMONIC_KEY } from '../identity'
 import { KeyringExtension } from '../keyring-extension'
 import { decideIdentityChange } from '../owner-decision'
+import { PairingExtension } from '../pairing-extension'
+import type { SecurityTaskDeps, SecurityTaskKind } from '../security/security-task'
 import { clearVaultWorkingTree, isVaultEmpty } from '../vault-reset'
-import DesktopChangeCodeEntry from './DesktopChangeCodeEntry.vue'
-import MobileChangeCodeEntry from './MobileChangeCodeEntry.vue'
 import OwnerHandoverDialog from './OwnerHandoverDialog.vue'
+import SecurityTaskView from './security/SecurityTaskView.vue'
 
 const arxhub = useArxHub()
 const touch = useShellFrame() === 'mobile'
 const buttonSize = touch ? 'lg' : 'sm'
-const ChangeCodeEntry = touch ? MobileChangeCodeEntry : DesktopChangeCodeEntry
 const keystoreExt = arxhub.extensions.get(KeyStoreExtension)
 const keystore = keystoreExt.keystore
 const deviceLockRequired = keystoreExt.deviceLockRequired
 const keyrings = arxhub.extensions.get(KeyringExtension)
 const keyring = keyrings.keyring
+const pairingServer = arxhub.extensions.get(PairingExtension).server
+const settings = arxhub.extensions.has(SettingsExtension) ? arxhub.extensions.get(SettingsExtension) : null
+// "Connect a server" leads to sync's own section, which exists only while sync is registered.
+const canOpenSync = computed(() => settings?.sections.value.some((section) => section.id === 'sync') ?? false)
 
 // This page is the one surface that may delete the working tree, so it reads the vault view itself
 // rather than borrowing one from a plugin that happens to hold it. An instance without a vault (there
@@ -50,91 +56,58 @@ const vault = (() => {
 // so a fresh one is the same store.
 const rawKeystore = new LocalStorageKeyStore()
 
-const locked = ref(false)
-const currentCode = ref('')
-const newCode = ref('')
-const lockBusy = ref(false)
-
-const newCodeValid = computed(() => isUnlockCodeValid(newCode.value))
+// Unknown until read: a task started before then must not guess "no lock" and skip the code.
+const locked = ref<boolean | null>(null)
+const codeShape = ref<CodeShape>('digits-6')
 
 onMounted(async () => {
   locked.value = await isDeviceLocked(rawKeystore)
+  codeShape.value = await getCodeShape(rawKeystore)
 })
+
+// The task on screen, if any. A new object per start, so every run asks for the code again.
+const task = shallowRef<{ kind: SecurityTaskKind; deps: SecurityTaskDeps; id: number } | null>(null)
+let taskId = 0
+
+// The lock is read again at the tap rather than taken from the page's copy: whether the code is asked
+// for must never rest on a value that may not have arrived yet.
+async function startTask(kind: SecurityTaskKind): Promise<void> {
+  const [isLocked, shape] = await Promise.all([isDeviceLocked(rawKeystore), getCodeShape(rawKeystore)])
+  locked.value = isLocked
+  codeShape.value = shape
+  const deps: SecurityTaskDeps = {
+    locked: isLocked,
+    codeShape: shape,
+    backoff: deviceCodeBackoff,
+    verify: (code) => verifyUnlockCode(rawKeystore, code),
+    readPhrase: () => keystore.get(IDENTITY_MNEMONIC_KEY),
+    changeCode: async (current, next) => void (await changeUnlockCode(rawKeystore, current, next)),
+    enableLock: async (code) => void (await enableDeviceLock(rawKeystore, code)),
+    disableLock: async (current) => void (await disableDeviceLock(rawKeystore, current)),
+  }
+  task.value = { kind, deps, id: ++taskId }
+}
+
+const APPLIED: Partial<Record<SecurityTaskKind, string>> = {
+  'change-code': 'Unlock code changed',
+  lock: 'Device locked',
+  'remove-lock': 'Device lock removed',
+}
 
 // Every lock change swaps the store the whole app reads secrets from, and that store is resolved
 // before ArxHub.start() — so, as with replacing the identity, the way to apply it is a fresh boot.
-async function applyLockChange(change: () => Promise<unknown>, success: string): Promise<void> {
-  lockBusy.value = true
-  try {
-    await change()
-    toaster.create({ title: success, type: 'success' })
-    window.location.reload()
-  } catch (error) {
-    lockBusy.value = false
-    const wrong = hasErrorCode(error, 'UnlockFailedError')
-    toaster.create({
-      title: wrong ? 'That code did not work' : 'Could not change the device lock',
-      description: wrong ? undefined : String(error),
-      type: 'error',
-    })
-  }
+function applied(kind: SecurityTaskKind): void {
+  toaster.create({ title: APPLIED[kind] ?? 'Saved', type: 'success' })
+  window.location.reload()
 }
 
-function confirmEnableLock(): void {
-  modals.openConfirmModal({
-    title: 'Lock this device',
-    content:
-      'Your keys will be encrypted with this code, and it will be asked for every time the app starts. There is no ' +
-      'way to recover it: forgetting it means erasing this device and restoring from your recovery phrase.',
-    labels: { confirm: 'Lock device', cancel: 'Cancel' },
-    onConfirm: () => void applyLockChange(() => enableDeviceLock(rawKeystore, newCode.value), 'Device locked'),
-  })
+function openSyncSettings(): void {
+  settings?.open('sync')
 }
-
-function confirmDisableLock(): void {
-  modals.openConfirmModal({
-    title: 'Remove the device lock',
-    content: 'Your recovery phrase goes back to being stored unencrypted. Anyone who can read this browser profile can take it.',
-    labels: { confirm: 'Remove lock', cancel: 'Cancel' },
-    confirmProps: { danger: true },
-    onConfirm: () => void applyLockChange(() => disableDeviceLock(rawKeystore, currentCode.value), 'Device lock removed'),
-  })
-}
-
-function submitChangeCode(): void {
-  if (!newCodeValid.value || currentCode.value.length === 0) return
-  void applyLockChange(() => changeUnlockCode(rawKeystore, currentCode.value, newCode.value), 'Unlock code changed')
-}
-
-function submitEnableLock(): void {
-  if (newCodeValid.value) confirmEnableLock()
-}
-
-const phrase = ref<string | null>(null)
 
 const entered = ref('')
 const normalized = computed(() => entered.value.trim().replace(/\s+/g, ' ').toLowerCase())
 const enteredValid = computed(() => normalized.value.length > 0 && validateMnemonic(normalized.value))
-
-async function reveal(): Promise<void> {
-  const stored = (await keystore.get(IDENTITY_MNEMONIC_KEY))?.trim()
-  if (!stored) {
-    toaster.create({ title: 'No recovery phrase', description: 'This device has no stored identity.', type: 'error' })
-    return
-  }
-  phrase.value = stored
-}
-
-function confirmReveal(): void {
-  modals.openConfirmModal({
-    title: 'Show recovery phrase',
-    content: 'Anyone who reads these words gains full access to your vault. Make sure nobody can see your screen.',
-    labels: { confirm: 'Show', cancel: 'Cancel' },
-    onConfirm: () => {
-      reveal().catch((error) => toaster.create({ title: 'Could not read the recovery phrase', description: String(error), type: 'error' }))
-    },
-  })
-}
 
 async function copy(text: string, what: string): Promise<void> {
   await navigator.clipboard.writeText(text)
@@ -282,6 +255,84 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
 <template>
   <PageLayout title="Security" description="Keys live on this device only. Nothing here is sent anywhere unless you set up sync.">
     <div class="security" :class="{ touch }">
+    <section class="rows" aria-label="Security actions">
+      <Row
+        as="button"
+        plated
+        next
+        icon="lu:key-round"
+        label="Show recovery phrase"
+        detail="12 words — connect a device or restore the vault"
+        :disabled="locked == null"
+        data-testid="security-show-phrase"
+        @click="startTask('phrase')"
+      />
+      <Row
+        v-if="pairingServer"
+        as="button"
+        plated
+        next
+        icon="lu:qr-code"
+        label="Connect a device"
+        detail="A QR for a new phone or computer"
+        :disabled="locked == null"
+        data-testid="security-pair"
+        @click="startTask('pair')"
+      />
+      <template v-else>
+        <Row
+          as="button"
+          plated
+          disabled
+          icon="lu:qr-code"
+          label="Connect a device"
+          detail="Connect a sync server first — without one, devices have nothing to exchange through. You can still enter the phrase on the new device."
+          data-testid="security-pair"
+        />
+        <div v-if="canOpenSync" class="row-action">
+          <Button block variant="secondary" data-testid="security-connect-server" @click="openSyncSettings">Connect a server</Button>
+        </div>
+      </template>
+      <Row
+        v-if="locked"
+        as="button"
+        plated
+        next
+        icon="lu:lock"
+        label="Change this device's code"
+        detail="6 digits"
+        :disabled="locked == null"
+        data-testid="security-change-code"
+        @click="startTask('change-code')"
+      />
+      <Row
+        v-else
+        as="button"
+        plated
+        next
+        icon="lu:lock-open"
+        label="Lock this device"
+        detail="6 digits. The keys on this device are stored unencrypted until then."
+        :disabled="locked == null"
+        data-testid="security-lock"
+        @click="startTask('lock')"
+      />
+      <Row
+        v-if="locked && !deviceLockRequired"
+        as="button"
+        plated
+        next
+        tone="danger"
+        icon="lu:lock-open"
+        label="Remove the device lock"
+        detail="The recovery phrase goes back to being stored unencrypted"
+        :disabled="locked == null"
+        data-testid="security-remove-lock"
+        @click="startTask('remove-lock')"
+      />
+      <p class="footnote">Showing the phrase and connecting a device ask for the code every time: both hand out the vault key.</p>
+    </section>
+
     <section class="block">
       <h3 class="block-title">Device identity</h3>
       <p v-if="!keyring" class="hint">This device has no identity. Sync and publishing stay idle until one exists.</p>
@@ -292,83 +343,6 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
         <div class="row">
           <code class="value" data-testid="public-key">{{ keyring.authPublicKey }}</code>
           <Button :size="buttonSize" variant="secondary" @click="run(copy(keyring.authPublicKey, 'Public key'), 'Could not copy')">Copy</Button>
-        </div>
-      </template>
-    </section>
-
-    <section class="block">
-      <div class="block-heading">
-        <h3 class="block-title">Device lock</h3>
-        <Badge :variant="locked ? 'success' : 'warning'" dot>{{ locked ? 'Locked' : 'Unlocked' }}</Badge>
-      </div>
-      <p v-if="locked" class="hint">
-        This device's keys are encrypted. The code is asked for each time the app starts and is never stored.
-      </p>
-      <p v-else class="hint">
-        <strong>This device's keys are stored unencrypted.</strong> Anyone who can read this browser profile — a
-        backup, a synced account, another program on this machine — can take your recovery phrase. A lock encrypts
-        them with a code only you know.
-      </p>
-
-      <template v-if="!locked">
-        <p class="hint">
-          The code is {{ MIN_UNLOCK_CODE_LENGTH }} digits or more. It stops whoever ends up with a copy of this
-          profile, not someone who came for your vault and can spend an afternoon on it.
-        </p>
-        <PinEntry
-          v-model="newCode"
-          label="New unlock code"
-          :placeholder="`Unlock code, ${MIN_UNLOCK_CODE_LENGTH}+ digits`"
-          autocomplete="new-password"
-          test-id="new-unlock-code"
-          :disabled="lockBusy"
-          @submit="submitEnableLock"
-        />
-        <div class="row">
-          <Button :size="buttonSize" variant="secondary" :disabled="!newCodeValid || lockBusy" @click="confirmEnableLock">
-            Lock this device
-          </Button>
-        </div>
-      </template>
-
-      <template v-else>
-        <ChangeCodeEntry
-          v-model:current-code="currentCode"
-          v-model:new-code="newCode"
-          :disabled="lockBusy"
-          @submit="submitChangeCode"
-        />
-        <div class="row">
-          <Button :size="buttonSize" variant="secondary" :disabled="!newCodeValid || currentCode.length === 0 || lockBusy" @click="submitChangeCode">
-            Change code
-          </Button>
-          <Button
-            v-if="!deviceLockRequired"
-            :size="buttonSize"
-            variant="danger"
-            :disabled="currentCode.length === 0 || lockBusy"
-            @click="confirmDisableLock"
-          >
-            Remove lock
-          </Button>
-        </div>
-      </template>
-    </section>
-
-    <section class="block">
-      <h3 class="block-title">Recovery phrase</h3>
-      <p class="hint">
-        These twelve words are the only way to reach this vault from another device, and the only way back after losing
-        this one. Store them outside this device.
-      </p>
-      <div v-if="phrase == null" class="row">
-        <Button :size="buttonSize" variant="secondary" @click="confirmReveal">Show recovery phrase</Button>
-      </div>
-      <template v-else>
-        <code class="value phrase" data-testid="recovery-phrase">{{ phrase }}</code>
-        <div class="row">
-          <Button :size="buttonSize" variant="secondary" @click="run(copy(phrase, 'Recovery phrase'), 'Could not copy')">Copy</Button>
-          <Button :size="buttonSize" variant="ghost" @click="phrase = null">Hide</Button>
         </div>
       </template>
     </section>
@@ -403,6 +377,16 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
       </div>
     </Card>
     </div>
+    <SecurityTaskView
+      v-if="task"
+      :key="task.id"
+      :kind="task.kind"
+      :deps="task.deps"
+      :server="pairingServer"
+      :keyring="keyring"
+      @close="task = null"
+      @applied="applied(task.kind)"
+    />
   </PageLayout>
 </template>
 
@@ -418,16 +402,27 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   max-width: 60ch;
 }
 
+/* The rows carry their own hairlines, so they stack without a gap. */
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.row-action {
+  padding: 8px 0;
+}
+
+.footnote {
+  margin: 12px 0 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--gray-11);
+}
+
 .block {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-}
-
-.block-heading {
-  display: flex;
-  align-items: center;
   gap: 12px;
 }
 
@@ -467,11 +462,6 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
 .security.touch .value {
   font-size: var(--font-size-sm);
   min-height: var(--size-xl);
-}
-
-.phrase {
-  line-height: 1.8;
-  letter-spacing: 0.02em;
 }
 
 .entry {

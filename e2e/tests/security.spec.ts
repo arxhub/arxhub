@@ -1,4 +1,9 @@
+import { fileURLToPath } from 'node:url'
+import type { Page } from '@playwright/test'
+import type { JoinerHandle } from '../fixtures/pairing-host'
+import { enterCode } from './entry-helpers'
 import { expect, OTHER_MNEMONIC, openSecuritySettings, SEEDED_MNEMONIC, storedMnemonic, test, waitForApp } from './fixtures'
+import { lockDevice, securityTask as task } from './security-helpers'
 
 const UNLOCK_CODE = '314159'
 
@@ -35,26 +40,50 @@ test.describe('Security settings', () => {
 
   test('keeps the recovery phrase hidden until it is asked for', async ({ app }) => {
     await expect(app.getByTestId('recovery-phrase')).toBeHidden()
-    await expect(app.getByRole('button', { name: 'Show recovery phrase' })).toBeVisible()
+    await expect(app.getByTestId('security-show-phrase')).toBeVisible()
   })
 
+  // The seeded device has no lock, so there is no code to ask for; the owner still confirms before the
+  // words appear, because a stray tap must not put them on screen (FR-194).
   test('reveals the phrase only after the confirm, and hides it again', async ({ app }) => {
-    await app.getByRole('button', { name: 'Show recovery phrase' }).click()
-
-    // The confirm is the point of the requirement: the words must not appear by a stray click (FR-194).
-    await expect(app.getByRole('dialog')).toContainText('Anyone who reads these words')
+    await app.getByTestId('security-show-phrase').click()
+    await expect(task(app)).toContainText('no code to ask for')
     await expect(app.getByTestId('recovery-phrase')).toBeHidden()
 
-    await app.getByRole('button', { name: 'Show', exact: true }).click()
-    await expect(app.getByTestId('recovery-phrase')).toHaveText(SEEDED_MNEMONIC)
+    await app.getByTestId('security-continue').click()
+    const shown = app.getByTestId('recovery-phrase')
+    for (const word of SEEDED_MNEMONIC.split(' ')) await expect(shown).toContainText(word)
 
-    await app.getByRole('button', { name: 'Hide' }).click()
+    await app.getByTestId('phrase-done').click()
     await expect(app.getByTestId('recovery-phrase')).toBeHidden()
   })
 
   test('cancelling the confirm leaves the phrase hidden', async ({ app }) => {
-    await app.getByRole('button', { name: 'Show recovery phrase' }).click()
+    await app.getByTestId('security-show-phrase').click()
     await app.getByRole('button', { name: 'Cancel' }).click()
+    await expect(app.getByTestId('recovery-phrase')).toBeHidden()
+    await expect(task(app)).toBeHidden()
+  })
+
+  test('on a locked device the phrase asks for the code, every time', async ({ app }) => {
+    await lockDevice(app, UNLOCK_CODE)
+    await enterCode(app, 'unlock-code', UNLOCK_CODE)
+    await waitForApp(app)
+    await openSecuritySettings(app)
+
+    await app.getByTestId('security-show-phrase').click()
+    await expect(app.getByRole('dialog', { name: 'Enter the code' })).toContainText('To show the recovery phrase.')
+    await enterCode(app, 'reentry-code', '000000')
+    await expect(task(app).getByRole('alert')).toContainText('Wrong code')
+    await expect(app.getByTestId('recovery-phrase')).toBeHidden()
+
+    await enterCode(app, 'reentry-code', UNLOCK_CODE)
+    await expect(app.getByTestId('recovery-phrase')).toContainText(SEEDED_MNEMONIC.split(' ')[0] ?? '')
+    await app.getByTestId('phrase-done').click()
+
+    // The code let the phrase out once; a second showing asks again.
+    await app.getByTestId('security-show-phrase').click()
+    await expect(app.getByRole('dialog', { name: 'Enter the code' })).toBeVisible()
     await expect(app.getByTestId('recovery-phrase')).toBeHidden()
   })
 
@@ -123,33 +152,24 @@ test.describe('Security settings', () => {
   })
 
   test('locking the device encrypts the phrase at rest and gates the next boot', async ({ app }) => {
-    await app.getByTestId('new-unlock-code').fill(UNLOCK_CODE)
-    await app.getByRole('button', { name: 'Lock this device' }).click()
-    await app.getByRole('button', { name: 'Lock device' }).click()
-
-    // Applying the lock reloads, and the reload must not get past the gate.
-    await expect(app.getByRole('heading', { name: 'Unlock ArxHub' })).toBeVisible()
+    await lockDevice(app, UNLOCK_CODE)
 
     // The point of the whole feature: the phrase is no longer readable off the profile.
     const atRest = await storedMnemonic(app)
     expect(atRest).not.toBe(SEEDED_MNEMONIC)
     expect(atRest).toMatch(/^[0-9a-f]+$/)
 
+    // Six digits submit themselves: there is no Unlock button to press.
     await app.getByLabel('Unlock code').fill(UNLOCK_CODE)
-    await app.getByRole('button', { name: 'Unlock' }).click()
     await waitForApp(app)
   })
 
   test('a wrong code does not get past the gate', async ({ app }) => {
-    await app.getByTestId('new-unlock-code').fill(UNLOCK_CODE)
-    await app.getByRole('button', { name: 'Lock this device' }).click()
-    await app.getByRole('button', { name: 'Lock device' }).click()
-    await expect(app.getByRole('heading', { name: 'Unlock ArxHub' })).toBeVisible()
+    await lockDevice(app, UNLOCK_CODE)
 
     await app.getByLabel('Unlock code').fill('000000')
-    await app.getByRole('button', { name: 'Unlock' }).click()
 
-    await expect(app.getByRole('alert')).toContainText('That code did not work')
+    await expect(app.getByRole('alert')).toContainText('Wrong code')
     await expect(app.getByRole('main')).toBeHidden()
   })
 
@@ -167,5 +187,89 @@ test.describe('Security settings', () => {
 
     await app.waitForLoadState('domcontentloaded')
     await waitForApp(app)
+  })
+})
+
+const pairingModule = `/@fs${fileURLToPath(new URL('../fixtures/pairing-host.ts', import.meta.url))}`
+
+// Sync's address is shared config, and every other test of the project reads the same file — so the
+// address this page sees is answered by a route on this page only, never written to the stand. The sync
+// routes are refused for the same reason: this page must not sync the project's shared tree.
+async function serveSyncAddress(app: Page, serverUrl: string): Promise<void> {
+  await app.route('**/api/sync/**', (route) => route.abort('connectionrefused'))
+  await app.route('**/api/vfs/read?**', (route) => {
+    const url = decodeURIComponent(route.request().url())
+    if (!url.includes('sync/config.toml')) return route.fallback()
+    return route.fulfill({ status: 200, contentType: 'application/octet-stream', body: `serverUrl = "${serverUrl}"\n` })
+  })
+  await app.reload()
+  await waitForApp(app)
+}
+
+test.describe('Connect a device', () => {
+  test('is unavailable without a sync server, and says where to set one', async ({ app }) => {
+    await serveSyncAddress(app, '')
+    await openSecuritySettings(app)
+
+    const row = app.getByTestId('security-pair')
+    await expect(row).toBeDisabled()
+    await expect(row).toContainText('Connect a sync server first')
+    await app.getByTestId('security-connect-server').click()
+    await expect(app.getByRole('heading', { name: 'Sync', exact: true })).toBeVisible()
+  })
+
+  test('shows the invitation, compares the digits and hands the key over', async ({ app, baseURL }) => {
+    const server = new URL(baseURL ?? '').origin
+    await serveSyncAddress(app, server)
+    await openSecuritySettings(app)
+
+    await app.getByTestId('security-pair').click()
+    // The seeded device has no lock, so the owner confirms instead of re-entering a code.
+    await app.getByTestId('security-continue').click()
+    await expect(app.getByTestId('pairing-qr')).toBeVisible()
+    await expect(app.getByTestId('pairing-server')).toHaveText(server)
+    await expect(app.getByTestId('pairing-status')).toContainText(/valid for \d:\d\d/)
+    const code = (await app.getByTestId('pairing-code').textContent()) ?? ''
+    expect(code).toMatch(/^[0-9A-Z]{4}-[0-9A-Z]{4}$/)
+
+    // The new device, driven in the same page: it needs nothing but the relay and the code.
+    await app.evaluate(
+      async ([module, typed]) => {
+        const { startPairingJoiner } = (await import(module)) as { startPairingJoiner: (c: string) => JoinerHandle }
+        ;(window as unknown as { joiner: JoinerHandle }).joiner = startPairingJoiner(typed)
+      },
+      [pairingModule, code] as const,
+    )
+    const joinerSas = () => app.evaluate(() => (window as unknown as { joiner: JoinerHandle }).joiner.sas())
+    const joinerPayload = () => app.evaluate(() => (window as unknown as { joiner: JoinerHandle }).joiner.payload())
+
+    await expect(app.getByRole('dialog', { name: 'Compare the digits' })).toContainText('E2E phone is connecting')
+    await expect.poll(joinerSas).not.toBeNull()
+    const sas = (await joinerSas()) as string
+    await expect(app.getByTestId('pairing-sas')).toHaveText(`${sas.slice(0, 3)} ${sas.slice(3)}`)
+
+    await app.evaluate(() => (window as unknown as { joiner: JoinerHandle }).joiner.confirm())
+    await app.getByTestId('pairing-confirm').click()
+    await expect(app.getByRole('dialog', { name: 'Device connected' })).toContainText('E2E phone received the vault key.')
+    await expect.poll(joinerPayload).toEqual({ v: 1, mnemonic: SEEDED_MNEMONIC, serverUrl: server })
+  })
+
+  test('asks for the code every time on a locked device', async ({ app, baseURL }) => {
+    await serveSyncAddress(app, new URL(baseURL ?? '').origin)
+    await openSecuritySettings(app)
+    await lockDevice(app, UNLOCK_CODE)
+    await enterCode(app, 'unlock-code', UNLOCK_CODE)
+    await waitForApp(app)
+    await openSecuritySettings(app)
+
+    for (let round = 0; round < 2; round++) {
+      await app.getByTestId('security-pair').click()
+      const dialog = app.getByRole('dialog', { name: 'Enter the code' })
+      await expect(dialog).toContainText('To show the connection QR — it hands out the vault key.')
+      await enterCode(app, 'reentry-code', UNLOCK_CODE)
+      await expect(app.getByTestId('pairing-qr')).toBeVisible()
+      await app.getByTestId('pairing-cancel').click()
+      await expect(task(app)).toBeHidden()
+    }
   })
 })

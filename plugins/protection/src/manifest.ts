@@ -14,6 +14,7 @@ export const serverManifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Authenticates gateway requests via signed challenges with TOFU key pinning',
+  namespace: 'pair',
   // Switching this off would leave the vault open to anyone who can reach the port. A recovery boot
   // must not be a way to get there.
   essential: true,

@@ -1,23 +1,31 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import type { Keyring } from '@arxhub/crypto'
+import type { StorageLike } from '@arxhub/plugin-keystore'
 import { SettingsExtension } from '@arxhub/plugin-settings'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { PluginVfs, RootVfs } from '@arxhub/vfs'
 import { markRaw } from 'vue'
 import { watchAuthRejections } from './auth-status'
+import { type EntryRecord, EntryRecordStore } from './entry/entry-record'
 import { KeyringExtension } from './keyring-extension'
 import { manifest } from './manifest'
 import { OwnerRegistry } from './owner-marker'
+import { PairingExtension } from './pairing-extension'
 import AuthAlert from './ui/AuthAlert.vue'
 import { openAuthRejectedDialog } from './ui/auth-dialog'
 import SecuritySettingsPage from './ui/SecuritySettingsPage.vue'
 
 export interface ProtectionPluginArgs extends PluginArgs {
   // The device keyring, resolved from client-local storage at the composition root (see
-  // loadOrCreateKeyring). Injected rather than derived here so the signer can be installed BEFORE
+  // resolveDeviceEntry). Injected rather than derived here so the signer can be installed BEFORE
   // ArxHub.start() — the working-tree /vfs is itself protected, so nothing can do VFS I/O until the
   // identity exists, and the mnemonic must never travel to the server VFS.
   keyring: Keyring
+  // What the first run left unfinished (see resolveDeviceEntry), handed on to sync through
+  // KeyringExtension.
+  entry?: EntryRecord | null
+  // Where that record lives; the device's localStorage unless a test says otherwise.
+  entryStorage?: StorageLike
 }
 
 // Client-side protection plugin: publishes the device keyring via KeyringExtension so other plugins
@@ -25,17 +33,23 @@ export interface ProtectionPluginArgs extends PluginArgs {
 // and request-signer installation happen in the instance's main.ts, not here.
 export class ProtectionPlugin extends Plugin {
   private readonly keyring: Keyring
+  private readonly entry: EntryRecord | null
+  private readonly entryRecords: EntryRecordStore
   private unwatchRejections: (() => void) | null = null
 
   constructor(args: ProtectionPluginArgs) {
     super(args, manifest)
     this.keyring = args.keyring
+    this.entry = args.entry ?? null
+    this.entryRecords = new EntryRecordStore(args.entryStorage)
   }
 
   override create(ctx: PluginContext): void {
     super.create(ctx)
     ctx.extensions.register(KeyringExtension, () => ({
       keyring: this.keyring,
+      entry: this.entry,
+      clearEntry: () => this.entryRecords.clear(),
       // Identity is protection's business, so the record of who the data on disk belongs to lives in
       // protection's own device-local state. Root is reached only to adopt the copy sync used to keep.
       owners: new OwnerRegistry({
@@ -44,6 +58,7 @@ export class ProtectionPlugin extends Plugin {
         logger: this.logger,
       }),
     }))
+    ctx.extensions.register(PairingExtension)
     // In create(), not start(): every plugin's config read happens during start(), so a subscription
     // made there would miss the first refusals — the ones that explain why the boot went wrong. The
     // dialog goes through the modal registry, so opening it here (before anything is mounted) is fine —

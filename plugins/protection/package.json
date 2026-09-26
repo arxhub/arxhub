@@ -12,7 +12,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./manifest": "./src/manifest.ts",
-    "./server": "./src/server.ts"
+    "./server": "./src/server.ts",
+    "./ui": "./src/ui.ts"
   },
   "files": [
     "dist"
@@ -23,6 +24,7 @@
   },
   "dependencies": {
     "@arxhub/crypto": "workspace:*",
+    "@arxhub/http": "workspace:*",
     "@sinclair/typebox": "catalog:shared",
     "elysia": "catalog:server",
     "vue": "catalog:client"
@@ -42,6 +44,8 @@
     "@arxhub/plugin-keystore": "workspace:*",
     "@arxhub/plugin-settings": "workspace:*",
     "@arxhub/plugin-shell": "workspace:*",
+    "@arxhub/stdlib": "workspace:*",
+    "@arxhub/sync": "workspace:*",
     "@arxhub/uikit": "workspace:*",
     "@arxhub/vfs": "workspace:*"
   },
@@ -58,6 +62,10 @@
       "./server": {
         "import": "./dist/server.js",
         "types": "./dist/server.d.ts"
+      },
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
       }
     }
   }
