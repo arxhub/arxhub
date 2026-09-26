@@ -23,6 +23,9 @@
 html {
   background-color: var(--gray-1);
   color: var(--gray-12);
+  /* Anything teleported to <body> (the slash menu, a popover) sits outside the shell that sets the font,
+     and would otherwise fall back to the browser's serif. */
+  font-family: var(--font-sans);
 }
 
 body {
