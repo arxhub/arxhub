@@ -1,13 +1,14 @@
 import { PluginConfig } from '@arxhub/config'
 import { apiBaseUrl, Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
-import { KeyringExtension } from '@arxhub/plugin-protection'
+import { KeyringExtension, PairingExtension } from '@arxhub/plugin-protection'
 import { RepositoryExtension } from '@arxhub/plugin-repository'
 import { SettingsExtension } from '@arxhub/plugin-settings'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { EncryptedSyncRemote, HttpSyncRemote, SYNC_NAMESPACE, SyncEngine } from '@arxhub/sync'
 import { type Static, Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
+import { adoptEntryServer } from './entry-server'
 import { manifest } from './manifest'
 import { SyncExtension } from './sync-extension'
 import SyncActions from './ui/SyncActions.vue'
@@ -89,14 +90,50 @@ export class SyncPlugin extends Plugin {
   override start(ctx: PluginContext): Promise<void> {
     this.stopping = false
     this.bootConfigPending = true
+    // Before the bring-up, synchronously: the boot decides whether to hold the app behind the download
+    // screen right after start() returns, long before the config read below has answered.
+    const keyring = ctx.extensions.get(KeyringExtension)
+    const entry = keyring.entry
+    if (entry?.kind === 'join') {
+      ctx.extensions.get(SyncExtension).expectInitialDownload({
+        finish: () => this.finishJoin(ctx, entry.serverUrl),
+        retry: () => this.bringUpAgain(ctx),
+      })
+    }
     this.bringUp = this.startSync(ctx)
-    void this.bringUp.catch((error) => {
-      const sync = ctx.extensions.get(SyncExtension)
-      sync.status.value = 'error'
-      sync.lastError.value = error instanceof Error ? error.message : String(error)
-      this.logger.error('Could not initialize sync', error)
-    })
+    void this.bringUp.catch((error) => this.bringUpFailed(ctx, error))
     return super.start(ctx)
+  }
+
+  private bringUpFailed(ctx: PluginContext, error: unknown): void {
+    const sync = ctx.extensions.get(SyncExtension)
+    const message = error instanceof Error ? error.message : String(error)
+    sync.status.value = 'error'
+    sync.lastError.value = message
+    sync.failInitialDownload(message)
+    this.logger.error('Could not initialize sync', error)
+  }
+
+  // "Try again" on a first download whose remote was never built (the config could not be read):
+  // the whole bring-up once more, which ends by starting the download.
+  private async bringUpAgain(ctx: PluginContext): Promise<void> {
+    if (this.stopping) return
+    await this.bringUp?.catch(() => {})
+    this.lastServerUrl = null
+    this.bootConfigPending = true
+    this.bringUp = this.startSync(ctx)
+    await this.bringUp.catch((error) => this.bringUpFailed(ctx, error))
+  }
+
+  // The joined device's vault is here, and with it the vault's own sync config. Only if that config
+  // still names no server is the address the join used written into it; then the record is done.
+  // `read`, not `tryRead`: a config that cannot be read is a failure the download screen shows and
+  // retries, not a reason to leave the record behind unannounced.
+  private async finishJoin(ctx: PluginContext, serverUrl: string): Promise<void> {
+    const config = ctx.services.get(PluginConfig)
+    const cfg = await config.read(SyncConfigSchema)
+    if (cfg.serverUrl === '') await config.write(SyncConfigSchema, { serverUrl })
+    ctx.extensions.get(KeyringExtension).completeEntry()
   }
 
   private async startSync(ctx: PluginContext): Promise<void> {
@@ -108,9 +145,22 @@ export class SyncPlugin extends Plugin {
     if (this.stopping) return
     // tryRead, not read: the product works offline (FR-147), so an unreachable settings store leaves
     // sync idle instead of aborting the whole boot.
-    const cfg = await ctx.services.get(PluginConfig).tryRead(SyncConfigSchema)
-    if (this.stopping || cfg == null) return
-    if (this.bootConfigPending) this.queueApplyConfig(ctx, cfg)
+    const config = ctx.services.get(PluginConfig)
+    const cfg = await config.tryRead(SyncConfigSchema)
+    if (this.stopping) return
+    if (cfg == null) {
+      ctx.extensions.get(SyncExtension).failInitialDownload("Could not read this device's sync settings")
+      return
+    }
+    const keyring = ctx.extensions.get(KeyringExtension)
+    const adopted = await adoptEntryServer({
+      entry: keyring.entry,
+      serverUrl: cfg.serverUrl,
+      writeServerUrl: (serverUrl) => config.write(SyncConfigSchema, { serverUrl }),
+      completeEntry: () => keyring.completeEntry(),
+    })
+    if (this.stopping) return
+    if (this.bootConfigPending) this.queueApplyConfig(ctx, { ...cfg, serverUrl: adopted })
     await this.applying
   }
 
@@ -135,6 +185,7 @@ export class SyncPlugin extends Plugin {
     // reacted to (attempted, not necessarily successfully), so a repeat write is not a repeat warning.
     if (cfg.serverUrl !== this.lastServerUrl) {
       this.lastServerUrl = cfg.serverUrl
+      ctx.extensions.get(PairingExtension).setServer(cfg.serverUrl || null)
       // Whatever was running (if anything) no longer matches the saved config — rebuilt below, or left
       // off if the new address is empty.
       repository.setRemote(null)
@@ -174,8 +225,10 @@ export class SyncPlugin extends Plugin {
           })
 
           // Sync once right away — full, because edits made before this remote existed (or while the
-          // app was not running) reached no watcher. sync() self-guards against overlap.
-          void syncExt.sync({ full: true })
+          // app was not running) reached no watcher. sync() self-guards against overlap. A joining
+          // device's first round is the download the boot is holding the app for.
+          if (syncExt.owesInitialDownload) void syncExt.downloadVault()
+          else void syncExt.sync({ full: true })
         }
       }
     }
@@ -214,6 +267,7 @@ export class SyncPlugin extends Plugin {
     await this.applying.catch(() => {})
     ctx.extensions.get(RepositoryExtension).setRemote(null)
     ctx.extensions.get(SyncExtension).engine = null
+    ctx.extensions.get(PairingExtension).setServer(null)
     this.lastServerUrl = null
     if (this.syncTimer != null) {
       clearInterval(this.syncTimer)

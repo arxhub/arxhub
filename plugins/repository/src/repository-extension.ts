@@ -43,6 +43,9 @@ export class RepositoryExtension extends Extension {
   // what the explorer draws as a phantom node. Refreshed from the repo after every sync round and
   // every materialize() — Sync calls refreshPending() itself; the repository never watches sync.
   readonly pending: ShallowRef<ReadonlySet<string>> = shallowRef(new Set())
+  // The "Keep files up to (MB)" setting as it applies now, 0 meaning everything — read by a screen that
+  // has to say what a download leaves in the cloud (the joining device's first download).
+  readonly materializeUpToMb = ref(20)
 
   private readonly rootVfs: VirtualFileSystem
   private readonly keyring: KeyringExtension

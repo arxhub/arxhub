@@ -1,4 +1,5 @@
 import { hasErrorCode, illegalState } from '@arxhub/errors'
+import { createEventBus, type TypedEventBus } from '@arxhub/events'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import AsyncLock from 'async-lock'
 import { EMPTY_SNAPSHOT_HASH } from './empty-snapshot-hash'
@@ -12,6 +13,24 @@ export type SyncEngineOptions = {
   local: Repo
   remote: SyncRemote
 }
+
+// How far a head fetch has got — what a first download on a joining device shows while it waits. Files
+// count the vault's own (the "N documents" a server check reported); bytes count every chunk the fetch
+// owes, deduplicated, including the ones already here, so a fetch resumed after a restart starts from
+// where the last one stopped rather than from zero. A chunk from a manifest older than per-chunk sizes
+// counts as zero bytes: the numbers are a read-out, not an accounting.
+export interface FetchProgress {
+  filesDone: number
+  filesTotal: number
+  bytesDone: number
+  bytesTotal: number
+  // What the materialize policy leaves in the cloud until it is opened.
+  cloudBytes: number
+}
+
+export type SyncEngineEvents = { progress: FetchProgress }
+
+const VAULT_PREFIX = 'vault/'
 
 // Batch bounds: cap per-request memory on both ends while keeping round trips low. A Rabin chunk is
 // at most 8 MiB, so a GET batch tops out around 256 MiB only in the worst case — real note-sized
@@ -44,6 +63,8 @@ export class SyncEngine {
   private readonly lock: AsyncLock
   private readonly local: Repo
   private readonly remote: SyncRemote
+  // A progress listener belongs to a screen; one that throws must not fail the fetch it is watching.
+  readonly events: TypedEventBus<SyncEngineEvents> = createEventBus<SyncEngineEvents>({ onError: () => {} })
 
   constructor(opts: SyncEngineOptions) {
     this.lock = new AsyncLock()
@@ -190,25 +211,71 @@ export class SyncEngine {
 
   // `everything` fetches regardless of the materialise policy — what fetchFile wants, since it is
   // called exactly to bring a declined file in. A head fetch asks the repo per file instead, so a
-  // device that keeps films in the cloud does not download them to then not write them.
+  // device that keeps films in the cloud does not download them to then not write them. Only a head
+  // fetch reports progress: a single file being opened is not a download anybody waits on a screen for.
   private async fetchChunks(snapshot: Snapshot, options: { everything?: boolean } = {}): Promise<void> {
+    const everything = options.everything === true
+    const sizes = new Map<string, number>()
+    const local = new Set<string>()
     const missing: string[] = []
-    const seen = new Set<string>()
+    // Per chunk, the vault files still waiting for it; per file, how many distinct chunks it still waits for.
+    const waiting = new Map<string, number[]>()
+    const remaining: number[] = []
+    let cloudBytes = 0
     for (const pathname in snapshot.files) {
-      if (options.everything !== true && !(await this.local.wantsContent(snapshot.files[pathname]))) continue
-      for (const chunk of snapshot.files[pathname].chunks) {
-        if (seen.has(chunk.hash)) continue
-        seen.add(chunk.hash)
-        if (!(await this.local.getChunkFile(chunk.hash).exists())) missing.push(chunk.hash)
+      const file = snapshot.files[pathname]
+      const counted = pathname.startsWith(VAULT_PREFIX)
+      if (!everything && !(await this.local.wantsContent(file))) {
+        if (counted) cloudBytes += file.size ?? 0
+        continue
+      }
+      const distinct = new Set(file.chunks.map((chunk) => chunk.hash))
+      for (const chunk of file.chunks) {
+        if (sizes.has(chunk.hash)) continue
+        sizes.set(chunk.hash, chunk.size ?? 0)
+        if (await this.local.getChunkFile(chunk.hash).exists()) local.add(chunk.hash)
+        else missing.push(chunk.hash)
+      }
+      if (!counted) continue
+      const index = remaining.length
+      remaining.push(0)
+      for (const hash of distinct) {
+        if (local.has(hash)) continue
+        remaining[index] += 1
+        const files = waiting.get(hash)
+        if (files == null) waiting.set(hash, [index])
+        else files.push(index)
       }
     }
-    await this.fetchAndStore(missing)
+    if (everything) return this.fetchAndStore(missing)
+
+    let bytesTotal = 0
+    let bytesDone = 0
+    for (const [hash, size] of sizes) {
+      bytesTotal += size
+      if (local.has(hash)) bytesDone += size
+    }
+    let filesDone = remaining.filter((count) => count === 0).length
+    const report = () => this.events.emit('progress', { filesDone, filesTotal: remaining.length, bytesDone, bytesTotal, cloudBytes })
+    report()
+    await this.fetchAndStore(missing, (stored) => {
+      for (const hash of stored) {
+        bytesDone += sizes.get(hash) ?? 0
+        for (const index of waiting.get(hash) ?? []) {
+          remaining[index] -= 1
+          if (remaining[index] === 0) filesDone += 1
+        }
+      }
+      report()
+    })
   }
 
   // Fetches hashes not already local, batched by GET_BATCH, verifies each against its own address
   // (zero-trust: a malicious server can swap blobs under hash-named keys) and writes it to the local
   // chunk store. Shared by a head fetch and a range read so the verification rule lives in one place.
-  private async fetchAndStore(hashes: string[]): Promise<void> {
+  // Written batch by batch, so a fetch cut short keeps every chunk it had verified and the next one
+  // asks only for the rest.
+  private async fetchAndStore(hashes: string[], onBatch?: (stored: string[]) => void): Promise<void> {
     for (let i = 0; i < hashes.length; i += GET_BATCH) {
       const batch = hashes.slice(i, i + GET_BATCH)
       const objects = await this.remote.getObjects(batch)
@@ -223,6 +290,7 @@ export class SyncEngine {
         if (actual !== hash) throw illegalState(`Chunk integrity check failed: expected ${hash}, got ${actual}`)
         await this.local.getChunkFile(hash).write(content)
       }
+      onBatch?.(batch)
     }
   }
 

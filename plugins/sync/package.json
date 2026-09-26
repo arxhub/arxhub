@@ -12,7 +12,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./manifest": "./src/manifest.ts",
-    "./server": "./src/server.ts"
+    "./server": "./src/server.ts",
+    "./ui": "./src/ui.ts"
   },
   "files": [
     "dist"
@@ -23,6 +24,7 @@
   },
   "dependencies": {
     "@arxhub/config": "workspace:*",
+    "@arxhub/stdlib": "workspace:*",
     "vue": "catalog:client"
   },
   "devDependencies": {
@@ -59,6 +61,10 @@
       "./server": {
         "import": "./dist/server.js",
         "types": "./dist/server.d.ts"
+      },
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
       }
     }
   }

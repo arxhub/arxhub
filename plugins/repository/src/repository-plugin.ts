@@ -90,7 +90,7 @@ export class RepositoryPlugin extends Plugin {
     this.unregisterTextMerger = repository.registerContentMerger(textMerger(() => this.textExtensions))
     this.unwatchConfig = config.watch(RepositoryConfigSchema, (cfg) => {
       this.bootConfigPending = false
-      this.applyConfig(cfg)
+      this.applyConfig(repository, cfg)
     })
 
     // Every vault write reaches the journal as it happens, in the repo's coordinates (the watcher
@@ -121,10 +121,11 @@ export class RepositoryPlugin extends Plugin {
     // the default policy (keep everything) instead of aborting the whole boot.
     const cfg = await ctx.services.get(PluginConfig).tryRead(RepositoryConfigSchema)
     if (this.stopping || cfg == null) return
-    if (this.bootConfigPending) this.applyConfig(cfg)
+    if (this.bootConfigPending) this.applyConfig(repository, cfg)
   }
 
-  private applyConfig(cfg: Static<typeof RepositoryConfigSchema>): void {
+  private applyConfig(repository: RepositoryExtension, cfg: Static<typeof RepositoryConfigSchema>): void {
+    repository.materializeUpToMb.value = cfg.materializeUpTo
     this.textExtensions = toTextExtensions(cfg['merge.textExtensions'])
     // A file without a size is a manifest entry written before sizes existed (completeLegacyEntries
     // fills it in the next time this device writes a snapshot) — kept, never left in the cloud on a

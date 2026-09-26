@@ -23,6 +23,7 @@
   "dependencies": {
     "@arxhub/crypto": "workspace:*",
     "@arxhub/errors": "workspace:*",
+    "@arxhub/events": "workspace:*",
     "@arxhub/http": "workspace:*",
     "@arxhub/path": "workspace:*",
     "@sinclair/typebox": "catalog:shared",
