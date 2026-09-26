@@ -2,6 +2,7 @@ import { ConsoleLogger } from '@arxhub/core'
 import { compareAndSwap, isCompareAndSwapCapable, ScopedFileSystem } from '@arxhub/vfs'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { NodeFileSystem } from '../index'
+import { tempRoot } from './temp-root'
 
 const enc = (text: string) => new TextEncoder().encode(text)
 const dec = (bytes: Uint8Array) => new TextDecoder().decode(bytes)
@@ -10,13 +11,13 @@ const dec = (bytes: Uint8Array) => new TextDecoder().decode(bytes)
 // and a test harness each open their own NodeFileSystem, and nothing but the disk is shared between
 // them — an instance lock would let both pass the compare.
 describe('NodeFileSystem.compareAndSwap', () => {
-  const dir = `${__dirname}/testdata/compare-and-swap`
+  const root = tempRoot('compare-and-swap')
   let a: NodeFileSystem
   let b: NodeFileSystem
 
   beforeEach(async () => {
-    a = new NodeFileSystem(dir, new ConsoleLogger())
-    b = new NodeFileSystem(dir, new ConsoleLogger())
+    a = new NodeFileSystem(root(), new ConsoleLogger())
+    b = new NodeFileSystem(root(), new ConsoleLogger())
     await a.delete('/', { force: true, recursive: true })
   })
 

@@ -1,13 +1,16 @@
 import { ConsoleLogger } from '@arxhub/core'
 import { beforeEach, describe, expect, test } from 'vitest'
 import { NodeFileSystem } from '../index'
+import { tempRoot } from './temp-root'
 
 // Backends must not hide dot-prefixed names from list/walk (packages/vfs AGENTS — the .arxmeta exception is gone).
 describe('NodeFileSystem dotfiles', () => {
   let vfs: NodeFileSystem
 
+  const root = tempRoot('dotfiles')
+
   beforeEach(async () => {
-    vfs = new NodeFileSystem(`${__dirname}/testdata/dotfiles`, new ConsoleLogger())
+    vfs = new NodeFileSystem(root(), new ConsoleLogger())
     await vfs.delete('/', { force: true, recursive: true })
   })
 

@@ -3,6 +3,7 @@ import type { Logger } from '@arxhub/core'
 import { hasErrorCode } from '@arxhub/errors'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { NodeFileSystem } from '../index'
+import { tempRoot } from './temp-root'
 
 function nodeError(code: string): NodeJS.ErrnoException {
   return Object.assign(new Error(`${code}: injected filesystem failure`), { code })
@@ -17,12 +18,12 @@ const silent: Logger = {
 }
 
 describe('NodeFileSystem read/list error classification', () => {
-  const directory = `${__dirname}/testdata/error-classification`
+  const root = tempRoot('error-classification')
   let vfs: NodeFileSystem
 
   beforeEach(async () => {
     vi.restoreAllMocks()
-    vfs = new NodeFileSystem(directory, silent)
+    vfs = new NodeFileSystem(root(), silent)
     await vfs.delete('/', { force: true, recursive: true })
   })
 

@@ -3,6 +3,7 @@ import { hasErrorCode } from '@arxhub/errors'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { beforeEach, describe, expect, test } from 'vitest'
 import { NodeFileSystem } from '../index'
+import { tempRoot } from './temp-root'
 
 // The root VFS must never let any caller (HTTP clients, plugins, sync) read or write outside the
 // chosen storage folder. Every operation that escapes via '..' or an absolute path must throw
@@ -10,8 +11,10 @@ import { NodeFileSystem } from '../index'
 describe('NodeFileSystem confinement', () => {
   let vfs: VirtualFileSystem
 
+  const root = tempRoot('vfs-confinement')
+
   beforeEach(async () => {
-    vfs = new NodeFileSystem(`${__dirname}/testdata/vfs-confinement`, new ConsoleLogger())
+    vfs = new NodeFileSystem(root(), new ConsoleLogger())
     await vfs.delete('/', { force: true, recursive: true })
   })
 

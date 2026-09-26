@@ -2,12 +2,15 @@ import { ConsoleLogger } from '@arxhub/core'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { beforeEach, describe, expect, test } from 'vitest'
 import { NodeFileSystem } from '../index'
+import { tempRoot } from './temp-root'
 
 describe('VFS locking', () => {
   let vfs: VirtualFileSystem
 
+  const root = tempRoot('vfs-lock')
+
   beforeEach(async () => {
-    vfs = new NodeFileSystem(`${__dirname}/testdata/vfs-lock`, new ConsoleLogger())
+    vfs = new NodeFileSystem(root(), new ConsoleLogger())
     await vfs.delete('/', { force: true, recursive: true })
   })
 

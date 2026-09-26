@@ -1,10 +1,12 @@
-import { mkdir, rm, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, unlink, writeFile } from 'node:fs/promises'
 import { ConsoleLogger } from '@arxhub/core'
 import type { VfsChange } from '@arxhub/vfs'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { NodeFileSystem } from '../index'
+import { tempRoot } from './temp-root'
 
-const dir = `${__dirname}/testdata/watch-tree`
+const root = tempRoot('watch-tree')
+let dir = ''
 
 // A few seconds, not the default 1s: FSEvents/inotify delivery is not instant, and CI is slower than a
 // dev machine.
@@ -15,8 +17,7 @@ describe('NodeFileSystem.watchTree', () => {
   let unwatch: (() => void) | null = null
 
   beforeEach(async () => {
-    await rm(dir, { force: true, recursive: true })
-    await mkdir(dir, { recursive: true })
+    dir = root()
     vfs = new NodeFileSystem(dir, new ConsoleLogger())
   })
 

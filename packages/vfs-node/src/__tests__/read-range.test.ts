@@ -3,14 +3,17 @@ import { hasErrorCode } from '@arxhub/errors'
 import { readRange } from '@arxhub/vfs'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { NodeFileSystem } from '../index'
+import { tempRoot } from './temp-root'
 
 const dec = (bytes: Uint8Array) => new TextDecoder().decode(bytes)
 
 describe('NodeFileSystem.readRange', () => {
   let vfs: NodeFileSystem
 
+  const root = tempRoot('read-range')
+
   beforeEach(async () => {
-    vfs = new NodeFileSystem(`${__dirname}/testdata/read-range`, new ConsoleLogger())
+    vfs = new NodeFileSystem(root(), new ConsoleLogger())
     await vfs.delete('/', { force: true, recursive: true })
   })
 

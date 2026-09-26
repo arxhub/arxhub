@@ -2,12 +2,15 @@ import { ConsoleLogger } from '@arxhub/core'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { beforeEach, describe, expect, test } from 'vitest'
 import { NodeFileSystem } from '../index'
+import { tempRoot } from './temp-root'
 
 describe('VirtualWalker (walk)', () => {
   let vfs: VirtualFileSystem
 
+  const root = tempRoot('vfs-list-cursor')
+
   beforeEach(async () => {
-    vfs = new NodeFileSystem(`${__dirname}/testdata/vfs-list-cursor`, new ConsoleLogger())
+    vfs = new NodeFileSystem(root(), new ConsoleLogger())
     await vfs.delete('/', { force: true, recursive: true })
   })
 
@@ -88,8 +91,10 @@ describe('VirtualWalker (walk)', () => {
 describe('list (flat)', () => {
   let vfs: VirtualFileSystem
 
+  const root = tempRoot('vfs-list-cursor')
+
   beforeEach(async () => {
-    vfs = new NodeFileSystem(`${__dirname}/testdata/vfs-list-cursor`, new ConsoleLogger())
+    vfs = new NodeFileSystem(root(), new ConsoleLogger())
     await vfs.delete('/', { force: true, recursive: true })
   })
 
