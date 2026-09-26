@@ -342,6 +342,9 @@ importers:
       '@arxhub/plugin-config':
         specifier: workspace:*
         version: link:../../plugins/config
+      '@arxhub/plugin-diff':
+        specifier: workspace:*
+        version: link:../../plugins/diff
       '@arxhub/plugin-editor':
         specifier: workspace:*
         version: link:../../plugins/editor
@@ -542,6 +545,9 @@ importers:
       '@arxhub/plugin-config':
         specifier: workspace:*
         version: link:../../plugins/config
+      '@arxhub/plugin-diff':
+        specifier: workspace:*
+        version: link:../../plugins/diff
       '@arxhub/plugin-editor':
         specifier: workspace:*
         version: link:../../plugins/editor
@@ -666,6 +672,9 @@ importers:
       '@arxhub/plugin-config':
         specifier: workspace:*
         version: link:../../plugins/config
+      '@arxhub/plugin-diff':
+        specifier: workspace:*
+        version: link:../../plugins/diff
       '@arxhub/plugin-editor':
         specifier: workspace:*
         version: link:../../plugins/editor
@@ -1424,9 +1433,12 @@ importers:
       '@arxhub/http':
         specifier: workspace:*
         version: link:../../packages/http
-      '@arxhub/plugin-editor':
+      '@arxhub/path':
         specifier: workspace:*
-        version: link:../editor
+        version: link:../../packages/path
+      '@arxhub/plugin-diff':
+        specifier: workspace:*
+        version: link:../diff
       '@arxhub/plugin-gateway':
         specifier: workspace:*
         version: link:../gateway
@@ -1651,6 +1663,52 @@ importers:
         specifier: catalog:toolchain
         version: 25.6.0
 
+  plugins/diff:
+    dependencies:
+      '@arxhub/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@arxhub/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@arxhub/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@arxhub/plugin-hotkeys':
+        specifier: workspace:*
+        version: link:../hotkeys
+      '@arxhub/plugin-settings':
+        specifier: workspace:*
+        version: link:../settings
+      '@arxhub/uikit':
+        specifier: workspace:*
+        version: link:../../packages/uikit
+      '@sinclair/typebox':
+        specifier: catalog:shared
+        version: 0.34.48
+      vue:
+        specifier: catalog:client
+        version: 3.5.33(typescript@6.0.3)
+    devDependencies:
+      '@arxhub/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@arxhub/toolchain-tsconfig':
+        specifier: workspace:*
+        version: link:../../toolchains/tsconfig
+      '@arxhub/toolchain-vite':
+        specifier: workspace:*
+        version: link:../../toolchains/vite
+      '@types/node':
+        specifier: catalog:toolchain
+        version: 25.6.0
+      vitest:
+        specifier: catalog:toolchain
+        version: 4.1.5(@types/node@25.6.0)(vite@8.1.5(@types/node@25.6.0)(esbuild@0.28.1)(tsx@4.21.0))
+      vue-tsc:
+        specifier: catalog:toolchain
+        version: 3.2.7(typescript@6.0.3)
+
   plugins/editor:
     dependencies:
       '@arxhub/core':
@@ -1665,6 +1723,9 @@ importers:
       '@arxhub/path':
         specifier: workspace:*
         version: link:../../packages/path
+      '@arxhub/plugin-diff':
+        specifier: workspace:*
+        version: link:../diff
       '@arxhub/plugin-explorer':
         specifier: workspace:*
         version: link:../explorer
@@ -2448,6 +2509,9 @@ importers:
       '@arxhub/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@arxhub/plugin-diff':
+        specifier: workspace:*
+        version: link:../diff
       '@arxhub/plugin-editor':
         specifier: workspace:*
         version: link:../editor

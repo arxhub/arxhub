@@ -1,0 +1,61 @@
+{
+  "name": "@arxhub/plugin-diff",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Format-neutral comparison of two versions of a file for ArxHub",
+  "keywords": [
+    "arxhub"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest.ts",
+    "./ui": "./src/ui.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vue-tsc --noEmit && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "catalog:shared",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain",
+    "vitest": "catalog:toolchain",
+    "vue-tsc": "catalog:toolchain"
+  },
+  "peerDependencies": {
+    "@arxhub/config": "workspace:*",
+    "@arxhub/core": "workspace:*",
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/logger": "workspace:*",
+    "@arxhub/plugin-hotkeys": "workspace:*",
+    "@arxhub/plugin-settings": "workspace:*",
+    "@arxhub/uikit": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
+      },
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      }
+    }
+  }
+}

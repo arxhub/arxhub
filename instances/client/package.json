@@ -14,6 +14,7 @@
     "@arxhub/plugin-budget": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
     "@arxhub/plugin-config": "workspace:*",
+    "@arxhub/plugin-diff": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",
     "@arxhub/plugin-explorer": "workspace:*",
     "@arxhub/plugin-hotkeys": "workspace:*",

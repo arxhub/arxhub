@@ -1,0 +1,5 @@
+export { type DiffController, type DiffReveal, useDiffController } from './ui/controller'
+export { default as DiffBand } from './ui/DiffBand.vue'
+export { default as DiffView } from './ui/DiffView.vue'
+export { DIFF_ZOOM_STEPS, type DiffBandProps, type DiffLayout, type DiffPart, type DiffViewProps, type SheetView } from './ui/types'
+export { useDiff, useDiffSettings } from './ui/use-diff'

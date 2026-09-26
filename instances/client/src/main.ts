@@ -10,6 +10,7 @@ import { apiBaseUrl } from '@arxhub/core'
 import { BudgetPlugin } from '@arxhub/plugin-budget'
 import { CodeMirrorPlugin } from '@arxhub/plugin-codemirror'
 import { ConfigPlugin } from '@arxhub/plugin-config'
+import { DiffPlugin } from '@arxhub/plugin-diff'
 import { ArxEditorPlugin } from '@arxhub/plugin-editor'
 import { ExplorerPlugin } from '@arxhub/plugin-explorer'
 import { HotkeysPlugin } from '@arxhub/plugin-hotkeys'
@@ -76,6 +77,7 @@ await bootClient({
     arxhub.plugins.register(ExplorerPlugin, () => ({ root: '' }))
     arxhub.plugins.register(CodeMirrorPlugin)
     arxhub.plugins.register(PreviewPlugin)
+    arxhub.plugins.register(DiffPlugin)
     arxhub.plugins.register(ArxEditorPlugin)
     arxhub.plugins.register(SheetsPlugin)
     arxhub.plugins.register(SettingsPlugin)
