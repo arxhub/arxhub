@@ -51,9 +51,11 @@ export { default as Slider } from './Slider.vue'
 export { default as StatusDot } from './StatusDot.vue'
 export { default as Strip } from './Strip.vue'
 export { default as Switch } from './Switch.vue'
+export { default as TileGrid } from './TileGrid.vue'
 export { default as Toaster } from './Toaster.vue'
 export { default as Tooltip } from './Tooltip.vue'
 export { default as TreeView } from './TreeView.vue'
+export type { TileGridItem } from './tile-grid'
 export {
   branchesOnly,
   draftPosition,
