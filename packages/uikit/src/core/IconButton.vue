@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useShellFrame } from '../hooks/useShellFrame'
 import Icon from './Icon.vue'
 import type { Placement } from './placement'
 import Tooltip from './Tooltip.vue'
@@ -10,7 +11,9 @@ defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
     icon?: string
-    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+    // `row` is an action inside a Row: a small box on the desktop, the whole touch row's height on the
+    // phone, with the row's own icon size (DS-8) on both.
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'row'
     active?: boolean
     disabled?: boolean
     tooltip?: string
@@ -24,14 +27,16 @@ const props = withDefaults(
 // One optical size across the set: a single-weight glyph at ~14px inside a larger hit box, so chrome
 // icons read as labels rather than as buttons of their own. `lg` fills a Strip (--size-md); `xl`
 // fills a touch status/dock band (--size-xl).
-const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20, xl: 20 })[props.size])
+const touch = useShellFrame() === 'mobile'
+const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20, xl: 20, row: touch ? 16 : 14 })[props.size])
+const sizeClass = computed(() => (props.size === 'row' ? (touch ? 'size-xl' : 'size-sm') : `size-${props.size}`))
 </script>
 
 <template>
   <Tooltip v-if="tooltip" :label="tooltip" :placement="tooltipPlacement">
     <button
       class="icon-button"
-      :class="[`size-${size}`, { active }]"
+      :class="[sizeClass, { active }]"
       :type="type"
       :disabled="disabled"
       :aria-label="ariaLabel ?? tooltip"
@@ -45,7 +50,7 @@ const iconSize = computed(() => ({ xs: 12, sm: 14, md: 16, lg: 20, xl: 20 })[pro
   <button
     v-else
     class="icon-button"
-    :class="[`size-${size}`, { active }]"
+    :class="[sizeClass, { active }]"
     :type="type"
     :disabled="disabled"
     :aria-label="ariaLabel"

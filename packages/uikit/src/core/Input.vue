@@ -7,7 +7,9 @@ defineProps<{
   placeholder?: string
   type?: string
   disabled?: boolean
-  variant?: 'default' | 'title'
+  // `inline` sits inside a Row (an inline rename, a draft tree node) and must fit inside it: a
+  // default control is as tall as the touch row and taller than the desktop one.
+  variant?: 'default' | 'title' | 'inline'
   // Room for an icon a composing control draws over the box (SearchField): the box keeps its one
   // geometry, and the text starts clear of the icon instead of under it.
   iconStart?: boolean
@@ -20,7 +22,7 @@ const touch = useShellFrame() === 'mobile'
 <template>
   <input
     class="input"
-    :class="{ touch, title: variant === 'title', 'icon-start': iconStart, 'icon-end': iconEnd }"
+    :class="{ touch, title: variant === 'title', inline: variant === 'inline', 'icon-start': iconStart, 'icon-end': iconEnd }"
     :type="type || 'text'"
     :placeholder="placeholder"
     :disabled="disabled"
@@ -46,6 +48,14 @@ const touch = useShellFrame() === 'mobile'
 .input.touch {
   height: var(--size-xl);
   font-size: var(--font-size-md);
+}
+
+.input.inline {
+  height: var(--size-xl-half);
+}
+
+.input.touch.inline {
+  height: var(--size-xs);
 }
 
 .input.icon-start {

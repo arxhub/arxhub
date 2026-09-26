@@ -16,6 +16,7 @@ export { default as FormattingToolbar } from './FormattingToolbar.vue'
 export type { FormattingAction } from './formatting-action'
 export { default as Icon } from './Icon.vue'
 export { default as IconButton } from './IconButton.vue'
+export { default as InlineNameInput } from './InlineNameInput.vue'
 export { default as Input } from './Input.vue'
 export { default as InspectorPanel } from './InspectorPanel.vue'
 export { type IconResolver, type ResolvedIcon, registerIconPack, resolveIcon } from './icons'
@@ -44,6 +45,14 @@ export { default as Switch } from './Switch.vue'
 export { default as Toaster } from './Toaster.vue'
 export { default as Tooltip } from './Tooltip.vue'
 export { default as TreeView } from './TreeView.vue'
-export type { TreeDragDropOptions, TreeViewNode, TreeViewRow } from './tree-view'
+export {
+  branchesOnly,
+  draftPosition,
+  type TreeDragDropOptions,
+  type TreeViewDraft,
+  type TreeViewMode,
+  type TreeViewNode,
+  type TreeViewRow,
+} from './tree-view'
 export { default as ZoomControl } from './ZoomControl.vue'
 export { stepZoomValue, type ZoomScale } from './zoom'
