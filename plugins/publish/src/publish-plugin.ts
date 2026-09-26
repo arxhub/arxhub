@@ -21,6 +21,8 @@ import { DEFAULT_HISTORY_LIMIT } from './publish-history'
 import { Publisher } from './publisher'
 import { reportFailures } from './report'
 import PublicationsPage from './ui/PublicationsPage.vue'
+import PublishedPathsSheet from './ui/PublishedPathsSheet.vue'
+import { publicationsBar } from './ui/publications-view'
 
 export const PublishConfigSchema = Type.Object(
   {
@@ -91,6 +93,8 @@ export class PublishPlugin extends Plugin {
       order: 20,
       pinned: false,
       content: markRaw(PublicationsPage),
+      bar: () => publicationsBar(ctx.extensions.get(PublishExtension)),
+      sheet: { title: 'Paths', content: markRaw(PublishedPathsSheet) },
     })
 
     // The server address applies without a restart: every write of THIS section rebuilds the remote

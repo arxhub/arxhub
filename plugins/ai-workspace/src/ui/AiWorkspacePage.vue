@@ -2,9 +2,10 @@
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import AiWorkspaceDesktop from './AiWorkspaceDesktop.vue'
 import AiWorkspaceMobile from './AiWorkspaceMobile.vue'
-import type { AiWorkspaceProps } from './use-ai-workspace'
+import type { AiWorkspaceCore, AiWorkspaceProps } from './use-ai-workspace'
 
-defineProps<AiWorkspaceProps>()
+// `state` is the type's shared session state (see `aiWorkspaceState`); an embedded page without it keeps its own.
+defineProps<AiWorkspaceProps & { state?: AiWorkspaceCore }>()
 const surface = useShellFrame() === 'mobile' ? AiWorkspaceMobile : AiWorkspaceDesktop
 </script>
 

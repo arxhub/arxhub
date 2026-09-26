@@ -1,5 +1,6 @@
 import { apiBaseUrl, Plugin, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner, signingMiddleware } from '@arxhub/crypto'
+import { illegalState, notFound } from '@arxhub/errors'
 import { createHttpClient } from '@arxhub/http'
 import { DOCUMENTS_TYPE_ID, DocumentsExtension } from '@arxhub/plugin-documents'
 import { KeyringExtension } from '@arxhub/plugin-protection'
@@ -14,7 +15,10 @@ import { AI_WORKSPACE_TYPE_ID } from './contributions'
 import { AI_WORKSPACE_NAMESPACE, manifest } from './manifest'
 import type { CompareMode } from './session-store'
 import type { CompareWire, SessionView } from './session-view'
+import AiSessionsSheet from './ui/AiSessionsSheet.vue'
 import AiWorkspaceHost from './ui/AiWorkspaceHost.vue'
+import { aiWorkspaceBar } from './ui/ai-workspace-bar'
+import { aiWorkspaceState, disposeAiWorkspaceState } from './ui/use-ai-workspace'
 
 function stagingPath(sessionId: string, pathname: string): string {
   return `_ai-workspace/${sessionId}/${pathname.replace(/^\/+/, '')}`
@@ -122,11 +126,11 @@ export class AiWorkspacePlugin extends Plugin {
         const path = pathname.replace(/^\/+/, '')
         const file = documents.vfs.file(path)
         if (!(await file.exists())) {
-          throw new Error(`Source file is not available: ${path}`)
+          throw notFound(`Source file is not available: ${path}`)
         }
         const text = excerpt.trim()
         const opened = await shell.workspace.openObject(DOCUMENTS_TYPE_ID, text ? { id: path, at: { text } } : { id: path })
-        if (opened == null) throw new Error(`Could not open source: ${path}`)
+        if (opened == null) throw illegalState(`Could not open source: ${path}`)
       },
     }))
   }
@@ -140,6 +144,8 @@ export class AiWorkspacePlugin extends Plugin {
       pinned: false,
       order: 80,
       content: markRaw(AiWorkspaceHost),
+      bar: () => aiWorkspaceBar(aiWorkspaceState(ctx.extensions.get(AiWorkspaceExtension))),
+      sheet: { title: 'Sessions', content: markRaw(AiSessionsSheet) },
     })
 
     if (ctx.services.has(VaultWatcher) && ctx.extensions.has(DocumentsExtension)) {
@@ -180,6 +186,7 @@ export class AiWorkspacePlugin extends Plugin {
   override async stop(ctx: PluginContext): Promise<void> {
     this.unwatch?.()
     this.unwatch = null
+    disposeAiWorkspaceState(ctx.extensions.get(AiWorkspaceExtension))
     await super.stop(ctx)
   }
 }

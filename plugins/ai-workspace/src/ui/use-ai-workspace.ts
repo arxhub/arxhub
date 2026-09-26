@@ -1,7 +1,8 @@
+import { illegalState } from '@arxhub/errors'
 import { posix } from '@arxhub/path'
 import type { DiffRequest } from '@arxhub/plugin-diff'
 import { type DiffPart, useDiff } from '@arxhub/plugin-diff/ui'
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, effectScope, onMounted, ref, shallowRef, watch } from 'vue'
 import type { ChangeKind, CompareMode } from '../session-store'
 import type { CompareResult, SessionChange, SessionView } from '../session-view'
 
@@ -15,11 +16,11 @@ export interface AiWorkspaceProps {
 }
 
 export const MODE_OPTIONS = [
-  { value: 'agent', label: 'Агент (base→worktree)' },
-  { value: 'apply', label: 'Перенос (worktree→main)' },
+  { value: 'agent', label: 'Agent (base → worktree)' },
+  { value: 'apply', label: 'Apply (worktree → main)' },
 ]
 
-const CHANGE_ICONS: Record<ChangeKind, string> = {
+export const CHANGE_ICONS: Record<ChangeKind, string> = {
   modified: 'lu:square-pen',
   created: 'lu:square-plus',
   deleted: 'lu:square-minus',
@@ -30,13 +31,20 @@ function messageOf(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason)
 }
 
+export function sessionDetail(session: SessionView): string {
+  const count = session.changes.length
+  return `${session.status} · ${count} ${count === 1 ? 'change' : 'changes'}`
+}
+
 export function changeLabel(change: SessionChange): string {
   return `${change.kind} · ${change.fromPath && change.toPath ? `${change.fromPath} → ${change.toPath}` : change.pathname}`
 }
 
-// The state both realizations of the AI workspace share: which session and change are open, and the diff of that
-// change. The frames differ only in how they lay it out.
-export function useAiWorkspace(props: AiWorkspaceProps) {
+// Which session and change are open. It outlives a component when the type's own page, the phone's band and its
+// second-tap sheet all read it — three places that would disagree after the first tap if each held a copy — and
+// that shared copy is `aiWorkspaceState`. The diff of the open change stays per component (`useAiWorkspace`),
+// because computing it needs the component's app.
+export function createAiWorkspaceState(props: AiWorkspaceProps) {
   const sessions = ref<SessionView[]>([])
   const active = ref<SessionView | null>(null)
   const selectedPath = ref<string | null>(null)
@@ -61,16 +69,8 @@ export function useAiWorkspace(props: AiWorkspaceProps) {
       rightLabel: current.answer.rightLabel,
     }
   })
-  const diff = useDiff(request)
-
-  const parts = computed((): DiffPart[] =>
-    (active.value?.changes ?? []).map((change) => ({
-      id: change.pathname,
-      label: posix.basename(change.pathname),
-      meta: change.kind,
-      icon: CHANGE_ICONS[change.kind],
-    })),
-  )
+  // The phone reads one change at a time: the diff takes the screen the proposal had.
+  const diffOpen = ref(false)
   const selectedName = computed(() => (selectedPath.value == null ? '' : posix.basename(selectedPath.value)))
 
   async function loadCompare(): Promise<void> {
@@ -107,6 +107,11 @@ export function useAiWorkspace(props: AiWorkspaceProps) {
 
   function selectChange(pathname: string): void {
     selectedPath.value = pathname
+  }
+
+  function openChange(pathname: string): void {
+    selectedPath.value = pathname
+    diffOpen.value = true
   }
 
   async function refresh(): Promise<void> {
@@ -178,7 +183,9 @@ export function useAiWorkspace(props: AiWorkspaceProps) {
     void loadCompare()
   })
 
-  onMounted(refresh)
+  watch(active, (session) => {
+    if (session == null) diffOpen.value = false
+  })
 
   return {
     sessions,
@@ -191,10 +198,11 @@ export function useAiWorkspace(props: AiWorkspaceProps) {
     error,
     archived,
     comparing,
-    diff,
-    parts,
+    request,
+    diffOpen,
     selectSession,
     selectChange,
+    openChange,
     refresh,
     run,
     openInDocuments,
@@ -203,4 +211,42 @@ export function useAiWorkspace(props: AiWorkspaceProps) {
   }
 }
 
+export type AiWorkspaceCore = ReturnType<typeof createAiWorkspaceState>
+
+// The component's view of the workspace: the shared state when the page is the type's own, a private one when the
+// page is embedded with props of its own, plus the diff of the open change.
+export function useAiWorkspace(props: AiWorkspaceProps, shared?: AiWorkspaceCore) {
+  const state = shared ?? createAiWorkspaceState(props)
+  const diff = useDiff(state.request)
+  const parts = computed((): DiffPart[] =>
+    (state.active.value?.changes ?? []).map((change) => ({
+      id: change.pathname,
+      label: posix.basename(change.pathname),
+      meta: change.kind,
+      icon: CHANGE_ICONS[change.kind],
+    })),
+  )
+  onMounted(state.refresh)
+  return { ...state, diff, parts }
+}
+
 export type AiWorkspaceState = ReturnType<typeof useAiWorkspace>
+
+// One shared state per workspace extension, in a scope of its own: its watchers belong to no component, so they
+// are stopped by the plugin (`disposeAiWorkspaceState`) and not by whichever component happened to mount first.
+const shared = new WeakMap<AiWorkspaceProps, { state: AiWorkspaceCore; stop: () => void }>()
+
+export function aiWorkspaceState(api: AiWorkspaceProps): AiWorkspaceCore {
+  const known = shared.get(api)
+  if (known != null) return known.state
+  const scope = effectScope(true)
+  const state = scope.run(() => createAiWorkspaceState(api))
+  if (state == null) throw illegalState('The AI workspace state scope was stopped before it ran')
+  shared.set(api, { state, stop: () => scope.stop() })
+  return state
+}
+
+export function disposeAiWorkspaceState(api: AiWorkspaceProps): void {
+  shared.get(api)?.stop()
+  shared.delete(api)
+}

@@ -17,7 +17,9 @@ import { mergeBudgets } from './merge'
 import { downloadReceipt } from './receipt-client'
 import { ReceiptPhotoStore } from './receipt-photo-store'
 import { BudgetStore } from './store'
+import BudgetMonthsSheet from './ui/BudgetMonthsSheet.vue'
 import BudgetPage from './ui/BudgetPage.vue'
+import { budgetBar } from './ui/budget-view'
 
 export interface BudgetPluginArgs extends PluginArgs {
   capture?: BudgetCapture
@@ -99,6 +101,8 @@ export class BudgetPlugin extends Plugin {
       order: 12,
       config: ctx.services.get(PluginConfig),
     })
+    const repository = ctx.extensions.get(RepositoryExtension)
+    const budget = ctx.extensions.get(BudgetExtension)
     ctx.extensions.get(ShellExtension).types.register({
       id: BUDGET_TYPE_ID,
       title: 'Budget',
@@ -106,9 +110,9 @@ export class BudgetPlugin extends Plugin {
       order: 30,
       pinned: false,
       content: markRaw(BudgetPage),
+      bar: () => budgetBar(budget, this.logger),
+      sheet: { title: 'Months', content: markRaw(BudgetMonthsSheet) },
     })
-    const repository = ctx.extensions.get(RepositoryExtension)
-    const budget = ctx.extensions.get(BudgetExtension)
     this.unwatch = watch(repository.storageRevision, () => {
       void budget.refresh().catch((error) => this.logger.error('Could not reload the budget after sync', error))
     })

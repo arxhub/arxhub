@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { Button, Dialog, Input, Segmented } from '@arxhub/uikit/core'
+import { Button, Dialog, Field, Input, Segmented } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
 import type { BudgetCategory, TransactionKind } from '../model'
-import BudgetFormField from './BudgetFormField.vue'
 import { errorMessage } from './budget-ui'
 
 const props = defineProps<{
@@ -71,10 +70,10 @@ async function save(): Promise<void> {
     @update:open="emit('update:open', $event)"
   >
     <form id="budget-category-form" class="form" @submit.prevent="save">
-      <BudgetFormField label="Name" for-id="budget-category-name">
+      <Field label="Name" for="budget-category-name">
         <Input id="budget-category-name" v-model="name" autocomplete="off" placeholder="Groceries" :disabled="saving" />
-      </BudgetFormField>
-      <BudgetFormField label="Type" :hint="kindLocked ? 'Type cannot change after the category has transactions.' : undefined">
+      </Field>
+      <Field label="Type" :hint="kindLocked ? 'Type cannot change after the category has transactions.' : undefined">
         <Segmented
           :model-value="kind"
           :options="kindOptions"
@@ -83,7 +82,7 @@ async function save(): Promise<void> {
           :disabled="saving || kindLocked"
           @update:model-value="kind = $event as TransactionKind"
         />
-      </BudgetFormField>
+      </Field>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </form>
     <template #footer>

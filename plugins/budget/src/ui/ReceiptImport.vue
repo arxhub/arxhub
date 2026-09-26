@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { validation } from '@arxhub/errors'
 // biome-ignore lint/correctness/noUnusedImports: ScrollArea is used in template
-import { Button, Icon, Input, ScrollArea, Segmented } from '@arxhub/uikit/core'
+import { Button, Field, Icon, Input, ScrollArea, Segmented } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
 import { fiscalQr, type ImportedReceipt, parseFiscalFields, parseFiscalQr, parseReceiptJson } from '../fiscal'
 import type { FiscalReceipt } from '../model'
 import { formatAmount } from '../money'
-import BudgetFormField from './BudgetFormField.vue'
 import { amountInput, errorMessage } from './budget-ui'
 
 const props = defineProps<{
@@ -271,26 +270,26 @@ function clear(): void {
       <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="choose(jsonInput)">Import JSON</Button>
     </div>
 
-    <BudgetFormField label="Receipt QR text" for-id="budget-receipt-qr" hint="Paste the text encoded in the QR">
+    <Field label="Receipt QR text" for="budget-receipt-qr" hint="Paste the text encoded in the QR">
       <div class="with-action">
         <Input id="budget-receipt-qr" v-model="qr" autocomplete="off" placeholder="t=…&amp;s=…&amp;fn=…" :disabled="disabled || working" />
         <Button :size="buttonSize" variant="secondary" :disabled="disabled || working || !qr.trim()" @click="parseQrText(qr)">Read QR</Button>
       </div>
-    </BudgetFormField>
+    </Field>
 
     <div class="fiscal-fields">
-      <BudgetFormField label="FN" for-id="budget-receipt-fn"><Input id="budget-receipt-fn" v-model="fn" inputmode="numeric" :disabled="disabled || working" /></BudgetFormField>
-      <BudgetFormField label="FD" for-id="budget-receipt-fd"><Input id="budget-receipt-fd" v-model="fd" inputmode="numeric" :disabled="disabled || working" /></BudgetFormField>
-      <BudgetFormField label="FP" for-id="budget-receipt-fp"><Input id="budget-receipt-fp" v-model="fp" inputmode="numeric" :disabled="disabled || working" /></BudgetFormField>
+      <Field label="FN" for="budget-receipt-fn"><Input id="budget-receipt-fn" v-model="fn" inputmode="numeric" :disabled="disabled || working" /></Field>
+      <Field label="FD" for="budget-receipt-fd"><Input id="budget-receipt-fd" v-model="fd" inputmode="numeric" :disabled="disabled || working" /></Field>
+      <Field label="FP" for="budget-receipt-fp"><Input id="budget-receipt-fp" v-model="fp" inputmode="numeric" :disabled="disabled || working" /></Field>
     </div>
-    <BudgetFormField label="Receipt date and time" for-id="budget-receipt-issued-at">
+    <Field label="Receipt date and time" for="budget-receipt-issued-at">
       <Input id="budget-receipt-issued-at" v-model="issuedAt" type="datetime-local" :disabled="disabled || working" />
-    </BudgetFormField>
+    </Field>
     <div class="fiscal-fields two">
-      <BudgetFormField label="Receipt total, RUB" for-id="budget-receipt-total">
+      <Field label="Receipt total, RUB" for="budget-receipt-total">
         <Input id="budget-receipt-total" v-model="receiptAmount" inputmode="decimal" placeholder="0.00" :disabled="disabled || working" />
-      </BudgetFormField>
-      <BudgetFormField label="Operation">
+      </Field>
+      <Field label="Operation">
         <Segmented
           :model-value="operation"
           :options="operationOptions"
@@ -299,7 +298,7 @@ function clear(): void {
           :disabled="disabled || working"
           @update:model-value="operation = $event ?? '1'"
         />
-      </BudgetFormField>
+      </Field>
     </div>
     <div class="manual-actions">
       <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="reviewManual">Review fiscal details</Button>

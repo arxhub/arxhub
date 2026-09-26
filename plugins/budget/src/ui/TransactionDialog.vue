@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Dialog, Dropdown, Icon, Input, MenuItem, Segmented } from '@arxhub/uikit/core'
+import { Button, Dialog, Dropdown, Field, Icon, Input, MenuItem, Segmented } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { type ComponentPublicInstance, computed, nextTick, ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
@@ -7,7 +7,6 @@ import type { ImportedReceipt } from '../fiscal'
 import type { BudgetAttachment, BudgetTransaction, FiscalReceipt, TransactionKind } from '../model'
 import { formatAmount, parseAmount } from '../money'
 import { nearestKnownPlace } from '../places'
-import BudgetFormField from './BudgetFormField.vue'
 import { accountCurrency, amountInput, errorMessage, localDate } from './budget-ui'
 import PurchaseItemsEditor from './PurchaseItemsEditor.vue'
 import { itemsSubtotal, type PurchaseItemDraft, purchaseItemDraft, purchaseItems } from './purchase-draft'
@@ -378,7 +377,7 @@ async function save(): Promise<void> {
     @update:open="handleOpen"
   >
     <form id="budget-transaction-form" class="form" :class="{ touch }" @submit.prevent="save">
-      <BudgetFormField label="Amount" for-id="budget-transaction-amount">
+      <Field label="Amount" for="budget-transaction-amount">
         <div class="amount-control">
           <Input
             id="budget-transaction-amount"
@@ -392,9 +391,9 @@ async function save(): Promise<void> {
           />
           <span class="currency">{{ currency }}</span>
         </div>
-      </BudgetFormField>
+      </Field>
 
-      <BudgetFormField :label="kind === 'expense' && !previous ? 'Place (required)' : 'Place'">
+      <Field :label="kind === 'expense' && !previous ? 'Place (required)' : 'Place'">
         <div class="place-actions">
           <Dropdown>
             <template #trigger>
@@ -419,7 +418,7 @@ async function save(): Promise<void> {
             {{ savingPlace ? 'Saving…' : 'Save place' }}
           </Button>
         </div>
-      </BudgetFormField>
+      </Field>
 
       <p v-if="subtotalMismatch" class="mismatch" role="status">
         Items add up to {{ formatAmount(subtotal ?? 0, currency) }}, while the transaction amount is {{ formatAmount(enteredAmount ?? 0, currency) }}.
@@ -458,7 +457,7 @@ async function save(): Promise<void> {
         <Icon :name="detailsOpen ? 'lu:chevron-up' : 'lu:chevron-down'" :size="touch ? 16 : 14" />
       </Button>
       <section v-if="detailsOpen" class="transaction-details" aria-label="Transaction details">
-        <BudgetFormField label="Type">
+        <Field label="Type">
           <Segmented
             :model-value="kind"
             :options="kindOptions"
@@ -467,10 +466,10 @@ async function save(): Promise<void> {
             :disabled="saving"
             @update:model-value="kind = $event as TransactionKind"
           />
-        </BudgetFormField>
+        </Field>
 
         <div class="field-grid">
-          <BudgetFormField label="Account">
+          <Field label="Account">
             <Dropdown>
               <template #trigger>
                 <Button
@@ -490,9 +489,9 @@ async function save(): Promise<void> {
               </MenuItem>
             </Dropdown>
             <p v-if="accounts.length === 0" class="choice-hint">Create an account before adding a transaction.</p>
-          </BudgetFormField>
+          </Field>
 
-          <BudgetFormField label="Category">
+          <Field label="Category">
             <Dropdown>
               <template #trigger>
                 <Button
@@ -509,16 +508,16 @@ async function save(): Promise<void> {
               <MenuItem v-for="entry in categories" :key="entry.id" :value="entry.id" @select="categoryId = entry.id">{{ entry.name }}</MenuItem>
             </Dropdown>
             <p v-if="categories.length === 0" class="choice-hint">Create an {{ kind }} category before adding this transaction.</p>
-          </BudgetFormField>
+          </Field>
         </div>
 
-        <BudgetFormField label="Date" for-id="budget-transaction-date">
+        <Field label="Date" for="budget-transaction-date">
           <Input id="budget-transaction-date" v-model="date" type="date" :disabled="saving" />
-        </BudgetFormField>
+        </Field>
 
-        <BudgetFormField label="Note" for-id="budget-transaction-note" hint="Optional">
+        <Field label="Note" for="budget-transaction-note" hint="Optional">
           <Input id="budget-transaction-note" v-model="note" autocomplete="off" placeholder="What was this for?" :disabled="saving" />
-        </BudgetFormField>
+        </Field>
       </section>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </form>

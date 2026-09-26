@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { Button, Dialog, Input } from '@arxhub/uikit/core'
+import { Button, Dialog, Field, Input } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
 import type { BudgetPlace } from '../model'
-import BudgetFormField from './BudgetFormField.vue'
 import { errorMessage } from './budget-ui'
 
 const props = defineProps<{
@@ -91,16 +90,16 @@ async function save(): Promise<void> {
     @update:open="emit('update:open', $event)"
   >
     <form id="budget-place-form" class="form" @submit.prevent="save">
-      <BudgetFormField label="Name" for-id="budget-place-name">
+      <Field label="Name" for="budget-place-name">
         <Input id="budget-place-name" v-model="name" autocomplete="off" placeholder="Corner shop" :disabled="saving" />
-      </BudgetFormField>
+      </Field>
       <div class="coordinates">
-        <BudgetFormField label="Latitude" for-id="budget-place-latitude" hint="Optional">
+        <Field label="Latitude" for="budget-place-latitude" hint="Optional">
           <Input id="budget-place-latitude" v-model="latitude" inputmode="decimal" autocomplete="off" placeholder="54.7104" :disabled="saving" />
-        </BudgetFormField>
-        <BudgetFormField label="Longitude" for-id="budget-place-longitude" hint="Optional">
+        </Field>
+        <Field label="Longitude" for="budget-place-longitude" hint="Optional">
           <Input id="budget-place-longitude" v-model="longitude" inputmode="decimal" autocomplete="off" placeholder="20.4522" :disabled="saving" />
-        </BudgetFormField>
+        </Field>
       </div>
       <p class="hint">Coordinates let new purchases recognize this place nearby.</p>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>

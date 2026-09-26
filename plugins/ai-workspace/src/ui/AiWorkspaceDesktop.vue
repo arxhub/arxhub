@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { DiffView, useDiffController } from '@arxhub/plugin-diff/ui'
 import { Button, PageLayout, Row, ScrollArea, Segmented } from '@arxhub/uikit/core'
-import { type AiWorkspaceProps, changeLabel, MODE_OPTIONS, useAiWorkspace } from './use-ai-workspace'
+import { type AiWorkspaceCore, type AiWorkspaceProps, changeLabel, MODE_OPTIONS, useAiWorkspace } from './use-ai-workspace'
 
-const props = defineProps<AiWorkspaceProps>()
-const state = useAiWorkspace(props)
+const props = defineProps<AiWorkspaceProps & { state?: AiWorkspaceCore }>()
+const state = useAiWorkspace(props, props.state)
 const { sessions, active, selectedPath, selectedChange, selectedName, diffMode, busy, error, archived, comparing, diff } = state
 const controller = useDiffController(() => diff.result.value)
 </script>
@@ -37,7 +37,7 @@ const controller = useDiffController(() => diff.result.value)
             <Row as="button" type="button" class="change" :selected="selectedPath === change.pathname" @click="state.selectChange(change.pathname)">
               {{ changeLabel(change) }}
             </Row>
-            <Button size="sm" variant="ghost" :disabled="busy || archived" @click.stop="state.openInDocuments(change.pathname)">Открыть</Button>
+            <Button size="sm" variant="ghost" :disabled="busy || archived" @click.stop="state.openInDocuments(change.pathname)">Open</Button>
           </li>
         </ul>
         <div v-if="selectedChange" class="diff-panel">

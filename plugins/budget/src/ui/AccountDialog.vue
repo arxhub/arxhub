@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { Button, Dialog, Input } from '@arxhub/uikit/core'
+import { Button, Dialog, Field, Input } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
 import type { BudgetAccount } from '../model'
 import { parseAmount } from '../money'
-import BudgetFormField from './BudgetFormField.vue'
 import { amountInput, errorMessage } from './budget-ui'
 
 const props = defineProps<{
@@ -74,12 +73,12 @@ async function save(): Promise<void> {
     @update:open="emit('update:open', $event)"
   >
     <form id="budget-account-form" class="form" @submit.prevent="save">
-      <BudgetFormField label="Name" for-id="budget-account-name">
+      <Field label="Name" for="budget-account-name">
         <Input id="budget-account-name" v-model="name" autocomplete="off" placeholder="Everyday account" :disabled="saving" />
-      </BudgetFormField>
-      <BudgetFormField
+      </Field>
+      <Field
         label="Currency"
-        for-id="budget-account-currency"
+        for="budget-account-currency"
         :hint="currencyLocked ? 'Currency cannot change after the account has transactions.' : 'Use a three-letter currency code.'"
       >
         <Input
@@ -91,8 +90,8 @@ async function save(): Promise<void> {
           :disabled="saving || currencyLocked"
           @update:model-value="currency = ($event ?? '').toUpperCase()"
         />
-      </BudgetFormField>
-      <BudgetFormField label="Opening balance" for-id="budget-account-opening" hint="The balance before your first transaction.">
+      </Field>
+      <Field label="Opening balance" for="budget-account-opening" hint="The balance before your first transaction.">
         <Input
           id="budget-account-opening"
           v-model="openingBalance"
@@ -101,7 +100,7 @@ async function save(): Promise<void> {
           placeholder="0.00"
           :disabled="saving"
         />
-      </BudgetFormField>
+      </Field>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </form>
     <template #footer>

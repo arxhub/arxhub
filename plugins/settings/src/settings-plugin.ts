@@ -1,12 +1,14 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { ShellExtension } from '@arxhub/plugin-shell'
-import { markRaw } from 'vue'
+import { h, markRaw } from 'vue'
 import { SETTINGS_TYPE_ID } from './contributions'
 import { manifest } from './manifest'
+import { settingsBar } from './settings-bar'
 import { SettingsExtension } from './settings-extension'
 import PendingChangesStatus from './ui/PendingChangesStatus.vue'
 import SettingsLayout from './ui/SettingsLayout.vue'
 import SettingsNav from './ui/SettingsNav.vue'
+import SettingsSectionList from './ui/SettingsSectionList.vue'
 
 export class SettingsPlugin extends Plugin {
   constructor(args: PluginArgs) {
@@ -22,6 +24,7 @@ export class SettingsPlugin extends Plugin {
     super.configure(ctx)
 
     const shell = ctx.extensions.get(ShellExtension)
+    const settings = ctx.extensions.get(SettingsExtension)
     // A type with no objects: a section is chosen from a list, not opened, closed, split and dragged —
     // which is what a tab means (F-23). Unpinned (OR-05): a permanent key in the phone's bottom row is
     // the most reachable place the frame has, and settings are not where the owner works — it is
@@ -36,6 +39,8 @@ export class SettingsPlugin extends Plugin {
       pinned: false,
       content: markRaw(SettingsLayout),
       nav: { component: markRaw(SettingsNav), title: 'Sections' },
+      bar: () => settingsBar(settings),
+      sheet: { title: 'Sections', content: markRaw({ render: () => h(SettingsSectionList, { marked: true }) }) },
     })
     // Staged settings edits are app-wide, so the status bar reports them even when Settings is closed.
     // It reports and leads back; applying them is SettingsChangesBar's job, so this is a state.

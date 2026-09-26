@@ -66,7 +66,7 @@ test.describe('budget accounting', () => {
       ['Expense', '250,50', 'Lunch'],
       ['Income', '2000', 'September pay'],
     ]) {
-      await page.getByRole('button', { name: 'New purchase', exact: true }).click()
+      await app.getByRole('button', { name: 'New purchase', exact: true }).click()
       dialog = app.getByRole('dialog', { name: 'New transaction', exact: true })
       await dialog.getByRole('button', { name: 'Transaction details', exact: false }).click()
       await dialog.getByLabel('Transaction type').getByText(kind, { exact: true }).click()
@@ -134,7 +134,7 @@ test.describe('budget accounting', () => {
     await app.context().grantPermissions(['geolocation'], { origin: new URL(app.url()).origin })
     await app.context().setGeolocation({ latitude: 54.7104, longitude: 20.4522 })
 
-    await page.getByRole('button', { name: 'New purchase', exact: true }).click()
+    await app.getByRole('button', { name: 'New purchase', exact: true }).click()
     let dialog = app.getByRole('dialog', { name: 'New transaction', exact: true })
     await expect(dialog.getByLabel('Amount', { exact: true })).toBeFocused()
     await dialog.getByRole('button', { name: 'Add receipt or photo', exact: true }).click()
@@ -221,7 +221,7 @@ test.describe('budget accounting', () => {
     expect(transaction?.placeId).toBeTruthy()
     expect(transaction?.attachments).toEqual([expect.objectContaining({ name: 'budget-fiscal-qr.png', mimeType: 'image/png' })])
 
-    await page.getByRole('button', { name: 'New purchase', exact: true }).click()
+    await app.getByRole('button', { name: 'New purchase', exact: true }).click()
     dialog = app.getByRole('dialog', { name: 'New transaction', exact: true })
     await expect(dialog.getByLabel('Amount', { exact: true })).toBeFocused()
     await dialog.getByRole('button', { name: 'Transaction details', exact: false }).click()
@@ -247,7 +247,7 @@ test.describe('budget accounting', () => {
     const page = app.getByTestId('budget-page')
     await expect(page.getByRole('alert')).toContainText('line 2')
     expect(await vault.readData(storage)).toBe(broken)
-    await expect(page.getByRole('button', { name: 'New purchase', exact: true })).toHaveCount(0)
+    await expect(app.getByRole('button', { name: 'New purchase', exact: true })).toHaveCount(0)
     await vault.writeData(storage, header)
     await page.getByRole('button', { name: 'Retry', exact: true }).click()
     await expect(page.getByTestId('budget-summary')).toBeVisible()

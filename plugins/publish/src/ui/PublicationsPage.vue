@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Badge, IconButton, PageLayout, Row } from '@arxhub/uikit/core'
-import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
-import { computed, ref } from 'vue'
+import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
+import { computed } from 'vue'
 import { PublishExtension } from '../publish-extension'
-import type { PublicationKind, PublicationRecord } from '../publish-history'
+import type { PublicationKind } from '../publish-history'
 import PublicationActions from './PublicationActions.vue'
+import { counts, publicationsView, short } from './publications-view'
 
 const arxhub = useArxHub()
 const publish = arxhub.extensions.get(PublishExtension)
@@ -23,75 +24,11 @@ const meta = computed(() => (enabled.value ? publish.serverUrl : 'Publishing is 
 // the same state, so none of them is offered as a place to go back to.
 const head = computed(() => history.value[0]?.hash ?? null)
 
-// One operation at a time from this page: the Publisher serialises them anyway, so a second click would
-// only queue a duplicate behind the first.
-const busy = ref(false)
-function act(action: Promise<void>, context: string): void {
-  busy.value = true
-  publish.run(
-    action.finally(() => {
-      busy.value = false
-    }),
-    context,
-  )
-}
-
-function copyLink(root: string): void {
-  const url = publish.publicUrl(root)
-  if (url == null) return
-  act(
-    navigator.clipboard.writeText(url).then(() => {
-      toaster.create({ title: 'Link copied', description: url, type: 'success' })
-    }),
-    `copy link for ${root}`,
-  )
-}
-
-function openInBrowser(root: string): void {
-  const url = publish.publicUrl(root)
-  if (url == null) return
-  window.open(url, '_blank', 'noopener,noreferrer')
-}
-
-function republish(root: string): void {
-  act(
-    publish.publish(root).then(() => {
-      toaster.create({ title: 'Published', description: publish.publicUrl(root) ?? root, type: 'success' })
-    }),
-    `publish ${root}`,
-  )
-}
-
-function unpublish(root: string): void {
-  act(
-    publish.unpublish(root).then(() => {
-      toaster.create({ title: 'Unpublished', description: root, type: 'success' })
-    }),
-    `unpublish ${root}`,
-  )
-}
-
-function rollback(entry: PublicationRecord): void {
-  act(
-    publish.rollback(entry.hash).then(() => {
-      toaster.create({ title: 'Rolled back', description: `${counts(entry)} are public again`, type: 'success' })
-    }),
-    `roll back to ${short(entry.hash)}`,
-  )
-}
-
-function short(hash: string): string {
-  return hash.slice(0, 8)
-}
+const view = publicationsView(publish)
+const busy = view.busy
 
 function when(at: string): string {
   return new Date(at).toLocaleString()
-}
-
-function counts(entry: PublicationRecord): string {
-  const roots = `${entry.roots.length} ${entry.roots.length === 1 ? 'root' : 'roots'}`
-  const files = `${entry.files} ${entry.files === 1 ? 'file' : 'files'}`
-  return `${roots} · ${files}`
 }
 </script>
 
@@ -114,10 +51,10 @@ function counts(entry: PublicationRecord): string {
           <div class="actions">
             <PublicationActions
               :busy="busy"
-              :on-copy="() => copyLink(root)"
-              :on-open="() => openInBrowser(root)"
-              :on-republish="() => republish(root)"
-              :on-unpublish="() => unpublish(root)"
+              :on-copy="() => view.copyLink(root)"
+              :on-open="() => view.openInBrowser(root)"
+              :on-republish="() => view.republish(root)"
+              :on-unpublish="() => view.unpublish(root)"
             />
           </div>
         </Row>
@@ -135,7 +72,7 @@ function counts(entry: PublicationRecord): string {
           </div>
           <div class="actions">
             <Badge v-if="entry.hash === head">Current</Badge>
-            <IconButton v-else :size="rowIconSize" icon="lu:undo-2" tooltip="Roll back" :disabled="busy" @click="rollback(entry)" />
+            <IconButton v-else :size="rowIconSize" icon="lu:undo-2" tooltip="Roll back" :disabled="busy" @click="view.rollback(entry)" />
           </div>
         </Row>
       </ul>

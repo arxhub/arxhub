@@ -5,8 +5,11 @@ import { PluginVfs } from '@arxhub/vfs'
 import { markRaw } from 'vue'
 import { LOGS_TYPE_ID } from './contributions'
 import { LogFileWriter } from './log-file-writer'
+import { logBar, logView } from './log-view'
 import { LoggerExtension } from './logger-extension'
 import { manifest } from './manifest'
+import LogFilterField from './ui/LogFilterField.vue'
+import LogLevelsSheet from './ui/LogLevelsSheet.vue'
 import LogStatus from './ui/LogStatus.vue'
 import LogViewerPanel from './ui/LogViewerPanel.vue'
 
@@ -50,6 +53,8 @@ export class LoggerPlugin extends Plugin {
       order: 910,
       pinned: false,
       content: markRaw(LogViewerPanel),
+      bar: () => logBar(logView(ctx.extensions.get(LoggerExtension), this.logger)),
+      sheet: { title: 'Levels', content: markRaw(LogLevelsSheet), footer: markRaw(LogFilterField) },
     })
     // A state, not an action: it says what the session's log holds — a dot at the worst level present
     // and the counts. Opening the viewer is a way into that state, not a second thing the item does.

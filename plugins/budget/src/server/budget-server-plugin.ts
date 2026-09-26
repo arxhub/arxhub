@@ -2,7 +2,7 @@ import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { illegalState } from '@arxhub/errors'
 import { GatewayServerExtension } from '@arxhub/plugin-gateway'
 import { serverManifest } from '../manifest'
-import { FnsReceiptClient, type FnsClientOptions } from './fns-client'
+import { type FnsClientOptions, FnsReceiptClient } from './fns-client'
 import { receiptRoutes } from './receipt-routes'
 
 export interface BudgetServerPluginArgs extends PluginArgs {

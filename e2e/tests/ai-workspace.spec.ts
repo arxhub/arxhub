@@ -64,11 +64,13 @@ test.describe('ai workspace agent channel', () => {
       const band = app.getByTestId('diff-band')
       await expect(band).toBeVisible()
       await band.getByTestId('diff-more').click()
-      await app.getByTestId('diff-options').getByRole('button', { name: 'К предложению' }).click()
+      await app.getByTestId('diff-options').getByRole('button', { name: 'Back to proposal' }).click()
       await expect(proposal).toBeVisible()
       await expect(band).toHaveCount(0)
     }
-    await proposal.getByRole('button', { name: 'Accept all', exact: true }).click()
+    // The phone keeps the session's commands in the band above the type row, the desktop under the proposal.
+    const commands = (await isMobileFrame(app)) ? app.getByTestId('object-bar') : proposal
+    await commands.getByRole('button', { name: 'Accept all', exact: true }).click()
     await expect.poll(async () => vault.read(note)).toBe('after from agent\n')
   })
 

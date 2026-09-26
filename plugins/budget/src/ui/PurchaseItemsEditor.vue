@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { IconButton, Input } from '@arxhub/uikit/core'
+import { Field, IconButton, Input } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { formatAmount } from '../money'
-import BudgetFormField from './BudgetFormField.vue'
 import { itemsSubtotal, itemTotal, type PurchaseItemDraft } from './purchase-draft'
 
 const props = defineProps<{
@@ -57,7 +56,7 @@ function remove(index: number): void {
           @click="remove(index)"
         />
       </div>
-      <BudgetFormField label="Name" :for-id="`budget-item-${index}-name`">
+      <Field label="Name" :for="`budget-item-${index}-name`">
         <Input
           :id="`budget-item-${index}-name`"
           :model-value="item.name"
@@ -66,9 +65,9 @@ function remove(index: number): void {
           :disabled="disabled"
           @update:model-value="update(index, { name: $event ?? '' })"
         />
-      </BudgetFormField>
+      </Field>
       <div class="item-numbers">
-        <BudgetFormField label="Quantity" :for-id="`budget-item-${index}-quantity`">
+        <Field label="Quantity" :for="`budget-item-${index}-quantity`">
           <Input
             :id="`budget-item-${index}-quantity`"
             :model-value="item.quantity"
@@ -78,8 +77,8 @@ function remove(index: number): void {
             :disabled="disabled"
             @update:model-value="update(index, { quantity: $event ?? '' })"
           />
-        </BudgetFormField>
-        <BudgetFormField label="Unit price" :for-id="`budget-item-${index}-price`">
+        </Field>
+        <Field label="Unit price" :for="`budget-item-${index}-price`">
           <Input
             :id="`budget-item-${index}-price`"
             :model-value="item.unitPrice"
@@ -89,7 +88,7 @@ function remove(index: number): void {
             :disabled="disabled"
             @update:model-value="update(index, { unitPrice: $event ?? '' })"
           />
-        </BudgetFormField>
+        </Field>
       </div>
       <p class="line-total">
         Line total

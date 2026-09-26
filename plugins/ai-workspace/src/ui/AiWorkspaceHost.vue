@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ARXHUB_KEY } from '@arxhub/uikit/hooks'
-import { inject } from 'vue'
+import { useArxHub } from '@arxhub/uikit/hooks'
 import { AiWorkspaceExtension } from '../ai-workspace-extension'
 import AiWorkspacePage from './AiWorkspacePage.vue'
+import { aiWorkspaceState } from './use-ai-workspace'
 
-const arxhub = inject(ARXHUB_KEY)
-if (!arxhub) throw new Error('ArxHub is not provided')
+const arxhub = useArxHub()
 const extension = arxhub.extensions.get(AiWorkspaceExtension)
+const state = aiWorkspaceState(extension)
 </script>
 
 <template>
@@ -17,5 +17,6 @@ const extension = arxhub.extensions.get(AiWorkspaceExtension)
     :compare="extension.compare"
     :open-overlay="extension.openOverlay"
     :open-source="extension.openSource"
+    :state="state"
   />
 </template>

@@ -2,27 +2,14 @@
 import type { LogRecord } from '@arxhub/logger'
 // biome-ignore lint/style/useImportType: ScrollArea is used in template and as a type
 import { Button, EmptyState, IconButton, Row, ScrollArea, SearchField } from '@arxhub/uikit/core'
-import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
+import { useArxHub } from '@arxhub/uikit/hooks'
 import dayjs from 'dayjs'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { LEVELS, levelName, logView } from '../log-view'
 import { LoggerExtension } from '../logger-extension'
 import LogToolbar from './LogToolbar.vue'
 
-type LevelName = 'debug' | 'info' | 'warn' | 'error'
-const LEVELS: { name: LevelName; value: number }[] = [
-  { name: 'debug', value: 20 },
-  { name: 'info', value: 30 },
-  { name: 'warn', value: 40 },
-  { name: 'error', value: 50 },
-]
 const STRUCTURAL = new Set(['level', 'time', 'msg', 'name'])
-
-function levelName(level: number): LevelName {
-  if (level >= 50) return 'error'
-  if (level >= 40) return 'warn'
-  if (level >= 30) return 'info'
-  return 'debug'
-}
 
 // What the row role calls a condition. The level is the entry's own vocabulary; danger/warning is the
 // product's, and it is what puts the marker on the leading edge of the line that failed.
@@ -34,26 +21,8 @@ function levelTone(level: number): 'neutral' | 'danger' | 'warning' {
 
 const arxhub = useArxHub()
 const ext = arxhub.extensions.get(LoggerExtension)
-const touch = useShellFrame() === 'mobile'
-const buttonSize = touch ? 'lg' : 'sm'
-
-const enabled = ref<Record<LevelName, boolean>>({ debug: true, info: true, warn: true, error: true })
-const search = ref('')
-// Source: '' = live buffer, otherwise a past session file path.
-const source = ref('')
-const sessions = ref<string[]>([])
-const loaded = shallowRef<LogRecord[]>([])
-
-const records = computed(() => (source.value === '' ? ext.records.value : loaded.value))
-
-const visible = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  return records.value.filter((r) => {
-    if (!enabled.value[levelName(r.level)]) return false
-    if (q === '') return true
-    return r.msg.toLowerCase().includes(q) || (r.name ?? '').toLowerCase().includes(q)
-  })
-})
+const view = logView(ext, arxhub.logger)
+const { enabled, source, sessions, visible } = view
 
 function extras(record: LogRecord): string {
   const out: Record<string, unknown> = {}
@@ -61,27 +30,6 @@ function extras(record: LogRecord): string {
     if (!STRUCTURAL.has(k)) out[k] = v
   }
   return Object.keys(out).length > 0 ? JSON.stringify(out) : ''
-}
-
-function toggle(name: LevelName): void {
-  enabled.value = { ...enabled.value, [name]: !enabled.value[name] }
-}
-
-async function loadSessions(): Promise<void> {
-  sessions.value = await ext.listSessions()
-}
-
-async function onSourceChange(): Promise<void> {
-  if (source.value === '') {
-    loaded.value = []
-    return
-  }
-  try {
-    loaded.value = await ext.loadSession(source.value)
-  } catch (error) {
-    arxhub.logger.error('Failed to load log session', error)
-    loaded.value = []
-  }
 }
 
 // Follow-tail: keep pinned to the bottom on new live records unless the user has scrolled up.
@@ -110,13 +58,13 @@ let listening: HTMLElement | null = null
 onMounted(() => {
   listening = area.value?.viewport ?? null
   listening?.addEventListener('scroll', onScroll, { passive: true })
-  void loadSessions()
+  void view.loadSessions()
 })
 onBeforeUnmount(() => listening?.removeEventListener('scroll', onScroll))
 </script>
 
 <template>
-  <div class="log-panel" :class="{ touch }">
+  <div class="log-panel">
     <LogToolbar>
       <template #levels>
         <Button
@@ -125,25 +73,25 @@ onBeforeUnmount(() => listening?.removeEventListener('scroll', onScroll))
           type="button"
           class="chip"
           variant="ghost"
-          :size="buttonSize"
+          size="sm"
           :active="enabled[lvl.name]"
           :aria-pressed="enabled[lvl.name]"
-          @click="toggle(lvl.name)"
+          @click="view.toggle(lvl.name)"
         >
           {{ lvl.name }}
         </Button>
       </template>
       <template #actions>
-        <IconButton :size="touch ? 'xl' : 'lg'" icon="lu:refresh-cw" tooltip="Reload sessions" @click="loadSessions" />
-        <Button variant="secondary" :size="buttonSize" :disabled="source !== ''" @click="ext.clear()">Clear</Button>
+        <IconButton size="lg" icon="lu:refresh-cw" tooltip="Reload sessions" @click="view.loadSessions()" />
+        <Button variant="secondary" size="sm" :disabled="source !== ''" @click="view.clear()">Clear</Button>
       </template>
       <template #search>
       <div class="search">
-        <SearchField v-model="search" placeholder="Filter logs…" aria-label="Filter logs" />
+        <SearchField v-model="view.search.value" placeholder="Filter logs…" aria-label="Filter logs" />
       </div>
       </template>
       <template #session>
-      <select v-model="source" class="session" aria-label="Log session" @change="onSourceChange">
+      <select :value="source" class="session" aria-label="Log session" @change="view.showSource(($event.target as HTMLSelectElement).value)">
         <option value="">Live</option>
         <option v-for="s in sessions" :key="s" :value="s">{{ s.replace('logs/', '') }}</option>
       </select>
@@ -177,11 +125,6 @@ onBeforeUnmount(() => listening?.removeEventListener('scroll', onScroll))
   text-transform: uppercase;
 }
 
-.log-panel.touch .chip {
-  flex: 1;
-  min-width: 0;
-}
-
 .search {
   flex: 1;
   min-width: 0;
@@ -199,11 +142,6 @@ onBeforeUnmount(() => listening?.removeEventListener('scroll', onScroll))
   font-size: var(--font-size-xs);
   font-family: var(--font-sans);
   padding: 0 8px;
-}
-
-.log-panel.touch .session {
-  height: var(--size-xl);
-  font-size: var(--font-size-md);
 }
 
 .session:focus-visible {
