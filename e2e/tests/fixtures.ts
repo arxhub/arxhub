@@ -47,10 +47,12 @@ export const test = base.extend<{ app: Page; vault: Vault }>({
   vault: async ({}, use, testInfo) => {
     // Unique filename per test rather than a subdirectory: parallel workers stay isolated and the
     // note still sits at the tree root, where it is visible without expanding anything.
-    const prefix = testInfo.title
-      .replace(/[^a-z0-9]+/gi, '-')
-      .toLowerCase()
-      .slice(0, 40)
+    // `--repeat-each` runs the copies of one test in parallel, so each copy needs its own names too.
+    const prefix =
+      testInfo.title
+        .replace(/[^a-z0-9]+/gi, '-')
+        .toLowerCase()
+        .slice(0, 40) + (testInfo.repeatEachIndex > 0 ? `-r${testInfo.repeatEachIndex}` : '')
     const vault: Vault = {
       async write(relative, content) {
         const path = `${prefix}--${relative}`
