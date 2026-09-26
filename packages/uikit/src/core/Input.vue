@@ -8,6 +8,10 @@ defineProps<{
   type?: string
   disabled?: boolean
   variant?: 'default' | 'title'
+  // Room for an icon a composing control draws over the box (SearchField): the box keeps its one
+  // geometry, and the text starts clear of the icon instead of under it.
+  iconStart?: boolean
+  iconEnd?: boolean
 }>()
 
 const touch = useShellFrame() === 'mobile'
@@ -16,7 +20,7 @@ const touch = useShellFrame() === 'mobile'
 <template>
   <input
     class="input"
-    :class="{ touch, title: variant === 'title' }"
+    :class="{ touch, title: variant === 'title', 'icon-start': iconStart, 'icon-end': iconEnd }"
     :type="type || 'text'"
     :placeholder="placeholder"
     :disabled="disabled"
@@ -42,6 +46,22 @@ const touch = useShellFrame() === 'mobile'
 .input.touch {
   height: var(--size-xl);
   font-size: var(--font-size-md);
+}
+
+.input.icon-start {
+  padding-left: 32px;
+}
+
+.input.icon-end {
+  padding-right: 32px;
+}
+
+.input.touch.icon-start {
+  padding-left: 40px;
+}
+
+.input.touch.icon-end {
+  padding-right: 48px;
 }
 
 /* A single focus ring shared with every other control — no border tint stacked under an outline. */
