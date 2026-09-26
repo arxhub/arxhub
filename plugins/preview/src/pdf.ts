@@ -43,3 +43,17 @@ export function pageOfAnchor(anchor: { readonly part?: string }, numPages: numbe
   if (page < 1) return null
   return Math.min(page, numPages)
 }
+
+// Which page is being read: the one crossing `offset`, measured from the first page's top edge. Every page
+// shares page 1's size (see PdfPanel), so this is arithmetic rather than a measurement of each box — the
+// band reads it on every scroll frame.
+export function pageAtOffset(offset: number, pageHeight: number, gap: number, count: number): number {
+  if (count < 1) return 0
+  if (pageHeight <= 0) return 1
+  const page = Math.floor(Math.max(0, offset) / (pageHeight + gap)) + 1
+  return Math.min(count, page)
+}
+
+export function formatPageOf(page: number, count: number): string {
+  return `Page ${page} of ${count}`
+}

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { canvasPixelSize, clampZoom, fitWidthSize, formatPageCount, MAX_ZOOM, MIN_ZOOM, pageOfAnchor } from '../pdf'
+import { canvasPixelSize, clampZoom, fitWidthSize, formatPageCount, formatPageOf, MAX_ZOOM, MIN_ZOOM, pageAtOffset, pageOfAnchor } from '../pdf'
 
 describe('clampZoom', () => {
   test('holds the bounds', () => {
@@ -65,5 +65,27 @@ describe('pageOfAnchor', () => {
 
   test('a document with no pages has nowhere to go', () => {
     expect(pageOfAnchor({ part: '1' }, 0)).toBeNull()
+  })
+})
+
+describe('pageAtOffset', () => {
+  test('the page crossing the offset, counting the gap between pages', () => {
+    expect(pageAtOffset(0, 100, 16, 5)).toBe(1)
+    expect(pageAtOffset(115, 100, 16, 5)).toBe(1)
+    expect(pageAtOffset(116, 100, 16, 5)).toBe(2)
+    expect(pageAtOffset(350, 100, 16, 5)).toBe(4)
+  })
+
+  test('stays inside the document', () => {
+    expect(pageAtOffset(-40, 100, 16, 5)).toBe(1)
+    expect(pageAtOffset(10_000, 100, 16, 5)).toBe(5)
+    expect(pageAtOffset(50, 0, 16, 5)).toBe(1)
+    expect(pageAtOffset(50, 100, 16, 0)).toBe(0)
+  })
+})
+
+describe('formatPageOf', () => {
+  test('names the page and the count', () => {
+    expect(formatPageOf(3, 12)).toBe('Page 3 of 12')
   })
 })

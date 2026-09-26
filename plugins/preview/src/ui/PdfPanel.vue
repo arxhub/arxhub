@@ -7,7 +7,7 @@ import { useArxHub } from '@arxhub/uikit/hooks'
 import { getDocument, type PDFDocumentProxy, RenderingCancelledException, type RenderTask } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { computed, onBeforeUnmount, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { formatBytes } from '../media'
-import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, pageOfAnchor } from '../pdf'
+import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, pageAtOffset, pageOfAnchor } from '../pdf'
 import { createPdfRangeLoadingTask, type PdfRangeLoadingTask } from '../pdf-range'
 import { configurePdfWorker } from '../pdf-worker'
 import PdfShell from './PdfShell.vue'
@@ -52,6 +52,9 @@ let pendingAnchor: BlockAnchor | null = props.anchor ?? null
 // panel is hidden (v-show) because Workspace activates its type and tab only after the reveal returns.
 // Measuring a hidden box reads zeros and a scrollTop set on it is dropped, so it waits for a laid-out one.
 const pendingPage = ref<number | null>(null)
+
+// The page being read, for the phone's band. Recomputed on scroll and whenever the pages change size.
+const currentPage = ref(0)
 
 const pageSize = computed(() => (baseSize.value && stageWidth.value > 0 ? fitWidthSize(baseSize.value, stageWidth.value, zoom.value) : null))
 const meta = computed(() => (size.value == null ? '' : `${formatPageCount(pages.length)} · ${formatBytes(size.value)}`))
@@ -171,6 +174,27 @@ watch(
   { flush: 'post' },
 )
 
+// The line a third of the way down the viewport decides: a page whose bottom is still in view but which
+// the reader has scrolled past is not the one being read.
+function updateCurrentPage(): void {
+  const stage = stageArea.value?.viewport
+  const content = stage?.firstElementChild
+  if (stage == null || content == null || pageSize.value == null) {
+    currentPage.value = pages.length === 0 ? 0 : 1
+    return
+  }
+  const style = getComputedStyle(content)
+  const inset = Number.parseFloat(style.paddingTop) || 0
+  const gap = Number.parseFloat(style.rowGap) || 0
+  currentPage.value = pageAtOffset(stage.scrollTop + stage.clientHeight / 3 - inset, pageSize.value.height, gap, pages.length)
+}
+
+watch([pageSize, () => pages.length], updateCurrentPage, { flush: 'post' })
+
+function showPage(index: number): void {
+  pendingPage.value = index
+}
+
 function reveal(anchor: BlockAnchor): boolean {
   if (pages.length === 0) {
     if (anchor.part == null) return false
@@ -275,6 +299,7 @@ onMounted(() => {
     stageWidth.value = measureStage(stage)
   })
   stageObserver.observe(stage)
+  stage.addEventListener('scroll', updateCurrentPage, { passive: true })
   // rootMargin percentages are relative to the root's own box, so "100%" top and bottom is exactly one
   // stage-height of lookahead in each direction without measuring anything by hand.
   pageObserver = new IntersectionObserver(
@@ -295,6 +320,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   ticket++
   stageObserver?.disconnect()
+  stageArea.value?.viewport?.removeEventListener('scroll', updateCurrentPage)
   void closeDoc().catch((cause: unknown) => arxhub.logger.error('[preview] could not close the PDF task', cause))
 })
 </script>
@@ -306,6 +332,9 @@ onBeforeUnmount(() => {
       :meta="meta"
       :zoom="zoom"
       :on-zoom="(value: number) => (zoom = value)"
+      :page="currentPage"
+      :page-count="pages.length"
+      :on-page="showPage"
     >
       <ScrollArea ref="stageArea" axis="both" class="pdf-stage" content-class="pdf-stage-inner">
         <p v-if="loading" class="media-state">Loading…</p>

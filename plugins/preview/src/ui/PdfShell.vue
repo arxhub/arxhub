@@ -8,13 +8,19 @@ defineProps<{
   meta: string
   zoom: number
   onZoom: (value: number) => void
+  page: number
+  pageCount: number
+  onPage: (index: number) => void
 }>()
 
-const impl = useShellFrame() === 'mobile' ? MobilePdfShell : DesktopPdfShell
+const mobile = useShellFrame() === 'mobile'
 </script>
 
 <template>
-  <component :is="impl" :path="path" :meta="meta" :zoom="zoom" :on-zoom="onZoom">
+  <MobilePdfShell v-if="mobile" :path="path" :meta="meta" :zoom="zoom" :on-zoom="onZoom" :page="page" :page-count="pageCount" :on-page="onPage">
     <slot />
-  </component>
+  </MobilePdfShell>
+  <DesktopPdfShell v-else :path="path" :meta="meta" :zoom="zoom" :on-zoom="onZoom">
+    <slot />
+  </DesktopPdfShell>
 </template>

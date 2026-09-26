@@ -1,33 +1,24 @@
 <script setup lang="ts">
-import { DocumentName } from '@arxhub/plugin-documents/ui'
-import { Strip } from '@arxhub/uikit/core'
-import { useKeyboardInset } from '@arxhub/uikit/hooks'
-import { computed } from 'vue'
-import SheetBar from './SheetBar.vue'
 import SheetFormulaBar from './SheetFormulaBar.vue'
 import SheetFormulaHelp from './SheetFormulaHelp.vue'
 import SheetGrid from './SheetGrid.vue'
 import SheetMessages from './SheetMessages.vue'
-import SheetTabs from './SheetTabs.vue'
 import { useSheet } from './use-sheet'
+import { useSheetBar } from './use-sheet-bar'
 
-defineProps<{ path: string }>()
-const { root, sheet, formulaFocused } = useSheet()
-const keyboardInset = useKeyboardInset()
-const typing = computed(() => formulaFocused.value && keyboardInset.value > 0)
+// No strip at the top: the name is the object band's, and nothing the thumb reaches for sits up there.
+const props = defineProps<{ path: string }>()
+const session = useSheet()
+const { root, sheet } = session
+useSheetBar(() => props.path, session)
 </script>
 
 <template>
   <div ref="root" class="sheet-editor sheet-mobile">
-    <Strip>
-      <DocumentName :path="path" />
-    </Strip>
     <SheetMessages />
     <SheetGrid v-if="sheet" :row-height="48" :column-width="120" />
-    <SheetTabs v-show="!typing" />
     <SheetFormulaHelp />
     <SheetFormulaBar />
-    <SheetBar v-show="!typing" />
   </div>
 </template>
 

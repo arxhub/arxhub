@@ -15,9 +15,11 @@ export {
   DEFAULT_ZOOM,
   fitWidthSize,
   formatPageCount,
+  formatPageOf,
   MAX_ZOOM,
   MIN_ZOOM,
   type PageSize,
+  pageAtOffset,
   pageOfAnchor,
   ZOOM_STEP,
 } from './pdf'
