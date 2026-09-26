@@ -9,11 +9,12 @@ import { VaultWatcher, type VfsChange } from '@arxhub/vfs'
 import { markRaw } from 'vue'
 import { applyAcceptWithMerge } from './accept-with-merge'
 import { AiWorkspaceExtension } from './ai-workspace-extension'
+import { base64ToBytes } from './bytes-wire'
 import { AI_WORKSPACE_TYPE_ID } from './contributions'
 import { AI_WORKSPACE_NAMESPACE, manifest } from './manifest'
 import type { CompareMode } from './session-store'
+import type { CompareWire, SessionView } from './session-view'
 import AiWorkspaceHost from './ui/AiWorkspaceHost.vue'
-import type { SessionView } from './ui/AiWorkspacePage.vue'
 
 function stagingPath(sessionId: string, pathname: string): string {
   return `_ai-workspace/${sessionId}/${pathname.replace(/^\/+/, '')}`
@@ -81,11 +82,8 @@ export class AiWorkspacePlugin extends Plugin {
               if (!(await file.exists())) return ''
               return file.readText()
             }
-            const compared = await http()
-              .url(`/sessions/${sessionId}/files/compare`)
-              .post({ pathname, mode: 'agent' })
-              .json<{ left: string; right: string }>()
-            return side === 'base' ? compared.left : compared.right
+            const compared = await http().url(`/sessions/${sessionId}/files/compare`).post({ pathname, mode: 'agent' }).json<CompareWire>()
+            return new TextDecoder().decode(base64ToBytes(side === 'base' ? compared.left : compared.right))
           },
           writeVault: async (pathname, content) => {
             await notes.vfs.file(pathname).writeText(content)
@@ -107,10 +105,8 @@ export class AiWorkspacePlugin extends Plugin {
         await clearStaging(sessionId)
       },
       compare: async (sessionId: string, pathname: string, mode: CompareMode) => {
-        return http()
-          .url(`/sessions/${sessionId}/files/compare`)
-          .post({ pathname, mode })
-          .json<{ leftLabel: string; rightLabel: string; left: string; right: string }>()
+        const wire = await http().url(`/sessions/${sessionId}/files/compare`).post({ pathname, mode }).json<CompareWire>()
+        return { ...wire, left: base64ToBytes(wire.left), right: base64ToBytes(wire.right) }
       },
       openOverlay: async (sessionId: string, pathname: string) => {
         const notes = ctx.extensions.get(NotesExtension)
@@ -129,10 +125,7 @@ export class AiWorkspacePlugin extends Plugin {
           throw new Error(`Source file is not available: ${path}`)
         }
         const text = excerpt.trim()
-        const opened = await shell.workspace.openObject(
-          NOTES_TYPE_ID,
-          text ? { id: path, at: { text } } : { id: path },
-        )
+        const opened = await shell.workspace.openObject(NOTES_TYPE_ID, text ? { id: path, at: { text } } : { id: path })
         if (opened == null) throw new Error(`Could not open source: ${path}`)
       },
     }))
@@ -147,6 +140,7 @@ export class AiWorkspacePlugin extends Plugin {
       pinned: false,
       order: 80,
       content: markRaw(AiWorkspaceHost),
+      dock: () => this.dockOf(ctx),
     })
 
     if (ctx.services.has(VaultWatcher) && ctx.extensions.has(NotesExtension)) {
@@ -155,6 +149,10 @@ export class AiWorkspacePlugin extends Plugin {
         void this.onVaultChange(ctx, notes, change)
       })
     }
+  }
+
+  private dockOf(ctx: PluginContext) {
+    return ctx.extensions.get(AiWorkspaceExtension).dock.value
   }
 
   private async onVaultChange(ctx: PluginContext, notes: NotesExtension, change: VfsChange): Promise<void> {

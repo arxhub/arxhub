@@ -18,11 +18,7 @@ function textResult(data: unknown) {
 }
 
 function errorResult(error: unknown) {
-  const message = isAppError(error)
-    ? error.message
-    : error instanceof Error
-      ? error.message
-      : String(error)
+  const message = isAppError(error) ? error.message : error instanceof Error ? error.message : String(error)
   return { content: [{ type: 'text' as const, text: message }], isError: true as const }
 }
 
@@ -205,10 +201,10 @@ export class AiWorkspaceMcpHost {
     try {
       body = await request.clone().json()
     } catch {
-      return new Response(
-        JSON.stringify({ jsonrpc: '2.0', error: { code: -32700, message: 'Parse error' }, id: null }),
-        { status: 400, headers: { 'content-type': 'application/json' } },
-      )
+      return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32700, message: 'Parse error' }, id: null }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      })
     }
 
     if (!isInitializeRequest(body)) {
@@ -249,9 +245,9 @@ export class AiWorkspaceMcpHost {
   }
 
   private missingSession(): Response {
-    return new Response(
-      JSON.stringify({ jsonrpc: '2.0', error: { code: -32001, message: 'Session not found' }, id: null }),
-      { status: 404, headers: { 'content-type': 'application/json' } },
-    )
+    return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32001, message: 'Session not found' }, id: null }), {
+      status: 404,
+      headers: { 'content-type': 'application/json' },
+    })
   }
 }

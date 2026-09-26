@@ -1,14 +1,32 @@
 import { createHash } from 'node:crypto'
-import type { Page } from '@playwright/test'
-import { expect, openNavigation, test } from './fixtures'
+import type { Locator, Page } from '@playwright/test'
+import { expect, isMobileFrame, openNavigation, test } from './fixtures'
 
+// The versions page stands in the editor's own column, in place of the document.
 async function versions(app: Page) {
   await app.getByRole('button', { name: 'Document tools', exact: true }).click()
   await app.getByRole('menuitem', { name: 'Saved versions', exact: true }).click()
-  return app.getByRole('dialog', { name: 'Saved versions', exact: true })
+  const page = app.getByRole('region', { name: 'Saved versions', exact: true })
+  await expect(page).toBeVisible()
+  return page
+}
+
+function diffOf(page: Locator) {
+  return page.getByTestId('diff-view')
+}
+
+// The phone has no side column: the page's commands sit in the band's «…» sheet.
+async function restoreWholeVersion(app: Page, page: Locator): Promise<void> {
+  if (await isMobileFrame(app)) {
+    await page.getByTestId('diff-more').click()
+    await app.getByTestId('diff-options').getByRole('button', { name: 'Restore this version', exact: true }).click()
+  } else {
+    await page.getByRole('button', { name: 'Restore this version', exact: true }).click()
+  }
 }
 
 test('restoring a version preserves the current draft, refuses a failed save and survives restart', async ({ app, vault }) => {
+  test.skip(await isMobileFrame(app), 'the restore flow is driven through the desktop column; the phone has its own smoke test')
   const path = await vault.write(
     `${test.info().project.name}-history.arx`,
     JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'First version' }] }] } }),
@@ -35,14 +53,20 @@ test('restoring a version preserves the current draft, refuses a failed save and
   const rows = dialog.getByRole('navigation', { name: 'Saved document versions' }).getByRole('button')
   await expect(rows).toHaveCount(2)
   await rows.last().click()
-  await expect(dialog.getByLabel('Version preview')).toContainText('First version')
+  await expect(diffOf(dialog)).toContainText('First version')
   await dialog.getByRole('button', { name: 'Restore this version', exact: true }).click()
   await expect(dialog.getByRole('alert')).toContainText('current draft could not be saved')
   expect(await vault.read(path)).toContain('Second version')
-  await expect(editor).toContainText('Third draft')
-  fail = false
-  await dialog.getByRole('button', { name: 'Restore this version', exact: true }).click()
+  // The buffer stayed mounted under the page: the unsaved draft is still there once the page closes.
+  await dialog.getByRole('button', { name: 'Close versions', exact: true }).click()
   await expect(dialog).toHaveCount(0)
+  await expect(editor).toContainText('Third draft')
+  const retry = await versions(app)
+  await retry.getByRole('navigation', { name: 'Saved document versions' }).getByRole('button').last().click()
+  await expect(diffOf(retry)).toContainText('First version')
+  fail = false
+  await retry.getByRole('button', { name: 'Restore this version', exact: true }).click()
+  await expect(retry).toHaveCount(0)
   await expect(editor).toContainText('First version')
   expect(JSON.parse(await vault.read(path)).documentId).toBe(identity)
   await app.reload()
@@ -54,10 +78,11 @@ test('restoring a version preserves the current draft, refuses a failed save and
   const savedRows = reopened.getByRole('navigation', { name: 'Saved document versions' }).getByRole('button')
   await expect(savedRows).toHaveCount(4)
   await savedRows.nth(1).click()
-  await expect(reopened.getByLabel('Version preview')).toContainText('Third draft')
+  await expect(diffOf(reopened)).toContainText('Third draft')
   await expect(reopened.getByRole('button', { name: 'Restore this version' })).toBeDisabled()
-  await reopened.getByRole('button', { name: 'Show raw .arx' }).click()
-  await expect(reopened.getByLabel('Version preview')).toContainText('"documentId"')
+  await reopened.getByRole('button', { name: 'Ещё', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Показать JSON', exact: true }).click()
+  await expect(diffOf(reopened)).toContainText('"text": "Third draft"')
 })
 
 test('a copied document gets its own history identity', async ({ app, vault }) => {
@@ -85,6 +110,7 @@ test('a copied document gets its own history identity', async ({ app, vault }) =
 })
 
 test('one block can be restored while a different edited block stays current', async ({ app, vault }) => {
+  test.skip(await isMobileFrame(app), 'the restore flow is driven through the desktop column; the phone has its own smoke test')
   const path = await vault.write(
     `${test.info().project.name}-partial.arx`,
     JSON.stringify({
@@ -110,11 +136,11 @@ test('one block can be restored while a different edited block stays current', a
   // expired: under load it names the edited draft instead, and a version equal to the draft has no block
   // changes to click.
   await dialog.getByRole('navigation', { name: 'Saved document versions' }).getByRole('button').last().click()
-  await dialog
-    .getByRole('navigation', { name: 'Changes from saved version' })
-    .getByRole('button', { name: 'changed · First changed', exact: true })
-    .click()
-  await expect(dialog.getByLabel('Saved block preview')).toContainText('First original')
+  // A block is chosen in the diff itself: focusing a change makes it the current stop.
+  const change = dialog.locator('[data-diff-stop]').filter({ hasText: 'First' }).first()
+  await change.click()
+  await expect(change).toBeFocused()
+  await expect(diffOf(dialog)).toContainText('First original')
   await dialog.getByRole('button', { name: 'Restore selected block', exact: true }).click()
   await expect(dialog).toBeHidden()
   await expect(editor.locator('p')).toHaveText(['First original', 'Second changed'])
@@ -136,13 +162,37 @@ test('legacy saved versions move into snapshot history and remain available afte
   await app.getByRole('treeitem', { name: path, exact: true }).click()
   await expect(app.locator('.ProseMirror:visible')).toContainText('Current document')
   const dialog = await versions(app)
-  await expect(dialog.getByLabel('Version preview')).toContainText('Legacy saved text')
+  await expect(diffOf(dialog)).toContainText('Legacy saved text')
   await expect.poll(() => vault.readData(legacy).catch(() => null)).toBeNull()
   const head = (await vault.readData('state/Repository/repo/head')).trim()
   expect(JSON.parse(await vault.readData(`state/Repository/repo/snapshots/${head}`)).files[`vault/${path}`].identity).toBe(id)
   await app.reload()
   const reopened = await versions(app)
-  await expect(reopened.getByLabel('Version preview')).toContainText('Legacy saved text')
-  await reopened.getByRole('button', { name: 'Restore this version', exact: true }).click()
+  await expect(diffOf(reopened)).toContainText('Legacy saved text')
+  await restoreWholeVersion(app, reopened)
   await expect.poll(() => vault.read(path)).toContain('Legacy saved text')
+})
+
+test('the phone opens saved versions as a page with the diff band', async ({ app, vault }) => {
+  test.skip(!(await isMobileFrame(app)), 'the phone realization of the versions page')
+  const path = await vault.write(
+    `${test.info().project.name}-versions-smoke.arx`,
+    JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Saved text' }] }] } }),
+  )
+  await app.reload()
+  await openNavigation(app)
+  await app.getByRole('treeitem', { name: path, exact: true }).click()
+  const editor = app.locator('.ProseMirror:visible')
+  await app.getByRole('button', { name: 'Document tools', exact: true }).click()
+  await app.getByRole('menuitem', { name: 'Save', exact: true }).click()
+  await expect(app.locator('.document-save-status')).toContainText('Saved')
+  // No edit after the save: an autosave landing while the page opens would list a version still being written.
+  const page = await versions(app)
+  await expect(diffOf(page)).toBeVisible()
+  await expect(page.getByTestId('diff-band')).toBeVisible()
+  await expect(editor).toHaveCount(0)
+  await page.getByTestId('diff-more').click()
+  await app.getByTestId('diff-options').getByRole('button', { name: 'Открыть документ', exact: true }).click()
+  await expect(page).toHaveCount(0)
+  await expect(app.locator('.ProseMirror:visible')).toContainText('Saved text')
 })

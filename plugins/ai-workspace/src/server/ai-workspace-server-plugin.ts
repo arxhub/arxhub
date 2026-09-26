@@ -29,9 +29,7 @@ export class AiWorkspaceServerPlugin extends Plugin {
   override async start(ctx: PluginContext): Promise<void> {
     await super.start(ctx)
     const token = await ensureMcpChannelToken(this.vfs, process.env.ARXHUB_AI_WORKSPACE_MCP_TOKEN)
-    this.logger.info(
-      `AiWorkspace MCP channel at /api/ai-workspace/mcp (Bearer token in state/AiWorkspace/mcp-token, length ${token.length})`,
-    )
+    this.logger.info(`AiWorkspace MCP channel at /api/ai-workspace/mcp (Bearer token in state/AiWorkspace/mcp-token, length ${token.length})`)
   }
 
   override async stop(ctx: PluginContext): Promise<void> {

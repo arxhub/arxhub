@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import type { Logger } from '@arxhub/core'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { AiSessionStore } from '../session-store'
 import { AiWorkspaceMcpHost } from '../server/mcp'
+import { AiSessionStore } from '../session-store'
 
 const silent: Logger = {
   debug: () => {},

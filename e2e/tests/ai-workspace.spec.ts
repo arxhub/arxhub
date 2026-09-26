@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
-import { expect, openType, SEEDED_MNEMONIC, test } from './fixtures'
 import { mcpCallTool } from './ai-workspace-mcp'
+import { expect, isMobileFrame, openType, SEEDED_MNEMONIC, test } from './fixtures'
 
 // Spec: forge-wiki APP-02-*-QA / UJ-27..UJ-29 (26-ai-workspace).
 const AI_WORKSPACE_TYPE_ID = 'arxhub.ai-workspace'
@@ -57,7 +57,17 @@ test.describe('ai workspace agent channel', () => {
     await expect(proposal.getByText(`modified · ${note}`, { exact: false })).toBeVisible()
     await proposal.getByText(`modified · ${note}`, { exact: false }).click()
     await expect(app.getByTestId('ai-workspace-diff')).toBeVisible()
-    await expect(app.getByTestId('diff-view')).toBeVisible()
+    await expect(app.getByTestId('diff-view').filter({ visible: true })).toBeVisible()
+    if (await isMobileFrame(app)) {
+      // The phone swaps the proposal for the diff and docks the diff's controls above the type row.
+      await expect(proposal).toBeHidden()
+      const band = app.getByTestId('diff-band')
+      await expect(band).toBeVisible()
+      await band.getByTestId('diff-more').click()
+      await app.getByTestId('diff-options').getByRole('button', { name: 'К предложению' }).click()
+      await expect(proposal).toBeVisible()
+      await expect(band).toHaveCount(0)
+    }
     await proposal.getByRole('button', { name: 'Accept all', exact: true }).click()
     await expect.poll(async () => vault.read(note)).toBe('after from agent\n')
   })

@@ -15,7 +15,7 @@ import { keymap } from 'prosemirror-keymap'
 import { EditorState, Selection } from 'prosemirror-state'
 import { columnResizing, tableEditing } from 'prosemirror-tables'
 import { EditorView } from 'prosemirror-view'
-import { computed, onMounted, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, shallowRef, toRef, useId, watch } from 'vue'
 import { ARX_ASSETS, createAssetSession } from '../asset-session'
 import { createAssetStore } from '../assets'
 import { blockIdentityPlugin, identifyBlocks } from '../block-identity'
@@ -51,7 +51,7 @@ import DocumentOutline from './DocumentOutline.vue'
 import DocumentPageHeader from './DocumentPageHeader.vue'
 import DocumentRecovery from './DocumentRecovery.vue'
 import DocumentTools from './DocumentTools.vue'
-import DocumentVersions from './DocumentVersions.vue'
+import DocumentVersionsPage from './DocumentVersionsPage.vue'
 import EditorInspector from './EditorInspector.vue'
 import SelectionFormatting from './SelectionFormatting.vue'
 import SlashMenu from './SlashMenu.vue'
@@ -467,6 +467,17 @@ async function resolveRecovery(action: 'draft' | 'saved' | 'both') {
   }
 }
 
+const displayName = computed(() => notes.displayName(props.path).text)
+
+// The versions page stands in the editor's own column rather than over it, so the buffer it compares against and
+// restores into stays mounted underneath — unsaved text and undo survive the visit.
+async function closeVersions(): Promise<void> {
+  versionsOpen.value = false
+  await nextTick()
+  const current = view.value
+  if (current && !current.isDestroyed) focusDocument(current)
+}
+
 async function restoreVersion(content: string, block?: string): Promise<void> {
   if (mode.value !== 'editable' || !view.value || !canSave.value) throw validation('Switch to Editable to restore a version.')
   const id = documentId(view.value.state.doc)
@@ -579,7 +590,6 @@ const chromeTarget = usePanelChrome(() => ({
     <DocumentFind v-if="findOpen && view && canSave" :view="view" :revision="revision" :mode="mode" @close="closeFind" />
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
-    <DocumentVersions v-if="versionsOpen && extension.history && historyId && view" :store="extension.history" :current="view.state.doc" :document-id="historyId" :kit="kit" :mode="mode" :restore="restoreVersion" @close="versionsOpen = false" />
     <DocumentRecovery v-if="recovery" :kit="kit" :saved="recovery.saved" :draft="recovery.draft.content" :conflict="recovery.conflict" :busy="recoveryBusy" :error="recoveryError" @choose="resolveRecovery" />
     <div v-if="draftError" class="editor-error" role="alert"><span>Draft backup unavailable: {{ draftError }}</span><Button :size="buttonSize" variant="secondary" @click="backupDraft()">Retry draft backup</Button></div>
     <div v-if="loadError" class="editor-error">
@@ -592,7 +602,8 @@ const chromeTarget = usePanelChrome(() => ({
     <div v-if="saveError" class="editor-error" role="alert"><span>Save failed. Your changes are still in this editor.</span><Button :size="buttonSize" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button></div>
     <div v-if="conflictCount" class="editor-warning" role="status">{{ conflictCount }} unresolved conflict{{ conflictCount === 1 ? '' : 's' }}</div>
     <DocumentAppearance v-if="appearanceOpen" :appearance="appearance" @apply="applyAppearance" @close="appearanceOpen = false" />
-    <div ref="editorBody" class="editor-body">
+    <DocumentVersionsPage v-if="versionsOpen && extension.history && historyId && view" :store="extension.history" :current="view.state.doc" :revision="revision" :document-id="historyId" :kit="kit" :mode="mode" :path="path" :title="displayName" :restore="restoreVersion" @close="closeVersions" />
+    <div v-show="!versionsOpen" ref="editorBody" class="editor-body">
     <ScrollArea v-show="!loadError" ref="editorArea" class="editor-scroll" viewport-class="editor-content" content-class="editor-document">
       <DocumentPageHeader :path="path" :appearance="appearance" :disabled="!canSave || mode !== 'editable'" />
       <div ref="editorMount" />
@@ -603,7 +614,7 @@ const chromeTarget = usePanelChrome(() => ({
     <BlockSettingsHandle v-if="view && editorEl && editorBody && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :panel="editorBody" :revision="revision" :components="kit.components" />
     <EditorInspector v-if="view && canSave" :view="view" :revision="revision" :kit="kit" :mode="mode" :path="path" />
     </div>
-    <DocumentChrome :target="chromeTarget" :status="assets.pending.value ? 'Uploading attachment…' : saveStatus" :mode="mode">
+    <DocumentChrome v-show="!(touch && versionsOpen)" :target="chromeTarget" :status="assets.pending.value ? 'Uploading attachment…' : saveStatus" :mode="mode">
       <DocumentTools v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" :on-appearance="() => appearanceOpen = true" @properties="view && inspect(view, { kind: 'page' })" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
     </DocumentChrome>
     <Teleport v-for="control in controls.values()" :key="control.id" :to="control.host">

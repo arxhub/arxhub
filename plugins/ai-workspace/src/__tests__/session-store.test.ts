@@ -4,7 +4,10 @@ import { join } from 'node:path'
 import type { Logger } from '@arxhub/core'
 import { NodeFileSystem } from '@arxhub/vfs-node'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
+import { base64ToBytes } from '../bytes-wire'
 import { AiSessionStore } from '../session-store'
+
+const text = (base64: string) => new TextDecoder().decode(base64ToBytes(base64))
 
 const silent: Logger = {
   debug: () => {},
@@ -70,14 +73,22 @@ describe('AiSessionStore', () => {
     const agent = await store.compare(session.sessionId, 'note.md', 'agent')
     expect(agent.leftLabel).toBe('Base')
     expect(agent.rightLabel).toBe('Worktree')
-    expect(agent.left).toBe('main\n')
-    expect(agent.right).toBe('overlay\n')
+    expect(text(agent.left)).toBe('main\n')
+    expect(text(agent.right)).toBe('overlay\n')
 
     const apply = await store.compare(session.sessionId, 'note.md', 'apply')
     expect(apply.leftLabel).toBe('Worktree')
     expect(apply.rightLabel).toBe('Main')
-    expect(apply.left).toBe('overlay\n')
-    expect(apply.right).toBe('main\n')
+    expect(text(apply.left)).toBe('overlay\n')
+    expect(text(apply.right)).toBe('main\n')
+  })
+
+  test('compare carries the raw bytes of a binary side', async () => {
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x00, 0xff, 0xfe])
+    await root.file('vault/image.png').write(bytes)
+    const session = await store.createSession()
+    const apply = await store.compare(session.sessionId, 'image.png', 'apply')
+    expect([...base64ToBytes(apply.right)]).toEqual([...bytes])
   })
 
   test('clientApplied accept only archives', async () => {

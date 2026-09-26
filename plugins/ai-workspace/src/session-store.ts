@@ -1,6 +1,8 @@
 import { AppError, notFound, validation } from '@arxhub/errors'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { nanoid } from 'nanoid'
+import { bytesToBase64 } from './bytes-wire'
+import type { CompareWire } from './session-view'
 
 function archivedError(): AppError {
   return new AppError({
@@ -323,44 +325,31 @@ export class AiSessionStore {
     return meta
   }
 
-  async readSide(sessionId: string, pathname: string, side: ReadSide): Promise<string> {
+  async readSideBytes(sessionId: string, pathname: string, side: ReadSide): Promise<Uint8Array> {
     const path = pathname.replace(/^\/+/, '')
+    const empty = new Uint8Array()
     if (side === 'base') {
       const file = this.root.file(`${SESSIONS}/${sessionId}/base/${path}`)
-      if (!(await file.exists())) return ''
-      return file.readText()
+      return (await file.exists()) ? file.read() : empty
     }
     if (side === 'overlay') {
-      if (await this.isDeletedInSession(sessionId, path)) return ''
+      if (await this.isDeletedInSession(sessionId, path)) return empty
       const over = this.root.file(overlayPath(sessionId, path))
-      if (!(await over.exists())) return ''
-      return over.readText()
+      return (await over.exists()) ? over.read() : empty
     }
     const vault = this.root.file(vaultPath(path))
-    if (!(await vault.exists())) return ''
-    return vault.readText()
+    return (await vault.exists()) ? vault.read() : empty
   }
 
-  async compare(
-    sessionId: string,
-    pathname: string,
-    mode: CompareMode,
-  ): Promise<{ leftLabel: string; rightLabel: string; left: string; right: string }> {
+  async compare(sessionId: string, pathname: string, mode: CompareMode): Promise<CompareWire> {
     await this.readMeta(sessionId)
     const path = pathname.replace(/^\/+/, '')
-    if (mode === 'agent') {
-      return {
-        leftLabel: 'Base',
-        rightLabel: 'Worktree',
-        left: await this.readSide(sessionId, path, 'base'),
-        right: await this.readSide(sessionId, path, 'overlay'),
-      }
-    }
+    const [leftSide, rightSide]: [ReadSide, ReadSide] = mode === 'agent' ? ['base', 'overlay'] : ['overlay', 'main']
     return {
-      leftLabel: 'Worktree',
-      rightLabel: 'Main',
-      left: await this.readSide(sessionId, path, 'overlay'),
-      right: await this.readSide(sessionId, path, 'main'),
+      leftLabel: mode === 'agent' ? 'Base' : 'Worktree',
+      rightLabel: mode === 'agent' ? 'Worktree' : 'Main',
+      left: bytesToBase64(await this.readSideBytes(sessionId, path, leftSide)),
+      right: bytesToBase64(await this.readSideBytes(sessionId, path, rightSide)),
     }
   }
 
