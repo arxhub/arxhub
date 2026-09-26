@@ -13,6 +13,11 @@ export interface Theme {
 
 export const THEME_ATTRIBUTE = 'data-arxhub-theme'
 
+// Read before the first paint by the theme-boot script (@arxhub/toolchain-vite themeBoot) — the device's
+// last applied theme, so a boot or crash screen already wears it. Device-local on purpose: the chosen
+// theme lives in config, which is not readable that early.
+export const THEME_STORAGE_KEY = 'arxhub.theme'
+
 export class ThemeExtension extends Extension {
   readonly themes = shallowRef<Theme[]>([])
   readonly activeId = shallowRef<string | null>(null)
@@ -39,5 +44,10 @@ export class ThemeExtension extends Extension {
     // The shared scales (danger, warning) carry their own dark variants keyed on this attribute, so
     // a dark theme has to announce its base or those colours stay light against it.
     root.setAttribute('data-theme', theme.base)
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ id: theme.id, base: theme.base }))
+    } catch {
+      // Private mode or blocked storage: the next boot falls back to the system preference.
+    }
   }
 }

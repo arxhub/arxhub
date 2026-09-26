@@ -1,4 +1,5 @@
 import { type ArxHub, type BootFailure, bootFailures, type PluginInfo } from '@arxhub/core'
+import { SHELL_FRAME_KEY, type ShellFrame } from '@arxhub/uikit/hooks'
 import { createApp } from 'vue'
 import type { BootLedger } from './boot-ledger'
 import type { BootPolicy } from './boot-policy'
@@ -15,6 +16,8 @@ export interface CrashScreenOptions {
   // How far the boot got before it died: which plugins were through, which was in the middle of a phase,
   // which never got a turn. The error alone names one plugin and says nothing about the twenty around it.
   ledger?: BootLedger
+  // The instance's frame. The screen is its own Vue app, so nothing above it provides one.
+  frame?: ShellFrame
 }
 
 // Takes over the page when the boot died, names what broke and offers to switch it off.
@@ -43,6 +46,7 @@ export function showCrashScreen(options: CrashScreenOptions): Promise<void> {
         resolve()
       },
     })
+    app.provide(SHELL_FRAME_KEY, options.frame ?? 'desktop')
     app.mount(host)
   })
 }
@@ -50,18 +54,18 @@ export function showCrashScreen(options: CrashScreenOptions): Promise<void> {
 // Boots the app, and hands the page to the crash screen if that fails. Resolves once it is safe to
 // mount: either the boot went through, or the user chose to carry on into a half-booted app. This is
 // what an instance's composition root calls instead of `arxhub.start()`.
-export async function startWithCrashScreen(arxhub: ArxHub, policy: BootPolicy): Promise<void> {
+export async function startWithCrashScreen(arxhub: ArxHub, policy: BootPolicy, frame: ShellFrame = 'desktop'): Promise<void> {
   // Subscribed before start() rather than inside the failure path: by the time a boot has died there is
   // nothing left to listen to, and what had already gone through is exactly what the crash screen wants.
   // On a boot fast enough not to need a progress screen, this costs one timer that never fires.
-  const boot = watchBoot(arxhub)
+  const boot = watchBoot(arxhub, frame)
   try {
     await arxhub.start()
     boot.dismiss()
   } catch (error) {
     boot.dismiss()
     arxhub.logger.error('ArxHub failed to boot', error)
-    await showCrashScreen({ error, policy, catalog: arxhub.catalog, maintenance: arxhub.maintenance, ledger: boot.ledger })
+    await showCrashScreen({ error, policy, catalog: arxhub.catalog, maintenance: arxhub.maintenance, ledger: boot.ledger, frame })
   }
 }
 

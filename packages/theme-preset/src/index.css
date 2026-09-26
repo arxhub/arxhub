@@ -2,3 +2,4 @@
 @import url(./semantic.css);
 @import url(./colors/index.css);
 @import url(./styles/index.css);
+@import url(./fallback.css);

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { request } from 'node:http'
+import { themeBoot } from '@arxhub/toolchain-vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
@@ -33,6 +34,7 @@ function apiProxy(port: number) {
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(version) },
   plugins: [
+    themeBoot(),
     vue(),
     {
       name: 'vite-plugin-arxhub-dev',

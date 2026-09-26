@@ -8,9 +8,18 @@ import type { Theme } from './theme-extension'
 import { ThemeExtension } from './theme-extension'
 import ThemeSettingsPage from './ui/ThemeSettingsPage.vue'
 
+// Optional with no typebox default on purpose: with a default, an absent key reads back as 'default'
+// and "the owner chose light" cannot be told apart from "the owner chose nothing".
 export const ThemeConfigSchema = Type.Object({
-  theme: Type.String({ title: 'Theme', default: 'default' }),
+  theme: Type.Optional(Type.String({ title: 'Theme' })),
 })
+
+// With no theme named, the default family follows the base already on the document — which the pre-paint
+// script (toolchains/vite themeBoot) took from the theme this device applied last, else from the system.
+// Always answering the light default flipped a dark boot screen to light the moment this plugin ran.
+export function unnamedThemeId(): string {
+  return typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark' ? 'default-dark' : 'default'
+}
 
 export interface ThemePluginArgs extends PluginArgs {
   // The themes whose CSS this instance actually bundles. Registering one whose stylesheet is absent
@@ -59,8 +68,8 @@ export class ThemePlugin extends Plugin {
   }
 
   override start(ctx: PluginContext): Promise<void> {
-    // Do not await tryRead: on the browser client PluginConfig is HTTP. Until the read lands the
-    // page uses the stylesheet default (light when nothing is selected — theme-preset).
+    // Do not await tryRead: on the browser client PluginConfig is HTTP. Until the read lands the page
+    // keeps what the pre-paint script put on it (the last applied theme, else the system base).
     const themes = ctx.extensions.get(ThemeExtension)
     this.stopping = false
     this.bringUp = this.loadTheme(ctx, themes)
@@ -72,7 +81,7 @@ export class ThemePlugin extends Plugin {
     // tryRead: an unreachable settings store must not abort the boot, it just means the default theme.
     const cfg = await ctx.services.get(PluginConfig).tryRead(ThemeConfigSchema)
     if (this.stopping) return
-    const id = this.resolveBundledThemeId(themes, cfg?.theme ?? 'default')
+    const id = this.resolveBundledThemeId(themes, cfg?.theme ?? unnamedThemeId())
     if (cfg?.theme != null && cfg.theme !== id) {
       this.logger.warn(`Saved theme "${cfg.theme}" is not bundled — using ${id}`)
     }

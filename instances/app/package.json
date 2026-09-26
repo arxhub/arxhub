@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
     "@tauri-apps/cli": "catalog:tauri",
     "@vitejs/plugin-vue": "catalog:toolchain",
     "cross-env": "catalog:toolchain",

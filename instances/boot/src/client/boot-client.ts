@@ -81,7 +81,7 @@ export async function bootClient(options: BootClientOptions): Promise<BootedClie
   // A failed boot lands on the crash screen instead of a blank page: it names the plugin that broke and
   // offers to switch it off (or to boot the essentials only) and try again. When every failure happened
   // in start(), carrying on is still an option — configure() had already registered the whole UI.
-  await startWithCrashScreen(arxhub, policy)
+  await startWithCrashScreen(arxhub, policy, options.frame)
   await options.contribute?.(arxhub)
 
   const shell = arxhub.extensions.get(ShellExtension)

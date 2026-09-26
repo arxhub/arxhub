@@ -69,7 +69,7 @@ Every value below comes from a token. A literal in place of one of these is a vi
   read-out: shown only while scrolling, never taking a pointer, native momentum untouched. With no frame provided
   (the pre-boot screens) it behaves as on the desktop. Under `prefers-reduced-motion` it shows and hides without
   fading or widening. A scroller someone else owns (CodeMirror's `.cm-scroller`, ProseMirror's table wrapper and
-  code block, the boot and crash screens that must not import the uikit) stays native with a `design-ignore` reason.
+  code block) stays native with a `design-ignore` reason.
 </Roles>
 
 <Colour>

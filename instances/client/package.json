@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
     "@vitejs/plugin-vue": "catalog:toolchain",
     "typescript": "catalog:toolchain",
     "vite": "catalog:toolchain",

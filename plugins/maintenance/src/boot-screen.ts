@@ -1,4 +1,5 @@
 import type { ArxHub } from '@arxhub/core'
+import { SHELL_FRAME_KEY, type ShellFrame } from '@arxhub/uikit/hooks'
 import { createApp, reactive } from 'vue'
 import { type BootLedger, emptyLedger, followBoot } from './boot-ledger'
 import BootScreen from './ui/BootScreen.vue'
@@ -15,31 +16,29 @@ export interface BootScreenHandle {
   dismiss: () => void
 }
 
-// Follows a boot and puts a screen in front of it once it is slow enough to deserve one.
+// A fallback for a bundle built without `themeBoot()` (toolchains/vite): that script normally puts the
+// base on <html> before any module — the theme this device applied last, else the system's light/dark —
+// and then this is a no-op. Without it, the OS preference is the only signal there is this early: the
+// owner's configured theme needs the VFS, which needs the very boot these screens stand in front of.
 //
-// The ledger starts collecting immediately, whether or not anything is ever drawn: its other reader is
-// the crash screen, which needs to know what had already gone through when the boot died, and by then
-// there is nothing left to subscribe to.
-// Paints the pre-boot screens on the base the machine is set to.
-//
-// The owner's actual theme is unreachable this early by construction: ThemePlugin reads it from the
-// plugin's own config, which needs the VFS, which needs the very boot these screens are standing in
-// front of. The OS preference is the only signal that exists yet.
-//
-// It sets the base ATTRIBUTE rather than writing a dark palette here, which is what makes it honest
-// rather than a second theme: `themes/default` applies through `:root:not([data-arxhub-theme])` and
-// resolves every step through `data-theme`, so the screen gets the product's real dark tokens and no
-// literal is introduced. ThemePlugin overwrites the attribute with the owner's choice a moment later,
-// and if the boot never gets that far the crash screen keeps this one — which is the case that matters.
+// It sets the base ATTRIBUTE rather than writing a dark palette here, so the screen gets the product's
+// real dark tokens and no literal is introduced; ThemePlugin overwrites it with the owner's choice.
 function applySystemBase(): void {
   const root = document.documentElement
-  // Never fight a base something has already established — an instance may set one before boot.
   if (root.hasAttribute('data-theme')) return
   const dark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches === true
   root.setAttribute('data-theme', dark ? 'dark' : 'light')
 }
 
-export function watchBoot(arxhub: ArxHub): BootScreenHandle {
+// Follows a boot and puts a screen in front of it once it is slow enough to deserve one.
+//
+// The ledger starts collecting immediately, whether or not anything is ever drawn: its other reader is
+// the crash screen, which needs to know what had already gone through when the boot died, and by then
+// there is nothing left to subscribe to.
+//
+// `frame` is the instance's own choice: this screen is a Vue app of its own, mounted before the shell
+// that would otherwise provide it, and without it every uikit role would take the desktop geometry.
+export function watchBoot(arxhub: ArxHub, frame: ShellFrame = 'desktop'): BootScreenHandle {
   // Before anything can paint, and outside the timer: a boot that fails in the first millisecond still
   // hands the page to the crash screen, and that screen deserves the right base as much as this one.
   applySystemBase()
@@ -56,6 +55,7 @@ export function watchBoot(arxhub: ArxHub): BootScreenHandle {
     host = document.createElement('div')
     document.body.appendChild(host)
     app = createApp(BootScreen, { ledger })
+    app.provide(SHELL_FRAME_KEY, frame)
     app.mount(host)
   }, SHOW_AFTER_MS)
 

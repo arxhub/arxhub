@@ -12,7 +12,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "@vitejs/plugin-vue": "catalog:toolchain",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",
-    "@types/node": "catalog:toolchain"
+    "@types/node": "catalog:toolchain",
+    "vitest": "catalog:toolchain"
   }
 }

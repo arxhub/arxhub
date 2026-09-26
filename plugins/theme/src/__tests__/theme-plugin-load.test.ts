@@ -11,6 +11,7 @@ import { ThemePlugin } from '../theme-plugin'
 
 const bundled: Theme[] = [
   { id: 'default', title: 'Default', base: 'light' },
+  { id: 'default-dark', title: 'Default Dark', base: 'dark' },
   { id: 'slate', title: 'Slate', base: 'dark' },
   { id: 'berry', title: 'Berry', base: 'light' },
 ]
@@ -39,7 +40,7 @@ function registerPluginConfig(services: LazyContainer<object>, config: PluginCon
 }
 
 // Parks tryRead at a gate so start() can return while loadTheme is still in flight — the TH-22-01 window.
-function gatedTryRead(savedTheme: string) {
+function gatedTryRead(savedTheme: string | undefined) {
   let openGate: (() => void) | null = null
   const gate = new Promise<void>((resolve) => {
     openGate = resolve
@@ -60,7 +61,7 @@ function gatedTryRead(savedTheme: string) {
       await gate
       settledResolve?.()
       settledResolve = null
-      return { theme: savedTheme }
+      return savedTheme === undefined ? {} : { theme: savedTheme }
     },
     write: vi.fn(async () => undefined),
   } as unknown as PluginConfig
@@ -136,5 +137,28 @@ describe('loadTheme vs immediate pick (TH-22-01)', () => {
 
     expect(themes.activeId.value).toBe('slate')
     expect(document.documentElement.setAttribute).toHaveBeenCalledWith('data-arxhub-theme', 'slate')
+  })
+})
+
+describe('no theme named in config', () => {
+  async function settle(base: string | null): Promise<string | null> {
+    vi.mocked(document.documentElement.getAttribute).mockImplementation((name: string) => (name === 'data-theme' ? base : null))
+    const gate = gatedTryRead(undefined)
+    build(gate)
+    await plugin.start(ctx)
+    gate.finish()
+    await gate.settled
+    await (plugin as unknown as { bringUp: Promise<void> | null }).bringUp
+    return themes.activeId.value
+  }
+
+  it('follows a dark base already on the document instead of flipping it to light', async () => {
+    expect(await settle('dark')).toBe('default-dark')
+  })
+
+  it('stays on the light default otherwise', async () => {
+    expect(await settle('light')).toBe('default')
+    await plugin.stop(ctx)
+    expect(await settle(null)).toBe('default')
   })
 })

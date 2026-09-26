@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { themeBoot } from '@arxhub/toolchain-vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
@@ -18,7 +19,7 @@ const frame = tauriPlatform === 'android' || tauriPlatform === 'ios' ? 'mobile' 
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [vue()],
+  plugins: [vue(), themeBoot()],
   define: { __APP_VERSION__: JSON.stringify(version), __ARXHUB_FRAME__: JSON.stringify(frame) },
 
   // PGlite carries its Postgres build as .wasm and .tar.gz assets it resolves with new URL(...).
