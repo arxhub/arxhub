@@ -11,7 +11,9 @@
     "./server": "./src/server.ts",
     "./ui": "./src/ui.ts"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "vue-tsc --noEmit && vite build",
     "test": "vitest"
@@ -48,10 +50,22 @@
   },
   "publishConfig": {
     "exports": {
-      ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" },
-      "./manifest": { "import": "./dist/manifest.js", "types": "./dist/manifest.d.ts" },
-      "./server": { "import": "./dist/server.js", "types": "./dist/server.d.ts" },
-      "./ui": { "import": "./dist/ui.js", "types": "./dist/ui.d.ts" }
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./manifest": {
+        "import": "./dist/manifest.js",
+        "types": "./dist/manifest.d.ts"
+      },
+      "./server": {
+        "import": "./dist/server.js",
+        "types": "./dist/server.d.ts"
+      },
+      "./ui": {
+        "import": "./dist/ui.js",
+        "types": "./dist/ui.d.ts"
+      }
     }
   }
 }

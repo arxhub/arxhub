@@ -59,7 +59,9 @@ async function choose(anchor?: BlockDestination['anchor']) {
     emit('choose', href)
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : String(reason)
-  } finally { busy.value = false }
+  } finally {
+    busy.value = false
+  }
 }
 </script>
 
