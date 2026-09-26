@@ -803,6 +803,10 @@ const chromeTarget = usePanelChrome(() => ({
 .editor-scroll :deep(h1) { font-size: 2em; font-weight: 700; margin: 0.67em 0; }
 .editor-scroll :deep(h2) { font-size: 1.5em; font-weight: 600; margin: 0.75em 0; }
 .editor-scroll :deep(h3) { font-size: 1.17em; font-weight: 600; margin: 0.83em 0; }
+/* design-ignore DS type ramp: note content again. A phone column is a third of a desktop one, so 2em/1.5em
+   headings wrap after two words there; 26px and 20px over the 16px touch body. */
+.editor-panel.touch .editor-scroll :deep(.ProseMirror h1) { font-size: 1.625em; }
+.editor-panel.touch .editor-scroll :deep(.ProseMirror h2) { font-size: 1.25em; }
 .editor-scroll :deep(p) { margin: 0.4em 0; }
 .editor-scroll :deep(ul), .editor-scroll :deep(ol) { padding-left: 1.75em; margin: 0.4em 0; }
 .editor-scroll :deep(blockquote) {
