@@ -19,7 +19,7 @@ withDefaults(
     <Tooltip.Trigger as-child>
       <slot />
     </Tooltip.Trigger>
-    <Tooltip.Positioner>
+    <Tooltip.Positioner class="tooltip-positioner">
       <Tooltip.Content class="tooltip-content">
         <slot name="content">{{ label }}</slot>
       </Tooltip.Content>
@@ -28,6 +28,13 @@ withDefaults(
 </template>
 
 <style scoped>
+/* A tooltip only says what is under the pointer; it is never a target. Chrome re-runs hover when layout
+   moves under a resting cursor, so a label raised that way over the vault strip took the clicks meant for
+   the key beneath it. */
+.tooltip-positioner {
+  pointer-events: none;
+}
+
 .tooltip-content {
   padding: 4px 8px;
   font-size: var(--font-size-xs);
