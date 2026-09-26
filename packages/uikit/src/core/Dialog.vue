@@ -7,6 +7,8 @@ import { useShellFrame } from '../hooks/useShellFrame'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import Icon from './Icon.vue'
 // biome-ignore lint/correctness/noUnusedImports: used in template
+import ScrollArea from './ScrollArea.vue'
+// biome-ignore lint/correctness/noUnusedImports: used in template
 import Strip from './Strip.vue'
 
 const props = withDefaults(
@@ -60,9 +62,9 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
               </Dialog.CloseTrigger>
             </template>
           </Strip>
-          <div class="dialog-body">
+          <ScrollArea class="dialog-body-area" content-class="dialog-body">
             <slot />
-          </div>
+          </ScrollArea>
           <footer v-if="$slots.footer" class="dialog-footer">
             <slot name="footer" />
           </footer>
@@ -172,17 +174,15 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
   outline-offset: -1px;
 }
 
-.dialog-body {
-  min-height: 0;
+.dialog-body-area :deep(.dialog-body) {
   padding: 16px;
-  overflow-y: auto;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   font-family: var(--font-sans);
   color: var(--gray-12);
 }
 
-.dialog-content.touch .dialog-body {
+.dialog-content.touch .dialog-body-area :deep(.dialog-body) {
   padding: 16px;
   font-size: var(--font-size-md);
 }

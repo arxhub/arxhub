@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { basename } from '@arxhub/path'
 import { DocumentName } from '@arxhub/plugin-notes/ui'
-import { IconButton, Strip } from '@arxhub/uikit/core'
+import { IconButton, ScrollArea, Strip } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { canOpenExternally, openExternally, VaultVfs } from '@arxhub/vfs'
 import { computed, onUnmounted, ref, watch } from 'vue'
@@ -103,7 +103,7 @@ onUnmounted(() => {
         <IconButton size="lg" icon="lu:external-link" tooltip="Open in system app" @click="openInSystemApp" />
       </template>
     </Strip>
-    <div class="media-stage">
+    <ScrollArea axis="both" class="media-stage" content-class="media-stage-inner">
       <p v-if="loading" class="media-state">Loading…</p>
       <template v-else-if="error">
         <p class="media-state">{{ error }}</p>
@@ -114,7 +114,7 @@ onUnmounted(() => {
         <video v-else-if="media.kind === 'video'" class="media-video" :src="url" controls preload="metadata" :aria-label="name" />
         <audio v-else class="media-audio" :src="url" controls preload="metadata" :aria-label="name" />
       </template>
-    </div>
+    </ScrollArea>
   </div>
 </template>
 
@@ -139,15 +139,22 @@ onUnmounted(() => {
 }
 
 .media-stage {
-  display: flex;
   flex: 1;
+}
+
+/* Exactly the viewport's height rather than at least it, so the picture's max-height: 100% resolves
+   against a definite size and contains it, as it did against the old stage. The width is Ark's inline
+   `min-width: fit-content`, which a scoped rule cannot override: it stays the viewport's only while
+   every child can shrink to it, which is why the texts below break anywhere. */
+.media-stage :deep(.media-stage-inner) {
+  display: flex;
+  flex: 1 1 0;
   min-height: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 16px;
-  overflow: auto;
 }
 
 .media-image,
@@ -167,6 +174,7 @@ onUnmounted(() => {
   color: var(--gray-11);
   font-size: var(--font-size-sm);
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .media-path {

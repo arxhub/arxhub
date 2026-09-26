@@ -9,6 +9,7 @@ import type { ArxEditorComponent } from '../editor-extension'
 const props = defineProps<{
   view: EditorView
   scroller: HTMLElement
+  panel: HTMLElement
   revision: number
   components: Readonly<Record<string, ArxEditorComponent>>
 }>()
@@ -50,11 +51,10 @@ const target = computed(() => {
   if (pos === null) return null
   const node = props.view.state.doc.nodeAt(pos)
   const dom = props.view.nodeDOM(pos)
-  const parent = props.scroller.parentElement
-  if (!node || !(dom instanceof HTMLElement) || !parent) return null
+  if (!node || !(dom instanceof HTMLElement)) return null
   const block = dom.getBoundingClientRect(),
     scroll = props.scroller.getBoundingClientRect(),
-    panel = parent.getBoundingClientRect()
+    panel = props.panel.getBoundingClientRect()
   if (block.bottom <= scroll.top || block.top >= scroll.bottom) return null
   const size = iconSize === 'xl' ? 48 : 28
   return {

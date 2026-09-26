@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CodeEditor } from '@arxhub/plugin-codemirror/ui'
-import { modals, Strip } from '@arxhub/uikit/core'
+// biome-ignore lint/correctness/noUnusedImports: ScrollArea is used in template
+import { modals, ScrollArea, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { SearchExtension } from '../search-extension'
@@ -83,7 +84,7 @@ const summary = computed(() => {
       </template>
     </Strip>
 
-    <div class="console">
+    <ScrollArea class="console" content-class="console-content">
       <p class="limits">{{ meta.join(' · ') }}</p>
       <p class="about">
         Ask the index a question in SQL. A query runs inside a read-only transaction, so nothing here can change the
@@ -118,7 +119,7 @@ const summary = computed(() => {
         <div v-if="table.rows.length === 0" class="empty" data-testid="sql-console-empty">
           The query ran and matched nothing. Not a refusal — there is simply no row like that.
         </div>
-        <div v-else class="table-scroll">
+        <ScrollArea v-else axis="x" class="table-scroll">
           <table class="result-table">
             <thead>
               <tr>
@@ -137,7 +138,7 @@ const summary = computed(() => {
               </tr>
             </tbody>
           </table>
-        </div>
+        </ScrollArea>
       </div>
       <div v-else-if="!controller.answered.value" class="idle">Write a query and run it. Nothing has been asked yet.</div>
 
@@ -151,7 +152,7 @@ const summary = computed(() => {
         </span>
         <span v-else-if="!summary" class="summary muted">no result yet</span>
       </div>
-    </div>
+    </ScrollArea>
   </div>
 </template>
 
@@ -189,8 +190,9 @@ const summary = computed(() => {
 
 .console {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+}
+
+.console :deep(.console-content) {
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -231,7 +233,6 @@ const summary = computed(() => {
 
 /* A wide result scrolls inside its own box; the page itself never scrolls sideways. */
 .table-scroll {
-  overflow-x: auto;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);
 }

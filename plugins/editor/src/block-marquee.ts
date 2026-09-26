@@ -93,6 +93,13 @@ export function blockMarqueePlugin(getScroller?: () => HTMLElement | undefined):
         animation = requestAnimationFrame(scroll)
       }
 
+      // The document sits inside wrappers of the scroller (a scroll area's content box, the editor's
+      // mount), and their bare margins are page margin too: a target that contains view.dom is bare space.
+      function startsOnSurface(target: EventTarget | null) {
+        if (target === scroller || target === view.dom) return true
+        return target instanceof HTMLElement && scroller?.contains(target) === true && target.contains(view.dom)
+      }
+
       function start(event: PointerEvent) {
         if (
           !scroller ||
@@ -101,7 +108,7 @@ export function blockMarqueePlugin(getScroller?: () => HTMLElement | undefined):
           event.pointerType !== 'mouse' ||
           !event.isPrimary ||
           editorMode(view.state) !== 'editable' ||
-          (event.target !== scroller && event.target !== view.dom)
+          !startsOnSurface(event.target)
         )
           return
         const rect = scroller.getBoundingClientRect()

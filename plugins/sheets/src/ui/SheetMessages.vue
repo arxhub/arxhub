@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Button } from '@arxhub/uikit/core'
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { Button, ScrollArea } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { useSheet } from './use-sheet'
 
@@ -9,21 +10,30 @@ const { loading, error } = document
 </script>
 
 <template>
-  <div v-if="loading" class="sheet-message" role="status">Opening spreadsheet…</div>
-  <div v-if="error" class="sheet-message" role="alert">
-    Could not open spreadsheet: {{ error instanceof Error ? error.message : String(error) }}. Saving is disabled.
-    <Button :size="buttonSize" variant="secondary" @click="reload">Retry</Button>
-  </div>
-  <div v-if="calculationError" class="sheet-message" role="alert">
-    {{ calculationError }}
-    <Button :size="buttonSize" variant="secondary" @click="retryCalculation">Retry calculation</Button>
-  </div>
-  <div v-if="saveError" class="sheet-message" role="alert">
-    {{ saveError }}
-    <Button :size="buttonSize" variant="secondary" @click="save">Retry save</Button>
-  </div>
+  <ScrollArea v-if="loading" class="sheet-message">
+    <div class="sheet-message-body" role="status">Opening spreadsheet…</div>
+  </ScrollArea>
+  <ScrollArea v-if="error" class="sheet-message">
+    <div class="sheet-message-body" role="alert">
+      Could not open spreadsheet: {{ error instanceof Error ? error.message : String(error) }}. Saving is disabled.
+      <Button :size="buttonSize" variant="secondary" @click="reload">Retry</Button>
+    </div>
+  </ScrollArea>
+  <ScrollArea v-if="calculationError" class="sheet-message">
+    <div class="sheet-message-body" role="alert">
+      {{ calculationError }}
+      <Button :size="buttonSize" variant="secondary" @click="retryCalculation">Retry calculation</Button>
+    </div>
+  </ScrollArea>
+  <ScrollArea v-if="saveError" class="sheet-message">
+    <div class="sheet-message-body" role="alert">
+      {{ saveError }}
+      <Button :size="buttonSize" variant="secondary" @click="save">Retry save</Button>
+    </div>
+  </ScrollArea>
 </template>
 
 <style scoped>
-.sheet-message { padding: 8px 12px; color: var(--danger-11); font-size: var(--font-size-sm); overflow: auto; max-height: 30%; flex-shrink: 0; }
+.sheet-message { color: var(--danger-11); font-size: var(--font-size-sm); max-height: 30%; flex-shrink: 0; }
+.sheet-message-body { padding: 8px 12px; }
 </style>

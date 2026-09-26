@@ -199,7 +199,7 @@ onUnmounted(() => {
 <style scoped>
 .codemirror-editor {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   min-height: 0;
 }
 
@@ -208,6 +208,9 @@ onUnmounted(() => {
   font-size: var(--font-size-sm);
 }
 
+/* design-ignore DS-1 ScrollArea: CodeMirror creates .cm-scroller itself and measures its viewport,
+   virtualises lines, autoscrolls a drag selection and keeps gutters sticky against that element, while
+   ScrollArea needs a viewport of its own, which would take all of that from the editor. */
 .codemirror-editor :deep(.cm-scroller) {
   overflow: auto;
   font-family: var(--font-mono, monospace);

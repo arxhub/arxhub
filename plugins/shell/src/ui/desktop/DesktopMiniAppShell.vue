@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ScrollArea } from '@arxhub/uikit/core'
 import { computed, onUnmounted, ref, useSlots } from 'vue'
 import { RAIL_MAX, RAIL_MIN, useRailWidth } from '../use-rail-width'
 
@@ -54,9 +55,9 @@ onUnmounted(() => cleanup?.())
 <template>
   <div ref="shellEl" class="mini-app-shell">
     <template v-if="showRail">
-      <div class="rail" :style="{ width: `${railWidth}px` }">
+      <ScrollArea class="rail" content-class="rail-inner" :style="{ width: `${railWidth}px` }">
         <slot name="rail" />
-      </div>
+      </ScrollArea>
       <div class="rail-resize" @mousedown="startResize" />
     </template>
     <div class="content-column">
@@ -80,9 +81,22 @@ onUnmounted(() => cleanup?.())
 .rail {
   flex-shrink: 0;
   height: 100%;
-  overflow: auto;
   background-color: var(--gray-2);
   border-right: 1px solid var(--gray-6);
+}
+
+/* A rail that is one full-height pane with a scroller of its own (a strip over a tree) has to be
+   handed the viewport's height: as a plain child of the scroll content its `height: 100%` resolves
+   against an indefinite box, grows to the whole tree, and the strip then scrolls away with it. A zero
+   basis gives it exactly the viewport, while a child whose content is taller keeps its automatic
+   minimum and still scrolls here. */
+.rail :deep(.rail-inner) {
+  display: flex;
+  flex-direction: column;
+}
+
+.rail :deep(.rail-inner > :only-child) {
+  flex: 1 1 0;
 }
 
 /* Zero width itself — the rail's own border-right is the seam, not a 4px strip beside it — but the

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon } from '@arxhub/uikit/core'
+import { Icon, ScrollArea } from '@arxhub/uikit/core'
 import type { TypeRowItem } from '../workspace'
 
 const props = defineProps<{ row: TypeRowItem[]; sheetOpen: boolean; navTitle: string | null; navOpen: boolean }>()
@@ -24,7 +24,7 @@ function tap(item: TypeRowItem): void {
     <!-- The types scroll rather than squeeze. A key in this row is the most frequent target on the
          screen and must never fall below the touch minimum: dividing 412px between eight types gives
          46px and between nine gives 41px, so the row broke exactly when there were many of them. -->
-    <div class="types">
+    <ScrollArea axis="x" class="types" viewport-class="types-viewport" content-class="types-row">
       <button
         v-for="item in props.row"
         :key="item.type.id"
@@ -44,7 +44,7 @@ function tap(item: TypeRowItem): void {
              the active one the label is what answers "where am I". -->
         <span v-if="item.active" class="label">{{ item.type.title }}</span>
       </button>
-    </div>
+    </ScrollArea>
 
     <!-- The active type's own navigation: the tree under Notes, the sections under Settings. It used
          to be the only thing in the band above the row, which spent 48px of the shortest screen there
@@ -96,17 +96,16 @@ function tap(item: TypeRowItem): void {
 }
 
 .types {
-  display: flex;
-  min-width: 0;
   flex: 1;
-  align-items: stretch;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
 }
 
-.types::-webkit-scrollbar {
-  display: none;
+.types :deep(.types-viewport) {
+  overscroll-behavior-x: contain;
+}
+
+.types :deep(.types-row) {
+  display: flex;
+  align-items: stretch;
 }
 
 .key {

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { LogRecord } from '@arxhub/logger'
-import { Button, IconButton, Input, Row } from '@arxhub/uikit/core'
+// biome-ignore lint/style/useImportType: ScrollArea is used in template and as a type
+import { Button, IconButton, Input, Row, ScrollArea } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import dayjs from 'dayjs'
-import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { LoggerExtension } from '../logger-extension'
 import LogToolbar from './LogToolbar.vue'
 
@@ -84,11 +85,11 @@ async function onSourceChange(): Promise<void> {
 }
 
 // Follow-tail: keep pinned to the bottom on new live records unless the user has scrolled up.
-const scroller = ref<HTMLElement>()
+const area = ref<InstanceType<typeof ScrollArea> | null>(null)
 const pinned = ref(true)
 
 function onScroll(): void {
-  const el = scroller.value
+  const el = area.value?.viewport
   if (!el) return
   pinned.value = el.scrollHeight - el.scrollTop - el.clientHeight < 24
 }
@@ -98,13 +99,20 @@ watch(
   () => {
     if (source.value !== '' || !pinned.value) return
     nextTick(() => {
-      const el = scroller.value
+      const el = area.value?.viewport
       if (el) el.scrollTop = el.scrollHeight
     })
   },
 )
 
-onMounted(loadSessions)
+// On the viewport itself: scroll does not bubble, so a listener on the scroll area's root never fires.
+let listening: HTMLElement | null = null
+onMounted(() => {
+  listening = area.value?.viewport ?? null
+  listening?.addEventListener('scroll', onScroll, { passive: true })
+  void loadSessions()
+})
+onBeforeUnmount(() => listening?.removeEventListener('scroll', onScroll))
 </script>
 
 <template>
@@ -142,7 +150,7 @@ onMounted(loadSessions)
       </template>
     </LogToolbar>
 
-    <div ref="scroller" class="rows" @scroll="onScroll">
+    <ScrollArea ref="area" class="rows" content-class="rows-content">
       <div v-if="visible.length === 0" class="empty">No log entries.</div>
       <!-- An entry is read and copied, never activated, and a long message grows the line downwards. -->
       <Row v-for="(r, i) in visible" :key="i" plain wrap class="log-row" :tone="levelTone(r.level)">
@@ -152,7 +160,7 @@ onMounted(loadSessions)
         <span class="msg">{{ r.msg }}</span>
         <span v-if="extras(r)" class="extras">{{ extras(r) }}</span>
       </Row>
-    </div>
+    </ScrollArea>
   </div>
 </template>
 
@@ -204,11 +212,12 @@ onMounted(loadSessions)
 }
 
 .rows {
-  min-height: 0;
   flex: 1;
-  overflow-y: auto;
   font-family: var(--font-mono, monospace);
   font-size: var(--font-size-xs);
+}
+
+.rows :deep(.rows-content) {
   padding: 4px 0;
 }
 

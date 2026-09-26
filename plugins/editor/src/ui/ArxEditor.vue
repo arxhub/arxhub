@@ -5,7 +5,8 @@ import { useHotkeyLayer } from '@arxhub/plugin-hotkeys/ui'
 import { type BlockAnchor, NotesExtension } from '@arxhub/plugin-notes'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 import { createDebouncedTask } from '@arxhub/stdlib/scheduling/debounced-task'
-import { Button } from '@arxhub/uikit/core'
+// biome-ignore lint/style/useImportType: ScrollArea is also rendered in the template, not only read as a type
+import { Button, ScrollArea } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useFileDocument, usePanelChrome, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { closeHistory, history } from 'prosemirror-history'
@@ -74,7 +75,9 @@ const vfs = arxhub.services.get(VaultVfs)
 const assets = createAssetSession(extension.assets ?? createAssetStore(vfs))
 provide(ARX_ASSETS, assets)
 const notes = arxhub.extensions.get(NotesExtension)
-const editorEl = ref<HTMLDivElement>()
+const editorArea = ref<InstanceType<typeof ScrollArea> | null>(null)
+const editorEl = computed(() => editorArea.value?.viewport ?? undefined)
+const editorBody = ref<HTMLElement>()
 const editorMount = ref<HTMLDivElement>()
 const appearanceOpen = ref(false)
 const view = shallowRef<EditorView | null>(null)
@@ -288,6 +291,12 @@ function dismissSlash() {
   const current = view.value
   if (current && slashKey.getState(current.state)) current.dispatch(current.state.tr.setMeta(slashKey, 'dismiss'))
 }
+// scroll does not bubble, so a listener on the ScrollArea component would sit on its root and never fire.
+watch(editorEl, (el, _, cleanup) => {
+  if (!el) return
+  el.addEventListener('scroll', dismissSlash)
+  cleanup(() => el.removeEventListener('scroll', dismissSlash))
+})
 
 function closeFind() {
   findOpen.value = false
@@ -583,15 +592,15 @@ const chromeTarget = usePanelChrome(() => ({
     <div v-if="saveError" class="editor-error" role="alert"><span>Save failed. Your changes are still in this editor.</span><Button :size="buttonSize" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button></div>
     <div v-if="conflictCount" class="editor-warning" role="status">{{ conflictCount }} unresolved conflict{{ conflictCount === 1 ? '' : 's' }}</div>
     <DocumentAppearance v-if="appearanceOpen" :appearance="appearance" @apply="applyAppearance" @close="appearanceOpen = false" />
-    <div class="editor-body">
-    <div v-show="!loadError" ref="editorEl" class="editor-content" @scroll="dismissSlash">
+    <div ref="editorBody" class="editor-body">
+    <ScrollArea v-show="!loadError" ref="editorArea" class="editor-scroll" viewport-class="editor-content" content-class="editor-document">
       <DocumentPageHeader :path="path" :appearance="appearance" :disabled="!canSave || mode !== 'editable'" />
       <div ref="editorMount" />
-    </div>
-    <BlockHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :commands="kit.commands" />
-    <SelectionFormatting v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :links="extension.links" :path="path" />
+    </ScrollArea>
+    <BlockHandle v-if="view && editorEl && editorBody && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :panel="editorBody" :revision="revision" :commands="kit.commands" />
+    <SelectionFormatting v-if="view && editorEl && editorBody && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :panel="editorBody" :revision="revision" :links="extension.links" :path="path" />
     <SlashMenu v-if="view && slashMenu && !loadError" :view="view" :menu="slashMenu" :menu-id="slashMenuId" :commands="kit.commands" />
-    <BlockSettingsHandle v-if="view && editorEl && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :revision="revision" :components="kit.components" />
+    <BlockSettingsHandle v-if="view && editorEl && editorBody && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :panel="editorBody" :revision="revision" :components="kit.components" />
     <EditorInspector v-if="view && canSave" :view="view" :revision="revision" :kit="kit" :mode="mode" :path="path" />
     </div>
     <DocumentChrome :target="chromeTarget" :status="assets.pending.value ? 'Uploading attachment…' : saveStatus" :mode="mode">
@@ -612,17 +621,18 @@ const chromeTarget = usePanelChrome(() => ({
   overflow: hidden;
 }
 .editor-warning { padding: 8px 12px; color: var(--warning-11); background: var(--warning-2); font-size: var(--font-size-sm); }
-.editor-panel.touch .editor-content { padding-inline: 56px; }
+.editor-panel.touch .editor-scroll :deep(.editor-content) { padding-inline: 56px; }
 .editor-body { position: relative; display: flex; flex: 1; min-height: 0; min-width: 0; container-type: inline-size; }
-.editor-content {
-  min-width: 0;
-  min-height: 0;
+.editor-scroll { flex: 1; }
+/* The inset stays on the viewport, the element that scrolls, as it was on the old container: a pointerdown
+   in that margin (or in the empty space under a short document) must land on the scroller itself, which
+   is where the block marquee starts. */
+.editor-scroll :deep(.editor-content) {
   overscroll-behavior: contain;
-  flex: 1;
-  overflow-y: auto;
   padding: 24px clamp(44px, 6%, 64px);
   box-sizing: border-box;
 }
+.editor-scroll :deep(.editor-document) { flex: none; }
 .editor-error {
   display: flex;
   align-items: center;
@@ -634,7 +644,7 @@ const chromeTarget = usePanelChrome(() => ({
   background: var(--danger-2);
   border-bottom: 1px solid var(--danger-6);
 }
-.editor-content :deep(.ProseMirror) {
+.editor-scroll :deep(.ProseMirror) {
   outline: none;
   min-height: 200px;
   max-width: 760px;
@@ -645,12 +655,12 @@ const chromeTarget = usePanelChrome(() => ({
   line-height: 1.7;
   color: var(--gray-12);
 }
-.editor-content :deep(.arx-block-selected) {
+.editor-scroll :deep(.arx-block-selected) {
   outline: 2px solid var(--accent-8);
   outline-offset: 1px;
   background: var(--accent-3);
 }
-.editor-content :deep(.arx-block-marquee) {
+.editor-scroll :deep(.arx-block-marquee) {
   position: fixed;
   pointer-events: none;
   border: 1px solid var(--accent-8);
@@ -658,43 +668,46 @@ const chromeTarget = usePanelChrome(() => ({
   box-sizing: border-box;
   z-index: 1;
 }
-.editor-content :deep(.arx-find-match) { background: var(--warning-4); }
-.editor-content :deep(.arx-find-current) { outline: 2px solid var(--accent-8); outline-offset: 1px; }
-.editor-content :deep(.arx-columns-desktop) { display: grid; gap: 24px; align-items: start; }
-.editor-content :deep(.arx-columns-mobile) { display: flex; flex-direction: column; gap: 16px; }
-.editor-content :deep(.arx-column) { min-width: 0; }
-.editor-content :deep(.tableWrapper) { overflow-x: auto; margin-block: 16px; }
-.editor-content :deep(table) { border-collapse: collapse; table-layout: fixed; width: 100%; overflow: hidden; }
-.editor-content :deep(td), .editor-content :deep(th) { border: 1px solid var(--gray-7); padding: 8px; min-width: 80px; vertical-align: top; position: relative; }
-.editor-content :deep(th) { background: var(--gray-3); font-weight: 600; }
-.editor-content :deep(.selectedCell) { background: var(--accent-3); }
-.editor-content :deep(.column-resize-handle) { position: absolute; inset-block: 0; right: -1px; width: 4px; background: var(--accent-8); pointer-events: none; }
-.editor-content :deep(.resize-cursor) { cursor: col-resize; }
-.editor-content :deep(details[data-type="section"]) { padding: 8px; border: 1px solid var(--gray-6); border-radius: var(--radius-sm); margin-block: 12px; }
-.editor-content :deep(details[data-type="section"] > summary) { cursor: pointer; }
-.editor-content :deep(details[data-type="section"] > summary:focus-visible) { outline: 2px solid var(--accent-8); outline-offset: 1px; }
-.editor-content :deep(details[data-type="section"] > summary > .arx-control) { display: inline-block; width: calc(100% - 32px); vertical-align: middle; }
-.editor-content :deep(.section-content) { padding: 8px; }
-.editor-content :deep(.tok-keyword), .editor-content :deep(.tok-operator) { color: var(--info-11); }
-.editor-content :deep(.tok-string), .editor-content :deep(.tok-string2) { color: var(--success-11); }
-.editor-content :deep(.tok-number), .editor-content :deep(.tok-bool), .editor-content :deep(.tok-atom) { color: var(--warning-11); }
-.editor-content :deep(.tok-comment), .editor-content :deep(.tok-meta) { color: var(--gray-11); }
-.editor-content :deep(.tok-typeName), .editor-content :deep(.tok-className), .editor-content :deep(.tok-labelName) { color: var(--info-11); }
+.editor-scroll :deep(.arx-find-match) { background: var(--warning-4); }
+.editor-scroll :deep(.arx-find-current) { outline: 2px solid var(--accent-8); outline-offset: 1px; }
+.editor-scroll :deep(.arx-columns-desktop) { display: grid; gap: 24px; align-items: start; }
+.editor-scroll :deep(.arx-columns-mobile) { display: flex; flex-direction: column; gap: 16px; }
+.editor-scroll :deep(.arx-column) { min-width: 0; }
+/* design-ignore DS-1 ScrollArea: prosemirror-tables creates this wrapper inside the editable DOM, where a
+   Vue component cannot be mounted; a wide table scrolls natively as part of the note's content. */
+.editor-scroll :deep(.tableWrapper) { overflow-x: auto; margin-block: 16px; }
+
+.editor-scroll :deep(table) { border-collapse: collapse; table-layout: fixed; width: 100%; overflow: hidden; }
+.editor-scroll :deep(td), .editor-scroll :deep(th) { border: 1px solid var(--gray-7); padding: 8px; min-width: 80px; vertical-align: top; position: relative; }
+.editor-scroll :deep(th) { background: var(--gray-3); font-weight: 600; }
+.editor-scroll :deep(.selectedCell) { background: var(--accent-3); }
+.editor-scroll :deep(.column-resize-handle) { position: absolute; inset-block: 0; right: -1px; width: 4px; background: var(--accent-8); pointer-events: none; }
+.editor-scroll :deep(.resize-cursor) { cursor: col-resize; }
+.editor-scroll :deep(details[data-type="section"]) { padding: 8px; border: 1px solid var(--gray-6); border-radius: var(--radius-sm); margin-block: 12px; }
+.editor-scroll :deep(details[data-type="section"] > summary) { cursor: pointer; }
+.editor-scroll :deep(details[data-type="section"] > summary:focus-visible) { outline: 2px solid var(--accent-8); outline-offset: 1px; }
+.editor-scroll :deep(details[data-type="section"] > summary > .arx-control) { display: inline-block; width: calc(100% - 32px); vertical-align: middle; }
+.editor-scroll :deep(.section-content) { padding: 8px; }
+.editor-scroll :deep(.tok-keyword), .editor-scroll :deep(.tok-operator) { color: var(--info-11); }
+.editor-scroll :deep(.tok-string), .editor-scroll :deep(.tok-string2) { color: var(--success-11); }
+.editor-scroll :deep(.tok-number), .editor-scroll :deep(.tok-bool), .editor-scroll :deep(.tok-atom) { color: var(--warning-11); }
+.editor-scroll :deep(.tok-comment), .editor-scroll :deep(.tok-meta) { color: var(--gray-11); }
+.editor-scroll :deep(.tok-typeName), .editor-scroll :deep(.tok-className), .editor-scroll :deep(.tok-labelName) { color: var(--info-11); }
 /* design-ignore DS type ramp: this is the CONTENT of a note, not chrome. A heading inside a document
    scales with the body it sits in, so these are relative to --font-size-md rather than steps of the
    chrome ramp — the ramp has no note-heading step and should not grow one. */
-.editor-content :deep(h1) { font-size: 2em; font-weight: 700; margin: 0.67em 0; }
-.editor-content :deep(h2) { font-size: 1.5em; font-weight: 600; margin: 0.75em 0; }
-.editor-content :deep(h3) { font-size: 1.17em; font-weight: 600; margin: 0.83em 0; }
-.editor-content :deep(p) { margin: 0.4em 0; }
-.editor-content :deep(ul), .editor-content :deep(ol) { padding-left: 1.75em; margin: 0.4em 0; }
-.editor-content :deep(blockquote) {
+.editor-scroll :deep(h1) { font-size: 2em; font-weight: 700; margin: 0.67em 0; }
+.editor-scroll :deep(h2) { font-size: 1.5em; font-weight: 600; margin: 0.75em 0; }
+.editor-scroll :deep(h3) { font-size: 1.17em; font-weight: 600; margin: 0.83em 0; }
+.editor-scroll :deep(p) { margin: 0.4em 0; }
+.editor-scroll :deep(ul), .editor-scroll :deep(ol) { padding-left: 1.75em; margin: 0.4em 0; }
+.editor-scroll :deep(blockquote) {
   border-left: 3px solid var(--gray-6);
   padding-left: 1em;
   color: var(--gray-10);
   margin: 0.5em 0;
 }
-.editor-content :deep(code) {
+.editor-scroll :deep(code) {
   background: var(--gray-3);
   padding: 0.1em 0.35em;
   border-radius: var(--radius-xs);
@@ -702,7 +715,9 @@ const chromeTarget = usePanelChrome(() => ({
   /* design-ignore DS type ramp: inline code inside note content, relative to the note body. */
   font-size: 0.875em;
 }
-.editor-content :deep(pre) {
+/* design-ignore DS-1 ScrollArea: a code block is ProseMirror-rendered note content (contenteditable), not
+   chrome; its long lines keep the native horizontal scroll a reader expects of code. */
+.editor-scroll :deep(pre) {
   background: var(--gray-2);
   border: 1px solid var(--gray-4);
   padding: 1em;
@@ -710,23 +725,24 @@ const chromeTarget = usePanelChrome(() => ({
   overflow-x: auto;
   margin: 0.5em 0;
 }
+
 /* design-ignore DS type ramp: code block inside note content, relative to the note body. */
-.editor-content :deep(pre code) { background: none; padding: 0; border-radius: 0; font-size: 0.9em; }
-.editor-content :deep(hr) { border: none; border-top: 1px solid var(--gray-5); margin: 1.5em 0; }
-.editor-content :deep(ul[data-type="task_list"]) { list-style: none; padding-left: 0.25em; }
-.editor-content :deep(li[data-type="task_item"]) { display: flex; align-items: baseline; gap: 0.5em; margin: 0.15em 0; }
-.editor-content :deep(.task-content > ul[data-type="task_list"]) { padding-left: 1.25em; }
-.editor-content :deep(.task-content) { flex: 1; min-width: 0; }
-.editor-content :deep(li[data-checked="true"] > .task-content > p) { color: var(--gray-9); text-decoration: line-through; }
+.editor-scroll :deep(pre code) { background: none; padding: 0; border-radius: 0; font-size: 0.9em; }
+.editor-scroll :deep(hr) { border: none; border-top: 1px solid var(--gray-5); margin: 1.5em 0; }
+.editor-scroll :deep(ul[data-type="task_list"]) { list-style: none; padding-left: 0.25em; }
+.editor-scroll :deep(li[data-type="task_item"]) { display: flex; align-items: baseline; gap: 0.5em; margin: 0.15em 0; }
+.editor-scroll :deep(.task-content > ul[data-type="task_list"]) { padding-left: 1.25em; }
+.editor-scroll :deep(.task-content) { flex: 1; min-width: 0; }
+.editor-scroll :deep(li[data-checked="true"] > .task-content > p) { color: var(--gray-9); text-decoration: line-through; }
 /* The paragraph that carries the hint is chosen by `insert-hint.ts`, not by this selector. */
-.editor-content :deep(p[data-placeholder])::before {
+.editor-scroll :deep(p[data-placeholder])::before {
   content: attr(data-placeholder);
   color: var(--gray-10);
   pointer-events: none;
   float: left;
   height: 0;
 }
-.editor-content :deep(.callout) {
+.editor-scroll :deep(.callout) {
   border-left: 4px solid var(--gray-6);
   padding: 0.75em 1em;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
@@ -735,13 +751,13 @@ const chromeTarget = usePanelChrome(() => ({
 }
 /* The semantic aliases, not the raw scales they happen to resolve to: a theme remaps info/warning/
    danger/success, and naming blue/yellow/red/green here would opt a callout out of that. */
-.editor-content :deep(.callout[data-type="info"]) { border-color: var(--info-8); background: var(--info-2); }
-.editor-content :deep(.callout[data-type="warning"]) { border-color: var(--warning-8); background: var(--warning-2); }
-.editor-content :deep(.callout[data-type="danger"]) { border-color: var(--danger-8); background: var(--danger-2); }
-.editor-content :deep(.callout[data-type="success"]) { border-color: var(--success-8); background: var(--success-2); }
-.editor-content :deep(s) { text-decoration: line-through; }
-.editor-content :deep(u) { text-decoration: underline; }
-.editor-content :deep(mark) { background: var(--warning-4); border-radius: var(--radius-xs); padding: 0 2px; }
+.editor-scroll :deep(.callout[data-type="info"]) { border-color: var(--info-8); background: var(--info-2); }
+.editor-scroll :deep(.callout[data-type="warning"]) { border-color: var(--warning-8); background: var(--warning-2); }
+.editor-scroll :deep(.callout[data-type="danger"]) { border-color: var(--danger-8); background: var(--danger-2); }
+.editor-scroll :deep(.callout[data-type="success"]) { border-color: var(--success-8); background: var(--success-2); }
+.editor-scroll :deep(s) { text-decoration: line-through; }
+.editor-scroll :deep(u) { text-decoration: underline; }
+.editor-scroll :deep(mark) { background: var(--warning-4); border-radius: var(--radius-xs); padding: 0 2px; }
 /* A link is the second of the two things the accent is spent on, and accent text is step 11. */
-.editor-content :deep(a) { color: var(--accent-11); text-decoration: underline; cursor: pointer; }
+.editor-scroll :deep(a) { color: var(--accent-11); text-decoration: underline; cursor: pointer; }
 </style>

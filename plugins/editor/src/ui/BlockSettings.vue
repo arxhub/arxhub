@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Dropdown, Input, MenuItem, Row } from '@arxhub/uikit/core'
+import { Button, Dropdown, Input, MenuItem, Row, ScrollArea } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Node } from 'prosemirror-model'
 import type { Command } from 'prosemirror-state'
@@ -48,10 +48,12 @@ const labels: Record<string, string> = { list: 'List', board: 'Grouped', calenda
     </template>
     <template v-else-if="node.type.name === 'code_block'">
       <Input v-model="query" aria-label="Search code languages" placeholder="Search languages" />
-      <nav aria-label="Code languages">
-        <Row as="button" type="button" :selected="!node.attrs.language" @click="change({ language: '' })">Plain text</Row>
-        <Row v-for="language in choices" :key="language" as="button" type="button" :selected="node.attrs.language === language" @click="change({ language })">{{ language }}</Row>
-      </nav>
+      <ScrollArea class="language-list">
+        <nav aria-label="Code languages">
+          <Row as="button" type="button" :selected="!node.attrs.language" @click="change({ language: '' })">Plain text</Row>
+          <Row v-for="language in choices" :key="language" as="button" type="button" :selected="node.attrs.language === language" @click="change({ language })">{{ language }}</Row>
+        </nav>
+      </ScrollArea>
     </template>
     <template v-else-if="node.type.name === 'section'"><label>Title<Input :model-value="node.attrs.title" aria-label="Section title" @update:model-value="change({ title: $event })" /></label></template>
     <template v-else-if="node.type.name === 'callout'">
@@ -63,5 +65,5 @@ const labels: Record<string, string> = { list: 'List', board: 'Grouped', calenda
 .block-settings { display: flex; flex-direction: column; gap: 12px; font-size: var(--font-size-sm); }
 label, .setting-field { display: flex; flex-direction: column; gap: 4px; }
 .settings-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-nav { max-height: 400px; overflow-y: auto; }
+.language-list { max-height: 400px; }
 </style>

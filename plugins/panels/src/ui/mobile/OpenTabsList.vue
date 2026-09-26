@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Row } from '@arxhub/uikit/core'
+import { Row, ScrollArea } from '@arxhub/uikit/core'
 import type { PanelStore } from '../../types'
 import { useOpenTabsList } from '../use-open-tabs'
 
@@ -9,35 +9,39 @@ const { openTabs, pathOf, select } = useOpenTabsList(props.store)
 </script>
 
 <template>
-  <div class="open-tabs-list" role="menu" aria-label="Open documents">
-    <Row
-      v-for="tab in openTabs"
-      :key="tab.instance.instanceId"
-      as="button"
-      type="button"
-      wrap
-      class="tab-entry"
-      :selected="tab.active"
-      role="menuitem"
-      @click="select(tab.groupId, tab.instance.instanceId)"
-    >
-      <span class="entry-text">
-        <span class="entry-name">{{ tab.instance.title }}</span>
-        <span v-if="pathOf(tab.instance)" class="entry-path">{{ pathOf(tab.instance) }}</span>
-      </span>
-    </Row>
-    <div v-if="openTabs.length === 0" class="tabs-empty">
-      <p>No documents open</p>
+  <ScrollArea class="open-tabs-list">
+    <div class="open-tabs-menu" role="menu" aria-label="Open documents">
+      <Row
+        v-for="tab in openTabs"
+        :key="tab.instance.instanceId"
+        as="button"
+        type="button"
+        wrap
+        class="tab-entry"
+        :selected="tab.active"
+        role="menuitem"
+        @click="select(tab.groupId, tab.instance.instanceId)"
+      >
+        <span class="entry-text">
+          <span class="entry-name">{{ tab.instance.title }}</span>
+          <span v-if="pathOf(tab.instance)" class="entry-path">{{ pathOf(tab.instance) }}</span>
+        </span>
+      </Row>
+      <div v-if="openTabs.length === 0" class="tabs-empty">
+        <p>No documents open</p>
+      </div>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped>
 .open-tabs-list {
+  height: 100%;
+}
+
+.open-tabs-menu {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow-y: auto;
   padding: 0 8px;
 }
 

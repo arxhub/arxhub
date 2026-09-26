@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { IconButton, Strip } from '@arxhub/uikit/core'
+// biome-ignore lint/style/useImportType: ScrollArea is also rendered in the template
+import { IconButton, ScrollArea, Strip } from '@arxhub/uikit/core'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
 import { usePanels } from '../use-panels'
@@ -24,13 +25,14 @@ const store = usePanels()
 const group = computed(() => store.groups.value[props.groupId])
 const isActiveGroup = computed(() => store.activeGroupId.value === props.groupId)
 
-const tabsEl = ref<HTMLElement | null>(null)
+const tabsArea = ref<InstanceType<typeof ScrollArea> | null>(null)
 let cleanup: (() => void) | null = null
 
 onMounted(() => {
-  if (!tabsEl.value) return
+  const viewport = tabsArea.value?.viewport
+  if (!viewport) return
   cleanup = dropTargetForElements({
-    element: tabsEl.value,
+    element: viewport,
     canDrop: ({ source }) => source.data.type === 'panel-tab',
     getData: () => ({ type: 'tab-bar', groupId: props.groupId }),
   })
@@ -61,7 +63,7 @@ watch(
   () => group.value?.activeInstanceId,
   async () => {
     await nextTick()
-    tabsEl.value
+    tabsArea.value?.viewport
       ?.querySelector<HTMLElement>('[aria-selected="true"], [aria-pressed="true"], .active')
       ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   },
@@ -70,7 +72,7 @@ watch(
 
 <template>
   <Strip class="panel-tab-bar" :class="{ 'is-active-group': isActiveGroup }" flush>
-    <div ref="tabsEl" class="tabs">
+    <ScrollArea ref="tabsArea" axis="x" passive class="tabs" content-class="tabs-row">
       <DraggableTab
         v-for="(instance, index) in group?.instances"
         :key="instance.instanceId"
@@ -83,7 +85,7 @@ watch(
         @click="onTabClick(instance.instanceId)"
         @close="onCloseTab(instance.instanceId)"
       />
-    </div>
+    </ScrollArea>
     <template #actions>
       <span v-if="group?.activeInstanceId && chrome?.states.get(group.activeInstanceId)?.value.mode" class="panel-mode">{{ chrome.states.get(group.activeInstanceId)?.value.mode }}</span>
       <div ref="actionsEl" class="panel-actions" />
@@ -102,15 +104,12 @@ watch(
 .panel-mode { font-size: var(--font-size-xs); color: var(--gray-11); white-space: nowrap; padding-inline: 8px; }
 
 .tabs {
+  flex: 1;
+}
+
+.tabs :deep(.tabs-row) {
   display: flex;
   align-items: center;
   gap: 0;
-  flex: 1;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.tabs::-webkit-scrollbar {
-  display: none;
 }
 </style>

@@ -3,11 +3,11 @@ import { Dialog } from '@ark-ui/vue'
 import { ref, watch } from 'vue'
 import { useBackStack } from '../hooks/useBackStack'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
+import ScrollArea from './ScrollArea.vue'
 
 const props = withDefaults(defineProps<{ open: boolean; title?: string; label?: string; restoreFocus?: boolean }>(), { restoreFocus: true })
 const emit = defineEmits<{ close: [] }>()
 
-const sheetEl = ref<HTMLElement | null>(null)
 const keyboardInset = useKeyboardInset()
 const dragOffset = ref(0)
 let startY: number | null = null
@@ -41,10 +41,11 @@ function onPointerMove(event: PointerEvent): void {
   dragOffset.value = Math.max(0, event.clientY - startY)
 }
 
-function onPointerUp(): void {
+function onPointerUp(event: PointerEvent): void {
   if (startY == null) return
   // Past a third of the sheet the gesture reads as dismissal; below that it springs back.
-  const height = sheetEl.value?.parentElement?.offsetHeight ?? 0
+  const sheet = event.currentTarget instanceof HTMLElement ? event.currentTarget.parentElement : null
+  const height = sheet?.offsetHeight ?? 0
   if (dragOffset.value > height / 3) emit('close')
   startY = null
   dragOffset.value = 0
@@ -71,9 +72,9 @@ function onPointerUp(): void {
             <div class="grabber" aria-hidden="true" />
             <Dialog.Title v-if="title" class="sheet-title">{{ title }}</Dialog.Title>
           </div>
-          <div ref="sheetEl" class="sheet-body">
+          <ScrollArea class="sheet-body" content-class="sheet-body-content">
             <slot />
-          </div>
+          </ScrollArea>
         </Dialog.Content>
       </Dialog.Positioner>
     </Teleport>
@@ -142,9 +143,7 @@ function onPointerUp(): void {
   color: var(--gray-11);
 }
 
-.sheet-body {
-  min-height: 0;
-  overflow-y: auto;
+.sheet-body :deep(.sheet-body-content) {
   padding: 0 0 max(8px, env(safe-area-inset-bottom));
 }
 </style>

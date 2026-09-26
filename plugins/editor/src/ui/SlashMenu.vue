@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon, Row } from '@arxhub/uikit/core'
+import { Icon, Row, ScrollArea } from '@arxhub/uikit/core'
 import type { EditorView } from 'prosemirror-view'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { type BlockCommand, canRunSlashCommand, matchingCommands, runSlashCommand, type SlashMenuState } from '../slash-commands'
@@ -50,7 +50,9 @@ watch(
 
 <template>
   <Teleport to="body">
-  <div ref="list" class="slash-menu" role="listbox" aria-label="Insert block" :id="menuId" :style="position" @mousedown.prevent>
+  <div class="slash-menu" :style="position" @mousedown.prevent>
+  <ScrollArea>
+  <div ref="list" class="slash-list" role="listbox" aria-label="Insert block" :id="menuId">
     <Row
       v-for="({ command, disabled }, index) in matches"
       :key="command.id"
@@ -67,6 +69,8 @@ watch(
     </Row>
     <span v-if="!matches.length" class="slash-empty">No matching blocks</span>
   </div>
+  </ScrollArea>
+  </div>
   </Teleport>
 </template>
 
@@ -76,12 +80,14 @@ watch(
   z-index: var(--z-index-dropdown);
   width: 272px;
   max-width: calc(100vw - 16px);
-  overflow-y: auto;
-  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);
   background: var(--gray-2);
   box-shadow: var(--shadow-md);
 }
+.slash-list { padding: 4px; }
 .slash-empty { display: block; padding: 8px; color: var(--gray-11); font-size: var(--font-size-sm); }
 </style>

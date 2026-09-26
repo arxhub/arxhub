@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { IconButton } from '@arxhub/uikit/core'
+// biome-ignore lint/style/useImportType: ScrollArea is a template component and an InstanceType
+import { IconButton, ScrollArea } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
-import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch, watchEffect } from 'vue'
 import { address, columnName, type Point, pointOf } from '../model'
 import { formulaReferences } from '../references'
 import { useSheet } from './use-sheet'
 
 const props = defineProps<{ rowHeight: number; columnWidth: number }>()
 const session = useSheet()
-const fillHandleSize = useShellFrame() === 'mobile' ? 'xl' : 'sm'
+const touch = useShellFrame() === 'mobile'
+const fillHandleSize = touch ? 'xl' : 'sm'
+// On the desktop an overlay bar takes the pointer over its 12px band, so a cell revealed flush with the
+// edge would have its bottom-right corner, and the fill handle on it, under the bar. The canvas grows by
+// the band too, or the last row and column could never be scrolled clear of it. The phone's bar never
+// takes a touch.
+const barGutter = touch ? 0 : 12
 const { grid, sheet, active, end, select, move, edit, clear, setVisible, cellText, onCopy, onPaste, editable } = session
 const { referenceMode, canPointReference, pointReference, extendReference, hiddenRows, fillTo } = session
 const id = useId()
@@ -73,6 +80,26 @@ const keys = computed(() =>
 )
 const activeId = computed(() => (keys.value.includes(address(active.value)) ? `${id}-${address(active.value)}` : undefined))
 watch(keys, setVisible, { immediate: true })
+const area = ref<InstanceType<typeof ScrollArea> | null>(null)
+const gridAttributes = computed(() => ({
+  role: 'grid',
+  'aria-label': 'Spreadsheet',
+  'aria-rowcount': (sheet.value?.rows ?? 0) + 1,
+  'aria-colcount': (sheet.value?.columns ?? 0) + 1,
+  'aria-activedescendant': activeId.value,
+  'aria-multiselectable': 'true',
+}))
+// The grid's semantics belong to the element that holds focus and scrolls, and that is ScrollArea's
+// viewport, which takes no attrs of its own. Ark renders it with a constant role="presentation", so
+// Vue never patches these back while the prop stays the same.
+watchEffect(() => {
+  const element = grid.value
+  if (!element) return
+  for (const [name, value] of Object.entries(gridAttributes.value)) {
+    if (value === undefined) element.removeAttribute(name)
+    else element.setAttribute(name, String(value))
+  }
+})
 function measure(): void {
   frame = 0
   if (!grid.value) return
@@ -85,11 +112,18 @@ function schedule(): void {
   if (!frame) frame = requestAnimationFrame(measure)
 }
 onMounted(() => {
+  grid.value = area.value?.viewport ?? undefined
   observer = new ResizeObserver(schedule)
-  if (grid.value) observer.observe(grid.value)
+  if (grid.value) {
+    observer.observe(grid.value)
+    // Scroll does not bubble, so a listener on the ScrollArea root would never hear the viewport.
+    grid.value.addEventListener('scroll', schedule, { passive: true })
+  }
   measure()
 })
 onUnmounted(() => {
+  grid.value?.removeEventListener('scroll', schedule)
+  grid.value = undefined
   observer?.disconnect()
   cancelAnimationFrame(frame)
   stopPointing()
@@ -248,14 +282,15 @@ watch([end, height, width], async ([point]) => {
     top = ((rowPositions.value.get(point.row) ?? 0) + 1) * cellHeight.value
   if (point.column >= frozenColumnCount.value && left < element.scrollLeft + columnOffsets.value[frozenColumnCount.value])
     element.scrollLeft = left - columnOffsets.value[frozenColumnCount.value]
-  else if (left + columnSize(point.column) > element.scrollLeft + element.clientWidth)
-    element.scrollLeft = left + columnSize(point.column) - element.clientWidth
+  else if (left + columnSize(point.column) > element.scrollLeft + element.clientWidth - barGutter)
+    element.scrollLeft = left + columnSize(point.column) - (element.clientWidth - barGutter)
   if (
     (rowPositions.value.get(point.row) ?? 0) >= frozenRowCount.value &&
     top < element.scrollTop + (frozenRowCount.value + 1) * cellHeight.value
   )
     element.scrollTop = top - (frozenRowCount.value + 1) * cellHeight.value
-  else if (top + cellHeight.value > element.scrollTop + element.clientHeight) element.scrollTop = top + cellHeight.value - element.clientHeight
+  else if (top + cellHeight.value > element.scrollTop + element.clientHeight - barGutter)
+    element.scrollTop = top + cellHeight.value - (element.clientHeight - barGutter)
   schedule()
 })
 function keydown(event: KeyboardEvent): void {
@@ -293,12 +328,11 @@ function keydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <div ref="grid" class="sheet-grid" :class="{ 'reference-mode': referenceMode }" role="grid" aria-label="Spreadsheet" :aria-rowcount="(sheet?.rows ?? 0) + 1"
-    :aria-colcount="(sheet?.columns ?? 0) + 1" :aria-activedescendant="activeId" aria-multiselectable="true" tabindex="0"
-    @scroll.passive="schedule" @keydown="keydown" @copy="onCopy" @paste="onPaste"
+  <ScrollArea ref="area" axis="both" class="sheet-grid" :viewport-class="['sheet-grid-viewport', { 'reference-mode': referenceMode }]" :tabindex="0"
+    @keydown="keydown" @copy="onCopy" @paste="onPaste"
     @pointerdown="startPointing" @pointermove="movePointer" @pointerup="finishPointing" @pointercancel="finishPointing"
     @lostpointercapture="stopPointing" @click.capture="consumeReferenceClick">
-    <div class="sheet-canvas" :style="{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }">
+    <div class="sheet-canvas" :style="{ width: `${canvasWidth + barGutter}px`, height: `${canvasHeight + barGutter}px` }">
       <div v-for="row in rows" :key="row" role="row" :aria-rowindex="row + 2" class="sheet-grid-row"
         :class="{ 'frozen-row': (rowPositions.get(row) ?? 0) < frozenRowCount }" :style="{ top: `${rowTop(row)}px`, height: `${cellHeight}px`, width: `${canvasWidth}px` }">
         <div role="rowheader" :aria-colindex="1" class="sheet-cell sheet-heading sheet-row-heading" :style="{ left: `${x}px`, width: '48px' }">{{ row + 1 }}</div>
@@ -318,13 +352,13 @@ function keydown(event: KeyboardEvent): void {
       </div>
       <div v-if="handle" class="fill-handle" :style="handle"><IconButton :size="fillHandleSize" icon="lu:grip" tooltip="Drag to autofill" @keydown.enter.prevent="session.tool.value = 'help'" /></div>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped>
-.sheet-grid { flex: 1; min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; position: relative; touch-action: pan-x pan-y; }
-.sheet-grid:focus-visible { outline: 2px solid var(--accent-8); outline-offset: -1px; }
-.sheet-grid.reference-mode { touch-action: none; }
+.sheet-grid { flex: 1; }
+.sheet-grid :deep(.sheet-grid-viewport) { overscroll-behavior: contain; position: relative; touch-action: pan-x pan-y; }
+.sheet-grid :deep(.sheet-grid-viewport.reference-mode) { touch-action: none; }
 .sheet-canvas { position: relative; contain: layout style; }
 .sheet-grid-row { position: absolute; left: 0; }
 .sheet-cell { position: absolute; top: 0; height: 100%; display: flex; align-items: center; padding: 0 8px; border-right: 1px solid var(--gray-4); border-bottom: 1px solid var(--gray-4); color: var(--gray-12); background: var(--gray-1); white-space: nowrap; overflow: hidden; user-select: none; font-variant-numeric: tabular-nums; cursor: cell; }

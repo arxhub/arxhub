@@ -255,6 +255,8 @@ function copyReport(): void {
   position: fixed;
   inset: 0;
   z-index: 9999;
+  /* design-ignore DS-1 ScrollArea: native scrolling — the overlay bar lives in the uikit/core barrel
+     this screen deliberately does not import (see the note on the plugin switches). */
   overflow: auto;
   padding: 32px 16px;
   background: var(--gray-1, #fff);
@@ -347,6 +349,7 @@ summary {
 
 .trace {
   max-height: 224px;
+  /* design-ignore DS-1 ScrollArea: native scrolling for the same reason as .crash. */
   overflow: auto;
   margin: 8px 0 0;
   padding: 8px;

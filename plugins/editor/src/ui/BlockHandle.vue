@@ -9,7 +9,13 @@ import { BlockSelection, selectedBlocks } from '../block-selection'
 import type { BlockCommand } from '../slash-commands'
 import { openBlockMenu } from './block-menu'
 
-const props = defineProps<{ view: EditorView; scroller: HTMLElement; revision: number; commands: readonly BlockCommand[] }>()
+const props = defineProps<{
+  view: EditorView
+  scroller: HTMLElement
+  panel: HTMLElement
+  revision: number
+  commands: readonly BlockCommand[]
+}>()
 const iconSize = useShellFrame() === 'mobile' ? 'xl' : 'sm'
 const layoutRevision = ref(0)
 const dragging = ref(false)
@@ -45,11 +51,10 @@ const position = computed(() => {
   if (!range) return null
   const pos = range.from
   const node = props.view.nodeDOM(pos)
-  const panel = props.scroller.parentElement
-  if (!(node instanceof HTMLElement) || !panel) return null
+  if (!(node instanceof HTMLElement)) return null
   const block = node.getBoundingClientRect()
   const scroll = props.scroller.getBoundingClientRect()
-  const parent = panel.getBoundingClientRect()
+  const parent = props.panel.getBoundingClientRect()
   if (block.bottom <= scroll.top || block.top >= scroll.bottom) return null
   const top = Math.max(scroll.top, Math.min(block.top, scroll.bottom - 64))
   return { top: `${top - parent.top}px`, left: `${block.left - parent.left - (iconSize === 'xl' ? 52 : 36)}px` }
@@ -97,10 +102,9 @@ function locate() {
     cancel()
     return
   }
-  const panel = props.scroller.parentElement?.getBoundingClientRect()
+  const panel = props.panel.getBoundingClientRect()
   const editor = props.view.dom.getBoundingClientRect()
   const viewport = props.scroller.getBoundingClientRect()
-  if (!panel) return
   const range = selectedBlocks(props.view.state)
   if (!range) return
   const source = props.view.nodeDOM(range.from)

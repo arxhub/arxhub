@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon } from '@arxhub/uikit/core'
+import { Icon, ScrollArea } from '@arxhub/uikit/core'
 import type { Component } from 'vue'
 import type { TabTypeCreate } from '../tab-type'
 
@@ -30,9 +30,9 @@ const props = defineProps<{ component: Component | null; create: TabTypeCreate |
       <Icon :name="props.create.icon ?? 'lu:plus'" :size="16" />
     </button>
 
-    <div v-if="props.component != null" class="tools">
+    <ScrollArea v-if="props.component != null" axis="x" class="tools" viewport-class="tools-viewport" content-class="tools-row">
       <component :is="props.component" />
-    </div>
+    </ScrollArea>
   </div>
 </template>
 
@@ -75,22 +75,20 @@ const props = defineProps<{ component: Component | null; create: TabTypeCreate |
   outline-offset: -1px;
 }
 
-
 /* The object's tools scroll sideways rather than wrapping: wrapping would make the band two storeys
    tall and eat the content the screen is open for. */
 .tools {
-  display: flex;
-  min-width: 0;
   flex: 1;
+}
+
+.tools :deep(.tools-viewport) {
+  overscroll-behavior-x: contain;
+}
+
+.tools :deep(.tools-row) {
+  display: flex;
   align-items: center;
   gap: 4px;
   padding: 0 8px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-}
-
-.tools::-webkit-scrollbar {
-  display: none;
 }
 </style>

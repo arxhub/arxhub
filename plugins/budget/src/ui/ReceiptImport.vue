@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { validation } from '@arxhub/errors'
-import { Button, Icon, Input, Segmented } from '@arxhub/uikit/core'
+// biome-ignore lint/correctness/noUnusedImports: ScrollArea is used in template
+import { Button, Icon, Input, ScrollArea, Segmented } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
@@ -316,11 +317,13 @@ function clear(): void {
         <span v-if="imported?.address">{{ imported.address }}</span>
         <span>FN {{ preview.fn }} · FD {{ preview.fd }} · FP {{ preview.fp }}</span>
       </div>
-      <ul v-if="imported" class="receipt-items">
-        <li v-for="item in imported.items" :key="item.id">
-          <span>{{ item.name }} × {{ item.quantity }}</span><strong>{{ formatAmount(item.total, 'RUB') }}</strong>
-        </li>
-      </ul>
+      <ScrollArea v-if="imported" class="receipt-items-scroll">
+        <ul class="receipt-items">
+          <li v-for="item in imported.items" :key="item.id">
+            <span>{{ item.name }} × {{ item.quantity }}</span><strong>{{ formatAmount(item.total, 'RUB') }}</strong>
+          </li>
+        </ul>
+      </ScrollArea>
       <p v-else>Fiscal details are ready. Receipt items require configured receipt access or a receipt JSON file.</p>
       <div class="preview-actions">
         <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="getDetails">
@@ -415,14 +418,16 @@ h3 {
   gap: 4px;
 }
 
+.receipt-items-scroll {
+  max-height: 240px;
+}
+
 .receipt-items {
   display: flex;
   flex-direction: column;
-  max-height: 240px;
   gap: 4px;
   margin: 0;
   padding: 0;
-  overflow-y: auto;
   list-style: none;
 }
 

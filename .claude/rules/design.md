@@ -57,6 +57,19 @@ Every value below comes from a token. A literal in place of one of these is a vi
 - **Tab** — keeps its own component (it carries drag-and-drop and a close control) but matches the Strip it sits in
   (`var(--size-md)`, 40px) rather than the Row role — it fills the tab bar's own height edge to edge, the way a
   `size="lg"` icon does, instead of sitting centred inside it with a gap above and below.
+- **Scroll area** — every scroll container is `ScrollArea` from `@arxhub/uikit/core` (Ark's ScrollArea) and nothing
+  else: no `overflow: auto|scroll`, no `::-webkit-scrollbar`, no `scrollbar-width` in a component. The bar is an
+  overlay drawn over the content at the right and bottom edge; it takes no width or height, so content runs to the
+  edge and never shifts when overflow appears. Hidden at rest, it shows while the pointer is over the area, while
+  scrolling and while dragging, and fades out about a second after scrolling stops — never on open, from a position
+  code restored. Thumb 4px, 8px under the pointer or while dragged, inset 4px from the edge and the ends, minimum
+  24px long; hit area 12px; a click on the track pages. `--gray-a8`, `--gray-a10` on hover and drag, `--radius-full`.
+  `axis` picks `y`, `x` or `both`. The viewport stays the element that scrolls, so keyboard, wheel and trackpad
+  behave as before. On the mobile frame, and for `passive` ribbons (tab strip, type rail), the bar is a 4px
+  read-out: shown only while scrolling, never taking a pointer, native momentum untouched. With no frame provided
+  (the pre-boot screens) it behaves as on the desktop. Under `prefers-reduced-motion` it shows and hides without
+  fading or widening. A scroller someone else owns (CodeMirror's `.cm-scroller`, ProseMirror's table wrapper and
+  code block, the boot and crash screens that must not import the uikit) stays native with a `design-ignore` reason.
 </Roles>
 
 <Colour>
@@ -117,8 +130,9 @@ Every value below comes from a token. A literal in place of one of these is a vi
 A rule nobody checks is a wish. Both levels run; each catches what the other cannot.
 
 - **Source level** — `pnpm check:design` (`scripts/check-design.mjs`): refuses a colour literal in a component, a
-  `font-size` outside the ramp, and a role height written as a literal where a role token exists. It names the
-  surface, the rule and the value found.
+  `font-size` outside the ramp, a role height written as a literal where a role token exists, and a native scroller
+  (`overflow: auto|scroll`, scrollbar styling) outside `ScrollArea.vue`. It names the surface, the rule and the
+  value found.
 - **Rendered level** — `pnpm --filter @arxhub/e2e test design` (`e2e/tests/design.spec.ts`): measures the roles on
   the running app in both frames — every strip is one height, rows of one frame are one density, switching workspace
   tabs does not move where content starts, and no glyph stands in for an icon. It reads the expected values out of

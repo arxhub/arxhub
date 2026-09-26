@@ -101,10 +101,12 @@ test('tree dragging scrolls to destinations below the viewport and ignores outsi
   await app.mouse.move(from.x + 60, from.y + from.height / 2)
   await app.mouse.down()
   await app.mouse.move(from.x + 80, from.y + from.height / 2, { steps: 4 })
-  const box = (await tree.boundingBox())!
-  const before = await tree.evaluate((node) => node.scrollTop)
+  // The tree is the content of a scroll area, not the element that scrolls: its viewport is.
+  const viewport = tree.locator('xpath=ancestor::*[@data-scope="scroll-area"][@data-part="viewport"][1]')
+  const box = (await viewport.boundingBox())!
+  const before = await viewport.evaluate((node) => node.scrollTop)
   await app.mouse.move(box.x + 80, box.y + box.height - 4, { steps: 10 })
-  await expect.poll(() => tree.evaluate((node) => node.scrollTop)).toBeGreaterThan(before)
+  await expect.poll(() => viewport.evaluate((node) => node.scrollTop)).toBeGreaterThan(before)
   await app.mouse.move(box.x + box.width + 80, box.y + 100, { steps: 10 })
   await app.mouse.up()
   expect(await vault.read(source)).toBe('stay intact')

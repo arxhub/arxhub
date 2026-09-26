@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { diffTexts, DiffView } from '@arxhub/plugin-editor/ui'
 import type { DiffResult } from '@arxhub/plugin-editor/ui'
-import { Button, PageLayout, Row, Segmented } from '@arxhub/uikit/core'
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { Button, PageLayout, Row, ScrollArea, Segmented } from '@arxhub/uikit/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import type { CompareMode } from '../session-store'
 
@@ -154,19 +155,21 @@ onMounted(refresh)
   <PageLayout title="AI workspace" description="Review agent worktree sessions before they enter the main vault.">
     <p v-if="error" role="alert">{{ error }}</p>
     <div class="layout">
-      <nav class="list" aria-label="AiWorkspace sessions">
-        <Row
-          v-for="session in sessions"
-          :key="session.sessionId"
-          as="button"
-          type="button"
-          :selected="active?.sessionId === session.sessionId"
-          @click="active = session"
-        >
-          {{ session.status }} · {{ session.sessionId }}
-        </Row>
-        <p v-if="!sessions.length">No agent sessions yet.</p>
-      </nav>
+      <ScrollArea class="list">
+        <nav aria-label="AiWorkspace sessions">
+          <Row
+            v-for="session in sessions"
+            :key="session.sessionId"
+            as="button"
+            type="button"
+            :selected="active?.sessionId === session.sessionId"
+            @click="active = session"
+          >
+            {{ session.status }} · {{ session.sessionId }}
+          </Row>
+          <p v-if="!sessions.length">No agent sessions yet.</p>
+        </nav>
+      </ScrollArea>
       <section
         v-if="active"
         data-testid="ai-workspace-proposal"
@@ -250,7 +253,7 @@ onMounted(refresh)
 
 <style scoped>
 .layout { display: grid; grid-template-columns: minmax(200px, 280px) 1fr; gap: 16px; min-height: 0; }
-.list { overflow: auto; max-height: 70vh; }
+.list { max-height: 70vh; }
 .proposal { min-width: 0; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
 .changes { list-style: none; margin: 0; padding: 0; }

@@ -8,7 +8,14 @@ import type { ArxDocumentLinks } from '../document-links'
 import LinkDialog from './LinkDialog.vue'
 import { MARKS } from './toolbar-actions'
 
-const props = defineProps<{ view: EditorView; scroller: HTMLElement; revision: number; links?: ArxDocumentLinks | null; path?: string }>()
+const props = defineProps<{
+  view: EditorView
+  scroller: HTMLElement
+  panel: HTMLElement
+  revision: number
+  links?: ArxDocumentLinks | null
+  path?: string
+}>()
 const linkOpen = ref(false)
 const layoutRevision = ref(0)
 const measure = () => layoutRevision.value++
@@ -32,8 +39,8 @@ const position = computed(() => {
   const view = props.view
   if (view.isDestroyed) return null
   const { selection } = view.state
-  const panel = props.scroller.parentElement
-  if (!(selection instanceof TextSelection) || selection.empty || !panel || !panel.contains(document.activeElement)) return null
+  const panel = props.panel
+  if (!(selection instanceof TextSelection) || selection.empty || !panel.contains(document.activeElement)) return null
   const rect = view.coordsAtPos(selection.from)
   const scroll = props.scroller.getBoundingClientRect()
   const parent = panel.getBoundingClientRect()

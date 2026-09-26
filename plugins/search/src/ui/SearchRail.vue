@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { DEFAULT_SEARCH_LIMIT, SEARCH_QUALIFIERS, type SearchSnippet, snippetSegments } from '@arxhub/sql'
-import { IconButton, Input, Row, SectionLabel, StatusDot, Strip } from '@arxhub/uikit/core'
+// biome-ignore lint/correctness/noUnusedImports: ScrollArea is used in template
+import { IconButton, Input, Row, ScrollArea, SectionLabel, StatusDot, Strip } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { SearchExtension } from '../search-extension'
@@ -204,66 +205,69 @@ onMounted(focusInput)
       </template>
     </div>
 
-    <div
-      v-if="entries.length > 0"
-      ref="listEl"
-      class="results"
-      role="listbox"
-      aria-label="Search results"
-      tabindex="0"
-      :aria-activedescendant="activeDescendant"
-      @keydown.down.prevent="move(1)"
-      @keydown.up.prevent="move(-1)"
-      @keydown.enter.prevent="openSelected"
-      @keydown.esc.prevent="reset"
-    >
-      <template v-for="(entry, index) in entries" :key="entry.key">
-        <Row
-          v-if="entry.kind === 'document'"
-          :id="optionId(index)"
-          as="button"
-          type="button"
-          wrap
-          tabindex="-1"
-          class="document"
-          :selected="index === selected"
-          role="option"
-          :aria-selected="index === selected"
-          @click="selectAndOpen(index)"
-        >
-          <span class="doc-text">
-            <span class="doc-title">{{ entry.title }}</span>
-            <span class="doc-path">{{ entry.path }}</span>
-          </span>
-        </Row>
-        <!-- A snippet sits one level in under the document it belongs to: the grouping is what the rows
-             look like, not how they nest, so it is the row role's own indent rather than a margin. -->
-        <Row
-          v-else
-          :id="optionId(index)"
-          as="button"
-          type="button"
-          wrap
-          :depth="1"
-          tabindex="-1"
-          class="snippet"
-          :selected="index === selected"
-          role="option"
-          :aria-selected="index === selected"
-          @click="selectAndOpen(index)"
-        >
-          <!-- Interpolated, segment by segment: the snippet arrives with control characters around each
-               match, so anything in the note that looks like markup stays text on the way to the page.
-               One wrapper around the lot, because the row role puts a gap between its children and a
-               snippet is one run of text. -->
-          <span class="snippet-text"
-            ><span v-for="(segment, position) in snippetSegments(entry.snippet?.text ?? '')" :key="position" :class="{ match: segment.match }">{{
-              segment.text
-            }}</span></span
+    <!-- The listbox is the element inside the scroller, not the scroller: the viewport's own role belongs
+         to the scroll area, and aria-activedescendant has to sit on the element that holds focus. -->
+    <ScrollArea v-if="entries.length > 0" class="results" viewport-class="results-viewport" content-class="results-content">
+      <div
+        ref="listEl"
+        class="results-list"
+        role="listbox"
+        aria-label="Search results"
+        tabindex="0"
+        :aria-activedescendant="activeDescendant"
+        @keydown.down.prevent="move(1)"
+        @keydown.up.prevent="move(-1)"
+        @keydown.enter.prevent="openSelected"
+        @keydown.esc.prevent="reset"
+      >
+        <template v-for="(entry, index) in entries" :key="entry.key">
+          <Row
+            v-if="entry.kind === 'document'"
+            :id="optionId(index)"
+            as="button"
+            type="button"
+            wrap
+            tabindex="-1"
+            class="document"
+            :selected="index === selected"
+            role="option"
+            :aria-selected="index === selected"
+            @click="selectAndOpen(index)"
           >
-        </Row>
-      </template>
-    </div>
+            <span class="doc-text">
+              <span class="doc-title">{{ entry.title }}</span>
+              <span class="doc-path">{{ entry.path }}</span>
+            </span>
+          </Row>
+          <!-- A snippet sits one level in under the document it belongs to: the grouping is what the rows
+               look like, not how they nest, so it is the row role's own indent rather than a margin. -->
+          <Row
+            v-else
+            :id="optionId(index)"
+            as="button"
+            type="button"
+            wrap
+            :depth="1"
+            tabindex="-1"
+            class="snippet"
+            :selected="index === selected"
+            role="option"
+            :aria-selected="index === selected"
+            @click="selectAndOpen(index)"
+          >
+            <!-- Interpolated, segment by segment: the snippet arrives with control characters around each
+                 match, so anything in the note that looks like markup stays text on the way to the page.
+                 One wrapper around the lot, because the row role puts a gap between its children and a
+                 snippet is one run of text. -->
+            <span class="snippet-text"
+              ><span v-for="(segment, position) in snippetSegments(entry.snippet?.text ?? '')" :key="position" :class="{ match: segment.match }">{{
+                segment.text
+              }}</span></span
+            >
+          </Row>
+        </template>
+      </div>
+    </ScrollArea>
 
     <!-- Outside the list rather than a row inside it: a listbox holds options, and "nothing matches" is not
          something to select. It says what was searched, not what is currently in the field. -->
@@ -273,7 +277,7 @@ onMounted(focusInput)
     <!-- Nothing has been asked yet. This space held an empty filler, with the qualifier list dumped
          under the field as a bare "title: path: tag: ext: in:" — which names the filters without saying
          what any of them does. Same facts, in the space that was already going spare. -->
-    <div v-else class="results-filler">
+    <ScrollArea v-else class="results-filler" content-class="results-filler-content">
       <SectionLabel>Narrow a search</SectionLabel>
       <dl class="qualifiers">
         <div v-for="qualifier in QUALIFIER_HINTS" :key="qualifier.name" class="qualifier">
@@ -281,7 +285,7 @@ onMounted(focusInput)
           <dd>{{ qualifier.does }}</dd>
         </div>
       </dl>
-    </div>
+    </ScrollArea>
 
     <!-- Same Strip role as the Explorer header: an identifying label on the left, action icons on the
          right — content here rather than the title slot because the label is a live dot+text pair, not
@@ -365,23 +369,37 @@ onMounted(focusInput)
 
 .results {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+}
+
+.results :deep(.results-content) {
+  display: flex;
+  flex-direction: column;
+}
+
+.results-list {
+  flex: 1 0 auto;
   padding: 4px 0;
 }
 
-.results:focus-visible {
+/* The ring is drawn on the viewport, where it sat before: on the list itself it would run the list's full
+   length and be cut off by the viewport wherever the list is taller than it. */
+.results:has(.results-list:focus-visible) :deep(.results-viewport) {
   outline: 2px solid var(--accent-8);
   outline-offset: -1px;
+}
+
+.results-list:focus-visible {
+  outline: none;
 }
 
 /* The space before anything has been asked. It still takes the slack — the index status stays pinned to
    the bottom of the rail — but it now spends it on the syntax rather than on nothing. */
 .results-filler {
   flex: 1;
-  min-height: 0;
+}
+
+.results-filler :deep(.results-filler-content) {
   padding: 12px 8px;
-  overflow-y: auto;
 }
 
 .qualifiers {

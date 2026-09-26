@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Dialog } from '@arxhub/uikit/core'
+import { Button, Dialog, ScrollArea } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { versionText } from '../document-history'
@@ -23,8 +23,8 @@ const draftText = computed(() => preview(props.draft))
 <template>
   <Dialog open :title="conflict ? 'File changed outside this editor' : 'Recover unsaved draft'" size="lg" :close-on-escape="false" :close-on-interact-outside="false">
     <p>{{ conflict ? 'The saved file differs from the version your draft started from. Choose which content to keep.' : 'This device has edits that did not reach the file before the editor closed.' }}</p>
-    <p>Saved file</p><pre aria-label="Saved file preview">{{ savedText }}</pre>
-    <p>Your draft</p><pre aria-label="Draft preview">{{ draftText }}</pre>
+    <p>Saved file</p><ScrollArea class="preview"><pre aria-label="Saved file preview">{{ savedText }}</pre></ScrollArea>
+    <p>Your draft</p><ScrollArea class="preview"><pre aria-label="Draft preview">{{ draftText }}</pre></ScrollArea>
     <p v-if="error" role="alert">{{ error }}</p>
     <template #footer>
       <Button :size="buttonSize" variant="ghost" :disabled="busy" @click="emit('choose', 'saved')">Keep saved file</Button>
@@ -35,6 +35,7 @@ const draftText = computed(() => preview(props.draft))
 </template>
 
 <style scoped>
-pre { max-height: 180px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; background: var(--gray-1); border: 1px solid var(--gray-6); border-radius: var(--radius-sm); font-size: var(--font-size-sm); font-family: var(--font-mono); }
+.preview { max-height: 180px; margin-block: 12px; font-size: var(--font-size-sm); background: var(--gray-1); border: 1px solid var(--gray-6); border-radius: var(--radius-sm); }
+pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; font-size: var(--font-size-sm); font-family: var(--font-mono); }
 p { margin-block: 8px; color: var(--gray-11); font-size: var(--font-size-sm); }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconButton, Strip } from '@arxhub/uikit/core'
+import { IconButton, ScrollArea, Strip } from '@arxhub/uikit/core'
 import { useBackStack } from '@arxhub/uikit/hooks'
 import type { Component } from 'vue'
 import { MOBILE_RAIL_HOST_ID } from './rail-host'
@@ -29,14 +29,14 @@ useBackStack(
           <IconButton icon="lu:x" size="lg" ariaLabel="Close navigation" @click="emit('close')" />
         </template>
       </Strip>
-      <div class="nav-body">
+      <ScrollArea class="nav-body" viewport-class="nav-viewport" content-class="nav-content">
         <!-- Two sources, one panel. A type's own `nav` role is the model; the teleport host is what a
              type whose content is a `MiniAppShell` uses — settings and search still carry their own
              rail inside their content. Both land in the same place because they are the same thing to
              the person holding the phone: the navigation of where they are. -->
         <component :is="props.nav" v-if="props.nav != null" class="nav-fill" />
         <div :id="MOBILE_RAIL_HOST_ID" class="nav-host" :class="{ 'nav-fill': props.nav == null }" />
-      </div>
+      </ScrollArea>
     </section>
   </div>
 </template>
@@ -68,17 +68,24 @@ useBackStack(
 }
 
 .nav-body {
-  display: flex;
-  flex-direction: column;
   flex: 1;
-  min-height: 0;
-  overflow: auto;
+}
+
+.nav-body :deep(.nav-viewport) {
   overscroll-behavior: contain;
 }
 
+.nav-body :deep(.nav-content) {
+  display: flex;
+  flex-direction: column;
+}
+
+/* A zero basis rather than `flex: 1`: the scroll content has no definite height, so a percentage
+   basis would fall back to the navigation's own height, and a navigation that scrolls itself (a strip
+   over a tree) would grow to the whole tree and take its strip away with it. Its automatic minimum is
+   left alone, so a rail whose content is simply taller still scrolls here. */
 .nav-fill {
-  flex: 1;
-  min-height: 0;
+  flex: 1 1 0;
 }
 
 /* Always mounted so the teleport target never disappears, and it takes no room while the active type

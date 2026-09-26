@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Input, Row } from '@arxhub/uikit/core'
+import { Button, Input, Row, ScrollArea } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { EditorView } from 'prosemirror-view'
 import { ref, watch } from 'vue'
@@ -70,18 +70,22 @@ async function choose(anchor?: BlockDestination['anchor']) {
       <p>{{ selected.title || selected.path }}</p>
       <Button :size="buttonSize" variant="secondary" :disabled="busy" @click="choose()">Link whole document</Button>
       <p>Or choose a text block{{ selected.path === path ? '' : ' from the saved document' }}:</p>
-      <div class="destination-list" aria-label="Document blocks">
-        <Row v-for="(block, index) in blocks" :key="index" as="button" type="button" wrap :disabled="busy" @click="choose(block.anchor)">{{ block.label }}</Row>
-      </div>
+      <ScrollArea class="destination-list">
+        <div aria-label="Document blocks">
+          <Row v-for="(block, index) in blocks" :key="index" as="button" type="button" wrap :disabled="busy" @click="choose(block.anchor)">{{ block.label }}</Row>
+        </div>
+      </ScrollArea>
       <p v-if="!busy && !error && !blocks.length">No text blocks available.</p>
     </template>
     <template v-else>
       <Input v-model="query" aria-label="Search link destinations" placeholder="Search documents" />
-      <div class="destination-list" aria-label="Documents">
-        <Row v-for="document in documents" :key="document.path" as="button" type="button" wrap @click="selected = document">
-          <span>{{ document.title || document.path }}<small>{{ document.path }}</small></span>
-        </Row>
-      </div>
+      <ScrollArea class="destination-list">
+        <div aria-label="Documents">
+          <Row v-for="document in documents" :key="document.path" as="button" type="button" wrap @click="selected = document">
+            <span>{{ document.title || document.path }}<small>{{ document.path }}</small></span>
+          </Row>
+        </div>
+      </ScrollArea>
       <p v-if="!busy && !error && !documents.length">No documents found.</p>
     </template>
     <p v-if="busy" role="status">Loading destinations…</p>
@@ -91,7 +95,7 @@ async function choose(anchor?: BlockDestination['anchor']) {
 
 <style scoped>
 .document-picker { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-.destination-list { max-height: 240px; overflow: auto; overflow-wrap: anywhere; }
+.destination-list { max-height: 240px; overflow-wrap: anywhere; }
 small { display: block; font-size: var(--font-size-xs); color: var(--gray-11); }
 .document-picker.touch small { font-size: var(--font-size-sm); }
 p { margin: 4px 0; }

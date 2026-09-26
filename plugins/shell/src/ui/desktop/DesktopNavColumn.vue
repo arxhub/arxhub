@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ScrollArea } from '@arxhub/uikit/core'
 import { onBeforeUnmount, ref } from 'vue'
 import type { TabTypeNav } from '../tab-type'
 import { NAV_MAX, NAV_MIN } from './use-nav-column'
@@ -71,9 +72,9 @@ onBeforeUnmount(() => stop?.())
       @click="emit('toggle')"
     />
 
-    <div v-show="!props.collapsed" class="body">
+    <ScrollArea v-show="!props.collapsed" class="body" content-class="body-inner">
       <component :is="props.nav.component" />
-    </div>
+    </ScrollArea>
 
     <div
       v-if="!props.collapsed"
@@ -130,10 +131,20 @@ onBeforeUnmount(() => stop?.())
 }
 
 .body {
-  min-height: 0;
   flex: 1;
-  overflow-x: hidden;
-  overflow-y: auto;
+}
+
+/* A navigation is one full-height pane with a scroller of its own (a strip over a tree). As a plain
+   child of the scroll content its `height: 100%` resolves against an indefinite box, grows to the whole
+   tree, and the strip then scrolls away with it; a zero basis hands it exactly the viewport. One whose
+   content is taller keeps its automatic minimum and still scrolls here. */
+.body :deep(.body-inner) {
+  display: flex;
+  flex-direction: column;
+}
+
+.body :deep(.body-inner > :only-child) {
+  flex: 1 1 0;
 }
 
 /* Sits on the column's own edge, straddling it by 4px on each side: wide enough to grab without

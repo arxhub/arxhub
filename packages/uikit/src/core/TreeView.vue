@@ -6,6 +6,7 @@ import { useTreeDragDrop } from '../hooks/useTreeDragDrop'
 import { useTreeNavigation } from '../hooks/useTreeNavigation'
 import Icon from './Icon.vue'
 import Row from './Row.vue'
+import ScrollArea from './ScrollArea.vue'
 import TreeDragTarget from './TreeDragTarget.vue'
 import type { TreeDragDropOptions, TreeViewNode } from './tree-view'
 
@@ -85,59 +86,70 @@ function keydown(node: TreeViewNode<T>, event: KeyboardEvent) {
   <DragDropProvider :sensors="dnd.sensors" :plugins="dnd.plugins"
     @before-drag-start="dnd.onBeforeDragStart" @drag-start="dnd.onDragStart"
     @drag-over="dnd.onDragOver" @drag-end="dnd.onDragEnd">
-    <div ref="root" v-bind="$attrs" class="tree-view" role="tree" :aria-label="label">
-      <TreeDragTarget v-for="row in rows" :key="row.node.id" :id="rowId(row.node.id)" :node-id="row.node.id"
-        :draggable="dnd.canDrag(row.node)" :droppable="dnd.canDrop(row.node)" v-slot="{ setElement }">
-        <Row
-          :ref="setElement"
-          :id="rowId(row.node.id)"
-          class="tree-view-node"
-          :class="{ 'drop-target': dnd.target.value?.id === row.node.id, 'drag-source': dnd.source.value?.id === row.node.id }"
-          role="treeitem"
-          :depth="row.depth"
-          :selected="row.node.id === selectedId"
-          :disabled="row.node.disabled"
-          :aria-label="row.node.ariaLabel ?? row.node.label"
-          :aria-description="row.node.description"
-          :title="row.node.description"
-          :aria-level="row.depth + 1"
-          :aria-posinset="row.position"
-          :aria-setsize="row.siblings"
-          :aria-selected="row.node.id === selectedId"
-          :aria-expanded="row.branch ? row.expanded : undefined"
-          :aria-disabled="row.node.disabled || undefined"
-          :tabindex="row.node.id === focusedId ? 0 : -1"
-          @focus="focusedId = row.node.id"
-          @click="click(row.node, $event)"
-          @contextmenu="contextmenu(row.node, $event)"
-          @keydown.self="keydown(row.node, $event)"
-        >
-          <span v-if="hasBranches" class="glyph" aria-hidden="true">
-            <Icon v-if="row.branch" :name="row.expanded ? 'lu:chevron-down' : 'lu:chevron-right'" :size="iconSize" />
-          </span>
-          <span v-if="row.node.icon" class="glyph" aria-hidden="true"><Icon :name="row.node.icon" :size="iconSize" /></span>
-          <span class="tree-view-label"><slot name="label" :node="row.node">{{ row.node.label }}</slot></span>
-          <slot name="actions" :node="row.node" />
-        </Row>
-      </TreeDragTarget>
-      <slot v-if="!rows.length" name="empty" />
-      <TreeDragTarget v-if="dragDrop?.rootLabel" :id="`${prefix}:root`" :node-id="null"
-        :draggable="false" :droppable="dnd.canDrop(null)" v-slot="{ setElement }">
-        <div :ref="setElement" class="tree-root-drop" :class="{ 'drop-target': dnd.target.value === null }" role="presentation">
-          <span v-if="dnd.canDrop(null)">{{ dragDrop.rootLabel }}</span>
-        </div>
-      </TreeDragTarget>
-    </div>
+    <ScrollArea v-bind="$attrs" class="tree-view-area" content-class="tree-view-content">
+      <div ref="root" class="tree-view" role="tree" :aria-label="label">
+        <TreeDragTarget v-for="row in rows" :key="row.node.id" :id="rowId(row.node.id)" :node-id="row.node.id"
+          :draggable="dnd.canDrag(row.node)" :droppable="dnd.canDrop(row.node)" v-slot="{ setElement }">
+          <Row
+            :ref="setElement"
+            :id="rowId(row.node.id)"
+            class="tree-view-node"
+            :class="{ 'drop-target': dnd.target.value?.id === row.node.id, 'drag-source': dnd.source.value?.id === row.node.id }"
+            role="treeitem"
+            :depth="row.depth"
+            :selected="row.node.id === selectedId"
+            :disabled="row.node.disabled"
+            :aria-label="row.node.ariaLabel ?? row.node.label"
+            :aria-description="row.node.description"
+            :title="row.node.description"
+            :aria-level="row.depth + 1"
+            :aria-posinset="row.position"
+            :aria-setsize="row.siblings"
+            :aria-selected="row.node.id === selectedId"
+            :aria-expanded="row.branch ? row.expanded : undefined"
+            :aria-disabled="row.node.disabled || undefined"
+            :tabindex="row.node.id === focusedId ? 0 : -1"
+            @focus="focusedId = row.node.id"
+            @click="click(row.node, $event)"
+            @contextmenu="contextmenu(row.node, $event)"
+            @keydown.self="keydown(row.node, $event)"
+          >
+            <span v-if="hasBranches" class="glyph" aria-hidden="true">
+              <Icon v-if="row.branch" :name="row.expanded ? 'lu:chevron-down' : 'lu:chevron-right'" :size="iconSize" />
+            </span>
+            <span v-if="row.node.icon" class="glyph" aria-hidden="true"><Icon :name="row.node.icon" :size="iconSize" /></span>
+            <span class="tree-view-label"><slot name="label" :node="row.node">{{ row.node.label }}</slot></span>
+            <slot name="actions" :node="row.node" />
+          </Row>
+        </TreeDragTarget>
+        <slot v-if="!rows.length" name="empty" />
+        <TreeDragTarget v-if="dragDrop?.rootLabel" :id="`${prefix}:root`" :node-id="null"
+          :draggable="false" :droppable="dnd.canDrop(null)" v-slot="{ setElement }">
+          <div :ref="setElement" class="tree-root-drop" :class="{ 'drop-target': dnd.target.value === null }" role="presentation">
+            <span v-if="dnd.canDrop(null)">{{ dragDrop.rootLabel }}</span>
+          </div>
+        </TreeDragTarget>
+      </div>
+    </ScrollArea>
   </DragDropProvider>
 </template>
 
 <style scoped>
+.tree-view-area {
+  flex: 1;
+}
+
+/* The content is at least the viewport's height; the tree fills it so the root drop zone below the
+   last row still reaches the bottom of the box. */
+.tree-view-area :deep(.tree-view-content) {
+  display: flex;
+  flex-direction: column;
+}
+
 .tree-view {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+  flex: 1 0 auto;
   font-family: var(--font-sans);
 }
 

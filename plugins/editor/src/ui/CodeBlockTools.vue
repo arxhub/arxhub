@@ -14,7 +14,6 @@ const touch = useShellFrame() === 'mobile'
 </template>
 
 <style scoped>
-nav { margin-top: 8px; max-height: 280px; overflow: auto; }
 .language-label { font-size: var(--font-size-xs); color: var(--gray-11); padding: 8px; display: block; }
 .language-label.touch { font-size: var(--font-size-sm); }
 </style>

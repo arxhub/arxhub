@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { actionMenu, Button, IconButton, Segmented, Strip } from '@arxhub/uikit/core'
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { actionMenu, Button, IconButton, ScrollArea, Segmented, Strip } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { useSheet } from './use-sheet'
@@ -37,12 +38,13 @@ function manage(event: MouseEvent) {
 <template>
   <Strip class="sheet-tabs">
     <IconButton :size="iconSize" icon="lu:ellipsis" tooltip="Worksheet actions" :disabled="!editable" @click="manage" />
-    <div class="sheet-tab-scroll"><Segmented :model-value="sheetId" :options="options" aria-label="Worksheets" :disabled="!editable" @update:model-value="switchSheet" /></div>
+    <ScrollArea axis="x" passive class="sheet-tab-scroll" content-class="sheet-tab-row"><Segmented :model-value="sheetId" :options="options" aria-label="Worksheets" :disabled="!editable" @update:model-value="switchSheet" /></ScrollArea>
     <template #actions>
       <Button :size="buttonSize" variant="secondary" :disabled="!editable || (book?.sheets.length ?? 0) >= 16" @click="addSheet">Add sheet</Button>
     </template>
   </Strip>
 </template>
 <style scoped>
-.sheet-tab-scroll { display: flex; flex: 1; min-width: 0; overflow: auto; }
+.sheet-tab-scroll { flex: 1; }
+.sheet-tab-scroll :deep(.sheet-tab-row) { display: flex; }
 </style>

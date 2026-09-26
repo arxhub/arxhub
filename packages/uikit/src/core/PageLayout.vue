@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useShellFrame } from '../hooks/useShellFrame'
+import ScrollArea from './ScrollArea.vue'
 
 defineProps<{
   title?: string
@@ -29,9 +30,9 @@ const touch = useShellFrame() === 'mobile'
       </div>
     </header>
 
-    <div class="body">
+    <ScrollArea class="body" content-class="body-content">
       <slot />
-    </div>
+    </ScrollArea>
 
     <footer v-if="$slots.footer" class="footer">
       <slot name="footer" />
@@ -109,12 +110,13 @@ const touch = useShellFrame() === 'mobile'
 
 .body {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+}
+
+.body :deep(.body-content) {
   padding: 0 24px 32px;
 }
 
-.page.touch .body {
+.page.touch .body :deep(.body-content) {
   padding: 0 16px 24px;
 }
 

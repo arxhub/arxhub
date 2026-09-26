@@ -65,6 +65,8 @@ const percent = computed(() => (props.ledger.total === 0 ? 0 : Math.round((props
   position: fixed;
   inset: 0;
   z-index: 9999;
+  /* design-ignore DS-1 ScrollArea: native scrolling — the overlay bar lives in the same uikit/core
+     barrel this screen deliberately does not import (see above). */
   overflow: auto;
   padding: 32px 16px;
   background: var(--gray-1, #fff);

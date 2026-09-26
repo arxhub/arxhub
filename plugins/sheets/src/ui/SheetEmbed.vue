@@ -3,7 +3,8 @@ import { validation } from '@arxhub/errors'
 import type { ArxEditorControlProps } from '@arxhub/plugin-editor'
 import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
 import { ShellExtension } from '@arxhub/plugin-shell'
-import { Button, Dialog, IconButton, Input, Strip } from '@arxhub/uikit/core'
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { Button, Dialog, IconButton, Input, ScrollArea, Strip } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { computed, onMounted, onUnmounted, ref, shallowRef, useId, watch } from 'vue'
@@ -164,11 +165,11 @@ onUnmounted(() => {
     </Strip>
     <p v-if="error" role="alert">{{ error }} <Button :size="buttonSize" variant="secondary" @click="load">Retry</Button></p>
     <p v-else-if="!node.attrs.path">Choose a spreadsheet file and range to display.</p>
-    <div v-else class="sheet-embed-scroll" :aria-busy="loading">
+    <ScrollArea v-else axis="both" class="sheet-embed-scroll" :aria-busy="loading">
       <table aria-label="Embedded spreadsheet"><thead><tr><th scope="col">{{ node.attrs.sheet }}</th><th v-for="column in columns" :key="column" scope="col">{{ columnName(column) }}</th></tr></thead>
         <tbody><tr v-for="row in rows" :key="row"><th scope="row">{{ row + 1 }}</th><td v-for="column in columns" :key="column">{{ formatValue(values[address({ row, column })] ?? '', sheet?.formats?.[address({ row, column })]) }}</td></tr></tbody>
       </table>
-    </div>
+    </ScrollArea>
     <Dialog :open="setup" title="Embed spreadsheet" size="sm" @update:open="setup = $event">
       <form :id="id" class="embed-form" @submit.prevent="apply">
         <label>Vault file path<Input v-model="path" aria-label="Spreadsheet path" placeholder="Budget.arxs" /></label>
@@ -184,7 +185,7 @@ onUnmounted(() => {
 <style scoped>
 .sheet-embed { border: 1px solid var(--gray-6); border-radius: var(--radius-sm); overflow: hidden; }
 .embed-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.sheet-embed-scroll { overflow: auto; max-height: 400px; }
+.sheet-embed-scroll { max-height: 400px; }
 table { border-collapse: collapse; font-size: var(--font-size-sm); min-width: 100%; }
 th, td { border: 1px solid var(--gray-4); padding: 8px; min-width: 80px; white-space: pre-wrap; overflow-wrap: anywhere; }
 th { color: var(--gray-11); background: var(--gray-2); }

@@ -1,9 +1,14 @@
+<script setup lang="ts">
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { ScrollArea } from '@arxhub/uikit/core'
+</script>
+
 <template>
   <!-- This remains outside the app landmark for the same reason as the desktop gate. The inner flex
        item uses auto block margins: it centres on a tall phone and falls back to the safe top edge
        when the keypad and recovery copy are taller than a short viewport. -->
   <div class="gate">
-    <div class="viewport">
+    <ScrollArea class="gate-scroll" content-class="gate-inner">
       <div class="card">
         <header class="intro">
           <slot name="title" />
@@ -13,7 +18,7 @@
         <div class="actions"><slot name="actions" /></div>
         <div v-if="$slots.recovery" class="recovery"><slot name="recovery" /></div>
       </div>
-    </div>
+    </ScrollArea>
   </div>
 </template>
 
@@ -22,14 +27,19 @@
   position: fixed;
   inset: 0;
   z-index: 9999;
-  overflow-y: auto;
   background-color: var(--gray-1);
   font-family: var(--font-sans);
 }
 
-.viewport {
+/* Ark puts `position: relative` inline on the ScrollArea root, which would beat a fixed overlay on it. */
+.gate-scroll {
+  width: 100%;
+  height: 100%;
+}
+
+/* ScrollArea's content is already at least the viewport's height, which is what min-height: 100% did. */
+.gate-scroll :deep(.gate-inner) {
   display: flex;
-  min-height: 100%;
   padding: max(var(--size-xs-half), env(safe-area-inset-top)) max(var(--size-xs-half), env(safe-area-inset-right))
     max(var(--size-xs-half), env(safe-area-inset-bottom)) max(var(--size-xs-half), env(safe-area-inset-left));
 }

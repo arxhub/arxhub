@@ -113,6 +113,9 @@ defineExpose({
   outline-offset: -1px;
 }
 
+/* design-ignore DS-1 ScrollArea: CodeMirror creates .cm-scroller itself and measures its viewport,
+   virtualises lines, autoscrolls a drag selection and keeps gutters sticky against that element, while
+   ScrollArea needs a viewport of its own, which would take all of that from the editor. */
 .code-editor :deep(.cm-scroller) {
   overflow: auto;
   font-family: var(--font-mono);

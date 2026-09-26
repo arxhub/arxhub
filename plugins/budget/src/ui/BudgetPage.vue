@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Button, PageLayout, Segmented } from '@arxhub/uikit/core'
+// biome-ignore lint/correctness/noUnusedImports: ScrollArea is used in template
+import { Button, PageLayout, ScrollArea, Segmented } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { BudgetExtension } from '../budget-extension'
@@ -81,14 +82,16 @@ async function refresh(): Promise<void> {
       </div>
 
       <template v-else>
-        <nav class="section-nav" aria-label="Budget sections">
-          <Segmented
-            :model-value="section"
-            :options="sections"
-            aria-label="Budget sections"
-            @update:model-value="section = $event as BudgetSection"
-          />
-        </nav>
+        <ScrollArea axis="x" class="section-nav" content-class="section-nav-content">
+          <nav aria-label="Budget sections">
+            <Segmented
+              :model-value="section"
+              :options="sections"
+              aria-label="Budget sections"
+              @update:model-value="section = $event as BudgetSection"
+            />
+          </nav>
+        </ScrollArea>
 
         <div v-if="section === 'overview' || section === 'transactions'" class="period">
           <MonthPicker v-model="month" />
@@ -127,7 +130,9 @@ async function refresh(): Promise<void> {
 
 .section-nav {
   width: 100%;
-  overflow-x: auto;
+}
+
+.section-nav :deep(.section-nav-content) {
   padding-bottom: 4px;
 }
 

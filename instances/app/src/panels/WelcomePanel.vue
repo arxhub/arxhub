@@ -3,7 +3,8 @@ import { NOTES_TYPE_ID } from '@arxhub/plugin-notes'
 import { SEARCH_TYPE_ID } from '@arxhub/plugin-search'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
-import { Button } from '@arxhub/uikit/core'
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { Button, ScrollArea } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 
 // The frame is already decided and published at boot, so the copy can name the control the reader is
@@ -31,7 +32,7 @@ async function createNote(): Promise<void> {
 </script>
 
 <template>
-  <div class="welcome-panel" :class="{ touch: mobile }">
+  <ScrollArea class="welcome-panel" :class="{ touch: mobile }" content-class="welcome-inner">
     <div class="sheet">
       <h1>ArxHub</h1>
       <p class="lede">
@@ -55,21 +56,23 @@ async function createNote(): Promise<void> {
         </div>
       </dl>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped>
 .welcome-panel {
+  width: 100%;
+  height: 100%;
+}
+
+.welcome-panel :deep(.welcome-inner) {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
   padding: 24px;
-  overflow-y: auto;
 }
 
-.welcome-panel.touch {
+.welcome-panel.touch :deep(.welcome-inner) {
   padding: 16px;
 }
 

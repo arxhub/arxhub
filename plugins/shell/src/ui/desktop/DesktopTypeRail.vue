@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NavItem } from '@arxhub/uikit/core'
+import { NavItem, ScrollArea } from '@arxhub/uikit/core'
 import type { TypeRowItem } from '../workspace'
 
 // The first level of navigation. The same set of types the phone puts in a row along the bottom, stood
@@ -18,19 +18,21 @@ function label(item: TypeRowItem): string {
 
 <template>
   <nav class="type-rail" aria-label="Types">
-    <div v-for="item in props.row" :key="item.type.id" class="type">
-      <NavItem
-        :icon="item.type.icon"
-        :title="label(item)"
-        :active="item.active"
-        :data-testid="`type-${item.type.id}`"
-        @click="$emit('select', item.type.id)"
-      />
-      <!-- Zero is never drawn: an empty badge would say "a number belongs here", which is not a
-           number. -->
-      <span v-if="item.count > 0" class="count" aria-hidden="true">{{ item.count > 99 ? '99+' : item.count }}</span>
-    </div>
-    <NavItem icon="lu:layout-grid" title="Open or switch to" @click="$emit('sheet')" />
+    <ScrollArea passive class="type-scroll" content-class="type-list">
+      <div v-for="item in props.row" :key="item.type.id" class="type">
+        <NavItem
+          :icon="item.type.icon"
+          :title="label(item)"
+          :active="item.active"
+          :data-testid="`type-${item.type.id}`"
+          @click="$emit('select', item.type.id)"
+        />
+        <!-- Zero is never drawn: an empty badge would say "a number belongs here", which is not a
+             number. -->
+        <span v-if="item.count > 0" class="count" aria-hidden="true">{{ item.count > 99 ? '99+' : item.count }}</span>
+      </div>
+      <NavItem icon="lu:layout-grid" title="Open or switch to" @click="$emit('sheet')" />
+    </ScrollArea>
   </nav>
 </template>
 
@@ -41,17 +43,20 @@ function label(item: TypeRowItem): string {
   width: calc(var(--size-md) + 1px);
   display: flex;
   flex-direction: column;
-  align-items: center;
   flex-shrink: 0;
-  overflow-y: auto;
   background-color: var(--gray-2);
   border-right: 1px solid var(--gray-6);
   z-index: var(--z-index-docked);
-  scrollbar-width: none;
 }
 
-.type-rail::-webkit-scrollbar {
-  display: none;
+.type-scroll {
+  flex: 1;
+}
+
+.type-scroll :deep(.type-list) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .type {

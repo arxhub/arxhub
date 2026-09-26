@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { VfsExtension } from '@arxhub/plugin-vfs'
+// biome-ignore lint/style/useImportType: used in the template and as InstanceType<typeof ScrollArea>
+import { ScrollArea } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import {
   GlobalWorkerOptions,
@@ -46,7 +48,7 @@ interface PageState {
 const baseSize = ref<{ width: number; height: number } | null>(null)
 const pages = reactive<PageState[]>([])
 
-const stageEl = ref<HTMLElement | null>(null)
+const stageArea = ref<InstanceType<typeof ScrollArea> | null>(null)
 const canvasEls = new Map<number, HTMLCanvasElement>()
 const activeRenders = new Map<number, RenderTask>()
 
@@ -218,13 +220,22 @@ watch(
   { immediate: true },
 )
 
+// The viewport and not the content is measured: the content widens to the widest page once zoom goes
+// past fit-width, and a fit-width computed from that would feed the zoom back into itself. The content's
+// padding is read rather than restated, so the pages keep the inset the stylesheet gives them.
+function measureStage(stage: HTMLElement): number {
+  const content = stage.firstElementChild
+  if (content == null) return stage.clientWidth
+  const style = getComputedStyle(content)
+  return Math.max(0, stage.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight))
+}
+
 onMounted(() => {
-  const stage = stageEl.value
+  const stage = stageArea.value?.viewport
   if (stage == null) return
-  stageWidth.value = stage.clientWidth
-  stageObserver = new ResizeObserver((entries) => {
-    const entry = entries[0]
-    if (entry != null) stageWidth.value = entry.contentRect.width
+  stageWidth.value = measureStage(stage)
+  stageObserver = new ResizeObserver(() => {
+    stageWidth.value = measureStage(stage)
   })
   stageObserver.observe(stage)
   // rootMargin percentages are relative to the root's own box, so "100%" top and bottom is exactly one
@@ -260,7 +271,7 @@ onBeforeUnmount(() => {
       :on-zoom-out="() => (zoom = stepZoom(zoom, -1))"
       :on-zoom-in="() => (zoom = stepZoom(zoom, 1))"
     >
-      <div ref="stageEl" class="pdf-stage">
+      <ScrollArea ref="stageArea" axis="both" class="pdf-stage" content-class="pdf-stage-inner">
         <p v-if="loading" class="media-state">Loading…</p>
         <template v-else-if="error">
           <p class="media-state">{{ error }}</p>
@@ -277,7 +288,7 @@ onBeforeUnmount(() => {
         >
           <canvas v-if="page.rendered" :ref="(el) => onCanvasRef(page.index, el as Element | null)" class="pdf-canvas" />
         </div>
-      </div>
+      </ScrollArea>
     </PdfShell>
   </div>
 </template>
@@ -292,14 +303,15 @@ onBeforeUnmount(() => {
 }
 
 .pdf-stage {
-  display: flex;
   flex: 1;
-  min-height: 0;
+}
+
+.pdf-stage :deep(.pdf-stage-inner) {
+  display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
   padding: 16px;
-  overflow: auto;
 }
 
 .pdf-page {

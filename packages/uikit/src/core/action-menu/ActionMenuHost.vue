@@ -4,6 +4,7 @@ import { useShellFrame } from '../../hooks/useShellFrame'
 import BottomSheet from '../BottomSheet.vue'
 import Icon from '../Icon.vue'
 import Row from '../Row.vue'
+import ScrollArea from '../ScrollArea.vue'
 import { actionMenu, useActionMenuState } from './action-menu'
 
 const state = useActionMenuState()
@@ -159,21 +160,23 @@ onBeforeUnmount(() => {
       @contextmenu.prevent
       @keydown="onMenuKeydown"
     >
-      <Row
-        v-for="item in state.items"
-        :key="item.id"
-        as="button"
-        type="button"
-        class="action-item"
-        :tone="item.variant === 'danger' ? 'danger' : 'neutral'"
-        role="menuitem"
-        tabindex="-1"
-        :disabled="item.disabled"
-        @click="run(item)"
-      >
-        <Icon v-if="item.icon" :name="item.icon" :size="14" />
-        <span class="action-label">{{ item.label }}</span>
-      </Row>
+      <ScrollArea class="action-menu-area" content-class="action-menu-list">
+        <Row
+          v-for="item in state.items"
+          :key="item.id"
+          as="button"
+          type="button"
+          class="action-item"
+          :tone="item.variant === 'danger' ? 'danger' : 'neutral'"
+          role="menuitem"
+          tabindex="-1"
+          :disabled="item.disabled"
+          @click="run(item)"
+        >
+          <Icon v-if="item.icon" :name="item.icon" :size="14" />
+          <span class="action-label">{{ item.label }}</span>
+        </Row>
+      </ScrollArea>
     </div>
   </Teleport>
 
@@ -206,14 +209,19 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-width: 168px;
   max-height: calc(100dvh - 8px);
-  overflow-y: auto;
-  padding: 4px;
+  overflow: hidden;
   background: var(--gray-2);
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
   /* Teleport places the menu outside the shell that sets the application's font. */
   font-family: var(--font-sans);
+}
+
+.action-menu-area :deep(.action-menu-list) {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
 }
 
 .action-label {

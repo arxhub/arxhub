@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { SqlSchemaReferenceColumn, SqlSchemaReferenceTable } from '@arxhub/sql'
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { ScrollArea } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted, ref, shallowRef } from 'vue'
 import { SearchExtension } from '../search-extension'
@@ -32,29 +34,32 @@ function marks(column: SqlSchemaReferenceColumn): string[] {
   <!-- Read from the catalog of the live index, never from a description of the DDL kept beside it: a
        query is written while looking at the fields, and a second copy of the schema drifts (A-26). -->
   <section class="schema" aria-label="Index schema">
-    <p v-if="failure" class="state" role="alert" data-testid="sql-schema-error">
-      The schema could not be read: {{ failure }}
-    </p>
-    <p v-else-if="tables == null" class="state">Reading the schema from the index…</p>
+    <!-- Both axes: three fixed columns are wider than a narrow panel, and the old scroller let them scroll sideways. -->
+    <ScrollArea axis="both" class="schema-scroll" content-class="schema-content">
+      <p v-if="failure" class="state" role="alert" data-testid="sql-schema-error">
+        The schema could not be read: {{ failure }}
+      </p>
+      <p v-else-if="tables == null" class="state">Reading the schema from the index…</p>
 
-    <article v-for="table in tables ?? []" :key="table.name" class="table">
-      <h2 class="table-name">{{ table.name }}</h2>
-      <p class="table-description">{{ table.description }}</p>
-      <ul class="columns">
-        <li v-for="column in table.columns" :key="column.name" class="column">
-          <code class="column-name">{{ column.name }}</code>
-          <code class="column-type">{{ column.type }}</code>
-          <span class="column-meaning">
-            <span v-if="marks(column).length" class="column-marks">{{ marks(column).join(' · ') }}</span>
-            <span class="column-description">{{ column.description || 'No note for this column.' }}</span>
-            <!-- What a join is written from, so it is stated rather than inferred from the name. -->
-            <span v-if="column.references" class="column-reference">
-              references <code>{{ column.references }}</code>
+      <article v-for="table in tables ?? []" :key="table.name" class="table">
+        <h2 class="table-name">{{ table.name }}</h2>
+        <p class="table-description">{{ table.description }}</p>
+        <ul class="columns">
+          <li v-for="column in table.columns" :key="column.name" class="column">
+            <code class="column-name">{{ column.name }}</code>
+            <code class="column-type">{{ column.type }}</code>
+            <span class="column-meaning">
+              <span v-if="marks(column).length" class="column-marks">{{ marks(column).join(' · ') }}</span>
+              <span class="column-description">{{ column.description || 'No note for this column.' }}</span>
+              <!-- What a join is written from, so it is stated rather than inferred from the name. -->
+              <span v-if="column.references" class="column-reference">
+                references <code>{{ column.references }}</code>
+              </span>
             </span>
-          </span>
-        </li>
-      </ul>
-    </article>
+          </li>
+        </ul>
+      </article>
+    </ScrollArea>
   </section>
 </template>
 
@@ -64,13 +69,18 @@ function marks(column: SqlSchemaReferenceColumn): string[] {
 .schema {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   max-height: 320px;
-  overflow-y: auto;
-  padding: 16px;
+  overflow: hidden;
   border: 1px solid var(--gray-6);
   border-radius: var(--radius-sm);
   background: var(--gray-2);
+}
+
+.schema-scroll :deep(.schema-content) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
 }
 
 .state {
