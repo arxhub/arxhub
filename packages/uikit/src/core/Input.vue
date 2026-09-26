@@ -122,6 +122,8 @@ defineExpose({ focus: () => el.value?.focus() })
 }
 
 .input.title { height: auto; min-height: var(--size-xl); padding: 0; border: none; background: transparent; font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); }
+/* design-ignore DS type ramp: a title field is the page's h1 being renamed, and takes its phone size. */
+.input.title.touch { font-size: 1.625rem; }
 
 .input.bare {
   height: 100%;
