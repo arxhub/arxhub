@@ -7,7 +7,8 @@ export interface ActionItem {
   label: string
   // Icon spec resolved by the icon registry, e.g. 'lu:trash-2'.
   icon?: string
-  variant?: 'default' | 'danger'
+  // Same vocabulary as Row's tone, so a menu row takes the item's tone as is.
+  tone?: 'neutral' | 'danger'
   disabled?: boolean
   onSelect: () => void
   // Set when picking this item navigates to an object elsewhere (a document opens) rather than acting

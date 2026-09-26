@@ -1,17 +1,27 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+import { useShellFrame } from '../hooks/useShellFrame'
+
+const props = defineProps<{
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
   size?: 'sm' | 'md' | 'lg'
   active?: boolean
   disabled?: boolean
   type?: 'button' | 'submit' | 'reset'
+  /** Fills the width of its container — the confirm action at the foot of a sheet. */
+  block?: boolean
 }>()
+
+// Like Row, the frame decides the default height: a control on the phone is a touch target (48px). An
+// explicit size still wins, for the few places whose band dictates a smaller one.
+const touch = useShellFrame() === 'mobile'
+const resolvedSize = computed(() => props.size ?? (touch ? 'lg' : 'md'))
 </script>
 
 <template>
   <button
     class="btn"
-    :class="[`btn-${variant || 'primary'}`, `btn-${size || 'md'}`, { active }]"
+    :class="[`btn-${variant || 'primary'}`, `btn-${resolvedSize}`, { active, block }]"
     :type="type || 'button'"
     :disabled="disabled"
   >
@@ -48,6 +58,12 @@ defineProps<{
   border-color: transparent;
   color: var(--gray-9);
   cursor: not-allowed;
+}
+
+.btn.block {
+  display: flex;
+  width: 100%;
+  min-width: 0;
 }
 
 /* Variants */

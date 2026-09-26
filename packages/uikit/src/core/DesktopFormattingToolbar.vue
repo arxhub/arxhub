@@ -22,6 +22,7 @@ withDefaults(
         :icon="action.icon"
         :tooltip="action.label"
         :active="action.active"
+        :disabled="action.disabled"
         @click="action.run()"
       />
     </div>

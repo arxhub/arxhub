@@ -39,7 +39,7 @@ export function openBlockMenu(view: EditorView, x: number, y: number): void {
       ...items.map(
         (item): ActionItem => ({
           ...item,
-          variant: item.id === 'delete' ? 'danger' : 'default',
+          tone: item.id === 'delete' ? 'danger' : 'neutral',
           disabled: !changeBlock(item.id)(view.state),
           onSelect: () => {
             if (view.isDestroyed) return

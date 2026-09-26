@@ -104,7 +104,7 @@ function run(action: ActionItem): void {
         :key="action.id"
         as="button"
         :disabled="action.disabled"
-        :tone="action.variant === 'danger' ? 'danger' : 'neutral'"
+        :tone="action.tone ?? 'neutral'"
         @click="run(action)"
       >
         <Icon v-if="action.icon" :name="action.icon" :size="16" />

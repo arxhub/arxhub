@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useAttrs, useSlots } from 'vue'
 import { useShellFrame } from '../hooks/useShellFrame'
 
 // One item of an enumeration: a tree node, a menu item, a settings section, a search result, a log entry.
@@ -7,6 +7,10 @@ import { useShellFrame } from '../hooks/useShellFrame'
 // decided once at boot and never changes, so it is a property of the frame rather than a decision each
 // list makes for itself. There is deliberately no `density` prop — that would be the second place a row
 // height is defined, which is what this component exists to remove.
+// With a trailing control the row becomes a box holding two siblings, so a close button never nests inside
+// the row's own <button>; the consumer's class and style belong to the box, everything else to the row.
+defineOptions({ inheritAttrs: false })
+
 const props = withDefaults(
   defineProps<{
     // A row that is a control is a <button>; a row that is only presentation stays a <div>. Roles and
@@ -31,15 +35,36 @@ const props = withDefaults(
 // once and is deliberately not reactive.
 const touch = useShellFrame() === 'mobile'
 const indent = computed(() => ({ paddingLeft: `calc(8px + ${props.depth} * var(--size-2xs-half))` }))
+const slots = useSlots()
+const attrs = useAttrs()
+const boxAttrs = computed(() => ({ class: attrs.class, style: attrs.style }))
+const rowAttrs = computed(() => {
+  const { class: _class, style: _style, ...rest } = attrs
+  return rest
+})
 </script>
 
 <template>
+  <div v-if="slots.trailing" class="row has-trailing" :class="[tone, { selected, disabled, wrap, plain, touch }]" v-bind="boxAttrs">
+    <component
+      :is="as"
+      class="row-main"
+      :style="indent"
+      :disabled="as === 'button' && disabled ? true : undefined"
+      v-bind="rowAttrs"
+    >
+      <slot />
+    </component>
+    <div class="row-trailing"><slot name="trailing" /></div>
+  </div>
   <component
     :is="as"
+    v-else
     class="row"
     :class="[tone, { selected, disabled, wrap, plain, touch }]"
     :style="indent"
     :disabled="as === 'button' && disabled ? true : undefined"
+    v-bind="$attrs"
   >
     <slot />
   </component>
@@ -132,6 +157,58 @@ const indent = computed(() => ({ paddingLeft: `calc(8px + ${props.depth} * var(-
 .row.warning:hover:not(.disabled):not(.selected):not(.plain),
 .row.warning[data-highlighted]:not(.disabled):not(.selected) {
   background: var(--warning-3);
+}
+
+/* The box keeps the row's surface, height and tones; the main part takes the inset and the text, and the
+   trailing control sits flush against the right edge at the row's own height. */
+.row.has-trailing {
+  gap: 0;
+  padding: 0;
+  cursor: auto;
+}
+
+.row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  padding-right: 8px;
+  border: none;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.row.wrap > .row-main {
+  align-items: flex-start;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.row.plain > .row-main {
+  cursor: auto;
+}
+
+.row.disabled > .row-main {
+  cursor: not-allowed;
+}
+
+.row-main:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -1px;
+}
+
+.row-trailing {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  align-self: stretch;
 }
 
 /* Flat, not faded — an unavailable row must not read as a dimmed available one. */

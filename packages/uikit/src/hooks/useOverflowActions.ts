@@ -11,6 +11,8 @@ export interface UseOverflowActionsOptions {
   /** Pinned content is measured separately and never enters the overflow list. */
   leading?: ElementSource
   trailing?: ElementSource
+  /** The overflow trigger is shown whatever fits (it also holds menu-only items), so its width is always spent. */
+  reserveOverflow?: MaybeRefOrGetter<boolean>
 }
 
 /** Items are ordered by priority: the trailing items move into overflow first. */
@@ -58,7 +60,7 @@ export function useOverflowActions<T>(items: MaybeRefOrGetter<readonly T[]>, opt
     const count = toValue(items).length
     const { available, item, overflow } = widths.value
     if (item <= 0) return 0
-    if (count * item <= available) return count
+    if (!toValue(options.reserveOverflow) && count * item <= available) return count
     return Math.max(0, Math.min(count, Math.floor((available - overflow) / item)))
   })
   const visible = computed(() => toValue(items).slice(0, visibleCount.value))

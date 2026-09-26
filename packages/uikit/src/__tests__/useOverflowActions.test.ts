@@ -87,3 +87,18 @@ test('observes late and replaced elements, handles all actions overflowing, and 
   scope.stop()
   expect(observers[1].disconnect).toHaveBeenCalledOnce()
 })
+
+test('spends the More width up front when the trigger is always shown', async () => {
+  const reserve = shallowRef(true)
+  const scope = effectScope()
+  scopes.push(scope)
+  const result = scope.run(() =>
+    useOverflowActions(['one', 'two', 'three'], { container: () => element(138), item: () => element(40), reserveOverflow: reserve }),
+  )!
+  await nextTick()
+  expect(result.visible.value).toEqual(['one', 'two'])
+  expect(result.overflow.value).toEqual(['three'])
+
+  reserve.value = false
+  expect(result.visible.value).toEqual(['one', 'two', 'three'])
+})

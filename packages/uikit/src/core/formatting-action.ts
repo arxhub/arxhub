@@ -3,6 +3,7 @@ export interface FormattingAction {
   label: string
   icon: string
   active?: boolean
+  disabled?: boolean
   primary?: boolean
   run(): void
 }

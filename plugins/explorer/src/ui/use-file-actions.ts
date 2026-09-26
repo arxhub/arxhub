@@ -137,7 +137,7 @@ export function useFileActions() {
             ]
           : []),
         { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
-        { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
+        { id: 'delete', label: 'Delete', icon: 'lu:trash-2', tone: 'danger', onSelect: () => confirmDelete(node) },
         ...explorer.getContributedActions(node).map(closeNavAfter),
       ]
     }
@@ -148,7 +148,7 @@ export function useFileActions() {
       // which is a different sentence.
       addFilesAction(node.entry.pathname),
       { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
-      { id: 'delete', label: 'Delete', icon: 'lu:trash-2', variant: 'danger', onSelect: () => confirmDelete(node) },
+      { id: 'delete', label: 'Delete', icon: 'lu:trash-2', tone: 'danger', onSelect: () => confirmDelete(node) },
       ...explorer.getContributedActions(node).map(closeNavAfter),
     ]
   }

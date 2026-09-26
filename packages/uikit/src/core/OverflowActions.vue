@@ -1,22 +1,35 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useOverflowActions } from '../hooks/useOverflowActions'
 import { useShellFrame } from '../hooks/useShellFrame'
 import ActionMenuButton from './ActionMenuButton.vue'
 import type { ActionItem } from './action-menu'
 import IconButton from './IconButton.vue'
 
-const props = defineProps<{
-  actions: readonly ActionItem[]
-  moreLabel: string
-  moreTitle?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** Inline while they fit, in priority order; the trailing ones move into More first. */
+    actions: readonly ActionItem[]
+    /** Only ever in More, after whatever overflowed: rare or destructive actions that never earn a key. */
+    menu?: readonly ActionItem[]
+    moreLabel: string
+    moreTitle?: string
+  }>(),
+  { menu: () => [] },
+)
 const touch = useShellFrame() === 'mobile'
 const container = ref<HTMLElement | null>(null)
 const item = ref<HTMLElement | null>(null)
 const leading = ref<HTMLElement | null>(null)
 const trailing = ref<HTMLElement | null>(null)
-const { visible, overflow } = useOverflowActions(() => props.actions, { container, item, leading, trailing })
+const { visible, overflow } = useOverflowActions(() => props.actions, {
+  container,
+  item,
+  leading,
+  trailing,
+  reserveOverflow: () => props.menu.length > 0,
+})
+const more = computed(() => [...overflow.value, ...props.menu])
 </script>
 
 <template>
@@ -28,7 +41,7 @@ const { visible, overflow } = useOverflowActions(() => props.actions, { containe
       v-for="action in visible"
       :key="action.id"
       class="overflow-action"
-      :class="{ danger: action.variant === 'danger' }"
+      :class="{ danger: action.tone === 'danger' }"
       :size="touch ? 'xl' : 'lg'"
       :icon="action.icon"
       :tooltip="action.label"
@@ -36,7 +49,7 @@ const { visible, overflow } = useOverflowActions(() => props.actions, { containe
       @click="action.onSelect"
     />
     <span class="spacer" />
-    <ActionMenuButton v-if="overflow.length" :label="moreLabel" :title="moreTitle ?? moreLabel" :items="() => overflow" />
+    <ActionMenuButton v-if="more.length" :label="moreLabel" :title="moreTitle ?? moreLabel" :items="() => more" />
     <div v-if="$slots.trailing" ref="trailing" class="pinned"><slot name="trailing" /></div>
   </div>
 </template>

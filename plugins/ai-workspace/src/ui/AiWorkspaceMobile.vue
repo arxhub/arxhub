@@ -51,7 +51,7 @@ const bandActions = computed((): ActionItem[] => [
     id: 'ai.reject',
     label: 'Отклонить',
     icon: 'lu:x',
-    variant: 'danger',
+    tone: 'danger',
     disabled: busy.value || archived.value,
     onSelect: () => void finish('reject'),
   },
