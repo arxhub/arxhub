@@ -1,8 +1,8 @@
 import { setLanguagePreference } from '@arxhub/i18n'
 import { history, undo } from 'prosemirror-history'
 import type { Node } from 'prosemirror-model'
-import { EditorState, TextSelection } from 'prosemirror-state'
-import { afterEach, describe, expect, it } from 'vitest'
+import { EditorState, TextSelection, type Transaction } from 'prosemirror-state'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { emptyDoc } from '../editor-format'
 import { buildKeymap } from '../editor-keymap'
 import { editorModeKey, modePlugin } from '../editor-mode'
@@ -226,6 +226,47 @@ describe('slash insertion', () => {
     })
     expect(state.doc.lastChild?.type.name).toBe('paragraph')
     expect(state.doc.firstChild?.childCount).toBe(1)
+  })
+
+  it('a held menu survives the blur of focus moving into its sheet, and a dismissal still ends it', () => {
+    const plugin = slashCommands('menu')
+    let state = EditorState.create({ doc: emptyDoc(schema), plugins: [modePlugin('editable'), plugin, history()] })
+    const view = {
+      get state() {
+        return state
+      },
+      dispatch: (tr: Transaction) => {
+        state = state.apply(tr)
+      },
+    }
+    // The handler asks whether focus went into the menu itself; nothing here is an element.
+    vi.stubGlobal('Element', class {})
+    const blur = () => plugin.props.handleDOMEvents?.blur?.call(plugin, view as never, { relatedTarget: null } as unknown as FocusEvent)
+    state = state.apply(state.tr.insertText('/'))
+    blur()
+    expect(slashKey.getState(state)).toBeNull()
+    state = state.apply(state.tr.insertText('ta'))
+    state = state.apply(state.tr.setMeta(slashKey, 'hold'))
+    blur()
+    expect(slashKey.getState(state)).toMatchObject({ query: 'ta', held: true })
+    state = state.apply(state.tr.setMeta(slashKey, 1))
+    expect(slashKey.getState(state)?.held).toBe(true)
+    state = state.apply(state.tr.setMeta(slashKey, 'dismiss'))
+    expect(slashKey.getState(state)).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('runs a command from a held menu and removes the trigger', () => {
+    let state = editor()
+    state = state.apply(state.tr.insertText('/ta'))
+    state = state.apply(state.tr.setMeta(slashKey, 'hold'))
+    const table = BLOCK_COMMANDS.find((command) => command.id === 'table')
+    expect(table).toBeDefined()
+    if (!table) return
+    expect(runSlashCommand(state, (tr) => (state = state.apply(tr)), table)).toBe(true)
+    expect(slashKey.getState(state)).toBeNull()
+    expect(state.doc.textContent).not.toContain('/ta')
+    expect(state.doc.firstChild?.type.name).toBe('table')
   })
 })
 

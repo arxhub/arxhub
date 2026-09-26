@@ -141,6 +141,9 @@ export interface SlashMenuState {
   to: number
   query: string
   index: number
+  // The phone's menu is a sheet, so focus leaves the document while it is up; a held menu survives that
+  // blur, and ends only by a command, a dismissal or the text no longer being a trigger.
+  held?: boolean
 }
 
 export const slashKey = new PluginKey<SlashMenuState | null>('slash-commands')
@@ -196,7 +199,8 @@ export function slashCommands(menuId = 'arx-slash-menu', commands: readonly Bloc
         // blocks" stays useful — a typo one Backspace away.
         if (!count && /\s/.test(next.query)) return null
         const index = typeof action === 'number' ? action : previous?.query === next.query ? previous.index : 0
-        return { ...next, index: count ? (index + count) % count : 0 }
+        const held = action === 'hold' || previous?.held === true
+        return { ...next, index: count ? (index + count) % count : 0, ...(held ? { held } : {}) }
       },
     },
     props: {
@@ -213,8 +217,10 @@ export function slashCommands(menuId = 'arx-slash-menu', commands: readonly Bloc
       },
       handleDOMEvents: {
         blur: (view, event) => {
+          const menu = slashKey.getState(view.state)
+          if (!menu || menu.held) return false
           if (event.relatedTarget instanceof Element && event.relatedTarget.closest(`[id="${menuId}"]`)) return false
-          if (slashKey.getState(view.state)) view.dispatch(view.state.tr.setMeta(slashKey, 'dismiss'))
+          view.dispatch(view.state.tr.setMeta(slashKey, 'dismiss'))
           return false
         },
       },

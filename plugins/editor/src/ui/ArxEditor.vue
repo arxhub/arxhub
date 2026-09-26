@@ -296,7 +296,9 @@ watch(
 
 function dismissSlash() {
   const current = view.value
-  if (current && slashKey.getState(current.state)) current.dispatch(current.state.tr.setMeta(slashKey, 'dismiss'))
+  const menu = current && slashKey.getState(current.state)
+  // A held menu is the phone's sheet: the keyboard going down scrolls the document under it.
+  if (current && menu && !menu.held) current.dispatch(current.state.tr.setMeta(slashKey, 'dismiss'))
 }
 // scroll does not bubble, so a listener on the ScrollArea component would sit on its root and never fire.
 watch(editorEl, (el, _, cleanup) => {
