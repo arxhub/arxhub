@@ -61,6 +61,11 @@ const touch = useShellFrame() === 'mobile'
   inset: calc((var(--size-xl-half) - var(--size-xl)) / 2);
 }
 
+/* Positioned too, so the box paints above the target that surrounds it and a tap on the box lands on it. */
+.root.touch.bare .control {
+  position: relative;
+}
+
 .root[data-disabled] {
   cursor: not-allowed;
 }
