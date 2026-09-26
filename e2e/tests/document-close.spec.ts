@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { closeFromBand, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 const arx = (text: string) =>
   JSON.stringify({ version: 1, doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] } })
@@ -14,10 +14,8 @@ async function open(page: Page, path: string, extension: string): Promise<Locato
 }
 
 async function close(page: Page): Promise<void> {
-  const control = (await isMobileFrame(page))
-    ? page.getByRole('button', { name: 'Close document', exact: true })
-    : page.locator('.tab.active .tab-close')
-  await control.click()
+  if (await isMobileFrame(page)) await closeFromBand(page)
+  else await page.locator('.tab.active .tab-close').click()
 }
 
 for (const extension of ['md', 'arx']) {

@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { closeSettings, openBlockSettings } from './arx-inspector-helpers'
-import { expect, isMobileFrame, openNavigation, test } from './fixtures'
+import { closeFromBand, expect, isMobileFrame, openNavigation, test } from './fixtures'
 
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aR1sAAAAASUVORK5CYII=', 'base64')
 const document = (text?: string) =>
@@ -78,10 +78,8 @@ test('a failed clipboard upload retries and closing waits for its insertion and 
   await editor.locator('p').click()
   await app.keyboard.press('End')
   await app.keyboard.insertText(' edits')
-  const close = (await isMobileFrame(app))
-    ? app.getByRole('button', { name: 'Close document', exact: true })
-    : app.locator('.tab.active .tab-close')
-  await close.click()
+  if (await isMobileFrame(app)) await closeFromBand(app)
+  else await app.locator('.tab.active .tab-close').click()
   await expect(editor).toBeVisible()
   release()
   await expect(editor).toHaveCount(0)

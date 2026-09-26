@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, isMobileFrame, openNavigation, openType, SETTINGS_TYPE, test } from './fixtures'
+import { closeFromBand, expect, isMobileFrame, openNavigation, openType, SETTINGS_TYPE, test } from './fixtures'
 
 const spreadsheet = (cells: Record<string, string>, rows = 1000, columns = 26) => JSON.stringify({ version: 1, rows, columns, cells })
 const cell = (page: Page, name: string) => page.getByRole('gridcell', { name, exact: true })
@@ -181,7 +181,7 @@ test('CSV, range fill and address navigation work through the visible controls',
 
 async function closeSheet(page: Page) {
   if (await isMobileFrame(page)) {
-    await page.getByRole('button', { name: 'Close document', exact: true }).click()
+    await closeFromBand(page)
   } else {
     await page.locator('.tab.active').getByRole('button', { name: 'Close', exact: true }).click()
   }

@@ -253,6 +253,13 @@ export async function openFile(page: Page, path: string): Promise<void> {
 // Which frame the bundle under test mounted. The stand probes the viewport and the pointer once at
 // boot (detectShellFrame), so the two Playwright projects each get exactly one frame and it never
 // changes mid-test — this asks the page which one it got rather than re-deriving the rule.
+// The phone closes the open document from its object band: More, then Close. The band is the one road to
+// the object's actions there, so a spec closing a document goes the way the owner does.
+export async function closeFromBand(page: Page): Promise<void> {
+  await page.getByTestId('object-bar').getByRole('button', { name: 'More actions', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Close', exact: true }).click()
+}
+
 export async function isMobileFrame(page: Page): Promise<boolean> {
   // The app mounts asynchronously — the identity is resolved, then the frame itself is imported — so
   // reading the DOM straight after a reload would race the mount and report the wrong frame. Both
