@@ -4,6 +4,7 @@ import { Dialog } from '@ark-ui/vue'
 import { watch } from 'vue'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
 import { useShellFrame } from '../hooks/useShellFrame'
+import { t } from '../i18n/messages'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import Icon from './Icon.vue'
 // biome-ignore lint/correctness/noUnusedImports: used in template
@@ -57,7 +58,7 @@ const emit = defineEmits<{ 'update:open': [open: boolean] }>()
             </template>
             <slot name="header" />
             <template #actions>
-              <Dialog.CloseTrigger class="dialog-close" aria-label="Close">
+              <Dialog.CloseTrigger class="dialog-close" :aria-label="t('close')">
                 <Icon name="lu:x" :size="touch ? 16 : 14" />
               </Dialog.CloseTrigger>
             </template>

@@ -1,5 +1,7 @@
 import type { TObject } from '@sinclair/typebox'
 import { isDeviceLocal } from '../device-local'
+import { t } from '../i18n/messages'
+import type { FieldTextResolver } from './field-text'
 
 // Which control a field renders as. The schema decides — a plugin never names a widget, so two
 // plugins that describe the same shape get the same control.
@@ -38,6 +40,9 @@ export interface FieldModel {
   max?: number
   step?: number
   unit?: string
+  // The unit as it reads after this number. A catalog may give a unit plural forms (Russian: 1 слово, 2 слова,
+  // 5 слов); `unit` alone is the form after "many", which is what a range such as "до 100 слов" needs.
+  unitFor?: (count: number) => string | undefined
   maxLength?: number
   pattern?: string
   // A field whose controlling boolean is off: shown, explained, and inert.
@@ -87,21 +92,33 @@ export interface FieldSchema {
 }
 
 // A union of literals is how TypeBox spells an enum, so both shapes have to resolve to one list.
-function ownChoices(schema: FieldSchema): Choice[] {
+function ownChoices(schema: FieldSchema, text: ChoiceText): Choice[] {
   const raw: unknown[] = schema.enum ?? schema.anyOf?.map((member) => member.const).filter((value) => value !== undefined) ?? []
   return raw.map((value) => {
     const key = String(value)
-    return { value: key, label: schema.enumLabels?.[key] ?? key, hint: schema.enumHints?.[key] }
+    return { value: key, label: text.label(key) ?? schema.enumLabels?.[key] ?? key, hint: text.hint(key) ?? schema.enumHints?.[key] }
   })
+}
+
+export interface ChoiceText {
+  label(value: string): string | undefined
+  hint(value: string): string | undefined
+}
+
+const NO_CHOICE_TEXT: ChoiceText = { label: () => undefined, hint: () => undefined }
+
+function choiceText(key: string, text: FieldTextResolver | undefined): ChoiceText {
+  if (text == null) return NO_CHOICE_TEXT
+  return { label: (value) => text(`config.${key}.enum.${value}`), hint: (value) => text(`config.${key}.hint.${value}`) }
 }
 
 // For an array the options live on the item schema, but the labels a plugin writes belong on the
 // field it declared — so either level may carry them.
-export function choicesFor(schema: FieldSchema): Choice[] {
-  if (schema.type !== 'array') return ownChoices(schema)
+export function choicesFor(schema: FieldSchema, text: ChoiceText = NO_CHOICE_TEXT): Choice[] {
+  if (schema.type !== 'array') return ownChoices(schema, text)
   const items = schema.items
   if (!items) return []
-  return ownChoices({ ...items, enumLabels: schema.enumLabels ?? items.enumLabels, enumHints: schema.enumHints ?? items.enumHints })
+  return ownChoices({ ...items, enumLabels: schema.enumLabels ?? items.enumLabels, enumHints: schema.enumHints ?? items.enumHints }, text)
 }
 
 // Three or fewer options fit on one row as a segmented control; more than that needs a list, where
@@ -153,23 +170,23 @@ export function signatureFor(key: string, schema: FieldSchema, choices: Choice[]
   if (schema.readOnly) parts.push('readOnly')
   // Where the value is kept belongs in the signature for the same reason its type does: without it a
   // reader has every reason to assume the setting they just changed changed on all their devices.
-  if (isDeviceLocal(schema)) parts.push('device-local', 'this device only')
+  if (isDeviceLocal(schema)) parts.push('device-local', t('field.deviceOnly'))
 
   return parts.join(' · ')
 }
 
-export function buildFields(schema: TObject, values: Record<string, unknown>): FieldModel[] {
+export function buildFields(schema: TObject, values: Record<string, unknown>, text?: FieldTextResolver): FieldModel[] {
   const required = new Set(schema.required ?? [])
   const properties = (schema.properties ?? {}) as Record<string, FieldSchema>
 
   return Object.entries(properties).map(([key, field]) => {
-    const choices = choicesFor(field)
+    const choices = choicesFor(field, choiceText(key, text))
     const gate = field.enabledBy
     const kind = controlFor(field)
     return {
       key,
-      label: field.title ?? key,
-      description: field.description,
+      label: text?.(`config.${key}.title`) ?? field.title ?? key,
+      description: text?.(`config.${key}.description`) ?? field.description,
       group: field.group,
       kind,
       // A value nobody can type is never "required" of the reader, whatever the schema says.
@@ -180,7 +197,8 @@ export function buildFields(schema: TObject, values: Record<string, unknown>): F
       min: field.minimum,
       max: field.maximum,
       step: field.multipleOf ?? (field.type === 'integer' ? 1 : undefined),
-      unit: field.unit,
+      unit: text?.(`config.${key}.unit`) ?? field.unit,
+      unitFor: (count: number) => text?.(`config.${key}.unit`, { count }) ?? field.unit,
       maxLength: field.maxLength,
       pattern: field.pattern,
       disabled: gate !== undefined && values[gate] !== true,
@@ -191,13 +209,17 @@ export function buildFields(schema: TObject, values: Record<string, unknown>): F
 
 // Groups in declaration order, so the schema's own ordering is what the page shows. Fields with no
 // group lead, under no header — the common case is a handful of settings that need no sectioning.
-export function groupFields(fields: FieldModel[]): { title?: string; fields: FieldModel[] }[] {
-  const groups: { title?: string; fields: FieldModel[] }[] = []
+// `group` is an id; the header reads `config.groups.<id>` from the owner's catalog, else the id itself.
+export function groupFields(fields: FieldModel[], text?: FieldTextResolver): { id?: string; title?: string; fields: FieldModel[] }[] {
+  const groups: { id?: string; title?: string; fields: FieldModel[] }[] = []
   for (const field of fields) {
     // Not `.at(-1)`: the app instance's tsconfig targets a lib without it (see AGENTS.md, 18-delivery Q-07).
     const last = groups[groups.length - 1]
-    if (last && last.title === field.group) last.fields.push(field)
-    else groups.push({ title: field.group, fields: [field] })
+    if (last && last.id === field.group) last.fields.push(field)
+    else {
+      const id = field.group
+      groups.push({ id, title: id == null ? undefined : (text?.(`config.groups.${id}`) ?? id), fields: [field] })
+    }
   }
   return groups
 }
@@ -217,18 +239,18 @@ export function validate(field: FieldModel, value: unknown): string | null {
   if (field.disabled) return null
 
   const empty = value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)
-  if (field.required && empty) return `${field.label} is required.`
+  if (field.required && empty) return t('validation.required', { name: field.label })
   if (empty) return null
 
   if (typeof value === 'number') {
-    if (Number.isNaN(value)) return 'Not a number.'
-    if (field.min !== undefined && value < field.min) return `Must be ${field.min} or more.`
-    if (field.max !== undefined && value > field.max) return `Must be ${field.max} or less.`
+    if (Number.isNaN(value)) return t('validation.notANumber')
+    if (field.min !== undefined && value < field.min) return t('validation.min', { min: field.min })
+    if (field.max !== undefined && value > field.max) return t('validation.max', { max: field.max })
   }
 
   if (typeof value === 'string') {
-    if (field.maxLength !== undefined && value.length > field.maxLength) return `At most ${field.maxLength} characters.`
-    if (field.pattern && !new RegExp(field.pattern).test(value)) return 'Does not match the format this field expects.'
+    if (field.maxLength !== undefined && value.length > field.maxLength) return t('validation.maxLength', { max: field.maxLength })
+    if (field.pattern && !new RegExp(field.pattern).test(value)) return t('validation.pattern')
   }
 
   return null

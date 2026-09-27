@@ -90,6 +90,7 @@ export class ArxHub {
       name: it.manifest.name,
       version: it.manifest.version,
       description: it.manifest.description,
+      descriptions: it.manifest.descriptions,
       essential: it.manifest.essential ?? false,
       enabled: this.isEnabled(it),
     }))

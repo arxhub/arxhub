@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useShellFrame } from '../hooks/useShellFrame'
+import { t } from '../i18n/messages'
 import Icon from './Icon.vue'
 import IconButton from './IconButton.vue'
 import { stepZoomValue } from './zoom'
@@ -15,7 +16,7 @@ const props = withDefaults(
     resetTo?: number
     labels?: { out: string; in: string; reset: string }
   }>(),
-  { resetTo: 1, labels: () => ({ out: 'Zoom out', in: 'Zoom in', reset: 'Reset zoom' }) },
+  { resetTo: 1, labels: undefined },
 )
 
 const emit = defineEmits<(e: 'update:modelValue', value: number) => void>()
@@ -35,18 +36,18 @@ const percent = computed(() => `${Math.round(props.modelValue * 100)}%`)
   <div class="zoom-control" :class="{ touch }">
     <IconButton
       :size="size"
-      :tooltip="labels.out"
+      :tooltip="labels?.out ?? t('zoom.out')"
       :disabled="outValue === modelValue"
       @click="emit('update:modelValue', outValue)"
     >
       <Icon name="lu:zoom-out" :size="glyph" />
     </IconButton>
-    <button type="button" class="zoom-value" :aria-label="labels.reset" @click="emit('update:modelValue', resetTo)">
+    <button type="button" class="zoom-value" :aria-label="labels?.reset ?? t('zoom.reset')" @click="emit('update:modelValue', resetTo)">
       {{ percent }}
     </button>
     <IconButton
       :size="size"
-      :tooltip="labels.in"
+      :tooltip="labels?.in ?? t('zoom.in')"
       :disabled="inValue === modelValue"
       @click="emit('update:modelValue', inValue)"
     >

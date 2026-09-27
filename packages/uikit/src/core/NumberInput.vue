@@ -2,6 +2,7 @@
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { NumberInput } from '@ark-ui/vue'
 import { useShellFrame } from '../hooks/useShellFrame'
+import { t } from '../i18n/messages'
 import Icon from './Icon.vue'
 
 defineProps<{
@@ -36,12 +37,12 @@ function onValueChange(details: { valueAsNumber: number }): void {
     @value-change="onValueChange"
   >
     <NumberInput.Control class="control">
-      <NumberInput.DecrementTrigger class="nudge" aria-label="Decrease">
+      <NumberInput.DecrementTrigger class="nudge" :aria-label="t('number.decrease')">
         <Icon name="lu:minus" :size="touch ? 16 : 14" />
       </NumberInput.DecrementTrigger>
       <NumberInput.Input class="value" :aria-label="ariaLabel" />
       <span v-if="unit" class="unit">{{ unit }}</span>
-      <NumberInput.IncrementTrigger class="nudge" aria-label="Increase">
+      <NumberInput.IncrementTrigger class="nudge" :aria-label="t('number.increase')">
         <Icon name="lu:plus" :size="touch ? 16 : 14" />
       </NumberInput.IncrementTrigger>
     </NumberInput.Control>

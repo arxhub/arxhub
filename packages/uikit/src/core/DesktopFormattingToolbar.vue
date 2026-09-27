@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n/messages'
 import type { FormattingAction } from './formatting-action'
 import IconButton from './IconButton.vue'
 import ScrollArea from './ScrollArea.vue'
@@ -14,7 +15,7 @@ withDefaults(
 
 <template>
   <ScrollArea axis="x" class="formatting-area" @mousedown.prevent>
-    <div class="formatting" role="toolbar" aria-label="Formatting">
+    <div class="formatting" role="toolbar" :aria-label="t('formatting.title')">
       <IconButton
         v-for="action in actions"
         :key="action.id"

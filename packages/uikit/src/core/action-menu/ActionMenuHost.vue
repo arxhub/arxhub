@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useShellFrame } from '../../hooks/useShellFrame'
+import { t } from '../../i18n/messages'
 import BottomSheet from '../BottomSheet.vue'
 import Icon from '../Icon.vue'
 import Row from '../Row.vue'
@@ -181,7 +182,7 @@ onBeforeUnmount(() => {
   </Teleport>
 
   <!-- Narrow screens get the same items as a bottom sheet: one list of actions, declared once. -->
-  <BottomSheet :open="state.open && isMobile" :title="state.title" :restore-focus="false" label="Actions" @close="actionMenu.close()">
+  <BottomSheet :open="state.open && isMobile" :title="state.title" :restore-focus="false" :label="t('actions')" @close="actionMenu.close()">
     <div class="action-sheet" role="menu">
       <Row
         v-for="item in state.items"

@@ -42,6 +42,7 @@ export interface PluginInfo {
   name: string
   version: string
   description?: string
+  descriptions?: Readonly<Record<string, string>>
   essential: boolean
   enabled: boolean
 }

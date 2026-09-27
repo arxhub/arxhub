@@ -3,6 +3,7 @@
 // glyph (DS-8) so swapping one for the other does not change the band.
 import { computed, ref } from 'vue'
 import { useOverflowActions } from '../hooks/useOverflowActions'
+import { t } from '../i18n/messages'
 import { actionMenu } from './action-menu/action-menu'
 import type { FormattingAction } from './formatting-action'
 import IconButton from './IconButton.vue'
@@ -49,7 +50,7 @@ function more(): void {
       disabled: action.disabled,
       onSelect: action.run,
     })),
-    { title: 'Formatting' },
+    { title: t('formatting.title') },
   )
 }
 
@@ -62,7 +63,7 @@ function hideKeyboard(): void {
 </script>
 
 <template>
-  <div ref="container" class="formatting" :class="{ fill: dismissKeyboard }" role="toolbar" aria-label="Formatting" @mousedown.prevent>
+  <div ref="container" class="formatting" :class="{ fill: dismissKeyboard }" role="toolbar" :aria-label="t('formatting.title')" @mousedown.prevent>
     <span ref="item" class="measure" aria-hidden="true" />
     <div v-if="history.length" ref="leading" class="pinned">
       <IconButton v-for="action in history" :key="action.id" size="row" :icon="action.icon" :tooltip="action.label" :disabled="action.disabled" @click="action.run()" />
@@ -79,9 +80,9 @@ function hideKeyboard(): void {
       @click="action.run()"
     />
     <!-- A code file has undo and redo and nothing to format: a More key there would open an empty menu. -->
-    <IconButton v-if="rest.length" size="row" icon="lu:ellipsis" tooltip="More formatting" @click="more" />
+    <IconButton v-if="rest.length" size="row" icon="lu:ellipsis" :tooltip="t('formatting.more')" @click="more" />
     <div v-if="dismissKeyboard" ref="trailing" class="pinned end">
-      <IconButton size="row" icon="lu:keyboard-off" tooltip="Hide keyboard" data-testid="hide-keyboard" @click="hideKeyboard" />
+      <IconButton size="row" icon="lu:keyboard-off" :tooltip="t('formatting.hideKeyboard')" data-testid="hide-keyboard" @click="hideKeyboard" />
     </div>
   </div>
 </template>

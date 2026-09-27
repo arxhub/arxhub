@@ -30,6 +30,7 @@
     "@ark-ui/vue": "catalog:client",
     "@arxhub/core": "workspace:*",
     "@arxhub/errors": "workspace:*",
+    "@arxhub/i18n": "workspace:*",
     "@dnd-kit/collision": "catalog:client",
     "@dnd-kit/dom": "catalog:client",
     "@dnd-kit/vue": "catalog:client",

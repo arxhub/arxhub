@@ -1,0 +1,46 @@
+{
+  "name": "@arxhub/i18n",
+  "sideEffects": false,
+  "version": "0.1.0",
+  "description": "Interface language for ArxHub: per-package typed catalogs, plurals, Intl formatting, a reactive device-local language",
+  "keywords": [
+    "arxhub",
+    "i18n"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@arxhub/errors": "workspace:*",
+    "@arxhub/events": "workspace:*",
+    "vue": "catalog:client"
+  },
+  "devDependencies": {
+    "@arxhub/toolchain-tsconfig": "workspace:*",
+    "@arxhub/toolchain-vite": "workspace:*",
+    "@types/node": "catalog:toolchain"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./testing": {
+        "import": "./dist/testing/index.js",
+        "types": "./dist/testing/index.d.ts"
+      }
+    }
+  }
+}

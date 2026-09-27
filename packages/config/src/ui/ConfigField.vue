@@ -2,6 +2,7 @@
 import { Button, CheckboxGroup, ChipInput, Icon, Input, NumberInput, RadioGroup, Segmented, Slider, Switch } from '@arxhub/uikit/core'
 import { toaster, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
+import { t } from '../i18n/messages'
 import { type FieldModel, isInline } from './field-model'
 
 const props = defineProps<{ field: FieldModel; modelValue: unknown; error: string | null; technical?: boolean }>()
@@ -15,6 +16,9 @@ const missingRequired = computed(() => props.field.required && props.modelValue 
 
 const asText = computed(() => (props.modelValue == null ? '' : String(props.modelValue)))
 const asNumber = computed(() => (typeof props.modelValue === 'number' ? props.modelValue : Number(props.modelValue ?? 0)))
+// The unit agrees with the value beside the control. The range hint keeps `unit`: after "до"/"не меньше" Russian
+// wants the genitive, which the "many" form already is for the round bounds a schema declares.
+const valueUnit = computed(() => props.field.unitFor?.(asNumber.value) ?? props.field.unit)
 const asList = computed(() => (Array.isArray(props.modelValue) ? (props.modelValue as string[]) : []))
 
 // A write-only value starts hidden: it is on screen because the field exists, not because anyone
@@ -30,9 +34,9 @@ function set(value: unknown): void {
 async function copy(): Promise<void> {
   try {
     await navigator.clipboard.writeText(asText.value)
-    toaster.create({ title: `${props.field.label} copied`, type: 'success' })
+    toaster.create({ title: t('field.copied', { name: props.field.label }), type: 'success' })
   } catch (error) {
-    toaster.create({ title: 'Could not copy', description: String(error), type: 'error' })
+    toaster.create({ title: t('field.copyFailed'), description: String(error), type: 'error' })
   }
 }
 </script>
@@ -42,15 +46,15 @@ async function copy(): Promise<void> {
     <div class="head">
       <div class="title-row">
         <span class="label">{{ field.label }}</span>
-        <span v-if="field.disabled" class="tag">Unavailable</span>
-        <span v-else-if="missingRequired" class="tag required">Required</span>
+        <span v-if="field.disabled" class="tag">{{ t('field.unavailable') }}</span>
+        <span v-else-if="missingRequired" class="tag required">{{ t('field.required') }}</span>
       </div>
-      <p v-if="field.deviceLocal" class="description">Only on this device</p>
+      <p v-if="field.deviceLocal" class="description">{{ t('field.deviceLocal') }}</p>
       <p v-if="field.min != null || field.max != null" class="description">
-        {{ field.min != null && field.max != null ? `From ${field.min} to ${field.max}` : field.min != null ? `At least ${field.min}` : `Up to ${field.max}` }}{{ field.unit ? ` ${field.unit}` : '' }}
+        {{ field.min != null && field.max != null ? t('field.range', { min: field.min, max: field.max }) : field.min != null ? t('field.atLeast', { min: field.min }) : t('field.upTo', { max: field.max ?? '' }) }}{{ field.unit ? ` ${field.unit}` : '' }}
       </p>
       <p v-if="field.description" class="description">{{ field.description }}</p>
-      <p v-if="field.disabled && field.disabledBy" class="description">Available once “{{ field.disabledBy }}” is on.</p>
+      <p v-if="field.disabled && field.disabledBy" class="description">{{ t('field.availableOnce', { name: field.disabledBy }) }}</p>
       <!-- Inline rows put the signature under the label; stacked rows put it under the control, which
            is where the eye lands last. -->
       <code v-if="technical && inline" class="signature">{{ field.signature }}</code>
@@ -106,7 +110,7 @@ async function copy(): Promise<void> {
         :min="field.min"
         :max="field.max"
         :step="field.step"
-        :unit="field.unit"
+        :unit="valueUnit"
         :disabled="field.disabled"
         :aria-label="field.label"
         @update:model-value="set($event)"
@@ -118,7 +122,7 @@ async function copy(): Promise<void> {
         :min="field.min"
         :max="field.max"
         :step="field.step"
-        :unit="field.unit"
+        :unit="valueUnit"
         :disabled="field.disabled"
         :aria-label="field.label"
         @update:model-value="set($event)"
@@ -126,7 +130,7 @@ async function copy(): Promise<void> {
 
       <div v-else-if="field.kind === 'readonly'" class="readonly">
         <code class="readonly-value">{{ asText || '—' }}</code>
-        <Button :size="buttonSize" variant="secondary" @click="copy">Copy</Button>
+        <Button :size="buttonSize" variant="secondary" @click="copy">{{ t('field.copy') }}</Button>
       </div>
 
       <div v-else-if="field.kind === 'secret'" class="secret">
@@ -139,7 +143,7 @@ async function copy(): Promise<void> {
           @update:model-value="set($event)"
         />
         <Button :size="buttonSize" variant="secondary" :disabled="field.disabled" @click="revealed = !revealed">
-          {{ revealed ? 'Hide' : 'Show' }}
+          {{ revealed ? t('field.hide') : t('field.show') }}
         </Button>
       </div>
 

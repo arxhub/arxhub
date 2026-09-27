@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { type Component, computed } from 'vue'
 import { useBackStack } from '../../hooks/useBackStack'
+import { t } from '../../i18n/messages'
 import Dialog from '../Dialog.vue'
 import ConfirmModalBody from './ConfirmModalBody.vue'
 import { type ConfirmLabels, type ModalState, modals, openModals } from './modals'
@@ -11,7 +12,7 @@ const props = withDefaults(
     modals?: Record<string, Component>
     labels?: ConfirmLabels
   }>(),
-  { labels: () => ({ confirm: 'Confirm', cancel: 'Cancel' }) },
+  { labels: undefined },
 )
 
 // Every surface stays mounted: a confirm raised from inside a multi-step sheet sits over it, and
@@ -59,7 +60,7 @@ useBackStack(
       :id="confirmModal.id"
       :body="confirmModal.props.children ?? confirmModal.props.content"
       :body-props="confirmModal.props.contentProps"
-      :labels="confirmModal.props.labels ?? labels"
+      :labels="confirmModal.props.labels ?? labels ?? { confirm: t('confirm'), cancel: t('cancel') }"
       :confirm-props="confirmModal.props.confirmProps"
       :cancel-props="confirmModal.props.cancelProps"
       :close-on-confirm="confirmModal.props.closeOnConfirm"

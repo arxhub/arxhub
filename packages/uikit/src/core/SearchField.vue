@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useShellFrame } from '../hooks/useShellFrame'
+import { t } from '../i18n/messages'
 import Icon from './Icon.vue'
 import IconButton from './IconButton.vue'
 import Input from './Input.vue'
@@ -56,7 +57,7 @@ defineExpose({ focus })
       :disabled="disabled"
       v-bind="$attrs"
     />
-    <IconButton v-if="clearable" class="search-clear" :size="touch ? 'md' : 'sm'" icon="lu:x" aria-label="Clear search" @click="clear" />
+    <IconButton v-if="clearable" class="search-clear" :size="touch ? 'md' : 'sm'" icon="lu:x" :aria-label="t('search.clear')" @click="clear" />
   </div>
 </template>
 

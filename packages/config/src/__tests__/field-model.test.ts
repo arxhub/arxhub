@@ -208,3 +208,42 @@ describe('hasBlockingErrors', () => {
     expect(hasBlockingErrors(two, { url: '', port: 0 }, new Set(['port']))).toBe(true)
   })
 })
+
+describe('field text from the owner catalog', () => {
+  const schema = Type.Object({
+    'sql.maxRows': Type.Integer({ title: 'Max rows', group: 'console', unit: 'rows' }),
+    mode: Type.Union([Type.Literal('a'), Type.Literal('b')], { title: 'Mode', enumLabels: { a: 'Alpha', b: 'Beta' } }),
+  })
+  const catalog: Record<string, string> = {
+    'config.sql.maxRows.title': 'Строк не больше',
+    'config.sql.maxRows.unit': 'строк',
+    'config.mode.enum.a': 'Альфа',
+    'config.groups.console': 'Консоль',
+  }
+  const text = (path: string) => catalog[path]
+
+  it('takes the translation first, then the schema annotation, then the key', () => {
+    const [rows, mode] = buildFields(schema, {}, text)
+    expect(rows?.label).toBe('Строк не больше')
+    expect(rows?.unit).toBe('строк')
+    expect(mode?.label).toBe('Mode')
+    expect(mode?.choices.map((c) => c.label)).toEqual(['Альфа', 'Beta'])
+  })
+
+  it('lets the unit agree with the number it follows', () => {
+    const forms = (count: number) => (count % 10 === 1 && count % 100 !== 11 ? 'строка' : [2, 3, 4].includes(count % 10) ? 'строки' : 'строк')
+    const plural = (path: string, params?: { count: number }) =>
+      path === 'config.sql.maxRows.unit' ? forms(params?.count ?? 0) : catalog[path]
+    const [rows] = buildFields(schema, {}, plural)
+    expect(rows?.unit).toBe('строк')
+    expect([1, 3, 5, 21].map((n) => rows?.unitFor?.(n))).toEqual(['строка', 'строки', 'строк', 'строка'])
+  })
+
+  it('names a group from config.groups, keyed by its id', () => {
+    const groups = groupFields(buildFields(schema, {}, text), text)
+    expect(groups.map((g) => [g.id, g.title])).toEqual([
+      ['console', 'Консоль'],
+      [undefined, undefined],
+    ])
+  })
+})

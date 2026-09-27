@@ -4,6 +4,7 @@ import { computed, ref, useId, watch } from 'vue'
 import { useShellFrame } from '../hooks/useShellFrame'
 import { useTreeDragDrop } from '../hooks/useTreeDragDrop'
 import { useTreeNavigation } from '../hooks/useTreeNavigation'
+import { t } from '../i18n/messages'
 import Icon from './Icon.vue'
 import IconButton from './IconButton.vue'
 import InlineNameInput from './InlineNameInput.vue'
@@ -145,9 +146,9 @@ function keydown(node: TreeViewNode<T>, event: KeyboardEvent) {
             <span v-if="draft.icon" class="glyph" aria-hidden="true"><Icon :name="draft.icon" :size="iconSize" /></span>
             <InlineNameInput :ref="setDraftInput" v-model="draftName" :label="draft.label" :placeholder="draft.placeholder"
               @commit="commitDraft" @cancel="emit('draftCancel')" />
-            <IconButton size="row" icon="lu:check" :aria-label="draft.confirmLabel ?? 'Create'" :disabled="!draftName.trim()"
+            <IconButton size="row" icon="lu:check" :aria-label="draft.confirmLabel ?? t('create')" :disabled="!draftName.trim()"
               @click.stop="draftInput?.commit()" />
-            <IconButton size="row" icon="lu:x" :aria-label="draft.cancelLabel ?? 'Cancel'" @click.stop="draftInput?.cancel()" />
+            <IconButton size="row" icon="lu:x" :aria-label="draft.cancelLabel ?? t('cancel')" @click.stop="draftInput?.cancel()" />
           </Row>
           <TreeDragTarget v-else-if="entry.row" :id="rowId(entry.row.node.id)" :node-id="entry.row.node.id"
             :draggable="dnd.canDrag(entry.row.node)" :droppable="dnd.canDrop(entry.row.node)" v-slot="{ setElement }">

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Avatar } from '@ark-ui/vue'
+import { t } from '../i18n/messages'
 
 defineProps<{
   src: string
@@ -9,7 +10,7 @@ defineProps<{
 
 <template>
   <Avatar.Root class="root">
-    <Avatar.Image class="image" :src="src" :alt="alt || 'Avatar'" />
+    <Avatar.Image class="image" :src="src" :alt="alt || t('avatar')" />
     <Avatar.Fallback class="fallback">{{ (alt || 'A').charAt(0).toUpperCase() }}</Avatar.Fallback>
   </Avatar.Root>
 </template>

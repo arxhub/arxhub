@@ -11,6 +11,10 @@ export interface PluginManifest {
   name: string
   version: string
   description?: string
+  // The description in other interface languages, keyed by language tag (`ru`); `description` stays the
+  // English source. Plain data rather than a catalog import: `./manifest` must stay static, and the crash
+  // screen reads it from the roster when no plugin has run at all.
+  descriptions?: Readonly<Record<string, string>>
   author: string
   minApi?: string
   // An essential plugin cannot be switched off: the app has nothing to render (or no way to reach

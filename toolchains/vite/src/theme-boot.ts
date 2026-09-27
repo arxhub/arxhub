@@ -5,7 +5,15 @@ const FILE = 'arxhub-theme-boot.js'
 // Must match the key ThemeExtension writes (plugins/theme/src/theme-extension.ts).
 const STORAGE_KEY = 'arxhub.theme'
 
-// Runs before the first paint, before any module: until ThemePlugin applies the chosen theme the page
+// Must match LANGUAGE_STORAGE_KEY and pickLanguage in packages/i18n/src/language.ts. The rule is copied rather
+// than imported because this runs before any module; the test beside it runs pickLanguage's own cases.
+const LANGUAGE_KEY = 'arxhub.language'
+
+// Runs before the first paint, before any module. The language block beside it answers the same need for text:
+// the unlock gate and the crash screen read <html lang> back through @arxhub/i18n, so they speak the chosen
+// language from their first frame.
+//
+// Before the theme: until ThemePlugin applies the chosen theme the page
 // has no `data-theme`, and the Radix scales would stay on their light arm — a boot or crash screen at
 // night would be a white flash. The theme this device applied last wins; with none saved, the system's
 // light/dark setting. Plain ES5 on purpose — it runs before anything is known about the engine.
@@ -26,11 +34,20 @@ const SOURCE = `(function () {
   meta.setAttribute('content', root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light')
   document.head.appendChild(meta)
   if (saved && typeof saved.id === 'string' && !root.hasAttribute('data-arxhub-theme')) root.setAttribute('data-arxhub-theme', saved.id)
+  var lang = null
+  try { lang = localStorage.getItem('${LANGUAGE_KEY}') } catch (e) {}
+  if (lang !== 'en' && lang !== 'ru') {
+    lang = 'en'
+    var tags = []
+    try { tags = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''] } catch (e) {}
+    for (var i = 0; i < tags.length; i++) if (String(tags[i]).toLowerCase().indexOf('ru') === 0) { lang = 'ru'; break }
+  }
+  root.setAttribute('lang', lang)
 })()
 `
 
 /**
- * Puts the last applied theme (else the system's light/dark base) on the document before the app has loaded. A same-origin file
+ * Puts the last applied theme (else the system's light/dark base) and the interface language on the document before the app has loaded. A same-origin file
  * rather than an inline script, because the Tauri bundle's CSP (`script-src 'self'`) refuses inline scripts.
  * Assumes an absolute `base` ('/' or '/sub/'): the dev middleware matches `${base}${FILE}` literally.
  */

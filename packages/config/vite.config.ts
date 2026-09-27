@@ -5,6 +5,16 @@ import { defineConfig } from 'vite'
 export default defineConfig((env) =>
   createVueConfig(__dirname, env, {
     entries: ['src/index.ts', 'src/ui/index.ts'],
-    external: ['@arxhub/di', '@arxhub/errors', '@arxhub/logger', '@arxhub/uikit', '@arxhub/vfs', '@sinclair/typebox', 'smol-toml', 'vue'],
+    external: [
+      '@arxhub/di',
+      '@arxhub/errors',
+      '@arxhub/i18n',
+      '@arxhub/logger',
+      '@arxhub/uikit',
+      '@arxhub/vfs',
+      '@sinclair/typebox',
+      'smol-toml',
+      'vue',
+    ],
   }),
 )

@@ -2,6 +2,7 @@
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { TagsInput } from '@ark-ui/vue'
 import { useShellFrame } from '../hooks/useShellFrame'
+import { t } from '../i18n/messages'
 import Icon from './Icon.vue'
 
 defineProps<{
@@ -34,13 +35,13 @@ const touch = useShellFrame() === 'mobile'
         >
           <TagsInput.ItemPreview class="chip-preview">
             <TagsInput.ItemText class="chip-text">{{ entry }}</TagsInput.ItemText>
-            <TagsInput.ItemDeleteTrigger class="chip-remove" :aria-label="`Remove ${entry}`">
+            <TagsInput.ItemDeleteTrigger class="chip-remove" :aria-label="t('chips.remove', { name: entry })">
               <Icon name="lu:x" :size="touch ? 16 : 14" />
             </TagsInput.ItemDeleteTrigger>
           </TagsInput.ItemPreview>
           <TagsInput.ItemInput class="chip-edit" />
         </TagsInput.Item>
-        <TagsInput.Input class="draft" :placeholder="placeholder ?? 'Add…'" :aria-label="ariaLabel" />
+        <TagsInput.Input class="draft" :placeholder="placeholder ?? t('chips.add')" :aria-label="ariaLabel" />
       </TagsInput.Control>
     </TagsInput.Context>
     <TagsInput.HiddenInput />

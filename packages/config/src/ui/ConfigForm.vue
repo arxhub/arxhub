@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import type { Messages } from '@arxhub/i18n'
 import { Button, SectionLabel } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { TObject } from '@sinclair/typebox'
 import { computed, reactive, ref, watch } from 'vue'
+import { t } from '../i18n/messages'
 import ConfigField from './ConfigField.vue'
 import { buildFields, groupFields, hasBlockingErrors, validate } from './field-model'
+import { fieldTextFrom } from './field-text'
 
 const props = defineProps<{
   schema: TObject
@@ -13,6 +16,8 @@ const props = defineProps<{
   // An edit staged earlier and not yet applied, to re-open the form with. Set once per section load
   // by the host — the form must not read its own staged state back, or it would never settle.
   draft?: Record<string, unknown>
+  // The owning plugin's catalog: its `config` section names the fields, their choices and the groups.
+  messages?: Messages
 }>()
 
 const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
@@ -52,8 +57,9 @@ watch(() => props.draft, load)
 
 // Fields are rebuilt from the live values, not the saved ones — a boolean that gates other fields
 // has to disable them the moment it is switched, not after a save.
-const fields = computed(() => buildFields(props.schema, local))
-const groups = computed(() => groupFields(fields.value))
+const text = computed(() => fieldTextFrom(props.messages))
+const fields = computed(() => buildFields(props.schema, local, text.value))
+const groups = computed(() => groupFields(fields.value, text.value))
 
 const errors = computed(() => {
   const found: Record<string, string> = {}
@@ -91,7 +97,7 @@ defineExpose({ revert })
 
 <template>
   <div class="config-form">
-    <section v-for="(group, index) in groups" :key="group.title ?? `ungrouped-${index}`" class="group">
+    <section v-for="(group, index) in groups" :key="group.id ?? `ungrouped-${index}`" class="group">
       <SectionLabel v-if="group.title" class="group-title">{{ group.title }}</SectionLabel>
       <ConfigField
         v-for="field in group.fields"
@@ -103,7 +109,7 @@ defineExpose({ revert })
         @update:model-value="edit(field.key, $event)"
       />
     </section>
-    <Button :size="buttonSize" variant="ghost" :aria-pressed="technical" @click="technical = !technical">{{ technical ? 'Hide technical details' : 'Technical details' }}</Button>
+    <Button :size="buttonSize" variant="ghost" :aria-pressed="technical" @click="technical = !technical">{{ technical ? t('form.hideTechnical') : t('form.technical') }}</Button>
   </div>
 </template>
 

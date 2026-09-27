@@ -3,6 +3,7 @@ import { Dialog } from '@ark-ui/vue'
 import { computed, nextTick, onBeforeUnmount, ref, useSlots, watch } from 'vue'
 import { useBackStack } from '../hooks/useBackStack'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
+import { t } from '../i18n/messages'
 import IconButton from './IconButton.vue'
 import ScrollArea from './ScrollArea.vue'
 import Strip from './Strip.vue'
@@ -27,7 +28,7 @@ const props = withDefaults(
     // column gap) at the touch text size. A list of rows leaves it off and runs edge to edge.
     inset?: boolean
   }>(),
-  { restoreFocus: true, variant: 'auto', anchor: 'start', closeLabel: 'Close' },
+  { restoreFocus: true, variant: 'auto', anchor: 'start', closeLabel: undefined },
 )
 // `scroll` is the owner moving the body by hand — never a scroll the sheet made itself (the end anchor, a
 // focused row brought into view), so a consumer may take it as "done typing" and let the keyboard go.
@@ -125,7 +126,7 @@ useBackStack(
             </template>
             <template #actions>
               <slot name="actions" />
-              <IconButton size="xl" icon="lu:x" :aria-label="closeLabel" data-testid="sheet-close" @click="emit('close')" />
+              <IconButton size="xl" icon="lu:x" :aria-label="closeLabel ?? t('close')" data-testid="sheet-close" @click="emit('close')" />
             </template>
           </Strip>
           <!-- Pinned under the header and above what scrolls: a field the sheet is opened to type into. -->

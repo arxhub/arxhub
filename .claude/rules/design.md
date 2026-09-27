@@ -19,6 +19,16 @@ A deviation names the rule and the reason in one line, in the code, at the point
   (1px), border widths and optical marks (the 6px `StatusDot`) are the only exceptions. Type sizes are not on the grid.
 - **DS-5 — A max-width is not a token.** A measure (a 720px note column, a 60ch prose block) is a decision about one
   page and lives in that page's component. Do not add measures to theme-preset.
+- **DS-10 — Text a person reads goes through the catalog.** In a `.vue` `<template>`, no text node with a letter
+  (after `{{ … }}` is stripped) and no literal in an attribute that carries text — `title`, `aria-label`,
+  `aria-description`, `placeholder`, `tooltip`, `label`, `alt`, `hint`, `description`, `subtitle`, `close-label`,
+  `confirm-label`, `cancel-label`, and uikit's `text`, `detail`, `meta`, `error`, `sub`, `heading`, `empty-text`
+  (camelCase is read as kebab) — static, or as a string/template literal inside the bound form. The same holds in
+  the TypeScript that assembles UI (`src/ui/**/*.ts`, `*-plugin.ts`): no literal `title:`/`label:`/`description:`/
+  `sub:`/`detail:`/`text:`/`placeholder:`/`hint:`/`tooltip:`/`heading:`/`caption:`. The text comes from `t('…')`
+  (or `raw('…')` for `Interpolated`) of the package's own `src/i18n/messages.ts` (`@arxhub/i18n`); a literal stays
+  English whatever language the owner picked. Icon names (`lu:*`), punctuation, digits and user content are not
+  text; a language's own name (English, Русский) is a constant, not a translation. DS-9 is retired and not reused.
 </Principles>
 
 <Roles>
@@ -148,9 +158,10 @@ Every value below comes from a token. A literal in place of one of these is a vi
 A rule nobody checks is a wish. Both levels run; each catches what the other cannot.
 
 - **Source level** — `pnpm check:design` (`scripts/check-design.mjs`): refuses a colour literal in a component, a
-  `font-size` outside the ramp, a role height written as a literal where a role token exists, and a native scroller
-  (`overflow: auto|scroll`, scrollbar styling) outside `ScrollArea.vue`. It names the surface, the rule and the
-  value found.
+  `font-size` outside the ramp, a role height written as a literal where a role token exists, a native scroller
+  (`overflow: auto|scroll`, scrollbar styling) outside `ScrollArea.vue`, and literal interface text in a template
+  or UI-building TypeScript (DS-10) — there `<!-- design-ignore: reason -->` (or `// design-ignore: reason`) covers
+  the rest of its block, up to the next blank line. It names the surface, the rule and the value found.
 - **Rendered level** — `pnpm --filter @arxhub/e2e test design` (`e2e/tests/design.spec.ts`): measures the roles on
   the running app in both frames — every strip is one height, rows of one frame are one density, switching workspace
   tabs does not move where content starts, and no glyph stands in for an icon. It reads the expected values out of

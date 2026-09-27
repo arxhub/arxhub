@@ -1,4 +1,5 @@
 import { onBeforeUnmount, onMounted, type Ref, ref } from 'vue'
+import { t } from '../i18n/messages'
 import { canScanQrInPage, decodeQr } from './decode-qr'
 
 export interface UseQrScannerOptions {
@@ -13,10 +14,10 @@ export type QrScannerState = 'starting' | 'scanning' | 'unavailable' | 'stopped'
 
 function reasonOf(error: unknown): string {
   const name = error instanceof DOMException ? error.name : ''
-  if (name === 'NotAllowedError' || name === 'SecurityError') return 'Camera access was denied — enter the code instead'
-  if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'This device has no camera to scan with — enter the code instead'
-  if (name === 'NotReadableError') return 'The camera is busy in another app — enter the code instead'
-  return 'The camera could not be started — enter the code instead'
+  if (name === 'NotAllowedError' || name === 'SecurityError') return t('camera.denied')
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') return t('camera.none')
+  if (name === 'NotReadableError') return t('camera.busy')
+  return t('camera.failed')
 }
 
 // Puts the back camera into `video` while the component is mounted and reads a frame every
@@ -63,7 +64,7 @@ export function useQrScanner(video: Ref<HTMLVideoElement | null>, options: UseQr
   }
 
   onMounted(async () => {
-    if (!canScanQrInPage()) return unavailable('This browser cannot use the camera — enter the code instead')
+    if (!canScanQrInPage()) return unavailable(t('camera.unsupported'))
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
     } catch (error) {

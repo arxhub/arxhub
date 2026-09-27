@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n/messages'
 import IconButton from './IconButton.vue'
 import ScrollArea from './ScrollArea.vue'
 import Strip from './Strip.vue'
@@ -8,7 +9,7 @@ const emit = defineEmits<{ close: [] }>()
 </script>
 <template>
   <aside class="inspector-panel" :aria-label="title" @keydown.esc.stop="emit('close')">
-    <Strip :title="title" flush-actions><template #actions><IconButton size="lg" icon="lu:x" tooltip="Close settings" @click="emit('close')" /></template></Strip>
+    <Strip :title="title" flush-actions><template #actions><IconButton size="lg" icon="lu:x" :tooltip="t('inspector.close')" @click="emit('close')" /></template></Strip>
     <ScrollArea class="inspector-body" content-class="inspector-content"><p v-if="subtitle" class="inspector-subtitle">{{ subtitle }}</p><slot /></ScrollArea>
   </aside>
 </template>

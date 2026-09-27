@@ -2,6 +2,7 @@
 import { Toaster as ArkToaster, ToastCloseTrigger, ToastDescription, ToastRoot, ToastTitle } from '@ark-ui/vue'
 import { useShellFrame } from '../hooks/useShellFrame'
 import { toaster } from '../hooks/useToast'
+import { t } from '../i18n/messages'
 import Icon from './Icon.vue'
 
 const touch = useShellFrame() === 'mobile'
@@ -14,7 +15,7 @@ const touch = useShellFrame() === 'mobile'
         <ToastTitle class="toast-title">{{ toast.title }}</ToastTitle>
         <ToastDescription v-if="toast.description" class="toast-desc">{{ toast.description }}</ToastDescription>
       </div>
-      <ToastCloseTrigger class="toast-close" aria-label="Dismiss">
+      <ToastCloseTrigger class="toast-close" :aria-label="t('dismiss')">
         <Icon name="lu:x" :size="touch ? 16 : 14" />
       </ToastCloseTrigger>
     </ToastRoot>

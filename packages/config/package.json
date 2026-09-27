@@ -29,7 +29,8 @@
     "@arxhub/events": "workspace:*",
     "@arxhub/logger": "workspace:*",
     "@arxhub/vfs": "workspace:*",
-    "smol-toml": "catalog:shared"
+    "smol-toml": "catalog:shared",
+    "@arxhub/i18n": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/toolchain-tsconfig": "workspace:*",

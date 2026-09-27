@@ -26,14 +26,22 @@ function emittedSource(): string {
 
 interface World {
   stored?: string | null
+  storedLanguage?: string | null
+  languages?: string[]
   storageThrows?: boolean
   systemDark?: boolean
   matchMediaThrows?: boolean
   attributes?: Record<string, string>
 }
 
+// The theme cases read the theme's attributes only; the language block has its own cases below.
 function run(world: World): Record<string, string> {
-  return runWithHead(world).attributes
+  const { lang: _lang, ...theme } = runWithHead(world).attributes
+  return theme
+}
+
+function lang(world: World): string | undefined {
+  return runWithHead(world).attributes.lang
 }
 
 function runWithHead(world: World): { attributes: Record<string, string>; head: Record<string, string>[] } {
@@ -56,6 +64,7 @@ function runWithHead(world: World): { attributes: Record<string, string>; head: 
   const localStorage = {
     getItem: (key: string) => {
       if (world.storageThrows) throw new Error('SecurityError')
+      if (key === 'arxhub.language') return world.storedLanguage ?? null
       return key === 'arxhub.theme' ? (world.stored ?? null) : null
     },
   }
@@ -64,7 +73,8 @@ function runWithHead(world: World): { attributes: Record<string, string>; head: 
     expect(query).toBe('(prefers-color-scheme: dark)')
     return { matches: world.systemDark === true }
   }
-  new Function('document', 'localStorage', 'matchMedia', emittedSource())(document, localStorage, matchMedia)
+  const navigator = { languages: world.languages ?? ['en-US'], language: world.languages?.[0] ?? '' }
+  new Function('document', 'localStorage', 'matchMedia', 'navigator', emittedSource())(document, localStorage, matchMedia, navigator)
   return { attributes, head }
 }
 
@@ -121,6 +131,32 @@ describe('theme boot color-scheme', () => {
     expect(runWithHead({ systemDark: true, attributes: { 'data-theme': 'light' } }).head).toEqual([
       { tag: 'meta', name: 'color-scheme', content: 'light' },
     ])
+  })
+})
+
+// The same cases as pickLanguage in packages/i18n: the script copies that rule, so it is held to its answers.
+describe('language boot', () => {
+  it('a stored choice wins over the system', () => {
+    expect(lang({ storedLanguage: 'en', languages: ['ru-RU'] })).toBe('en')
+    expect(lang({ storedLanguage: 'ru', languages: ['en-US'] })).toBe('ru')
+  })
+
+  it('without one, a Russian tag anywhere in the system list gives Russian, else English', () => {
+    expect(lang({ languages: ['ru-RU', 'en-US'] })).toBe('ru')
+    expect(lang({ languages: ['RU'] })).toBe('ru')
+    expect(lang({ languages: ['de-DE', 'ru'] })).toBe('ru')
+    expect(lang({ languages: ['en-GB'] })).toBe('en')
+    expect(lang({ languages: ['uk-UA'] })).toBe('en')
+    expect(lang({ languages: [] })).toBe('en')
+  })
+
+  it('ignores a stored value it does not know, and storage that throws', () => {
+    expect(lang({ storedLanguage: 'de', languages: ['ru'] })).toBe('ru')
+    expect(lang({ storageThrows: true, languages: ['ru-RU'] })).toBe('ru')
+  })
+
+  it('overrides the lang="en" fallback index.html carries', () => {
+    expect(lang({ storedLanguage: 'ru', attributes: { lang: 'en' } })).toBe('ru')
   })
 })
 
