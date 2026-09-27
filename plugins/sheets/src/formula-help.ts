@@ -1,14 +1,24 @@
+import { t } from './i18n/messages'
 import { canInsertReference } from './reference-input'
+
 export const FUNCTIONS = [
-  { name: 'SUM', signature: 'SUM(number1, number2, …)', description: 'Total numbers or ranges' },
-  { name: 'AVERAGE', signature: 'AVERAGE(number1, number2, …)', description: 'Arithmetic mean' },
-  { name: 'MIN', signature: 'MIN(number1, number2, …)', description: 'Smallest number' },
-  { name: 'MAX', signature: 'MAX(number1, number2, …)', description: 'Largest number' },
-  { name: 'COUNT', signature: 'COUNT(value1, value2, …)', description: 'Count numeric values' },
-  { name: 'IF', signature: 'IF(condition, value_if_true, value_if_false)', description: 'Choose a value' },
-  { name: 'ABS', signature: 'ABS(number)', description: 'Absolute value' },
-  { name: 'ROUND', signature: 'ROUND(number, digits)', description: 'Round to decimal places' },
-]
+  { name: 'SUM', signature: 'SUM(number1, number2, …)' },
+  { name: 'AVERAGE', signature: 'AVERAGE(number1, number2, …)' },
+  { name: 'MIN', signature: 'MIN(number1, number2, …)' },
+  { name: 'MAX', signature: 'MAX(number1, number2, …)' },
+  { name: 'COUNT', signature: 'COUNT(value1, value2, …)' },
+  { name: 'IF', signature: 'IF(condition, value_if_true, value_if_false)' },
+  { name: 'ABS', signature: 'ABS(number)' },
+  { name: 'ROUND', signature: 'ROUND(number, digits)' },
+] as const
+
+export type FunctionName = (typeof FUNCTIONS)[number]['name']
+
+// Function names stay English (formulas are written with them); only what a function does is translated.
+export function describeFunction(name: FunctionName): string {
+  return t(`functions.${name}`)
+}
+
 export function formulaHelp(text: string, caret: number) {
   if (!canInsertReference(text, caret, caret)) return { suggestions: [], prefix: '', argument: 0, fn: undefined }
   const prefix = /(?:^|[=+*/^%&<>,;(\s-])([A-Za-z_]+)$/.exec(text.slice(0, caret))?.[1] ?? ''

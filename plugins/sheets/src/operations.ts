@@ -1,4 +1,4 @@
-import { validation } from '@arxhub/errors'
+import { sheetsError } from './errors'
 import { type CellValue, isCellError, shiftFormula } from './formula'
 import { address, MAX_COLUMNS, MAX_ROWS, type Point, pointOf, rangePoints, type Sheet } from './model'
 import { anchoredAddress, mapReferences, quoteSheet } from './references'
@@ -6,14 +6,14 @@ import type { Workbook } from './workbook'
 
 export function editStructure(book: Workbook, id: string, axis: 'rows' | 'columns', index: number, count: number, remove: boolean): Workbook {
   const target = book.sheets.find((entry) => entry.id === id)
-  if (!target) throw validation('Sheet is missing')
+  if (!target) throw sheetsError('SheetMissing')
   const size = target.sheet[axis],
     coordinate = axis === 'rows' ? 'row' : 'column',
     limit = axis === 'rows' ? MAX_ROWS : MAX_COLUMNS
   if (!Number.isInteger(index) || !Number.isInteger(count) || count < 1 || index < 0 || index > size || (remove && index + count > size))
-    throw validation('Invalid structural selection')
+    throw sheetsError('SheetInvalidSelection')
   const dimension = size + (remove ? -count : count)
-  if (dimension < 1 || dimension > limit) throw validation(`Keep between 1 and ${limit} ${axis}`)
+  if (dimension < 1 || dimension > limit) throw sheetsError(axis === 'rows' ? 'SheetRowsLimit' : 'SheetColumnsLimit', { limit })
   const move = (value: number): number | null =>
     remove ? (value < index ? value : value < index + count ? null : value - count) : value < index ? value : value + count
   const changeReferences = (raw: string, owner: string): string =>
@@ -114,7 +114,7 @@ export function sortRange(
     bottom = Math.max(a.row, b.row),
     left = Math.min(a.column, b.column),
     right = Math.max(a.column, b.column)
-  if (column < left || column > right || top > bottom) throw validation('Choose a sort column inside the selected range')
+  if (column < left || column > right || top > bottom) throw sheetsError('SheetSortColumn')
   const compare = (a: CellValue = '', b: CellValue = '') => {
     if (a === '' || isCellError(a)) return b === '' || isCellError(b) ? 0 : 1
     if (b === '' || isCellError(b)) return -1
@@ -183,7 +183,7 @@ export function autofill(sheet: Sheet, a: Point, b: Point, target: Point): Sheet
     let value: string
     if (progression) {
       value = String(Number((progression.first + offset * progression.step).toPrecision(15)))
-      if (!Number.isFinite(Number(value))) throw validation('The series exceeds the supported number range')
+      if (!Number.isFinite(Number(value))) throw sheetsError('SheetSeriesRange')
     } else value = shiftFormula(raw, point.row - source.row, point.column - source.column)
     if (value) cells[key] = value
     else delete cells[key]

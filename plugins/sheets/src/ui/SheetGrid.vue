@@ -3,6 +3,7 @@
 import { IconButton, ScrollArea } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch, watchEffect } from 'vue'
+import { t } from '../i18n/messages'
 import { address, columnName, type Point, pointOf } from '../model'
 import { formulaReferences } from '../references'
 import { useSheet } from './use-sheet'
@@ -83,7 +84,7 @@ watch(keys, setVisible, { immediate: true })
 const area = ref<InstanceType<typeof ScrollArea> | null>(null)
 const gridAttributes = computed(() => ({
   role: 'grid',
-  'aria-label': 'Spreadsheet',
+  'aria-label': t('grid.label'),
   'aria-rowcount': (sheet.value?.rows ?? 0) + 1,
   'aria-colcount': (sheet.value?.columns ?? 0) + 1,
   'aria-activedescendant': activeId.value,
@@ -348,9 +349,9 @@ function keydown(event: KeyboardEvent): void {
         :style="{ top: `${y}px`, height: `${cellHeight}px`, width: `${canvasWidth}px` }">
         <div v-for="column in columns" :key="column" role="columnheader" :aria-colindex="column + 2" class="sheet-cell sheet-heading" :class="{ 'frozen-column': column < frozenColumnCount }"
           :style="{ left: `${columnLeft(column)}px`, width: `${columnSize(column)}px` }">{{ columnName(column) }}</div>
-        <div role="columnheader" :aria-colindex="1" aria-label="Row" class="sheet-cell sheet-heading sheet-corner" :style="{ left: `${x}px`, width: '48px' }" />
+        <div role="columnheader" :aria-colindex="1" :aria-label="t('grid.row')" class="sheet-cell sheet-heading sheet-corner" :style="{ left: `${x}px`, width: '48px' }" />
       </div>
-      <div v-if="handle" class="fill-handle" :style="handle"><IconButton :size="fillHandleSize" icon="lu:grip" tooltip="Drag to autofill" @keydown.enter.prevent="session.tool.value = 'help'" /></div>
+      <div v-if="handle" class="fill-handle" :style="handle"><IconButton :size="fillHandleSize" icon="lu:grip" :tooltip="t('grid.autofill')" @keydown.enter.prevent="session.tool.value = 'help'" /></div>
     </div>
   </ScrollArea>
 </template>

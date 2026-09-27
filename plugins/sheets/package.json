@@ -21,6 +21,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/i18n": "workspace:*",
     "exceljs": "catalog:client",
     "vue": "catalog:client"
   },

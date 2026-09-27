@@ -1,4 +1,4 @@
-import { validation } from '@arxhub/errors'
+import { sheetsError } from './errors'
 import { pointOf } from './model'
 
 export function validateEmbedPath(path: unknown): asserts path is string {
@@ -11,10 +11,10 @@ export function validateEmbedPath(path: unknown): asserts path is string {
         /[\\\0]/.test(path) ||
         path.split('/').some((part) => !part || part === '.' || part === '..')))
   )
-    throw validation('Enter a vault-relative .arxs path')
+    throw sheetsError('SheetEmbedPath')
 }
 export function embedRange(range: unknown) {
-  if (typeof range !== 'string') throw validation('Invalid embedded range')
+  if (typeof range !== 'string') throw sheetsError('SheetEmbedInvalidRange')
   const parts = range.split(':')
   const from = pointOf(parts[0]),
     to = pointOf(parts[1] ?? parts[0])
@@ -27,6 +27,6 @@ export function embedRange(range: unknown) {
     to.row - from.row >= 20 ||
     to.column - from.column >= 8
   )
-    throw validation('Embed a range of up to 20 rows and 8 columns')
+    throw sheetsError('SheetEmbedRangeTooLarge')
   return { from, to }
 }

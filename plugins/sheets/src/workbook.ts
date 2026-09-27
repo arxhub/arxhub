@@ -1,4 +1,4 @@
-import { validation } from '@arxhub/errors'
+import { sheetsError } from './errors'
 import { address, emptySheet, MAX_CELLS, MAX_FILE_BYTES, MAX_INPUT, type Patch, parseSheet, pointOf, type Sheet } from './model'
 
 export interface Worksheet {
@@ -19,7 +19,7 @@ export function validSheetName(name: string): boolean {
   return name.length > 0 && name.length <= 31 && name.trim() === name && !/[\\/?*[\]:!']/u.test(name)
 }
 export function parseWorkbook(raw: string): Workbook {
-  if (raw.length > MAX_FILE_BYTES) throw validation('Spreadsheet exceeds 8 MB')
+  if (raw.length > MAX_FILE_BYTES) throw sheetsError('WorkbookTooLarge')
   const value = JSON.parse(raw)
   if (value?.version === 1) return workbook(parseSheet(raw))
   if (
@@ -30,7 +30,7 @@ export function parseWorkbook(raw: string): Workbook {
     !value.sheets.length ||
     value.sheets.length > MAX_SHEETS
   )
-    throw validation('Unsupported spreadsheet or workbook format')
+    throw sheetsError('WorkbookUnsupportedFormat')
   const ids = new Set<string>(),
     names = new Set<string>()
   let count = 0,
@@ -46,7 +46,7 @@ export function parseWorkbook(raw: string): Workbook {
       ids.has(entry.id) ||
       names.has(entry.name.toLowerCase())
     )
-      throw validation('Invalid or duplicate worksheet')
+      throw sheetsError('WorkbookInvalidSheet')
     ids.add(entry.id)
     names.add(entry.name.toLowerCase())
     const sheet = parseSheet(JSON.stringify(entry.sheet))
@@ -54,7 +54,7 @@ export function parseWorkbook(raw: string): Workbook {
     size += Object.values(sheet.cells).reduce((sum, cell) => sum + cell.length, 0)
     return { id: entry.id, name: entry.name, sheet }
   })
-  if (!ids.has(value.active) || count > MAX_CELLS || size > 2_000_000) throw validation('Workbook capacity exceeded or active sheet is missing')
+  if (!ids.has(value.active) || count > MAX_CELLS || size > 2_000_000) throw sheetsError('WorkbookInvalid')
   return { version: 2, active: value.active, sheets }
 }
 export function serializeWorkbook(book: Workbook): string {
@@ -124,7 +124,7 @@ export class WorkbookHistory {
     for (const [key, value] of Object.entries(patch)) {
       const point = pointOf(key)
       if (!point || address(point) !== key || point.row >= this.sheet.rows || point.column >= this.sheet.columns || value.length > MAX_INPUT)
-        throw validation('Cell is outside the sheet or exceeds 4096 characters')
+        throw sheetsError('WorkbookCellOutOfBounds')
       const old = this.sheet.cells[key] ?? ''
       if (old === value) continue
       before[key] = old
@@ -132,7 +132,7 @@ export class WorkbookHistory {
       count += Number(value !== '') - Number(old !== '')
       size += value.length - old.length
     }
-    if (count > MAX_CELLS || size > 2_000_000) throw validation('Workbook capacity exceeded')
+    if (count > MAX_CELLS || size > 2_000_000) throw sheetsError('WorkbookCapacityExceeded')
     if (!Object.keys(after).length) return null
     const { cells, ...meta } = this.sheet
     const tabs = this.book.sheets.map(({ id, name }) => ({ id, name }))

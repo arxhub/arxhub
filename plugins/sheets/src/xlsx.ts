@@ -1,32 +1,32 @@
-import { validation } from '@arxhub/errors'
 import ExcelJS from 'exceljs'
+import { sheetsError } from './errors'
 import { type CellFormat, DATE_EPOCH, defaultFormat } from './format'
 import { emptySheet, MAX_CELLS, MAX_COLUMNS, MAX_FILE_BYTES, MAX_INPUT, MAX_ROWS, type Sheet } from './model'
 import { MAX_SHEETS, parseWorkbook, type Workbook } from './workbook'
 
 export function validateZip(bytes: ArrayBuffer): void {
-  if (bytes.byteLength > MAX_FILE_BYTES || bytes.byteLength < 22) throw validation('XLSX must be an unencrypted ZIP file under 8 MB')
+  if (bytes.byteLength > MAX_FILE_BYTES || bytes.byteLength < 22) throw sheetsError('XlsxNotZip')
   const view = new DataView(bytes)
   let end = bytes.byteLength - 22
   while (end >= Math.max(0, bytes.byteLength - 65_557) && view.getUint32(end, true) !== 0x06054b50) end--
-  if (end < 0 || view.getUint32(end, true) !== 0x06054b50) throw validation('Invalid XLSX archive')
+  if (end < 0 || view.getUint32(end, true) !== 0x06054b50) throw sheetsError('XlsxInvalidArchive')
   const count = view.getUint16(end + 10, true),
     start = view.getUint32(end + 16, true)
   if (view.getUint16(end + 4, true) || view.getUint16(end + 6, true) || count > 2048 || count < 1 || start >= end)
-    throw validation('Unsupported XLSX archive')
+    throw sheetsError('XlsxUnsupportedArchive')
   let offset = start,
     size = 0
   for (let i = 0; i < count; i++) {
     if (offset + 46 > end || view.getUint32(offset, true) !== 0x02014b50 || view.getUint16(offset + 8, true) & 1)
-      throw validation('Invalid or encrypted XLSX archive')
+      throw sheetsError('XlsxEncrypted')
     size += view.getUint32(offset + 24, true)
-    if (size > 32 * 1024 * 1024) throw validation('Expanded XLSX exceeds 32 MB')
+    if (size > 32 * 1024 * 1024) throw sheetsError('XlsxExpandedTooLarge')
     const nameLength = view.getUint16(offset + 28, true)
     const name = new TextDecoder().decode(new Uint8Array(bytes, offset + 46, nameLength))
-    if (/vbaProject|externalLinks\//i.test(name)) throw validation('Macros and external workbook links are not supported')
+    if (/vbaProject|externalLinks\//i.test(name)) throw sheetsError('XlsxMacros')
     offset += 46 + nameLength + view.getUint16(offset + 30, true) + view.getUint16(offset + 32, true)
   }
-  if (offset > end) throw validation('Invalid XLSX directory')
+  if (offset > end) throw sheetsError('XlsxInvalidDirectory')
 }
 function numberFormat(format: CellFormat): string {
   const decimal = format.decimals ? `.${'0'.repeat(format.decimals)}` : ''
@@ -53,12 +53,12 @@ export async function importXlsx(bytes: ArrayBuffer): Promise<Workbook> {
   const source = new ExcelJS.Workbook()
   // ExcelJS accepts ArrayBuffer in browsers; its Buffer declaration predates that supported input.
   await source.xlsx.load(bytes as Parameters<typeof source.xlsx.load>[0])
-  if (!source.worksheets.length || source.worksheets.length > MAX_SHEETS) throw validation('XLSX must contain 1–16 sheets')
+  if (!source.worksheets.length || source.worksheets.length > MAX_SHEETS) throw sheetsError('XlsxSheetCount')
   let count = 0,
     size = 0
   const sheets = source.worksheets.map((worksheet, index) => {
-    if (worksheet.rowCount > MAX_ROWS || worksheet.columnCount > MAX_COLUMNS) throw validation('XLSX exceeds 10,000 rows or 256 columns')
-    if (worksheet.model.merges?.length) throw validation('Unmerge XLSX cells before importing')
+    if (worksheet.rowCount > MAX_ROWS || worksheet.columnCount > MAX_COLUMNS) throw sheetsError('XlsxTooLarge')
+    if (worksheet.model.merges?.length) throw sheetsError('XlsxMerged')
     const sheet: Sheet = {
       ...emptySheet(),
       rows: Math.max(1000, worksheet.rowCount),
@@ -82,13 +82,13 @@ export async function importXlsx(bytes: ArrayBuffer): Promise<Workbook> {
           else if ('text' in value) raw = `'${value.text}`
           else if ('error' in value) raw = `=${value.error}`
         }
-        if (raw.length > MAX_INPUT) throw validation('An XLSX cell exceeds 4096 characters')
+        if (raw.length > MAX_INPUT) throw sheetsError('XlsxCellTooLong')
         if (raw) {
           sheet.cells[cell.address] = raw
           count++
           size += raw.length
         }
-        if (count > MAX_CELLS || size > 2_000_000) throw validation('XLSX exceeds workbook capacity')
+        if (count > MAX_CELLS || size > 2_000_000) throw sheetsError('XlsxCapacity')
         const format = readFormat(cell.numFmt)
         if (format) sheet.formats![cell.address] = format
         if (cell.alignment?.wrapText) sheet.wrap = true
@@ -124,6 +124,6 @@ export async function exportXlsx(book: Workbook): Promise<ArrayBuffer> {
     if (sheet.freeze) worksheet.views = [{ state: 'frozen', xSplit: sheet.freeze.columns, ySplit: sheet.freeze.rows }]
   }
   const bytes = new Uint8Array(await output.xlsx.writeBuffer())
-  if (bytes.byteLength > MAX_FILE_BYTES) throw validation('Exported XLSX exceeds 8 MB')
+  if (bytes.byteLength > MAX_FILE_BYTES) throw sheetsError('XlsxExportTooLarge')
   return bytes.slice().buffer
 }

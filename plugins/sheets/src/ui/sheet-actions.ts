@@ -1,4 +1,5 @@
 import type { ActionItem } from '@arxhub/uikit/core'
+import { t } from '../i18n/messages'
 import type { SheetSession } from './use-sheet'
 
 // One list per concern, drawn by both frames: the desktop opens them from its own bars, the phone puts
@@ -9,22 +10,22 @@ export function toolActions(session: SheetSession): ActionItem[] {
     session.tool.value = id
   }
   return [
-    { id: 'insert-rows', label: 'Insert selected rows above', icon: 'lu:rows-3', onSelect: () => session.structure('rows', false) },
-    { id: 'delete-rows', label: 'Delete selected rows', icon: 'lu:trash-2', onSelect: () => session.structure('rows', true) },
+    { id: 'insert-rows', label: t('actions.insertRows'), icon: 'lu:rows-3', onSelect: () => session.structure('rows', false) },
+    { id: 'delete-rows', label: t('actions.deleteRows'), icon: 'lu:trash-2', onSelect: () => session.structure('rows', true) },
     {
       id: 'insert-columns',
-      label: 'Insert selected columns before',
+      label: t('actions.insertColumns'),
       icon: 'lu:columns-3',
       onSelect: () => session.structure('columns', false),
     },
-    { id: 'delete-columns', label: 'Delete selected columns', icon: 'lu:trash-2', onSelect: () => session.structure('columns', true) },
-    { id: 'format', label: 'Format cells', icon: 'lu:hash', onSelect: tool('format') },
-    { id: 'layout', label: 'Column width, wrapping and freeze', icon: 'lu:panel-top', onSelect: tool('layout') },
-    { id: 'sort', label: 'Sort selected range', icon: 'lu:arrow-down-a-z', onSelect: tool('sort') },
-    { id: 'filter', label: 'Filter selected range', icon: 'lu:funnel', onSelect: tool('filter') },
+    { id: 'delete-columns', label: t('actions.deleteColumns'), icon: 'lu:trash-2', onSelect: () => session.structure('columns', true) },
+    { id: 'format', label: t('actions.format'), icon: 'lu:hash', onSelect: tool('format') },
+    { id: 'layout', label: t('actions.layout'), icon: 'lu:panel-top', onSelect: tool('layout') },
+    { id: 'sort', label: t('actions.sort'), icon: 'lu:arrow-down-a-z', onSelect: tool('sort') },
+    { id: 'filter', label: t('actions.filter'), icon: 'lu:funnel', onSelect: tool('filter') },
     {
       id: 'clear-filter',
-      label: 'Clear filter',
+      label: t('actions.clearFilter'),
       icon: 'lu:funnel-x',
       disabled: !session.hiddenRows.value.size,
       onSelect: () => {
@@ -33,14 +34,14 @@ export function toolActions(session: SheetSession): ActionItem[] {
     },
     {
       id: 'import-xlsx',
-      label: 'Import XLSX workbook',
+      label: t('actions.importXlsx'),
       icon: 'lu:file-input',
       disabled: session.operationBusy.value,
       onSelect: () => session.xlsxInput.value?.click(),
     },
     {
       id: 'export-xlsx',
-      label: 'Export XLSX workbook',
+      label: t('actions.exportXlsx'),
       icon: 'lu:file-output',
       disabled: session.operationBusy.value,
       onSelect: () => {
@@ -55,7 +56,7 @@ export function cellActions(session: SheetSession, tools: () => void): ActionIte
   return [
     {
       id: 'goto',
-      label: 'Go to cell',
+      label: t('actions.goto'),
       icon: 'lu:locate',
       onSelect: () => {
         session.tool.value = 'goto'
@@ -63,7 +64,7 @@ export function cellActions(session: SheetSession, tools: () => void): ActionIte
     },
     {
       id: 'select',
-      label: session.selectingRange.value ? 'Finish selecting range' : 'Select range',
+      label: session.selectingRange.value ? t('actions.finishRange') : t('actions.selectRange'),
       icon: 'lu:scan',
       onSelect: () => {
         session.selectingRange.value = !session.selectingRange.value
@@ -71,7 +72,7 @@ export function cellActions(session: SheetSession, tools: () => void): ActionIte
     },
     {
       id: 'copy',
-      label: 'Copy cells',
+      label: t('actions.copy'),
       icon: 'lu:copy',
       onSelect: () => {
         void session.copy()
@@ -79,23 +80,23 @@ export function cellActions(session: SheetSession, tools: () => void): ActionIte
     },
     {
       id: 'paste',
-      label: 'Paste cells',
+      label: t('actions.paste'),
       icon: 'lu:clipboard-paste',
       onSelect: () => {
         void session.paste()
       },
     },
-    { id: 'clear', label: 'Clear cells', icon: 'lu:eraser', onSelect: session.clear },
-    { id: 'fill-down', label: 'Fill down', icon: 'lu:arrow-down', onSelect: () => session.fill('down') },
-    { id: 'fill-right', label: 'Fill right', icon: 'lu:arrow-right', onSelect: () => session.fill('right') },
-    { id: 'tools', label: 'More tools', icon: 'lu:settings-2', onSelect: tools },
-    { id: 'rows', label: 'Add 1,000 rows', icon: 'lu:rows-3', onSelect: () => session.grow('rows') },
-    { id: 'columns', label: 'Add column', icon: 'lu:columns-3', onSelect: () => session.grow('columns') },
-    { id: 'import', label: 'Import CSV at selection', icon: 'lu:file-input', onSelect: () => session.fileInput.value?.click() },
-    { id: 'export', label: 'Export CSV (formulas)', icon: 'lu:file-output', onSelect: session.downloadCsv },
+    { id: 'clear', label: t('actions.clear'), icon: 'lu:eraser', onSelect: session.clear },
+    { id: 'fill-down', label: t('actions.fillDown'), icon: 'lu:arrow-down', onSelect: () => session.fill('down') },
+    { id: 'fill-right', label: t('actions.fillRight'), icon: 'lu:arrow-right', onSelect: () => session.fill('right') },
+    { id: 'tools', label: t('actions.moreTools'), icon: 'lu:settings-2', onSelect: tools },
+    { id: 'rows', label: t('actions.addRows'), icon: 'lu:rows-3', onSelect: () => session.grow('rows') },
+    { id: 'columns', label: t('actions.addColumn'), icon: 'lu:columns-3', onSelect: () => session.grow('columns') },
+    { id: 'import', label: t('actions.importCsv'), icon: 'lu:file-input', onSelect: () => session.fileInput.value?.click() },
+    { id: 'export', label: t('actions.exportCsv'), icon: 'lu:file-output', onSelect: session.downloadCsv },
     {
       id: 'help',
-      label: 'Spreadsheet help',
+      label: t('actions.help'),
       icon: 'lu:circle-help',
       onSelect: () => {
         session.tool.value = 'help'
@@ -108,7 +109,7 @@ export function worksheetActions(session: SheetSession): ActionItem[] {
   return [
     {
       id: 'rename-sheet',
-      label: 'Rename sheet',
+      label: t('actions.renameSheet'),
       icon: 'lu:pencil',
       onSelect: () => {
         session.tool.value = 'rename'
@@ -116,7 +117,7 @@ export function worksheetActions(session: SheetSession): ActionItem[] {
     },
     {
       id: 'delete-sheet',
-      label: 'Delete sheet',
+      label: t('actions.deleteSheet'),
       icon: 'lu:trash-2',
       tone: 'danger',
       disabled: (session.book.value?.sheets.length ?? 0) < 2,

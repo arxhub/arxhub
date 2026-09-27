@@ -1,4 +1,4 @@
-import { validation } from '@arxhub/errors'
+import { sheetsError } from './errors'
 import { shiftFormula } from './formula'
 import { address, MAX_INPUT, MAX_RANGE, type Patch, type Point, pointOf, rangePoints, type Sheet } from './model'
 
@@ -24,13 +24,13 @@ export function parseTsv(text: string): string[][] {
 }
 
 export function parseDelimited(text: string, delimiter: string): string[][] {
-  if (text.length > 2_000_000) throw validation('Clipboard is too large')
+  if (text.length > 2_000_000) throw sheetsError('SheetClipboardTooLarge')
   const rows: string[][] = [[]]
   let value = '',
     quoted = false,
     count = 0
   const push = () => {
-    if (++count > MAX_RANGE || value.length > MAX_INPUT) throw validation('Paste exceeds 50,000 cells or 4096 characters per cell')
+    if (++count > MAX_RANGE || value.length > MAX_INPUT) throw sheetsError('SheetPasteTooLarge')
     rows[rows.length - 1].push(value)
     value = ''
   }
@@ -50,7 +50,7 @@ export function parseDelimited(text: string, delimiter: string): string[][] {
       }
     } else value += char
   }
-  if (quoted) throw validation('Unclosed quoted cell in clipboard')
+  if (quoted) throw sheetsError('SheetPasteUnclosedQuote')
   push()
   return rows
 }
@@ -116,9 +116,9 @@ export function pasteRange(sheet: Sheet, target: Point, text: string, internal =
   let count = 0
   for (let r = 0; r < rows.length; r++)
     for (let c = 0; c < rows[r].length; c++) {
-      if (++count > MAX_RANGE) throw validation('Paste exceeds 50,000 cells')
+      if (++count > MAX_RANGE) throw sheetsError('SheetPasteTooManyCells')
       const point = { row: target.row + r, column: target.column + c }
-      if (point.row >= sheet.rows || point.column >= sheet.columns) throw validation('Paste does not fit. Add rows or columns first.')
+      if (point.row >= sheet.rows || point.column >= sheet.columns) throw sheetsError('SheetPasteDoesNotFit')
       patch[address(point)] = from ? shiftFormula(rows[r][c], target.row - from.row, target.column - from.column) : rows[r][c]
     }
   return patch

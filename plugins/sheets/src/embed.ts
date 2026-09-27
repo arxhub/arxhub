@@ -1,6 +1,7 @@
-import { validation } from '@arxhub/errors'
 import type { ArxEditorContribution } from '@arxhub/plugin-editor'
 import { embedRange, validateEmbedPath } from './embed-model'
+import { sheetsError } from './errors'
+import { t } from './i18n/messages'
 import SheetEmbed from './ui/SheetEmbed.vue'
 
 export const sheetContribution: ArxEditorContribution = {
@@ -17,7 +18,7 @@ export const sheetContribution: ArxEditorContribution = {
         sheet: {
           default: '',
           validate: (value) => {
-            if (typeof value !== 'string' || value.length > 31) throw validation('Invalid worksheet name')
+            if (typeof value !== 'string' || value.length > 31) throw sheetsError('SheetEmbedInvalidName')
           },
         },
         range: {
@@ -48,7 +49,7 @@ export const sheetContribution: ArxEditorContribution = {
   commands: (schema) => [
     {
       id: 'spreadsheet-embed',
-      label: 'Spreadsheet',
+      label: t('title'),
       icon: 'lu:table-2',
       keywords: 'excel sheet таблица формулы',
       run: (state, dispatch) => {

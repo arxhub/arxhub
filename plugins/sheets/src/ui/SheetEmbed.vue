@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { validation } from '@arxhub/errors'
 import { DOCUMENTS_TYPE_ID } from '@arxhub/plugin-documents'
 import type { ArxEditorControlProps } from '@arxhub/plugin-editor'
 import { ShellExtension } from '@arxhub/plugin-shell'
@@ -10,12 +9,16 @@ import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { computed, onMounted, onUnmounted, ref, shallowRef, useId, watch } from 'vue'
 import type { CalculationRequest } from '../calculation.worker'
 import { embedRange, validateEmbedPath } from '../embed-model'
+import { errorText, sheetsError } from '../errors'
 import { formatValue } from '../format'
 import type { CellValue } from '../formula'
+import { t } from '../i18n/messages'
 import { address, columnName, MAX_FILE_BYTES, rangePoints, type Sheet } from '../model'
 import { parseWorkbook } from '../workbook'
 
 const props = defineProps<ArxEditorControlProps>()
+// Cell addresses read the same in every language.
+const RANGE_SAMPLE = 'A1:D8'
 const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 const hub = useArxHub(),
   vfs = hub.services.get(VaultVfs)
@@ -24,7 +27,7 @@ const root = ref<HTMLElement>(),
   path = ref(''),
   name = ref(''),
   range = ref(''),
-  error = ref(''),
+  error = shallowRef<unknown>(null),
   loading = ref(false)
 const values = shallowRef<Record<string, CellValue>>({}),
   sheet = shallowRef<Sheet>()
@@ -60,31 +63,30 @@ async function load() {
   const version = generation
   if (!visible.value || !props.node.attrs.path || !bounds.value) return
   loading.value = true
-  error.value = ''
+  error.value = null
   try {
     validateEmbedPath(props.node.attrs.path)
     const size = (await vfs.head(props.node.attrs.path)).size
-    if (size > MAX_FILE_BYTES) throw validation('Spreadsheet exceeds 8 MB')
+    if (size > MAX_FILE_BYTES) throw sheetsError('WorkbookTooLarge')
     const book = parseWorkbook(new TextDecoder().decode(await vfs.read(props.node.attrs.path)))
     if (version !== generation) return
     const entry = props.node.attrs.sheet ? book.sheets.find((entry) => entry.name === props.node.attrs.sheet) : book.sheets[0]
-    if (!entry) throw validation('Worksheet was not found')
-    if (bounds.value.to.row >= entry.sheet.rows || bounds.value.to.column >= entry.sheet.columns)
-      throw validation('Embedded range is outside the worksheet')
+    if (!entry) throw sheetsError('SheetEmbedSheetMissing')
+    if (bounds.value.to.row >= entry.sheet.rows || bounds.value.to.column >= entry.sheet.columns) throw sheetsError('SheetEmbedOutside')
     sheet.value = entry.sheet
     worker = new Worker(new URL('../calculation.worker.ts', import.meta.url), { type: 'module' })
-    worker.onmessage = (event: MessageEvent<{ values?: Record<string, CellValue>; error?: string }>) => {
+    worker.onmessage = (event: MessageEvent<{ values?: Record<string, CellValue>; error?: unknown }>) => {
       if (version !== generation) return
       values.value = event.data.values ?? {}
-      error.value = event.data.error ?? ''
+      error.value = event.data.error ?? null
       stop()
     }
     worker.onerror = () => {
-      error.value = 'Could not calculate spreadsheet'
+      error.value = sheetsError('SheetEmbedCalculationFailed')
       stop()
     }
     deadline = setTimeout(() => {
-      error.value = 'Spreadsheet calculation timed out'
+      error.value = sheetsError('SheetEmbedCalculationTimeout')
       stop()
     }, 5000)
     worker.postMessage({
@@ -99,7 +101,7 @@ async function load() {
     } satisfies CalculationRequest)
   } catch (cause) {
     if (version === generation) {
-      error.value = cause instanceof Error ? cause.message : String(cause)
+      error.value = cause
       stop()
     }
   }
@@ -127,14 +129,14 @@ function apply() {
     props.change({ path: path.value, sheet: name.value, range: range.value })
     setup.value = false
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : String(cause)
+    error.value = cause
   }
 }
 async function open() {
   try {
     await hub.extensions.get(ShellExtension).workspace.openObject(DOCUMENTS_TYPE_ID, { id: props.node.attrs.path })
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : String(cause)
+    error.value = cause
   }
 }
 onMounted(() => {
@@ -157,28 +159,28 @@ onUnmounted(() => {
 <template>
   <div ref="root" class="sheet-embed">
     <Strip>
-      <span class="embed-title" :title="node.attrs.path">{{ node.attrs.path || 'Spreadsheet' }}</span>
+      <span class="embed-title" :title="node.attrs.path">{{ node.attrs.path || t('title') }}</span>
       <template #actions>
-        <Button v-if="node.attrs.path" :size="buttonSize" variant="secondary" @click="open">Open spreadsheet</Button>
-        <IconButton v-if="mode === 'editable'" size="lg" icon="lu:settings-2" tooltip="Configure spreadsheet" @click="setup = true" />
+        <Button v-if="node.attrs.path" :size="buttonSize" variant="secondary" @click="open">{{ t('embed.open') }}</Button>
+        <IconButton v-if="mode === 'editable'" size="lg" icon="lu:settings-2" :tooltip="t('embed.configure')" @click="setup = true" />
       </template>
     </Strip>
-    <p v-if="error" role="alert">{{ error }} <Button :size="buttonSize" variant="secondary" @click="load">Retry</Button></p>
-    <p v-else-if="!node.attrs.path">Choose a spreadsheet file and range to display.</p>
+    <p v-if="error" role="alert">{{ errorText(error) }} <Button :size="buttonSize" variant="secondary" @click="load">{{ t('embed.retry') }}</Button></p>
+    <p v-else-if="!node.attrs.path">{{ t('embed.empty') }}</p>
     <ScrollArea v-else axis="both" class="sheet-embed-scroll" :aria-busy="loading">
-      <table aria-label="Embedded spreadsheet"><thead><tr><th scope="col">{{ node.attrs.sheet }}</th><th v-for="column in columns" :key="column" scope="col">{{ columnName(column) }}</th></tr></thead>
+      <table :aria-label="t('embed.table')"><thead><tr><th scope="col">{{ node.attrs.sheet }}</th><th v-for="column in columns" :key="column" scope="col">{{ columnName(column) }}</th></tr></thead>
         <tbody><tr v-for="row in rows" :key="row"><th scope="row">{{ row + 1 }}</th><td v-for="column in columns" :key="column">{{ formatValue(values[address({ row, column })] ?? '', sheet?.formats?.[address({ row, column })]) }}</td></tr></tbody>
       </table>
     </ScrollArea>
-    <Dialog :open="setup" title="Embed spreadsheet" size="sm" @update:open="setup = $event">
+    <Dialog :open="setup" :title="t('embed.dialog')" size="sm" @update:open="setup = $event">
       <form :id="id" class="embed-form" @submit.prevent="apply">
-        <label>Vault file path<Input v-model="path" aria-label="Spreadsheet path" placeholder="Budget.arxs" /></label>
-        <label>Worksheet name (blank = first)<Input v-model="name" aria-label="Embedded worksheet" maxlength="31" /></label>
-        <label>Range (up to 20 × 8)<Input v-model="range" aria-label="Embedded range" placeholder="A1:D8" /></label>
-        <p>Displays saved values. Open the spreadsheet to edit its source.</p>
-        <p v-if="error" role="alert">{{ error }}</p>
+        <label>{{ t('embed.path') }}<Input v-model="path" :aria-label="t('embed.pathLabel')" :placeholder="t('embed.pathPlaceholder')" /></label>
+        <label>{{ t('embed.sheet') }}<Input v-model="name" :aria-label="t('embed.sheetLabel')" maxlength="31" /></label>
+        <label>{{ t('embed.range') }}<Input v-model="range" :aria-label="t('embed.rangeLabel')" :placeholder="RANGE_SAMPLE" /></label>
+        <p>{{ t('embed.note') }}</p>
+        <p v-if="error" role="alert">{{ errorText(error) }}</p>
       </form>
-      <template #footer><Button :size="buttonSize" variant="secondary" type="submit" :form="id">Apply</Button></template>
+      <template #footer><Button :size="buttonSize" variant="secondary" type="submit" :form="id">{{ t('embed.apply') }}</Button></template>
     </Dialog>
   </div>
 </template>

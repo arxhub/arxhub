@@ -8,6 +8,7 @@ import type {
   DiffStop,
   SheetStatus,
 } from '@arxhub/plugin-diff'
+import { t } from './i18n/messages'
 import { pointOf } from './model'
 import { parseWorkbook, type Workbook, type Worksheet } from './workbook'
 
@@ -41,8 +42,8 @@ export function diffWorkbooks(left: Workbook, right: Workbook): DiffSheetModel {
   const notes: string[] = []
   const survivors = (book: Workbook, other: Workbook) =>
     book.sheets.filter((sheet) => other.sheets.some((it) => it.id === sheet.id)).map((sheet) => sheet.id)
-  if (survivors(left, right).join('\n') !== survivors(right, left).join('\n')) notes.push('изменён порядок листов')
-  if (left.active !== right.active) notes.push('изменён активный лист')
+  if (survivors(left, right).join('\n') !== survivors(right, left).join('\n')) notes.push(t('diff.sheetOrder'))
+  if (left.active !== right.active) notes.push(t('diff.activeSheet'))
   const model: DiffSheetModel = {
     format: 'sheets',
     tabs,
@@ -159,7 +160,7 @@ function diffSheet(before: Worksheet | undefined, after: Worksheet | undefined):
     groups,
     stops,
     counts,
-    ...(styled.length ? { note: `изменено оформление: ${styled.join(', ')}` } : {}),
+    ...(styled.length ? { note: t('diff.styled', { what: styled.join(', ') }) } : {}),
   }
 }
 
@@ -168,11 +169,11 @@ function layoutChanges(before: Worksheet, after: Worksheet): string[] {
   const b = after.sheet
   const differs = (x: unknown, y: unknown) => JSON.stringify(x ?? null) !== JSON.stringify(y ?? null)
   const out: string[] = []
-  if (differs(a.formats, b.formats)) out.push('форматы ячеек')
-  if (differs(a.widths, b.widths)) out.push('ширина столбцов')
-  if (differs(a.wrap, b.wrap)) out.push('перенос текста')
-  if (differs(a.freeze, b.freeze)) out.push('закрепление')
-  if (a.rows !== b.rows || a.columns !== b.columns) out.push('размер листа')
+  if (differs(a.formats, b.formats)) out.push(t('diff.formats'))
+  if (differs(a.widths, b.widths)) out.push(t('diff.widths'))
+  if (differs(a.wrap, b.wrap)) out.push(t('diff.wrap'))
+  if (differs(a.freeze, b.freeze)) out.push(t('diff.freeze'))
+  if (a.rows !== b.rows || a.columns !== b.columns) out.push(t('diff.size'))
   return out
 }
 

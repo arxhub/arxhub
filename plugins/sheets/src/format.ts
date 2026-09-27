@@ -1,3 +1,4 @@
+import { locale } from '@arxhub/i18n'
 import type { CellValue } from './formula'
 import { displayValue, isCellError } from './formula'
 
@@ -8,8 +9,18 @@ export interface CellFormat {
   currency: string
 }
 export const defaultFormat: CellFormat = { kind: 'general', decimals: 2, currency: 'USD' }
+// Cells display in the interface language, so the key carries it: a switch must not reuse the other one's formatter.
 const numberFormats = new Map<string, Intl.NumberFormat>()
-const dateFormat = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' })
+const dateFormats = new Map<string, Intl.DateTimeFormat>()
+function dateFormat(): Intl.DateTimeFormat {
+  const lang = locale()
+  let formatter = dateFormats.get(lang)
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(lang, { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' })
+    dateFormats.set(lang, formatter)
+  }
+  return formatter
+}
 export const DATE_EPOCH = Date.UTC(1899, 11, 30)
 export function dateSerial(input: string): number | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return null
@@ -20,12 +31,13 @@ export function formatValue(value: CellValue, format?: CellFormat): string {
   if (!format || format.kind === 'general' || typeof value !== 'number' || isCellError(value)) return displayValue(value)
   if (format.kind === 'date') {
     const time = DATE_EPOCH + value * 86_400_000
-    return Number.isFinite(time) && Math.abs(time) < 8.64e15 ? dateFormat.format(new Date(time)) : '#NUM!'
+    return Number.isFinite(time) && Math.abs(time) < 8.64e15 ? dateFormat().format(new Date(time)) : '#NUM!'
   }
-  const key = `${format.kind}:${format.decimals}:${format.currency}`
+  const lang = locale()
+  const key = `${lang}:${format.kind}:${format.decimals}:${format.currency}`
   let formatter = numberFormats.get(key)
   if (!formatter) {
-    formatter = new Intl.NumberFormat(undefined, {
+    formatter = new Intl.NumberFormat(lang, {
       style: format.kind === 'number' ? 'decimal' : format.kind,
       currency: format.currency,
       minimumFractionDigits: format.decimals,

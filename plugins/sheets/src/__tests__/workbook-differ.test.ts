@@ -141,7 +141,7 @@ describe('diffWorkbooks', () => {
     const model = diffWorkbooks(book([plain]), book([wide]))
     expect(model.identical).toBe(false)
     expect(tab(model, 'a').status).toBe('changed')
-    expect(tab(model, 'a').note).toBe('изменено оформление: ширина столбцов')
+    expect(tab(model, 'a').note).toBe('formatting changed: column widths')
     expect(tab(model, 'a').stops).toEqual([])
     expectStopInvariant(model)
   })
@@ -151,7 +151,7 @@ describe('diffWorkbooks', () => {
     const b = ws('b', 'B', {})
     const model = diffWorkbooks(book([a, b], 'a'), book([b, a], 'a'))
     expect(model.identical).toBe(false)
-    expect(model.note).toBe('изменён порядок листов')
+    expect(model.note).toBe('sheet order changed')
   })
 
   test('groups one row at a time, with the first two values of the row as context', () => {

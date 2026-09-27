@@ -1,3 +1,4 @@
+import { sheetsError } from './errors'
 import { FormulaEngine } from './formula'
 import type { Patch, Sheet } from './model'
 import type { Workbook } from './workbook'
@@ -20,6 +21,6 @@ self.onmessage = (event: MessageEvent<CalculationRequest>) => {
     engine?.update(request.patch, request.rows, request.columns, request.active)
     self.postMessage({ id: request.id, values: engine?.values(request.keys, request.active) ?? {} })
   } catch {
-    self.postMessage({ id: request.id, error: 'Calculation failed. Your cell contents are still available to save.' })
+    self.postMessage({ id: request.id, error: sheetsError('SheetCalculationFailed').body })
   }
 }

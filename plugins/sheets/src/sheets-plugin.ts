@@ -7,6 +7,7 @@ import { PanelStoreExtension } from '@arxhub/plugin-panels'
 import { RepositoryExtension } from '@arxhub/plugin-repository'
 import { SearchExtension } from '@arxhub/plugin-search'
 import { sheetContribution } from './embed'
+import { t } from './i18n/messages'
 import { manifest } from './manifest'
 import { emptySheet } from './model'
 import SheetEditor from './ui/SheetEditor.vue'
@@ -30,14 +31,16 @@ export class SheetsPlugin extends Plugin {
     const id = 'arxhub.sheets'
     ctx.extensions
       .get(DocumentsExtension)
-      .registerViewer({ id, panelId: id, title: 'Spreadsheet', extensions: ['.arxs'], icon: 'lu:table-2', component: SheetEditor })
-    ctx.extensions.get(PanelStoreExtension).store.registerPanel({ id, title: 'Spreadsheet', component: SheetEditor })
+      .registerViewer({ id, panelId: id, title: () => t('title'), extensions: ['.arxs'], icon: 'lu:table-2', component: SheetEditor })
+    ctx.extensions.get(PanelStoreExtension).store.registerPanel({ id, title: t('title'), component: SheetEditor })
     if (ctx.extensions.has(ExplorerExtension)) {
       ctx.extensions.get(ExplorerExtension).registerFileTemplate({
         extension: '.arxs',
-        label: 'New spreadsheet',
+        label: () => t('template.label'),
         icon: 'lu:table-2',
-        hint: '.arxs — sheets and formulas',
+        hint: () => t('template.hint'),
+        noun: () => t('template.noun'),
+        object: () => t('template.object'),
         seed: () => JSON.stringify(emptySheet()),
       })
     }

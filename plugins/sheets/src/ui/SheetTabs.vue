@@ -2,6 +2,7 @@
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { actionMenu, Button, IconButton, ScrollArea, Segmented, Strip } from '@arxhub/uikit/core'
 import { computed } from 'vue'
+import { t } from '../i18n/messages'
 import { worksheetActions } from './sheet-actions'
 import { useSheet } from './use-sheet'
 
@@ -14,10 +15,10 @@ function manage(event: MouseEvent) {
 </script>
 <template>
   <Strip class="sheet-tabs">
-    <IconButton size="lg" icon="lu:ellipsis" tooltip="Worksheet actions" :disabled="!editable" @click="manage" />
-    <ScrollArea axis="x" passive class="sheet-tab-scroll" content-class="sheet-tab-row"><Segmented :model-value="sheetId" :options="options" aria-label="Worksheets" :disabled="!editable" @update:model-value="switchSheet" /></ScrollArea>
+    <IconButton size="lg" icon="lu:ellipsis" :tooltip="t('bar.worksheetActions')" :disabled="!editable" @click="manage" />
+    <ScrollArea axis="x" passive class="sheet-tab-scroll" content-class="sheet-tab-row"><Segmented :model-value="sheetId" :options="options" :aria-label="t('bar.worksheets')" :disabled="!editable" @update:model-value="switchSheet" /></ScrollArea>
     <template #actions>
-      <Button size="sm" variant="secondary" :disabled="!editable || (book?.sheets.length ?? 0) >= 16" @click="addSheet">Add sheet</Button>
+      <Button size="sm" variant="secondary" :disabled="!editable || (book?.sheets.length ?? 0) >= 16" @click="addSheet">{{ t('bar.addSheet') }}</Button>
     </template>
   </Strip>
 </template>

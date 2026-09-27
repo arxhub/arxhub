@@ -2,13 +2,13 @@ import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { type ActionItem, actionMenu } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onUnmounted } from 'vue'
+import { t } from '../i18n/messages'
 import { MAX_SHEETS } from '../workbook'
 import { cellActions, toolActions, worksheetActions } from './sheet-actions'
 import type { SheetSession } from './use-sheet'
 
 function filled(count: number): string {
-  if (count === 0) return 'Empty'
-  return count === 1 ? '1 filled cell' : `${count.toLocaleString()} filled cells`
+  return count === 0 ? t('filled.empty') : t('filled.cells', { count })
 }
 
 // The phone's whole workbook chrome: the band names the workbook and its sheet, the sheets are its parts,
@@ -19,17 +19,17 @@ export function useSheetBar(path: () => string, session: SheetSession): void {
   const documents = useArxHub().extensions.get(DocumentsExtension)
   onUnmounted(
     documents.registerViewBar(path, () => {
-      const { book, sheetId, sheetName, editable, selectingRange, selectionLabel, status } = session
+      const { book, sheetId, sheetName, editable, selectingRange, selectionLabel, status, saveState } = session
       const sheets = book.value?.sheets ?? []
       const locked = (items: ActionItem[]) => items.map((item) => ({ ...item, disabled: item.disabled === true || !editable.value }))
       const newSheet: ActionItem = {
         id: 'sheets.add',
-        label: 'New sheet',
+        label: t('bar.newSheet'),
         icon: 'lu:plus',
         disabled: !editable.value || sheets.length >= MAX_SHEETS,
         onSelect: session.addSheet,
       }
-      const tools = () => actionMenu.open(locked(toolActions(session)), { title: 'Spreadsheet tools' })
+      const tools = () => actionMenu.open(locked(toolActions(session)), { title: t('bar.tools') })
       return {
         icon: 'lu:table-2',
         // The save state rides after the sheet, as the desktop bar's status line carries it — silent while
@@ -37,12 +37,12 @@ export function useSheetBar(path: () => string, session: SheetSession): void {
         sub:
           [
             selectingRange.value ? `${sheetName.value} · ${selectionLabel.value}` : sheetName.value,
-            status.value === 'Saved' ? '' : status.value,
+            saveState.value === 'saved' ? '' : status.value,
           ]
             .filter((part) => part !== '')
             .join(' · ') || undefined,
         parts: {
-          title: 'Sheets',
+          title: t('bar.sheets'),
           items: sheets.map((entry) => ({
             id: entry.id,
             title: entry.name,
@@ -55,12 +55,12 @@ export function useSheetBar(path: () => string, session: SheetSession): void {
         },
         menu: [
           ...locked([
-            { id: 'sheets.undo', label: 'Undo', icon: 'lu:undo-2', disabled: !session.canUndo.value, onSelect: session.undo },
-            { id: 'sheets.redo', label: 'Redo', icon: 'lu:redo-2', disabled: !session.canRedo.value, onSelect: session.redo },
+            { id: 'sheets.undo', label: t('bar.undo'), icon: 'lu:undo-2', disabled: !session.canUndo.value, onSelect: session.undo },
+            { id: 'sheets.redo', label: t('bar.redo'), icon: 'lu:redo-2', disabled: !session.canRedo.value, onSelect: session.redo },
             ...cellActions(session, tools),
             {
               id: 'sheets.save',
-              label: 'Save',
+              label: t('bar.save'),
               icon: 'lu:save',
               onSelect: () => {
                 void session.save()

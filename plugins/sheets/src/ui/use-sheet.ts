@@ -8,8 +8,10 @@ import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { computed, type InjectionKey, inject, nextTick, onMounted, onUnmounted, ref, shallowRef, toRef, triggerRef, useId, watch } from 'vue'
 import type { CalculationRequest } from '../calculation.worker'
 import { CLIPBOARD_TYPE, copyRange, csvPatch, exportCsv, fillRange, pasteRange } from '../clipboard'
+import { errorText, sheetsError } from '../errors'
 import { type CellFormat, dateSerial, formatValue } from '../format'
 import { type CellValue, displayValue } from '../formula'
+import { t } from '../i18n/messages'
 import { address, emptySheet, MAX_COLUMNS, MAX_FILE_BYTES, MAX_ROWS, type Patch, type Point, rangePoints, type Sheet } from '../model'
 import { autofill, editStructure, renameReferences, sortRange } from '../operations'
 import { canInsertReference, insertReference, type ReferenceInsertion } from '../reference-input'
@@ -33,7 +35,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
   const revision = ref(0),
     savedRevision = ref(0),
     saving = ref(false),
-    saveError = ref(''),
+    saveError = shallowRef<unknown>(null),
     gone = ref(false)
   const active = ref<Point>({ row: 0, column: 0 }),
     end = ref<Point>({ row: 0, column: 0 }),
@@ -41,7 +43,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
   const draft = ref(''),
     values = shallowRef<Record<string, CellValue>>({}),
     calculating = ref(false),
-    calculationError = ref('')
+    calculationError = shallowRef<unknown>(null)
   const formulaCaret = ref(0)
   const formulaFocused = ref(false),
     composing = ref(false)
@@ -75,21 +77,22 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
     address(active.value) === address(end.value) ? activeAddress.value : `${activeAddress.value}:${address(end.value)}`,
   )
   const dirty = computed(() => revision.value !== savedRevision.value || draft.value !== (sheet.value?.cells[activeAddress.value] ?? ''))
-  const status = computed(() =>
+  const saveState = computed(() =>
     document.loading.value
-      ? 'Opening…'
+      ? 'opening'
       : document.error.value
-        ? 'Cannot open'
+        ? 'cannotOpen'
         : gone.value
-          ? 'File deleted'
+          ? 'deleted'
           : saving.value
-            ? 'Saving…'
+            ? 'saving'
             : saveError.value
-              ? 'Save failed'
+              ? 'saveFailed'
               : dirty.value
-                ? 'Unsaved'
-                : 'Saved',
+                ? 'unsaved'
+                : 'saved',
   )
+  const status = computed(() => t(`status.${saveState.value}`))
   const canUndo = computed(() => {
     revision.value
     return history.value?.canUndo ?? false
@@ -101,14 +104,14 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
 
   function report(error: unknown): void {
     if (disposed) return
-    toaster.create({ title: 'Spreadsheet', description: error instanceof Error ? error.message : String(error), type: 'error' })
+    toaster.create({ title: t('title'), description: errorText(error), type: 'error' })
   }
 
   const document = useFileDocument(toRef(props, 'path'), {
     retainOnPathChange: true,
     allowMissing: false,
     read: async (path) => {
-      if ((await vfs.head(path)).size > MAX_FILE_BYTES) throw validation('Spreadsheet is too large (8 MB maximum)')
+      if ((await vfs.head(path)).size > MAX_FILE_BYTES) throw sheetsError('SheetFileTooLarge')
       return vfs.read(path)
     },
     build: (_path, bytes) => parseWorkbook(new TextDecoder().decode(bytes)),
@@ -117,7 +120,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
       history.value = new WorkbookHistory(value)
       revision.value = 0
       savedRevision.value = 0
-      saveError.value = ''
+      saveError.value = null
       gone.value = false
       active.value = { row: 0, column: 0 }
       end.value = active.value
@@ -143,10 +146,10 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
     clearTimeout(deadline)
   }
 
-  function failCalculation(message: string): void {
+  function failCalculation(error: unknown): void {
     stopWorker()
     calculating.value = false
-    calculationError.value = message
+    calculationError.value = error
     values.value = {}
   }
 
@@ -161,7 +164,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
       }
       if (!worker) {
         worker = new Worker(new URL('../calculation.worker.ts', import.meta.url), { type: 'module' })
-        worker.onmessage = (event: MessageEvent<{ id: number; values?: Record<string, CellValue>; error?: string }>) => {
+        worker.onmessage = (event: MessageEvent<{ id: number; values?: Record<string, CellValue>; error?: unknown }>) => {
           clearTimeout(deadline)
           running = false
           if (event.data.error) {
@@ -174,7 +177,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
           }
           sendCalculation()
         }
-        worker.onerror = () => failCalculation('Calculation could not start. Save your data and retry calculation.')
+        worker.onerror = () => failCalculation(sheetsError('SheetCalculationStart'))
       }
       const request: CalculationRequest = {
         id: desired,
@@ -191,12 +194,9 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
       needsInit = false
       pending = {}
       running = true
-      deadline = setTimeout(
-        () => failCalculation('Calculation took too long and was stopped. Your inputs are safe; simplify the formulas and retry.'),
-        5000,
-      )
+      deadline = setTimeout(() => failCalculation(sheetsError('SheetCalculationTimeout')), 5000)
     } catch {
-      failCalculation('Calculation is unavailable. Your inputs can still be edited and saved.')
+      failCalculation(sheetsError('SheetCalculationUnavailable'))
     }
   }
 
@@ -218,7 +218,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
     if (!frame) frame = requestAnimationFrame(sendCalculation)
   }
   function retryCalculation(): void {
-    calculationError.value = ''
+    calculationError.value = null
     stopWorker()
     recalculate()
   }
@@ -226,7 +226,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
   function changed(patch: Patch | null): void {
     if (!patch) return
     revision.value++
-    saveError.value = ''
+    saveError.value = null
     recalculate(patch)
     autosave.schedule()
   }
@@ -382,7 +382,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
     if (!editable.value || !commit() || !sheet.value) return
     const max = axis === 'rows' ? MAX_ROWS : MAX_COLUMNS
     if (sheet.value[axis] === max) {
-      report(validation(`Maximum ${max} ${axis}`))
+      report(sheetsError(axis === 'rows' ? 'SheetMaxRows' : 'SheetMaxColumns', { max }))
       return
     }
     updateSheet({ ...sheet.value, [axis]: Math.min(max, sheet.value[axis] + (axis === 'rows' ? 1000 : 1)) })
@@ -446,7 +446,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
   function addSheet(): void {
     if (!book.value || !commit()) return
     if (book.value.sheets.length >= MAX_SHEETS) {
-      report(validation('A workbook supports at most 16 sheets'))
+      report(sheetsError('SheetTooManySheets'))
       return
     }
     let index = 1
@@ -517,15 +517,15 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
       }
       const timer = setTimeout(() => {
         finish()
-        reject(validation('The selected range took too long to calculate'))
+        reject(sheetsError('SheetRangeCalculationTimeout'))
       }, 5000)
       task.onerror = () => {
         finish()
-        reject(validation('Could not calculate the selected range'))
+        reject(sheetsError('SheetRangeCalculationFailed'))
       }
-      task.onmessage = (event: MessageEvent<{ values: Record<string, CellValue>; error?: string }>) => {
+      task.onmessage = (event: MessageEvent<{ values: Record<string, CellValue>; error?: unknown }>) => {
         finish()
-        if (event.data.error) reject(validation(event.data.error))
+        if (event.data.error) reject(event.data.error)
         else resolve(event.data.values)
       }
       task.postMessage({
@@ -549,7 +549,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
     try {
       const keys = rangePoints({ row: a.row, column }, { row: b.row, column }).map(address)
       const values = await selectionValues(keys)
-      if (disposed || version !== revision.value) throw validation('The workbook changed; please try sorting again')
+      if (disposed || version !== revision.value) throw sheetsError('SheetChangedSort')
       return updateSheet(sortRange(sheet.value, a, b, column, descending, header, values))
     } catch (error) {
       report(error)
@@ -561,7 +561,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
   async function filterSelection(column: number, text: string, header: boolean): Promise<boolean> {
     if (!sheet.value || !commit() || operationBusy.value) return false
     if (column < Math.min(active.value.column, end.value.column) || column > Math.max(active.value.column, end.value.column)) {
-      report(validation('Choose a filter column inside the selected range'))
+      report(sheetsError('SheetFilterColumn'))
       return false
     }
     operationBusy.value = true
@@ -571,7 +571,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
     try {
       const points = rangePoints({ row: Math.min(a.row, b.row) + Number(header), column }, { row: Math.max(a.row, b.row), column })
       const values = await selectionValues(points.map(address))
-      if (disposed || version !== revision.value) throw validation('The workbook changed; please try filtering again')
+      if (disposed || version !== revision.value) throw sheetsError('SheetChangedFilter')
       hiddenRows.value = new Set(
         points
           .filter(
@@ -606,7 +606,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
     input.value = ''
     if (!file || !sheet.value || !commit()) return
     try {
-      if (file.size > 2_000_000) throw validation('CSV import is limited to 2 MB')
+      if (file.size > 2_000_000) throw sheetsError('SheetCsvTooLarge')
       const patch = csvPatch(sheet.value, active.value, await file.text())
       if (apply(patch)) draft.value = sheet.value.cells[activeAddress.value] ?? ''
     } catch (error) {
@@ -644,15 +644,15 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
       }
       const timer = setTimeout(() => {
         finish()
-        reject(validation('XLSX conversion exceeded 15 seconds'))
+        reject(sheetsError('XlsxTimeout'))
       }, 15_000)
       task.onerror = () => {
         finish()
-        reject(validation('XLSX conversion could not start'))
+        reject(sheetsError('XlsxStartFailed'))
       }
-      task.onmessage = (event: MessageEvent<{ book?: Workbook; bytes?: ArrayBuffer; error?: string }>) => {
+      task.onmessage = (event: MessageEvent<{ book?: Workbook; bytes?: ArrayBuffer; error?: unknown }>) => {
         finish()
-        if (event.data.error) reject(validation(event.data.error))
+        if (event.data.error) reject(event.data.error)
         else resolve(event.data)
       }
       task.postMessage(request, request.kind === 'import' ? [request.bytes] : [])
@@ -666,9 +666,9 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
     operationBusy.value = true
     importedRevision = revision.value
     try {
-      if (file.size > MAX_FILE_BYTES) throw validation('XLSX import is limited to 8 MB')
+      if (file.size > MAX_FILE_BYTES) throw sheetsError('XlsxImportTooLarge')
       const result = await convertXlsx({ kind: 'import', bytes: await file.arrayBuffer() })
-      if (disposed || importedRevision !== revision.value) throw validation('The workbook changed; import again to avoid replacing newer edits')
+      if (disposed || importedRevision !== revision.value) throw sheetsError('SheetChangedImport')
       if (result.book) {
         importedBook.value = result.book
         tool.value = 'xlsx'
@@ -682,7 +682,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
   function applyImport(): boolean {
     if (!importedBook.value || !commit()) return false
     if (importedRevision !== revision.value) {
-      report(validation('The workbook changed; import again'))
+      report(sheetsError('SheetChangedImportAgain'))
       return false
     }
     const success = replaceBook(importedBook.value)
@@ -754,7 +754,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
         draft.value = sheet.value.cells[activeAddress.value] ?? ''
       }
     } catch {
-      report(validation('Clipboard access is unavailable. Focus the grid and paste with your keyboard.'))
+      report(sheetsError('SheetClipboardUnavailable'))
     }
   }
 
@@ -764,15 +764,15 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
       version = revision.value
     saving.value = true
     try {
-      if (!(await vfs.exists(target)) || gone.value) throw validation('The file no longer exists. Saving was stopped to avoid recreating it.')
+      if (!(await vfs.exists(target)) || gone.value) throw sheetsError('SheetFileGone')
       if (disposed || target !== props.path) return
       const bytes = new TextEncoder().encode(serializeWorkbook(history.value!.book))
-      if (bytes.length > MAX_FILE_BYTES) throw validation('The encoded spreadsheet exceeds 8 MB. Reduce the contents or undo the last change.')
+      if (bytes.length > MAX_FILE_BYTES) throw sheetsError('SheetEncodedTooLarge')
       await vfs.write(target, bytes)
       if (target === props.path) savedRevision.value = version
-      saveError.value = ''
+      saveError.value = null
     } catch (error) {
-      saveError.value = error instanceof Error ? error.message : String(error)
+      saveError.value = error
       hub.logger.error(`[sheets] could not save ${target}`, error)
       report(error)
       throw error
@@ -843,22 +843,24 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
       id: `${layer}.save`,
       chord: 'Mod-s',
       layer,
-      title: 'Save spreadsheet',
+      title: () => t('hotkeys.save'),
       run: () => {
         void save()
       },
     },
-    ...[
-      ['Mod-z', 'undo', undo],
-      ['Mod-Shift-z', 'redo', redo],
-      ['Mod-y', 'redo-alt', redo],
-    ].map(([chord, id, run]) => ({
+    ...(
+      [
+        ['Mod-z', 'undo', () => t('hotkeys.undo'), undo],
+        ['Mod-Shift-z', 'redo', () => t('hotkeys.redo'), redo],
+        ['Mod-y', 'redo-alt', () => t('hotkeys.redo'), redo],
+      ] as const
+    ).map(([chord, id, title, run]) => ({
       id: `${layer}.${id}`,
-      chord: String(chord),
+      chord,
       layer,
-      title: String(id),
+      title,
       when: () => !inputRoot.value?.contains(window.document.activeElement),
-      run: run as () => void,
+      run,
     })),
   ])
   onUnmounted(() => {
@@ -937,6 +939,7 @@ export function createSheetSession(props: { path: string; anchor?: BlockAnchor }
     selectionLabel,
     dirty,
     status,
+    saveState,
     canUndo,
     canRedo,
     editable,

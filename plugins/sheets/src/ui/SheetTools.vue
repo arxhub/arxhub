@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { Button, Checkbox, Dialog, Input, NumberInput, RadioGroup } from '@arxhub/uikit/core'
+import { formatList } from '@arxhub/i18n'
+import { Button, Checkbox, Dialog, Input, Interpolated, NumberInput, RadioGroup } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, useId, watch } from 'vue'
 import { defaultFormat, type NumberKind } from '../format'
+import { FUNCTIONS } from '../formula-help'
+import { messages, t } from '../i18n/messages'
 import { columnName, pointOf } from '../model'
 import { validSheetName } from '../workbook'
 import { useSheet } from './use-sheet'
@@ -38,7 +41,20 @@ const column = ref('A'),
   header = ref(true),
   filter = ref(''),
   name = ref('')
-const kinds = ['general', 'number', 'percent', 'currency', 'date'].map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }))
+const KINDS = ['general', 'number', 'percent', 'currency', 'date'] as const
+const kinds = computed(() => KINDS.map((value) => ({ value, label: t(`tools.kinds.${value}`) })))
+// Formulas, addresses and codes read the same in every language, so the help quotes them as they are typed.
+const SAMPLES = {
+  address: 'A1',
+  currency: 'USD',
+  multiply: '=A1*B1',
+  sum: '=SUM(C1:C10)',
+  choose: '=IF(A1>0,"Yes","No")',
+  absolute: '$A$1',
+  fixedRow: 'A$1',
+  fixedColumn: '$A1',
+}
+const FUNCTION_NAMES = FUNCTIONS.map((fn) => fn.name).join(', ')
 const target = ref(''),
   formId = useId()
 watch(tool, () => {
@@ -81,69 +97,74 @@ async function applyTool() {
   if (tool.value === 'filter' && point) done = await session.filterSelection(point.column, filter.value, header.value)
   if (done) tool.value = null
 }
-const titles = {
-  xlsx: 'Import XLSX workbook',
-  format: 'Format cells',
-  layout: 'Sheet layout',
-  rename: 'Rename sheet',
-  delete: 'Delete sheet',
-  sort: 'Sort selected range',
-  filter: 'Filter selected range',
-}
-const advanced = computed(() => (tool.value && tool.value in titles ? (tool.value as keyof typeof titles) : null))
+const ADVANCED = ['xlsx', 'format', 'layout', 'rename', 'delete', 'sort', 'filter'] as const
+type AdvancedTool = (typeof ADVANCED)[number]
+const advanced = computed(() => (ADVANCED.find((id) => id === tool.value) ?? null) as AdvancedTool | null)
 </script>
 
 <template>
-  <input ref="xlsxInput" type="file" accept=".xlsx" aria-label="Import XLSX" hidden @change="importExcel" />
-  <input ref="fileInput" type="file" accept=".csv,text/csv" aria-label="Import CSV" hidden @change="importCsv" />
-  <Dialog v-if="tool === 'goto'" :open="true" title="Go to cell" size="sm" @update:open="!$event && (tool = null)">
+  <input ref="xlsxInput" type="file" accept=".xlsx" :aria-label="t('tools.importXlsx')" hidden @change="importExcel" />
+  <input ref="fileInput" type="file" accept=".csv,text/csv" :aria-label="t('tools.importCsv')" hidden @change="importCsv" />
+  <Dialog v-if="tool === 'goto'" :open="true" :title="t('tools.goto')" size="sm" @update:open="!$event && (tool = null)">
     <form :id="formId" @submit.prevent="go">
-      <label class="sheet-field">Cell address<Input v-model="target" aria-label="Cell address" placeholder="A1" autocomplete="off" /></label>
-      <p class="sheet-hint">{{ sheet?.rows.toLocaleString() }} rows · {{ sheet?.columns }} columns</p>
+      <label class="sheet-field">{{ t('tools.address') }}<Input v-model="target" :aria-label="t('tools.address')" :placeholder="SAMPLES.address" autocomplete="off" /></label>
+      <p class="sheet-hint">{{ t('tools.rows', { count: sheet?.rows ?? 0 }) }} · {{ t('tools.columns', { count: sheet?.columns ?? 0 }) }}</p>
     </form>
-    <template #footer><Button :size="buttonSize" variant="secondary" type="submit" :form="formId" :disabled="!valid">Go</Button></template>
+    <template #footer><Button :size="buttonSize" variant="secondary" type="submit" :form="formId" :disabled="!valid">{{ t('tools.go') }}</Button></template>
   </Dialog>
-  <Dialog v-if="advanced" :open="true" :title="titles[advanced]" size="sm" @update:open="!$event && !operationBusy && (tool = null)">
+  <Dialog v-if="advanced" :open="true" :title="t(`tools.titles.${advanced}`)" size="sm" @update:open="!$event && !operationBusy && (tool = null)">
     <form :id="`${formId}-advanced`" class="sheet-tool-form" @submit.prevent="applyTool">
       <template v-if="advanced === 'xlsx'">
-        <p>Replace this workbook with {{ importedBook?.sheets.length }} imported sheets? Undo restores the current workbook.</p>
-        <p>{{ importedBook?.sheets.map((entry) => entry.name).join(', ') }}</p>
-        <p class="sheet-hint">Imports cell values, formulas, basic number formats, column widths and frozen panes. Charts, images, comments, custom styles and filter settings are not imported. Unsupported functions remain as formulas and show #NAME?.</p>
+        <p>{{ t('tools.xlsxReplace', { count: importedBook?.sheets.length ?? 0 }) }}</p>
+        <p>{{ formatList(importedBook?.sheets.map((entry) => entry.name) ?? [], 'unit') }}</p>
+        <p class="sheet-hint">{{ t('tools.xlsxHint') }}</p>
       </template>
       <template v-if="advanced === 'format'">
-        <RadioGroup v-model="formatKind" :options="kinds" aria-label="Number format" />
-        <label class="sheet-field" v-if="formatKind !== 'date' && formatKind !== 'general'">Decimal places<NumberInput v-model="decimals" :min="0" :max="10" aria-label="Decimal places" /></label>
-        <label class="sheet-field" v-if="formatKind === 'currency'">Currency code<Input v-model="currency" aria-label="Currency code" maxlength="3" placeholder="USD" /></label>
-        <p v-if="formatKind === 'date'" class="sheet-hint">Enter dates as YYYY-MM-DD. Dates are stored as serial numbers and display in your locale.</p>
+        <RadioGroup v-model="formatKind" :options="kinds" :aria-label="t('tools.numberFormat')" />
+        <label class="sheet-field" v-if="formatKind !== 'date' && formatKind !== 'general'">{{ t('tools.decimals') }}<NumberInput v-model="decimals" :min="0" :max="10" :aria-label="t('tools.decimals')" /></label>
+        <label class="sheet-field" v-if="formatKind === 'currency'">{{ t('tools.currency') }}<Input v-model="currency" :aria-label="t('tools.currency')" maxlength="3" :placeholder="SAMPLES.currency" /></label>
+        <p v-if="formatKind === 'date'" class="sheet-hint">{{ t('tools.dateHint') }}</p>
       </template>
       <template v-if="advanced === 'layout'">
-        <label class="sheet-field">Selected column width<NumberInput v-model="width" :min="64" :max="640" :step="4" aria-label="Column width" unit="px" /></label>
-        <Checkbox v-model="wrap" label="Wrap text (taller rows)" />
-        <label class="sheet-field">Frozen top rows<NumberInput v-model="frozenRows" :min="0" :max="Math.min(3, sheet?.rows ?? 0)" aria-label="Frozen rows" /></label>
-        <label class="sheet-field">Frozen left columns<NumberInput v-model="frozenColumns" :min="0" :max="Math.min(2, sheet?.columns ?? 0)" aria-label="Frozen columns" /></label>
+        <label class="sheet-field">{{ t('tools.width') }}<NumberInput v-model="width" :min="64" :max="640" :step="4" :aria-label="t('tools.widthLabel')" unit="px" /></label>
+        <Checkbox v-model="wrap" :label="t('tools.wrap')" />
+        <label class="sheet-field">{{ t('tools.frozenRows') }}<NumberInput v-model="frozenRows" :min="0" :max="Math.min(3, sheet?.rows ?? 0)" :aria-label="t('tools.frozenRowsLabel')" /></label>
+        <label class="sheet-field">{{ t('tools.frozenColumns') }}<NumberInput v-model="frozenColumns" :min="0" :max="Math.min(2, sheet?.columns ?? 0)" :aria-label="t('tools.frozenColumnsLabel')" /></label>
       </template>
       <template v-if="advanced === 'sort' || advanced === 'filter'">
-        <p class="sheet-hint">Selected range: {{ session.selectionLabel.value }}.<template v-if="advanced === 'sort'"> Sorting moves only this rectangle; select all related columns.</template></p>
-        <label class="sheet-field">Column letter<Input v-model="column" aria-label="Column letter" maxlength="3" /></label>
-        <Checkbox v-model="header" label="First row is a header" />
-        <Checkbox v-if="advanced === 'sort'" v-model="descending" label="Descending order" />
-        <label class="sheet-field" v-else>Contains<Input v-model="filter" aria-label="Filter text" /></label>
-        <p v-if="advanced === 'filter'" class="sheet-hint">The filter hides nonmatching rows for this view. Clear filter shows them again. Structural edits clear the filter.</p>
+        <p class="sheet-hint">{{ t('tools.selectedRange', { range: session.selectionLabel.value }) }}<template v-if="advanced === 'sort'"> {{ t('tools.sortHint') }}</template></p>
+        <label class="sheet-field">{{ t('tools.column') }}<Input v-model="column" :aria-label="t('tools.column')" maxlength="3" /></label>
+        <Checkbox v-model="header" :label="t('tools.header')" />
+        <Checkbox v-if="advanced === 'sort'" v-model="descending" :label="t('tools.descending')" />
+        <label class="sheet-field" v-else>{{ t('tools.contains') }}<Input v-model="filter" :aria-label="t('tools.filterText')" /></label>
+        <p v-if="advanced === 'filter'" class="sheet-hint">{{ t('tools.filterHint') }}</p>
       </template>
-      <label class="sheet-field" v-if="advanced === 'rename'">Sheet name<Input v-model="name" aria-label="Sheet name" maxlength="31" /></label>
-      <p v-if="advanced === 'delete'">Delete “{{ sheetName }}”? References to this sheet become #REF!. You can undo this operation.</p>
+      <label class="sheet-field" v-if="advanced === 'rename'">{{ t('tools.sheetName') }}<Input v-model="name" :aria-label="t('tools.sheetName')" maxlength="31" /></label>
+      <p v-if="advanced === 'delete'">{{ t('tools.deleteConfirm', { name: sheetName }) }}</p>
     </form>
-    <template #footer><Button :size="buttonSize" variant="secondary" type="submit" :form="`${formId}-advanced`" :disabled="operationBusy || advanced === 'rename' && !nameValid">{{ operationBusy ? 'Working…' : advanced === 'delete' ? 'Delete sheet' : 'Apply' }}</Button></template>
+    <template #footer><Button :size="buttonSize" variant="secondary" type="submit" :form="`${formId}-advanced`" :disabled="operationBusy || advanced === 'rename' && !nameValid">{{ operationBusy ? t('tools.working') : advanced === 'delete' ? t('tools.deleteSheet') : t('tools.apply') }}</Button></template>
   </Dialog>
-  <Dialog v-if="tool === 'help'" :open="true" title="Spreadsheet help" size="sm" @update:open="!$event && (tool = null)">
-    <p>Tap a cell, then enter a value or formula in the input. Enter applies it and moves down. Escape cancels the input.</p>
-    <p><code>=A1*B1</code> multiplies two cells. <code>=SUM(C1:C10)</code> totals a range. <code>=IF(A1&gt;0,"Yes","No")</code> chooses a value.</p>
-    <p>While typing a formula, click a cell or drag across cells to insert its reference or range at the caret. The input stays focused. Type an operator to pick another argument; Escape cancels the edit.</p>
-    <p>Functions: SUM, AVERAGE, MIN, MAX, COUNT, IF, ABS, ROUND. Use English names, a decimal point, and commas or semicolons between arguments.</p>
-    <p><code>$A$1</code> stays fixed when copied; <code>A$1</code> fixes the row and <code>$A1</code> the column. Begin with an apostrophe to keep a value as text.</p>
-    <p>Use Shift + arrows or Shift + click to select a range. On a phone, choose Select range and tap its other corner. Fill down copies the top row with adjusted formulas; Fill right copies the left column.</p>
-    <p>CSV imports into the selected cell and overwrites that rectangle; Undo restores it. CSV export preserves formula text. CSV uses commas, quoted cells and UTF-8.</p>
-    <p class="sheet-hint">Up to 16 sheets · up to 10,000 rows, 256 columns and 50,000 filled cells. Clipboard, CSV and fill operations support up to 50,000 cells. #LIMIT! means a formula exceeded the calculation limits; split it into smaller steps.</p>
+  <Dialog v-if="tool === 'help'" :open="true" :title="t('help.title')" size="sm" @update:open="!$event && (tool = null)">
+    <p>{{ t('help.enter') }}</p>
+    <p>
+      <Interpolated :text="messages.raw('help.formulas')">
+        <template #multiply><code>{{ SAMPLES.multiply }}</code></template>
+        <template #sum><code>{{ SAMPLES.sum }}</code></template>
+        <template #choose><code>{{ SAMPLES.choose }}</code></template>
+      </Interpolated>
+    </p>
+    <p>{{ t('help.pointing') }}</p>
+    <p>{{ t('help.functions', { names: FUNCTION_NAMES }) }}</p>
+    <p>
+      <Interpolated :text="messages.raw('help.references')">
+        <template #absolute><code>{{ SAMPLES.absolute }}</code></template>
+        <template #fixedRow><code>{{ SAMPLES.fixedRow }}</code></template>
+        <template #fixedColumn><code>{{ SAMPLES.fixedColumn }}</code></template>
+      </Interpolated>
+    </p>
+    <p>{{ t('help.select') }}</p>
+    <p>{{ t('help.csv') }}</p>
+    <p class="sheet-hint">{{ t('help.limits') }}</p>
   </Dialog>
 </template>
 

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { actionMenu, Button, IconButton, Strip } from '@arxhub/uikit/core'
+import { t } from '../i18n/messages'
 import { cellActions, toolActions } from './sheet-actions'
 import { useSheet } from './use-sheet'
 
 const session = useSheet()
 const { status, calculating, save, editable, undo, redo, canUndo, canRedo, selectingRange, selectionLabel } = session
 function more(event: MouseEvent) {
-  const tools = () => actionMenu.open(toolActions(session), { x: event.clientX, y: event.clientY, title: 'Spreadsheet tools' })
+  const tools = () => actionMenu.open(toolActions(session), { x: event.clientX, y: event.clientY, title: t('bar.tools') })
   actionMenu.open(cellActions(session, tools), { x: event.clientX, y: event.clientY })
 }
 </script>
@@ -14,11 +15,11 @@ function more(event: MouseEvent) {
 <template>
   <Strip class="sheet-bar">
     <span class="sheet-lead"><slot /></span>
-    <span class="sheet-status" role="status" :title="selectionLabel">{{ selectingRange ? selectionLabel : status }}{{ calculating ? ' · Calculating…' : '' }}</span>
-    <IconButton size="lg" icon="lu:undo-2" tooltip="Undo" :disabled="!canUndo || !editable" @click="undo" />
-    <IconButton size="lg" icon="lu:redo-2" tooltip="Redo" :disabled="!canRedo || !editable" @click="redo" />
-    <IconButton size="lg" icon="lu:ellipsis" tooltip="Spreadsheet actions" :disabled="!editable" @click="more" />
-    <template #actions><Button size="sm" variant="secondary" :disabled="!editable" @click="save">Save</Button></template>
+    <span class="sheet-status" role="status" :title="selectionLabel">{{ selectingRange ? selectionLabel : status }}<template v-if="calculating"> · {{ t('status.calculating') }}</template></span>
+    <IconButton size="lg" icon="lu:undo-2" :tooltip="t('bar.undo')" :disabled="!canUndo || !editable" @click="undo" />
+    <IconButton size="lg" icon="lu:redo-2" :tooltip="t('bar.redo')" :disabled="!canRedo || !editable" @click="redo" />
+    <IconButton size="lg" icon="lu:ellipsis" :tooltip="t('bar.actions')" :disabled="!editable" @click="more" />
+    <template #actions><Button size="sm" variant="secondary" :disabled="!editable" @click="save">{{ t('bar.save') }}</Button></template>
   </Strip>
 </template>
 

@@ -1,4 +1,4 @@
-import { validation } from '@arxhub/errors'
+import { sheetsError } from './errors'
 import type { CellFormat } from './format'
 
 export const MAX_ROWS = 10_000
@@ -48,14 +48,14 @@ export function emptySheet(): Sheet {
 }
 
 export function parseSheet(raw: string): Sheet {
-  if (raw.length > MAX_FILE_BYTES) throw validation('Spreadsheet is too large (8 MB maximum)')
+  if (raw.length > MAX_FILE_BYTES) throw sheetsError('SheetFileTooLarge')
   const value: unknown = JSON.parse(raw)
   if (
     !record(value) ||
     value.version !== 1 ||
     Object.keys(value).some((key) => !['version', 'rows', 'columns', 'cells', 'formats', 'widths', 'wrap', 'freeze'].includes(key))
   ) {
-    throw validation('Unsupported spreadsheet format or version')
+    throw sheetsError('SheetUnsupportedFormat')
   }
   const { rows, columns, cells } = value
   if (
@@ -69,9 +69,9 @@ export function parseSheet(raw: string): Sheet {
     columns > MAX_COLUMNS ||
     !record(cells)
   ) {
-    throw validation('Invalid spreadsheet dimensions or cells')
+    throw sheetsError('SheetInvalidDimensions')
   }
-  if (Object.keys(cells).length > MAX_CELLS) throw validation('A spreadsheet can contain at most 50,000 filled cells')
+  if (Object.keys(cells).length > MAX_CELLS) throw sheetsError('SheetTooManyCells')
   const result: Sheet = { version: 1, rows, columns, cells: {} }
   let size = 0
   for (const [key, input] of Object.entries(cells)) {
@@ -84,14 +84,14 @@ export function parseSheet(raw: string): Sheet {
       typeof input !== 'string' ||
       input.length > MAX_INPUT
     ) {
-      throw validation(`Invalid spreadsheet cell: ${key}`)
+      throw sheetsError('SheetInvalidCell', { cell: key })
     }
     size += input.length
-    if (size > 2_000_000) throw validation('Cell contents exceed the 2 million character limit')
+    if (size > 2_000_000) throw sheetsError('SheetContentTooLong')
     if (input !== '') result.cells[key] = input
   }
   if (value.formats !== undefined) {
-    if (!record(value.formats) || Object.keys(value.formats).length > MAX_CELLS) throw validation('Invalid cell formats')
+    if (!record(value.formats) || Object.keys(value.formats).length > MAX_CELLS) throw sheetsError('SheetInvalidFormats')
     result.formats = {}
     for (const [key, format] of Object.entries(value.formats)) {
       const point = pointOf(key)
@@ -110,12 +110,12 @@ export function parseSheet(raw: string): Sheet {
         typeof format.currency !== 'string' ||
         !/^[A-Z]{3}$/.test(format.currency)
       )
-        throw validation('Invalid cell format')
+        throw sheetsError('SheetInvalidFormat')
       result.formats[key] = { kind: format.kind as CellFormat['kind'], decimals: format.decimals, currency: format.currency }
     }
   }
   if (value.widths !== undefined) {
-    if (!record(value.widths) || Object.keys(value.widths).length > columns) throw validation('Invalid column widths')
+    if (!record(value.widths) || Object.keys(value.widths).length > columns) throw sheetsError('SheetInvalidWidths')
     result.widths = {}
     for (const [key, width] of Object.entries(value.widths)) {
       if (
@@ -127,12 +127,12 @@ export function parseSheet(raw: string): Sheet {
         width > 640 ||
         width % 4
       )
-        throw validation('Invalid column width')
+        throw sheetsError('SheetInvalidWidth')
       result.widths[key] = width
     }
   }
   if (value.wrap !== undefined) {
-    if (typeof value.wrap !== 'boolean') throw validation('Invalid text wrap')
+    if (typeof value.wrap !== 'boolean') throw sheetsError('SheetInvalidWrap')
     result.wrap = value.wrap
   }
   if (value.freeze !== undefined) {
@@ -148,7 +148,7 @@ export function parseSheet(raw: string): Sheet {
       value.freeze.columns < 0 ||
       value.freeze.columns > Math.min(2, columns)
     )
-      throw validation('Invalid frozen panes')
+      throw sheetsError('SheetInvalidFreeze')
     result.freeze = { rows: value.freeze.rows, columns: value.freeze.columns }
   }
   return result
@@ -163,7 +163,7 @@ export function rangePoints(a: Point, b: Point): Point[] {
     bottom = Math.max(a.row, b.row)
   const left = Math.min(a.column, b.column),
     right = Math.max(a.column, b.column)
-  if ((bottom - top + 1) * (right - left + 1) > MAX_RANGE) throw validation('Select at most 50,000 cells at a time')
+  if ((bottom - top + 1) * (right - left + 1) > MAX_RANGE) throw sheetsError('SheetRangeTooLarge')
   const points: Point[] = []
   for (let row = top; row <= bottom; row++) for (let column = left; column <= right; column++) points.push({ row, column })
   return points
@@ -205,7 +205,7 @@ export class SheetHistory {
     for (const [key, input] of Object.entries(patch)) {
       const point = pointOf(key)
       if (!point || address(point) !== key || point.row >= this.sheet.rows || point.column >= this.sheet.columns || input.length > MAX_INPUT) {
-        throw validation(`Cell ${key} is outside the sheet or exceeds 4096 characters`)
+        throw sheetsError('SheetCellOutOfBounds', { cell: key })
       }
       const old = this.sheet.cells[key] ?? ''
       if (old === input) continue
@@ -215,7 +215,7 @@ export class SheetHistory {
       count += Number(input !== '') - Number(old !== '')
       historySize += old.length + input.length + key.length * 2
     }
-    if (size > 2_000_000 || count > MAX_CELLS) throw validation('Spreadsheet capacity exceeded (50,000 filled cells / 2 million characters)')
+    if (size > 2_000_000 || count > MAX_CELLS) throw sheetsError('SheetCapacityExceeded')
     if (!Object.keys(after).length) return null
     this.write(after)
     this.redoStack = []
