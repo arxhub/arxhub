@@ -31,7 +31,8 @@
     "@codemirror/lang-markdown": "catalog:client",
     "@codemirror/search": "catalog:client",
     "@codemirror/view": "catalog:client",
-    "@lezer/highlight": "catalog:client"
+    "@lezer/highlight": "catalog:client",
+    "@arxhub/i18n": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/logger": "workspace:*",

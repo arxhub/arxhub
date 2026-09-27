@@ -20,7 +20,7 @@ describe('markdownActions', () => {
   test('keeps the desktop order and marks what earns a key on the phone', () => {
     const actions = markdownActions(null)
 
-    expect(actions.map((action) => action.label)).toEqual(MARKDOWN_ACTIONS.map((action) => action.label))
+    expect(actions.map((action) => action.label)).toEqual(MARKDOWN_ACTIONS.map((action) => action.label()))
     expect(actions.filter((action) => action.primary).map((action) => action.label)).toEqual([
       'Heading 1',
       'Bold',

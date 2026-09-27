@@ -1,6 +1,7 @@
 import type { FormattingAction } from '@arxhub/uikit/core'
 import { redo, redoDepth, undo, undoDepth } from '@codemirror/commands'
 import type { EditorView } from '@codemirror/view'
+import { t } from './i18n/messages'
 import {
   insertLink,
   isBoldActive,
@@ -22,7 +23,9 @@ import {
 } from './markdown-commands'
 
 interface MarkdownAction {
-  label: string
+  // Stable across languages: a FormattingAction's id keys its button, and a label is not an identity.
+  id: string
+  label: () => string
   icon: string
   run: (view: EditorView) => boolean
   // Asks the same question the toggle command would answer for itself — is the selection already wrapped
@@ -38,17 +41,42 @@ interface MarkdownAction {
 // previously ran "H1 H2 H3 · B I S </> · • ☑ ❝ 🔗" — three notations at once, the last of them a colour
 // emoji that no theme can restyle and that reads as a foreign object on a dark base.
 export const MARKDOWN_ACTIONS: readonly MarkdownAction[] = [
-  { label: 'Heading 1', icon: 'lu:heading-1', run: (v) => toggleHeading(v, 1), active: (v) => isHeadingActive(v, 1), primary: true },
-  { label: 'Heading 2', icon: 'lu:heading-2', run: (v) => toggleHeading(v, 2), active: (v) => isHeadingActive(v, 2) },
-  { label: 'Heading 3', icon: 'lu:heading-3', run: (v) => toggleHeading(v, 3), active: (v) => isHeadingActive(v, 3) },
-  { label: 'Bold', icon: 'lu:bold', run: toggleBold, active: isBoldActive, primary: true },
-  { label: 'Italic', icon: 'lu:italic', run: toggleItalic, active: isItalicActive, primary: true },
-  { label: 'Strikethrough', icon: 'lu:strikethrough', run: toggleStrikethrough, active: isStrikethroughActive },
-  { label: 'Inline code', icon: 'lu:code', run: toggleInlineCode, active: isInlineCodeActive },
-  { label: 'Bulleted list', icon: 'lu:list', run: toggleBullet, active: isBulletActive, primary: true },
-  { label: 'Task list', icon: 'lu:list-todo', run: toggleTask, active: isTaskActive, primary: true },
-  { label: 'Quote', icon: 'lu:quote', run: toggleQuote, active: isQuoteActive },
-  { label: 'Link', icon: 'lu:link', run: insertLink, primary: true },
+  {
+    id: 'Heading 1',
+    label: () => t('format.heading1'),
+    icon: 'lu:heading-1',
+    run: (v) => toggleHeading(v, 1),
+    active: (v) => isHeadingActive(v, 1),
+    primary: true,
+  },
+  {
+    id: 'Heading 2',
+    label: () => t('format.heading2'),
+    icon: 'lu:heading-2',
+    run: (v) => toggleHeading(v, 2),
+    active: (v) => isHeadingActive(v, 2),
+  },
+  {
+    id: 'Heading 3',
+    label: () => t('format.heading3'),
+    icon: 'lu:heading-3',
+    run: (v) => toggleHeading(v, 3),
+    active: (v) => isHeadingActive(v, 3),
+  },
+  { id: 'Bold', label: () => t('format.bold'), icon: 'lu:bold', run: toggleBold, active: isBoldActive, primary: true },
+  { id: 'Italic', label: () => t('format.italic'), icon: 'lu:italic', run: toggleItalic, active: isItalicActive, primary: true },
+  {
+    id: 'Strikethrough',
+    label: () => t('format.strikethrough'),
+    icon: 'lu:strikethrough',
+    run: toggleStrikethrough,
+    active: isStrikethroughActive,
+  },
+  { id: 'Inline code', label: () => t('format.inlineCode'), icon: 'lu:code', run: toggleInlineCode, active: isInlineCodeActive },
+  { id: 'Bulleted list', label: () => t('format.bulletList'), icon: 'lu:list', run: toggleBullet, active: isBulletActive, primary: true },
+  { id: 'Task list', label: () => t('format.taskList'), icon: 'lu:list-todo', run: toggleTask, active: isTaskActive, primary: true },
+  { id: 'Quote', label: () => t('format.quote'), icon: 'lu:quote', run: toggleQuote, active: isQuoteActive },
+  { id: 'Link', label: () => t('format.link'), icon: 'lu:link', run: insertLink, primary: true },
 ]
 
 function focused(view: EditorView | null, command: (view: EditorView) => boolean): void {
@@ -59,8 +87,8 @@ function focused(view: EditorView | null, command: (view: EditorView) => boolean
 
 export function markdownActions(view: EditorView | null): FormattingAction[] {
   return MARKDOWN_ACTIONS.map((action) => ({
-    id: action.label,
-    label: action.label,
+    id: action.id,
+    label: action.label(),
     icon: action.icon,
     primary: action.primary === true,
     active: view != null && action.active != null ? action.active(view) : false,
@@ -72,7 +100,19 @@ export function markdownActions(view: EditorView | null): FormattingAction[] {
 // there is nothing to undo, so a key that does nothing never looks like one that failed.
 export function historyActions(view: EditorView | null): FormattingAction[] {
   return [
-    { id: 'undo', label: 'Undo', icon: 'lu:undo', disabled: view == null || undoDepth(view.state) === 0, run: () => focused(view, undo) },
-    { id: 'redo', label: 'Redo', icon: 'lu:redo', disabled: view == null || redoDepth(view.state) === 0, run: () => focused(view, redo) },
+    {
+      id: 'undo',
+      label: t('format.undo'),
+      icon: 'lu:undo',
+      disabled: view == null || undoDepth(view.state) === 0,
+      run: () => focused(view, undo),
+    },
+    {
+      id: 'redo',
+      label: t('format.redo'),
+      icon: 'lu:redo',
+      disabled: view == null || redoDepth(view.state) === 0,
+      run: () => focused(view, redo),
+    },
   ]
 }

@@ -16,8 +16,10 @@ import { computed, h, markRaw, onMounted, onUnmounted, ref, shallowRef, toRef, w
 import { findOccurrence } from '../document-reveal'
 import { editorTheme } from '../editor-theme'
 import { CODEMIRROR_LAYER } from '../hotkeys'
+import { t } from '../i18n/messages'
 import { insertLink, toggleBold, toggleInlineCode, toggleItalic } from '../markdown-commands'
 import { isMarkdown, markdownProfile } from '../markdown-profile'
+import { livePhrases } from '../phrases'
 import CodeMirrorShell from './CodeMirrorShell.vue'
 import EditingToolbar from './EditingToolbar.vue'
 
@@ -60,6 +62,9 @@ let savedEdits = 0
 // installed for a note alone, so over a code file this editor claims nothing and ⌘B collapses the
 // column. That condition is the layer's rather than each binding's because the layer is per open
 // panel while the four chords are declared once for every panel — see `declareCodeMirrorChords`.
+const phrases = livePhrases()
+onUnmounted(phrases.follow(() => view.value))
+
 const noteEditorEl = computed(() => (note.value ? editorEl.value : null))
 useHotkeyLayer(useHotkeysExtension(), { id: CODEMIRROR_LAYER, kind: 'editor' }, noteEditorEl)
 
@@ -74,6 +79,7 @@ async function buildState(path: string, bytes: Uint8Array): Promise<EditorState>
     doc,
     extensions: [
       basicSetup,
+      phrases.extension,
       // A note is prose: no band on the caret's line. Passed rather than overridden downstream, so
       // there is one rule and no precedence race between two themes setting the same property.
       editorTheme({ activeLine: !note }),
@@ -156,7 +162,7 @@ const editing = markRaw({
 const menu = computed((): ActionItem[] => [
   {
     id: 'codemirror.find',
-    label: 'Find in document',
+    label: t('find'),
     icon: 'lu:search',
     disabled: view.value == null || !canSave.value,
     onSelect: () => {
@@ -164,7 +170,7 @@ const menu = computed((): ActionItem[] => [
     },
   },
   // doSave has already logged and toasted a failed write; the rejection has nobody left to tell.
-  { id: 'codemirror.save', label: 'Save', icon: 'lu:save', disabled: !canSave.value, onSelect: () => void save().catch(() => {}) },
+  { id: 'codemirror.save', label: t('save'), icon: 'lu:save', disabled: !canSave.value, onSelect: () => void save().catch(() => {}) },
 ])
 onUnmounted(
   documents.registerViewBar(
@@ -182,7 +188,7 @@ async function doSave() {
   } catch (error) {
     // Don't swallow — a failed write silently loses edits.
     arxhub.logger.error(`[codemirror] failed to save ${props.path}:`, error)
-    toaster.create({ title: 'Save failed', description: `Couldn't save ${props.path}`, type: 'error' })
+    toaster.create({ title: t('saveFailed.title'), description: t('saveFailed.description', { path: props.path }), type: 'error' })
     throw error
   }
 }

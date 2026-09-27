@@ -2,6 +2,7 @@
 import { DocumentName } from '@arxhub/plugin-documents/ui'
 import { Button, Strip } from '@arxhub/uikit/core'
 import type { EditorView } from '@codemirror/view'
+import { t } from '../i18n/messages'
 import MarkdownToolbar from './MarkdownToolbar.vue'
 
 defineProps<{
@@ -22,12 +23,12 @@ defineProps<{
       <DocumentName :path="path" />
       <MarkdownToolbar v-if="note && !loadError" :view="view" :revision="revision" />
       <template #actions>
-        <Button size="sm" variant="secondary" :disabled="!canSave" @click="onSave()">Save</Button>
+        <Button size="sm" variant="secondary" :disabled="!canSave" @click="onSave()">{{ t('save') }}</Button>
       </template>
     </Strip>
     <div v-if="loadError" class="codemirror-error">
-      <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
-      <Button size="sm" variant="secondary" @click="onRetry()">Retry</Button>
+      <span>{{ t('loadFailed') }}</span>
+      <Button size="sm" variant="secondary" @click="onRetry()">{{ t('retry') }}</Button>
     </div>
     <slot />
   </div>

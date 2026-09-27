@@ -6,6 +6,7 @@ import { EditorView, keymap, placeholder as placeholderExtension } from '@codemi
 import { basicSetup } from 'codemirror'
 import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { editorTheme } from '../editor-theme'
+import { livePhrases } from '../phrases'
 
 // A code editor over a plain string — no file, no panel, no save. The file-backed editor next to it owns
 // a document's lifecycle; this one is the control another surface embeds (the SQL console is the first),
@@ -31,6 +32,8 @@ const editorEl = ref<HTMLDivElement>()
 // shallowRef: the view is a live object graph, not reactive data, and making it deeply reactive would
 // have Vue walk CodeMirror's internals on every keystroke.
 const view = shallowRef<EditorView | null>(null)
+const phrases = livePhrases()
+onUnmounted(phrases.follow(() => view.value))
 
 function submit(): boolean {
   emit('submit')
@@ -46,6 +49,7 @@ async function extensions(): Promise<Extension[]> {
     // adds a line instead of running the query.
     ...(props.submitOnModEnter ? [Prec.highest(keymap.of([{ key: 'Mod-Enter', run: submit }]))] : []),
     basicSetup,
+    phrases.extension,
     editorTheme(),
     ...(support == null ? [] : [support]),
     ...(props.placeholder == null ? [] : [placeholderExtension(props.placeholder)]),

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@arxhub/uikit/core'
+import { t } from '../i18n/messages'
 
 // The phone's realization of the editor's frame: the text and, when it could not be read, why. Its name,
 // its tools and its editing toolbar are the object band's, described through `registerViewBar` — a band
@@ -14,8 +15,8 @@ defineProps<{ loadError: unknown; onSave: () => void; onRetry: () => void }>()
 <template>
   <div class="codemirror-wrapper" @keydown.ctrl.s.prevent.stop="onSave()" @keydown.meta.s.prevent.stop="onSave()">
     <div v-if="loadError" class="codemirror-error">
-      <span>Couldn't load this file. Saving is disabled to avoid overwriting it.</span>
-      <Button size="lg" variant="secondary" @click="onRetry()">Retry</Button>
+      <span>{{ t('loadFailed') }}</span>
+      <Button size="lg" variant="secondary" @click="onRetry()">{{ t('retry') }}</Button>
     </div>
     <slot />
   </div>

@@ -3,6 +3,7 @@ import { DocumentsExtension, type DocumentViewer } from '@arxhub/plugin-document
 import { HotkeysExtension } from '@arxhub/plugin-hotkeys'
 import { PanelStoreExtension } from '@arxhub/plugin-panels'
 import { declareCodeMirrorChords } from './hotkeys'
+import { t } from './i18n/messages'
 import { manifest } from './manifest'
 import CodeMirrorEditor from './ui/CodeMirrorEditor.vue'
 
@@ -64,7 +65,7 @@ export const CODEMIRROR_VIEWER: DocumentViewer = {
   // rather than derived from `id`: the two strings are equal today, and a lookup that relied on that
   // would break silently the day one of them changed.
   panelId: CODEMIRROR_PANEL_ID,
-  title: 'Text',
+  title: () => t('viewer.title'),
   extensions: CODEMIRROR_HANDLES,
   component: CodeMirrorEditor,
   // Behind the document editor, so a format that has a richer viewer is not claimed by the plain one.
@@ -86,7 +87,7 @@ export class CodeMirrorPlugin extends Plugin {
     const { store } = ctx.extensions.get(PanelStoreExtension)
     store.registerPanel({
       id: CODEMIRROR_VIEWER.panelId,
-      title: 'Editor',
+      title: t('panel.title'),
       component: CodeMirrorEditor,
     })
 

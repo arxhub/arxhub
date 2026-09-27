@@ -5,4 +5,5 @@ export const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Text file viewer powered by CodeMirror',
+  descriptions: { ru: 'Просмотр и правка текстовых файлов на CodeMirror' },
 } satisfies PluginManifest

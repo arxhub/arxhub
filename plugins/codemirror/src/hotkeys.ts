@@ -1,4 +1,5 @@
 import type { HotkeyBinding, HotkeysExtension } from '@arxhub/plugin-hotkeys'
+import { t } from './i18n/messages'
 
 export const CODEMIRROR_LAYER = 'editor:arxhub.codemirror'
 
@@ -17,10 +18,10 @@ export const CODEMIRROR_LAYER = 'editor:arxhub.codemirror'
 // business and is not visible from here; a collision inside it — which is exactly how ⌘⇧K emptied the
 // line before it was moved — is caught by using the editor, not by this list.
 export const CODEMIRROR_BINDINGS: HotkeyBinding[] = [
-  { id: 'codemirror.bold', chord: 'Mod-b', layer: CODEMIRROR_LAYER, title: 'Bold' },
-  { id: 'codemirror.italic', chord: 'Mod-i', layer: CODEMIRROR_LAYER, title: 'Italic' },
-  { id: 'codemirror.inline-code', chord: 'Mod-e', layer: CODEMIRROR_LAYER, title: 'Inline code' },
-  { id: 'codemirror.insert-link', chord: 'Mod-Shift-k', layer: CODEMIRROR_LAYER, title: 'Insert link' },
+  { id: 'codemirror.bold', chord: 'Mod-b', layer: CODEMIRROR_LAYER, title: () => t('chords.bold') },
+  { id: 'codemirror.italic', chord: 'Mod-i', layer: CODEMIRROR_LAYER, title: () => t('chords.italic') },
+  { id: 'codemirror.inline-code', chord: 'Mod-e', layer: CODEMIRROR_LAYER, title: () => t('chords.inlineCode') },
+  { id: 'codemirror.insert-link', chord: 'Mod-Shift-k', layer: CODEMIRROR_LAYER, title: () => t('chords.insertLink') },
 ]
 
 // Declared ONCE for the viewer type, from `configure()`, and never from an editor's `onMounted`: a
