@@ -26,7 +26,8 @@
     "@arxhub/config": "workspace:*",
     "@arxhub/path": "workspace:*",
     "@sinclair/typebox": "catalog:shared",
-    "vue": "catalog:client"
+    "vue": "catalog:client",
+    "@arxhub/i18n": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/core": "workspace:*",

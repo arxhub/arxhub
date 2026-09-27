@@ -8,6 +8,7 @@ import { markRaw } from 'vue'
 import { DOCUMENTS_SETTINGS_SECTION, DocumentsConfigSchema, toHideKnownExtensions } from './documents-config'
 import { DocumentsExtension } from './documents-extension'
 import { blockAnchorOf, DOCUMENTS_TYPE_ID, documentSnapshotPath, folderOf } from './documents-type'
+import { messages, t } from './i18n/messages'
 import { manifest } from './manifest'
 import { migrateHomeFolders } from './notes-migration'
 import DocumentsNav from './ui/DocumentsNav.vue'
@@ -52,11 +53,13 @@ export class DocumentsPlugin extends Plugin {
     const config = ctx.services.get(PluginConfig)
     ctx.extensions.get(SettingsExtension).register({
       id: DOCUMENTS_SETTINGS_SECTION,
-      title: 'Documents',
+      title: () => t('settings.title'),
+      description: () => t('settings.description'),
       icon: 'lu:file-text',
       order: 13,
       schema: DocumentsConfigSchema,
       config,
+      messages,
     })
     // Applies live, the same way Sync's own applyConfig does: a saved change reaches the tree and the
     // open document with no restart, through the one PluginConfig.watch this section's Save writes
@@ -101,7 +104,7 @@ export class DocumentsPlugin extends Plugin {
     shell.types.register({
       id: DOCUMENTS_TYPE_ID,
       icon: 'lu:folder',
-      title: 'Documents',
+      title: () => t('type.title'),
       order: 0,
       objects: {
         icon: 'lu:file-text',
@@ -121,12 +124,12 @@ export class DocumentsPlugin extends Plugin {
           return { title: object.title, subtitle: folderOf(path) ?? undefined, icon: documents.iconFor(path) }
         },
       },
-      nav: { component: markRaw(DocumentsNav), title: 'Vault', detail: 'All documents · search' },
-      create: { title: 'New note', icon: 'lu:file-plus', run: createDocument },
-      open: { title: 'Open documents' },
+      nav: { component: markRaw(DocumentsNav), title: () => t('type.vault'), detail: () => t('type.vaultDetail') },
+      create: { title: () => t('type.newNote'), icon: 'lu:file-plus', run: createDocument },
+      open: { title: () => t('type.openDocuments') },
       find: () => {
         const finder = documents.finder.value
-        return finder == null ? null : { placeholder: 'Find a document…', results: finder.results }
+        return finder == null ? null : { placeholder: t('type.find'), results: finder.results }
       },
       // The band above the phone's type row: where you are, New and Close are the type's; the open viewer
       // adds its own tools after Rename and Close, its parts and its editing toolbar (`registerViewBar`).
@@ -137,11 +140,12 @@ export class DocumentsPlugin extends Plugin {
         const flow = documents.createFlow.value
         const create = {
           id: 'documents.new',
-          label: 'New document',
+          label: t('type.newDocument'),
           icon: 'lu:plus',
           onSelect: () => (flow != null ? flow.start(folder) : void createDocument()),
         }
-        if (active == null || path == null) return { icon: 'lu:folder', name: 'Vault', actions: [create], menu: flow?.menu?.(null) ?? [] }
+        if (active == null || path == null)
+          return { icon: 'lu:folder', name: t('type.vault'), actions: [create], menu: flow?.menu?.(null) ?? [] }
         const view = documents.viewBar(path)
         const own = documentActions(documents, shell.workspace, this.logger, path, active.key)
         return {

@@ -4,6 +4,8 @@ import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { canOpenExternally, openExternally } from '@arxhub/vfs'
 import { computed } from 'vue'
 import { DocumentsExtension } from '../documents-extension'
+import { errorReason } from '../i18n/error-reason'
+import { t } from '../i18n/messages'
 import DocumentName from './DocumentName.vue'
 
 const props = defineProps<{ path: string }>()
@@ -19,8 +21,7 @@ async function openInSystemApp(): Promise<void> {
     await openExternally(documents.vfs, props.path)
   } catch (error) {
     arxhub.logger.error(`[documents] failed to open ${props.path} in the system app:`, error)
-    const description = error instanceof Error ? error.message : String(error ?? '')
-    toaster.create({ type: 'error', title: 'Could not open the file in the system app', description })
+    toaster.create({ type: 'error', title: t('unsupported.openFailed'), description: errorReason(error) })
   }
 }
 </script>
@@ -34,14 +35,14 @@ async function openInSystemApp(): Promise<void> {
       <DocumentName :path="path" />
     </Strip>
     <div class="document-unsupported" :class="{ touch }">
-      <p class="headline">Nothing can open this file</p>
+      <p class="headline">{{ t('unsupported.headline') }}</p>
       <p class="path">{{ path }}</p>
-      <p class="hint">No installed viewer claims this extension.</p>
+      <p class="hint">{{ t('unsupported.hint') }}</p>
       <!-- Hidden rather than disabled where the backend cannot honour it (a browser) — nothing dead is
            ever drawn (see packages/vfs/src/capabilities/open-externally.ts). -->
       <Button v-if="canOpen" :size="buttonSize" variant="secondary" @click="openInSystemApp">
         <Icon name="lu:external-link" :size="14" />
-        Open in system app
+        {{ t('unsupported.openExternally') }}
       </Button>
     </div>
   </div>

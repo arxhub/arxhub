@@ -1,5 +1,5 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { validation } from '@arxhub/errors'
+import type { Text } from '@arxhub/i18n'
 import { basename, extname, join } from '@arxhub/path'
 import type { ObjectBar } from '@arxhub/plugin-shell'
 import type { ActionItem } from '@arxhub/uikit/core'
@@ -8,6 +8,8 @@ import { type Component, markRaw, ref, shallowRef } from 'vue'
 import { type DisplayName, displayNameOf } from './display-name'
 import { DEFAULT_HIDE_KNOWN_EXTENSIONS } from './documents-config'
 import type { BlockAnchor } from './documents-type'
+import { documentNameTaken } from './errors'
+import { t } from './i18n/messages'
 import { renameTarget } from './rename'
 
 // What opens an object of this type. The viewer registry belongs to the TYPE, not to the shell: the
@@ -22,7 +24,8 @@ export interface DocumentViewer {
   // field so it can be deleted in one place when the frames mount `component` directly (F-14/F-16),
   // taking the panel registrations with it.
   panelId: string
-  title: string
+  // Registered once and read whenever a list of viewers is drawn: a function follows a language switch.
+  title: Text
   // Extensions with the dot, lower case: '.md', '.arx'.
   extensions: string[]
   // The glyph of what this viewer opens, wherever one of its files is listed (a tab, a tree row). Unset —
@@ -215,7 +218,7 @@ export class DocumentsExtension extends Extension {
   // second copy here.
   async createDocument(): Promise<string | null> {
     if (this.creator != null) return this.creator()
-    const path = await this.freePath(this.root, 'New note', '.md')
+    const path = await this.freePath(this.root, t('defaultStem'), '.md')
     await this.vfs.file(path).writeText('')
     return path
   }
@@ -268,7 +271,7 @@ export class DocumentsExtension extends Extension {
   async renameObject(path: string, name: string): Promise<string> {
     const target = renameTarget(path, name)
     if (target === path) return path
-    if (await this.vfs.exists(target)) throw validation(`"${basename(target)}" is already here`)
+    if (await this.vfs.exists(target)) throw documentNameTaken(basename(target))
     await renameEntry(this.vfs, path, target)
     return target
   }

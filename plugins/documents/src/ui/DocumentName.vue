@@ -3,6 +3,7 @@ import { Input } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref } from 'vue'
 import { DocumentsExtension } from '../documents-extension'
+import { t } from '../i18n/messages'
 import { renameDocument } from './rename-document'
 
 // What an open object is called, at the top of whatever is showing it (OR-02). It lives with the type
@@ -53,7 +54,7 @@ function commit(): void {
 <template>
   <component :is="inline ? 'h1' : 'span'" class="document-name" :class="{ editing: renaming, touch, inline }">
     <span v-if="renaming" ref="field" class="document-name-field">
-      <Input v-model="draft" :variant="inline ? 'title' : 'default'" aria-label="New name" @keydown.enter.prevent.stop="commit" @keydown.escape.prevent.stop="cancel" @blur="commit" @click.stop />
+      <Input v-model="draft" :variant="inline ? 'title' : 'default'" :aria-label="t('rename.newName')" @keydown.enter.prevent.stop="commit" @keydown.escape.prevent.stop="cancel" @blur="commit" @click.stop />
     </span>
     <!-- The full path as the native tooltip and nothing on screen: what tells two "Contract.md" apart
          is already the tab's own second line, and a second copy of it would spend the strip's only

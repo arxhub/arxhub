@@ -3,6 +3,7 @@ import { BottomSheet, Button, Field, Input, modals } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { nextTick, onMounted, ref } from 'vue'
 import { DocumentsExtension } from '../documents-extension'
+import { t } from '../i18n/messages'
 import { renameDocument } from './rename-document'
 
 // The band's Rename. A sheet at the bottom rather than the name at the top of the document: on the phone
@@ -34,14 +35,14 @@ onMounted(async () => {
 
 <template>
   <!-- The field sits in the footer with its confirm: above the keyboard it opens, under the thumb. -->
-  <BottomSheet :open="open" title="Rename" footer-inset @close="close">
+  <BottomSheet :open="open" :title="t('rename.title')" footer-inset @close="close">
     <template #footer>
       <div ref="field">
-        <Field label="Name" for="rename-document-field">
+        <Field :label="t('rename.name')" for="rename-document-field">
           <Input id="rename-document-field" v-model="draft" autofocus data-testid="rename-document-field" @keydown.enter.prevent="commit" />
         </Field>
       </div>
-      <Button block :disabled="draft.trim() === ''" data-testid="rename-document-confirm" @click="commit">Rename</Button>
+      <Button block :disabled="draft.trim() === ''" data-testid="rename-document-confirm" @click="commit">{{ t('rename.confirm') }}</Button>
     </template>
   </BottomSheet>
 </template>

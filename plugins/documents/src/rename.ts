@@ -1,5 +1,5 @@
-import { validation } from '@arxhub/errors'
 import { posix } from '@arxhub/path'
+import { documentNameEmpty, documentNameInvalid, documentNameSlash } from './errors'
 
 // Where a rename lands. Pure, so the whole rule is a unit test rather than a click on a running app.
 //
@@ -11,9 +11,9 @@ import { posix } from '@arxhub/path'
 // @arxhub/path answers '\' on Windows (see packages/path/src/index.node.ts).
 export function renameTarget(path: string, name: string): string {
   const trimmed = name.trim()
-  if (trimmed === '') throw validation('A file needs a name')
-  if (trimmed === '.' || trimmed === '..') throw validation(`"${trimmed}" is not a name`)
-  if (/[/\\]/.test(trimmed)) throw validation('A name cannot hold a slash — rename a file here, move it in the tree')
+  if (trimmed === '') throw documentNameEmpty()
+  if (trimmed === '.' || trimmed === '..') throw documentNameInvalid(trimmed)
+  if (/[/\\]/.test(trimmed)) throw documentNameSlash()
   const dir = posix.dirname(path)
   // A file at the root of the vault has no directory to re-join, and joining '.' would turn a plain
   // 'note.md' into './note.md' — a different string for the same file, which every path comparison

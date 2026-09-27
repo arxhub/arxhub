@@ -2,6 +2,7 @@
 import { EmptyState } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { DocumentsExtension } from '../documents-extension'
+import { t } from '../i18n/messages'
 
 // A wrapper with a permanent identity. The type is registered once and for good, while its navigation
 // is put in by the explorer — a plugin that can be switched off and that configures later. Putting the
@@ -14,5 +15,5 @@ const documents = useArxHub().extensions.get(DocumentsExtension)
   <component :is="documents.nav.value" v-if="documents.nav.value != null" />
   <!-- No tree means the explorer is off. That state is reachable (the plugin is switchable) and
        staying quiet about it is not an option: an empty column reads as broken. -->
-  <EmptyState v-else icon="lu:folder-x" text="The explorer is switched off, so there is no vault tree here." hint="Documents open from search." />
+  <EmptyState v-else icon="lu:folder-x" :text="t('nav.off')" :hint="t('nav.offHint')" />
 </template>

@@ -5,6 +5,8 @@ import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import type { DocumentsExtension } from '../documents-extension'
 import { DOCUMENTS_TYPE_ID } from '../documents-type'
+import { errorReason } from '../i18n/error-reason'
+import { t } from '../i18n/messages'
 import RenameDocumentSheet from './RenameDocumentSheet.vue'
 
 // The band's own actions on the open document — the ones every file has, whatever opens it. A viewer adds
@@ -18,27 +20,27 @@ export function documentActions(
 ): { rename: ActionItem; close: ActionItem; remove: ActionItem } {
   const rename: ActionItem = {
     id: 'documents.rename',
-    label: 'Rename',
+    label: t('actions.rename'),
     icon: 'lu:pencil',
     onSelect: () => void modals.openSurface({ component: RenameDocumentSheet, props: { path } }),
   }
   const close: ActionItem = {
     id: 'documents.close',
-    label: 'Close',
+    label: t('actions.close'),
     icon: 'lu:x',
     onSelect: () => void workspace.closeObject(DOCUMENTS_TYPE_ID, key),
   }
   const remove: ActionItem = {
     id: 'documents.delete',
-    label: 'Delete',
+    label: t('actions.delete'),
     icon: 'lu:trash-2',
     tone: 'danger',
     onSelect: () => {
       const name = basename(path)
       modals.openConfirmModal({
-        title: 'Delete',
-        content: `Delete "${name}"? This action cannot be undone.`,
-        labels: { confirm: 'Delete', cancel: 'Cancel' },
+        title: t('actions.delete'),
+        content: t('actions.deleteConfirm', { name }),
+        labels: { confirm: t('actions.delete'), cancel: t('actions.cancel') },
         confirmProps: { danger: true },
         onConfirm: () => {
           // Discarded, not closed: closing saves first, and a save landing after the delete would bring
@@ -47,12 +49,7 @@ export function documentActions(
             .then(() => documents.deleteObject(path))
             .catch((error: unknown) => {
               logger.error(`[documents] failed to delete ${path}:`, error)
-              const message = error instanceof Error ? error.message : String(error ?? '')
-              toaster.create({
-                type: 'error',
-                title: `Could not delete ${name}`,
-                description: message.trim() || 'The reason was not reported — see the log.',
-              })
+              toaster.create({ type: 'error', title: t('actions.deleteFailed', { name }), description: errorReason(error) })
             })
         },
       })
