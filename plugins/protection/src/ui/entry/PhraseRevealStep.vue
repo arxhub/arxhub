@@ -2,6 +2,7 @@
 import { Button, Card, GateLayout } from '@arxhub/uikit/core'
 import { onBeforeUnmount, ref } from 'vue'
 import type { EntryFlow } from '../../entry/entry-flow'
+import { t } from '../../i18n/messages'
 import EntryError from './EntryError.vue'
 import PhraseWords from './PhraseWords.vue'
 
@@ -30,27 +31,27 @@ async function copy(): Promise<void> {
 <template>
   <GateLayout width="wide">
     <template #kicker>{{ kicker }}</template>
-    <template #title>Recovery phrase</template>
-    <template #text>12 words — the only way to connect another device or get your vault back if this device is lost.</template>
+    <template #title>{{ t('common.recoveryPhrase') }}</template>
+    <template #text>{{ t('entry.reveal.text') }}</template>
 
     <PhraseWords :words="flow.words.value" :veiled="!flow.revealed.value" />
     <Button v-if="!flow.revealed.value" block variant="secondary" icon="lu:eye" data-testid="reveal-phrase" @click="flow.reveal()">
-      Show phrase
+      {{ t('entry.reveal.show') }}
     </Button>
     <Button v-else block variant="ghost" :icon="copied ? 'lu:check' : 'lu:copy'" @click="copy">
-      {{ copied ? 'Copied' : 'Copy' }}
+      {{ copied ? t('entry.reveal.copied') : t('entry.reveal.copy') }}
     </Button>
     <Card
       notice
       variant="warning"
       icon="lu:triangle-alert"
-      title="Write it on paper. Don't take a screenshot or send it in a messenger. Anyone who knows the phrase gets access to everything."
+      :title="t('entry.reveal.warning')"
     />
 
     <template #actions>
       <EntryError :flow="flow" />
-      <Button block variant="secondary" icon="lu:chevron-left" @click="flow.back()">Back</Button>
-      <Button block :disabled="!flow.revealed.value" data-testid="phrase-written" @click="flow.writtenDown()">I've written it down</Button>
+      <Button block variant="secondary" icon="lu:chevron-left" @click="flow.back()">{{ t('common.back') }}</Button>
+      <Button block :disabled="!flow.revealed.value" data-testid="phrase-written" @click="flow.writtenDown()">{{ t('entry.reveal.written') }}</Button>
     </template>
   </GateLayout>
 </template>

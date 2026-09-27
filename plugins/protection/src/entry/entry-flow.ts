@@ -2,6 +2,8 @@ import { normalizeInvitationCode, type PairingPayload, parseInvitationQr } from 
 import type { AppError } from '@arxhub/errors'
 import type { KeyStore } from '@arxhub/plugin-keystore'
 import { computed, type Ref, ref, type ShallowRef, shallowRef } from 'vue'
+import { errorText } from '../error-text'
+import { t } from '../i18n/messages'
 import { createIdentity, hasIdentity, IDENTITY_MNEMONIC_KEY, storeIdentity } from '../identity'
 import type { PairingJoinerOptions, PairingJoinerPhase } from '../pairing/pairing-client'
 import type { QrScanPort } from '../pairing-extension'
@@ -323,7 +325,7 @@ export class EntryFlow {
       const text = await scanner.scan(run.signal)
       if (!run.signal.aborted && text != null) this.scanned(text)
     } catch (error) {
-      if (!run.signal.aborted) this.scanError.value = error instanceof Error ? error.message : String(error)
+      if (!run.signal.aborted) this.scanError.value = errorText(error)
     } finally {
       if (this.scanRun === run) this.scanRun = null
       this.scanning.value = false
@@ -339,12 +341,12 @@ export class EntryFlow {
   scanned(text: string): void {
     const invitation = parseInvitationQr(text.trim())
     if (invitation == null) {
-      this.scanError.value = "This isn't an ArxHub invitation — scan the QR under Settings → Security → Connect a device"
+      this.scanError.value = t('entry.scan.notInvitation')
       return
     }
     const fixed = this.options.server === 'ask' ? null : this.options.server.fixed
     if (fixed != null && normalizeServerAddress(invitation.server) !== normalizeServerAddress(fixed)) {
-      this.scanError.value = `This invitation is for ${invitation.server} — open ArxHub from that address.`
+      this.scanError.value = t('entry.scan.otherServer', { server: invitation.server })
       return
     }
     this.startJoiner(invitation.server, invitation.id)
@@ -363,12 +365,12 @@ export class EntryFlow {
   inviteNext(): void {
     const server = normalizeServerAddress(this.inviteServer.value)
     if (server == null) {
-      this.inviteError.value = "That isn't a server address — for example https://hub.example.com"
+      this.inviteError.value = t('common.notAddress')
       return
     }
     const code = normalizeInvitationCode(this.inviteCode.value)
     if (code == null) {
-      this.inviteError.value = 'An invitation code is 8 letters and digits, as on the first device'
+      this.inviteError.value = t('entry.invite.badCode')
       return
     }
     this.startJoiner(server, code)
@@ -403,7 +405,7 @@ export class EntryFlow {
   private startJoiner(server: string, ref: string): void {
     const factory = this.options.joiner
     if (factory == null) return
-    const joiner = factory({ server, ref, deviceName: this.options.deviceName ?? 'New device' })
+    const joiner = factory({ server, ref, deviceName: this.options.deviceName ?? t('entry.device.unknown') })
     this.joiner.value = joiner
     this.step.value = 'join-compare'
     joiner.start().then(
@@ -588,7 +590,7 @@ export class EntryFlow {
     try {
       await work()
     } catch (error) {
-      this.error.value = error instanceof Error ? error.message : String(error)
+      this.error.value = errorText(error)
     } finally {
       this.busy.value = false
     }

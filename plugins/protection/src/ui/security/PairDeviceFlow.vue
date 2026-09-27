@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { formatInvitationCode } from '@arxhub/crypto'
-import { Card, QrCode, StatusDot } from '@arxhub/uikit/core'
+import { Card, Interpolated, QrCode, StatusDot } from '@arxhub/uikit/core'
 import { computed } from 'vue'
+import { errorText } from '../../error-text'
+import { messages, t } from '../../i18n/messages'
 import type { PairingHost } from '../../pairing/pairing-client'
 import { formatCountdown, pairScreen } from '../../security/security-task'
 import SasDigits from '../entry/SasDigits.vue'
@@ -13,51 +15,55 @@ const props = defineProps<{ host: PairingHost; server: string }>()
 
 const screen = computed(() => pairScreen(props.host.phase.value))
 const invitation = computed(() => props.host.invitation.value)
-const device = computed(() => props.host.deviceName.value ?? 'The new device')
+const device = computed(() => props.host.deviceName.value ?? t('pair.newDevice'))
 const countdown = computed(() => formatCountdown(props.host.ttlSeconds.value))
 const connecting = computed(() => props.host.phase.value === 'connecting')
-const reason = computed(() => props.host.error.value?.message ?? 'The connection stopped.')
+const reason = computed(() => {
+  const error = props.host.error.value
+  return error ? errorText(error) : t('common.connectionStopped')
+})
 </script>
 
 <template>
   <template v-if="screen === 'preparing'">
-    <p class="status" role="status"><StatusDot tone="neutral" pulse /><span>Creating the invitation…</span></p>
+    <p class="status" role="status"><StatusDot tone="neutral" pulse /><span>{{ t('pair.creating') }}</span></p>
   </template>
 
   <template v-else-if="screen === 'invite' && invitation">
-    <QrCode :value="invitation.qr" label="Invitation QR code" data-testid="pairing-qr" />
-    <p class="text">Open ArxHub on the new device → Connect to my vault → Scan the QR.</p>
+    <QrCode :value="invitation.qr" :label="t('pair.qr')" data-testid="pairing-qr" />
+    <p class="text">{{ t('pair.open') }}</p>
     <dl class="facts">
       <div class="fact">
-        <dt>No camera? Server:</dt>
+        <dt>{{ t('pair.noCamera') }}</dt>
         <dd class="mono" data-testid="pairing-server">{{ server }}</dd>
       </div>
       <div class="fact">
-        <dt>Code:</dt>
+        <dt>{{ t('pair.code') }}</dt>
         <dd class="mono code" data-testid="pairing-code">{{ formatInvitationCode(invitation.code) }}</dd>
       </div>
     </dl>
     <p class="status" role="status" data-testid="pairing-status">
       <StatusDot tone="neutral" pulse />
-      <span v-if="connecting">{{ device }} is connecting…</span>
-      <span v-else>Waiting for the new device · valid for {{ countdown }}</span>
+      <span v-if="connecting">{{ t('pair.connecting', { device }) }}</span>
+      <span v-else>{{ t('pair.waiting', { time: countdown }) }}</span>
     </p>
   </template>
 
   <template v-else-if="screen === 'compare'">
     <p class="text">
-      <strong class="device">{{ device }}</strong> is connecting. The digits must match the new device's screen — otherwise someone
-      tampered with the invitation.
+      <Interpolated :text="messages.raw('pair.compare')"><template #device><strong class="device">{{ device }}</strong></template></Interpolated>
     </p>
     <SasDigits v-if="host.sas.value" :sas="host.sas.value" />
   </template>
 
   <template v-else-if="screen === 'done'">
-    <p class="text" data-testid="pairing-done"><strong class="device">{{ device }}</strong> received the vault key.</p>
+    <p class="text" data-testid="pairing-done">
+      <Interpolated :text="messages.raw('pair.done')"><template #device><strong class="device">{{ device }}</strong></template></Interpolated>
+    </p>
   </template>
 
   <template v-else-if="screen === 'expired'">
-    <p class="text" data-testid="pairing-expired">Nobody used it within five minutes. A new invitation takes a moment.</p>
+    <p class="text" data-testid="pairing-expired">{{ t('pair.expired') }}</p>
   </template>
 
   <template v-else>

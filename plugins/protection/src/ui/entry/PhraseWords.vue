@@ -2,6 +2,7 @@
 import { Input } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { type ComponentPublicInstance, nextTick, watch } from 'vue'
+import { t } from '../../i18n/messages'
 
 // The twelve words, numbered, three to a line on the phone and four on the desktop's wider column — the order a person copies them onto paper in, and the
 // order they type them back in on another device. One cell for both, so the phrase a device shows and
@@ -59,7 +60,7 @@ function onKeydown(index: number, event: KeyboardEvent): void {
         :ref="(el) => bind(index, el)"
         variant="bare"
         :model-value="word"
-        :aria-label="`Word ${index + 1}`"
+        :aria-label="t('entry.phraseEntry.word', { number: index + 1 })"
         :aria-invalid="bad?.includes(index) || undefined"
         autocomplete="off"
         autocapitalize="off"

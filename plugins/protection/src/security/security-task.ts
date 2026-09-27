@@ -1,5 +1,6 @@
 import { type CodeBackoff, type CodeShape, isUnlockCodeValid, UNLOCK_CODE_LENGTH } from '@arxhub/plugin-keystore'
 import { computed, type Ref, ref } from 'vue'
+import { t } from '../i18n/messages'
 import type { PairingHostPhase } from '../pairing/pairing-client'
 
 // What a row of Settings → Security starts. Showing the phrase and connecting a device both hand out
@@ -23,10 +24,6 @@ export interface SecurityTaskDeps {
   enableLock(code: string): Promise<void>
   disableLock(current: string): Promise<void>
 }
-
-export const WRONG_CODE = 'Wrong code'
-export const CODES_DIFFER = "The codes don't match — try again"
-export const NO_PHRASE = 'This device has no stored recovery phrase.'
 
 // What the owner sees at the end of a task that rewrites the lock: the store the whole app reads its
 // secrets from was resolved before boot, so applying it means reloading.
@@ -92,7 +89,7 @@ export class SecurityTask {
       case 'repeat-code':
         if (code !== this.chosen) {
           this.chosen = null
-          this.refuse(CODES_DIFFER)
+          this.refuse(t('task.codesDiffer'))
           this.step.value = 'new-code'
           return null
         }
@@ -145,7 +142,7 @@ export class SecurityTask {
     try {
       if (!(await this.deps.verify(code))) {
         this.deps.backoff.fail()
-        this.refuse(WRONG_CODE)
+        this.refuse(t('task.wrongCode'))
         return null
       }
     } finally {
@@ -166,7 +163,7 @@ export class SecurityTask {
         try {
           const stored = (await this.deps.readPhrase())?.trim() ?? ''
           if (stored === '') {
-            this.error.value = NO_PHRASE
+            this.error.value = t('task.noPhrase')
             return null
           }
           this.phrase.value = stored

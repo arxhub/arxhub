@@ -3,6 +3,7 @@ import { Button, GateLayout } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import type { EntryFlow } from '../../entry/entry-flow'
+import { t } from '../../i18n/messages'
 import EntryError from './EntryError.vue'
 import PhraseWords from './PhraseWords.vue'
 
@@ -16,8 +17,8 @@ const pasteFailed = ref(false)
 
 // The error the phrase earns, most specific first: a word that is not a word at all, then the order.
 const problem = computed(() => {
-  if (check.value.badIndexes.length > 0) return "This word isn't in the phrase list — check the spelling"
-  if (check.value.orderWrong) return "The words are right, but the phrase doesn't add up — check the order"
+  if (check.value.badIndexes.length > 0) return t('entry.phraseEntry.badWord')
+  if (check.value.orderWrong) return t('entry.phraseEntry.badOrder')
   return null
 })
 
@@ -41,8 +42,8 @@ function blurred(index: number): void {
 <template>
   <GateLayout width="wide">
     <template #kicker>{{ kicker }}</template>
-    <template #title>Recovery phrase</template>
-    <template #text>In order, as written down on the first device.{{ touch ? '' : ' You can paste the whole phrase.' }}</template>
+    <template #title>{{ t('common.recoveryPhrase') }}</template>
+    <template #text>{{ t('entry.phraseEntry.text') }}{{ touch ? '' : t('entry.phraseEntry.pasteHint') }}</template>
 
     <PhraseWords
       editable
@@ -54,8 +55,8 @@ function blurred(index: number): void {
       @blur="blurred"
     />
     <p v-if="problem" class="problem" role="alert" data-testid="phrase-problem">{{ problem }}</p>
-    <p v-else-if="pasteFailed" class="problem" role="alert">This device won't let the app read the clipboard — paste into the first word instead</p>
-    <Button block variant="ghost" icon="lu:clipboard-paste" data-testid="phrase-paste" @click="paste">Paste from clipboard</Button>
+    <p v-else-if="pasteFailed" class="problem" role="alert">{{ t('entry.phraseEntry.pasteFailed') }}</p>
+    <Button block variant="ghost" icon="lu:clipboard-paste" data-testid="phrase-paste" @click="paste">{{ t('entry.phraseEntry.paste') }}</Button>
 
     <template v-if="flow.suggestions.value.length > 0" #dock>
       <!-- mousedown.prevent: the field being typed in keeps the focus, so the tap knows which word it completes. -->
@@ -74,8 +75,8 @@ function blurred(index: number): void {
 
     <template #actions>
       <EntryError :flow="flow" />
-      <Button block variant="secondary" icon="lu:chevron-left" @click="flow.back()">Back</Button>
-      <Button block :disabled="!check.valid" data-testid="phrase-next" @click="flow.phraseNext()">Next</Button>
+      <Button block variant="secondary" icon="lu:chevron-left" @click="flow.back()">{{ t('common.back') }}</Button>
+      <Button block :disabled="!check.valid" data-testid="phrase-next" @click="flow.phraseNext()">{{ t('common.next') }}</Button>
     </template>
   </GateLayout>
 </template>

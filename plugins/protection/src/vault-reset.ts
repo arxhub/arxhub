@@ -17,6 +17,16 @@ export const vaultNotCleared = (remaining: readonly string[], cause?: unknown) =
     cause,
   )
 
+export const noVaultToClearSchema = defineAppError('NoVaultToClearError', 409)
+
+export const noVaultToClear = () =>
+  new AppError<Static<typeof noVaultToClearSchema>>({
+    code: 'NoVaultToClearError',
+    statusCode: 409,
+    title: 'No vault to clear',
+    message: "This device has no vault to clear. The device's identity has NOT been changed.",
+  })
+
 // True only when the vault is known to hold nothing — the conservative direction: an emptiness answer
 // is what decides whether the user is asked before an irreversible change.
 export async function isVaultEmpty(vault: VirtualFileSystem): Promise<boolean> {

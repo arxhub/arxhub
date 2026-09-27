@@ -76,6 +76,28 @@ export const pairingCancelled = (message = 'The other device cancelled the conne
     message,
   })
 
+// Client side: no answer at all from the relay. Its own code rather than a generic validation error, so the
+// screen can say it in the reader's language.
+export const pairingUnreachableSchema = defineAppError('PairingUnreachableError', 503)
+export const pairingUnreachable = (message = 'Could not reach the server') =>
+  new AppError<Static<typeof pairingUnreachableSchema>>({
+    code: 'PairingUnreachableError',
+    statusCode: 503,
+    title: 'Server unreachable',
+    message,
+  })
+
+// Client side: the relay answered with a status that is not one of its own refusals.
+export const pairingRefusedSchema = Type.Composite([defineAppError('PairingRefusedError', 502), Type.Object({ status: Type.String() })])
+export const pairingRefused = (status: string) =>
+  new AppError<Static<typeof pairingRefusedSchema>>({
+    code: 'PairingRefusedError',
+    statusCode: 502,
+    title: 'Pairing refused',
+    message: `The server refused the pairing request (${status})`,
+    status,
+  })
+
 export function retryAfterOf(error: unknown): number | null {
   if (!isAppError(error) || error.body.code !== 'PairingRateLimitedError') return null
   const value = (error.body as GenericAppError & { retryAfterSeconds?: unknown }).retryAfterSeconds

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { keyringFromMnemonic, validateMnemonic } from '@arxhub/crypto'
-import { illegalState } from '@arxhub/errors'
 import {
   type CodeShape,
   changeUnlockCode,
@@ -18,12 +17,14 @@ import { Button, Card, modals, PageLayout, Row } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { VaultVfs } from '@arxhub/vfs'
 import { computed, markRaw, onMounted, ref, shallowRef } from 'vue'
+import { errorText } from '../error-text'
+import { t } from '../i18n/messages'
 import { IDENTITY_MNEMONIC_KEY } from '../identity'
 import { KeyringExtension } from '../keyring-extension'
 import { decideIdentityChange } from '../owner-decision'
 import { PairingExtension } from '../pairing-extension'
 import type { SecurityTaskDeps, SecurityTaskKind } from '../security/security-task'
-import { clearVaultWorkingTree, isVaultEmpty } from '../vault-reset'
+import { clearVaultWorkingTree, isVaultEmpty, noVaultToClear } from '../vault-reset'
 import OwnerHandoverDialog from './OwnerHandoverDialog.vue'
 import SecurityTaskView from './security/SecurityTaskView.vue'
 
@@ -88,16 +89,23 @@ async function startTask(kind: SecurityTaskKind): Promise<void> {
   task.value = { kind, deps, id: ++taskId }
 }
 
-const APPLIED: Partial<Record<SecurityTaskKind, string>> = {
-  'change-code': 'Unlock code changed',
-  lock: 'Device locked',
-  'remove-lock': 'Device lock removed',
+function appliedTitle(kind: SecurityTaskKind): string {
+  switch (kind) {
+    case 'change-code':
+      return t('security.applied.changeCode')
+    case 'lock':
+      return t('security.applied.lock')
+    case 'remove-lock':
+      return t('security.applied.removeLock')
+    default:
+      return t('security.applied.saved')
+  }
 }
 
 // Every lock change swaps the store the whole app reads secrets from, and that store is resolved
 // before ArxHub.start() — so, as with replacing the identity, the way to apply it is a fresh boot.
 function applied(kind: SecurityTaskKind): void {
-  toaster.create({ title: APPLIED[kind] ?? 'Saved', type: 'success' })
+  toaster.create({ title: appliedTitle(kind), type: 'success' })
   window.location.reload()
 }
 
@@ -109,13 +117,13 @@ const entered = ref('')
 const normalized = computed(() => entered.value.trim().replace(/\s+/g, ' ').toLowerCase())
 const enteredValid = computed(() => normalized.value.length > 0 && validateMnemonic(normalized.value))
 
-async function copy(text: string, what: string): Promise<void> {
+async function copy(text: string, copiedTitle: string): Promise<void> {
   await navigator.clipboard.writeText(text)
-  toaster.create({ title: `${what} copied`, type: 'success' })
+  toaster.create({ title: copiedTitle, type: 'success' })
 }
 
 function run(action: Promise<void>, title: string): void {
-  action.catch((error) => toaster.create({ title, description: String(error), type: 'error' }))
+  action.catch((error) => toaster.create({ title, description: errorText(error), type: 'error' }))
 }
 
 // A BIP39 checksum only answers “is this a phrase at all”. Deriving its auth key answers “is this
@@ -159,13 +167,13 @@ const decision = computed(() => {
 const verdict = computed(() => {
   switch (decision.value?.kind) {
     case 'nothing-to-lose':
-      return 'This device holds no files, so there is nothing to lose by switching to this phrase.'
+      return t('security.verdict.nothingToLose')
     case 'already-this-device':
-      return 'This is already this device’s phrase — there is nothing to change.'
+      return t('security.verdict.alreadyThisDevice')
     case 'restores-owner':
-      return 'This is the phrase the files on this device belong to. Restoring it changes nothing about them.'
+      return t('security.verdict.restoresOwner')
     case 'foreign-owner':
-      return 'This phrase belongs to a different owner and this device holds files — you will be asked what happens to them.'
+      return t('security.verdict.foreignOwner')
     default:
       return null
   }
@@ -194,7 +202,7 @@ async function beginReplace(): Promise<void> {
     // The button is already disabled for this, and the line under the field says so; this is the belt
     // for anyone reaching the decision by another route.
     case 'already-this-device':
-      toaster.create({ title: 'That is already this device’s phrase', description: 'Nothing was changed.', type: 'info' })
+      toaster.create({ title: t('security.alreadyToast'), description: t('security.nothingChanged'), type: 'info' })
       return
     // Nothing is being taken from anyone in either of these: an empty vault has nothing to lose, and
     // the phrase that owns the files on disk is the one they were waiting for.
@@ -212,14 +220,14 @@ const HANDOVER_MODAL_ID = 'arxhub.protection.handover'
 function openHandover(mnemonic: string, entered: string): void {
   modals.open({
     modalId: HANDOVER_MODAL_ID,
-    title: 'This phrase belongs to another owner',
+    title: t('security.handoverTitle'),
     size: 'md',
     centered: true,
     content: markRaw(OwnerHandoverDialog),
     contentProps: {
       modalId: HANDOVER_MODAL_ID,
-      onKeepLocalFiles: () => run(applyIdentity(mnemonic, entered, false), 'Could not replace the identity'),
-      onTakeFromServer: () => run(applyIdentity(mnemonic, entered, true), 'Could not replace the identity'),
+      onKeepLocalFiles: () => run(applyIdentity(mnemonic, entered, false), t('security.replaceFailed')),
+      onTakeFromServer: () => run(applyIdentity(mnemonic, entered, true), t('security.replaceFailed')),
     },
   })
 }
@@ -235,7 +243,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   replaceBusy.value = true
   try {
     if (wipeVault) {
-      if (vault == null) throw illegalState('This device has no vault to clear')
+      if (vault == null) throw noVaultToClear()
       await clearVaultWorkingTree(vault)
     }
     await keystore.set(IDENTITY_MNEMONIC_KEY, mnemonic)
@@ -253,16 +261,16 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
 </script>
 
 <template>
-  <PageLayout title="Security" description="Keys live on this device only. Nothing here is sent anywhere unless you set up sync.">
+  <PageLayout :title="t('security.title')" :description="t('security.description')">
     <div class="security" :class="{ touch }">
-    <section class="rows" aria-label="Security actions">
+    <section class="rows" :aria-label="t('security.actions')">
       <Row
         as="button"
         plated
         next
         icon="lu:key-round"
-        label="Show recovery phrase"
-        detail="12 words — connect a device or restore the vault"
+        :label="t('security.showPhrase')"
+        :detail="t('security.showPhraseDetail')"
         :disabled="locked == null"
         data-testid="security-show-phrase"
         @click="startTask('phrase')"
@@ -273,8 +281,8 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
         plated
         next
         icon="lu:qr-code"
-        label="Connect a device"
-        detail="A QR for a new phone or computer"
+        :label="t('security.pair')"
+        :detail="t('security.pairDetail')"
         :disabled="locked == null"
         data-testid="security-pair"
         @click="startTask('pair')"
@@ -285,12 +293,12 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
           plated
           disabled
           icon="lu:qr-code"
-          label="Connect a device"
-          detail="Connect a sync server first — without one, devices have nothing to exchange through. You can still enter the phrase on the new device."
+          :label="t('security.pair')"
+          :detail="t('security.pairNoServer')"
           data-testid="security-pair"
         />
         <div v-if="canOpenSync" class="row-action">
-          <Button block variant="secondary" icon="lu:server" data-testid="security-connect-server" @click="openSyncSettings">Connect a server</Button>
+          <Button block variant="secondary" icon="lu:server" data-testid="security-connect-server" @click="openSyncSettings">{{ t('security.connectServer') }}</Button>
         </div>
       </template>
       <Row
@@ -299,8 +307,8 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
         plated
         next
         icon="lu:lock"
-        label="Change this device's code"
-        detail="6 digits"
+        :label="t('security.changeCode')"
+        :detail="t('security.changeCodeDetail')"
         :disabled="locked == null"
         data-testid="security-change-code"
         @click="startTask('change-code')"
@@ -311,8 +319,8 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
         plated
         next
         icon="lu:lock-open"
-        label="Lock this device"
-        detail="6 digits. The keys on this device are stored unencrypted until then."
+        :label="t('security.lock')"
+        :detail="t('security.lockDetail')"
         :disabled="locked == null"
         data-testid="security-lock"
         @click="startTask('lock')"
@@ -324,45 +332,39 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
         next
         tone="danger"
         icon="lu:lock-open"
-        label="Remove the device lock"
-        detail="The recovery phrase goes back to being stored unencrypted"
+        :label="t('security.removeLock')"
+        :detail="t('security.removeLockDetail')"
         :disabled="locked == null"
         data-testid="security-remove-lock"
         @click="startTask('remove-lock')"
       />
-      <p class="footnote">Showing the phrase and connecting a device ask for the code every time: both hand out the vault key.</p>
+      <p class="footnote">{{ t('security.footnote') }}</p>
     </section>
 
     <section class="section">
-      <h3 class="section-title">Device identity</h3>
-      <p v-if="!keyring" class="hint">This device has no identity. Sync and publishing stay idle until one exists.</p>
+      <h3 class="section-title">{{ t('security.identity') }}</h3>
+      <p v-if="!keyring" class="hint">{{ t('security.noIdentity') }}</p>
       <template v-else>
-        <p class="hint">
-          The public key is what a server pins to recognise this device. It is safe to share.
-        </p>
+        <p class="hint">{{ t('security.publicKeyHint') }}</p>
         <div class="value-row">
           <code class="value" data-testid="public-key">{{ keyring.authPublicKey }}</code>
-          <Button :size="buttonSize" variant="secondary" @click="run(copy(keyring.authPublicKey, 'Public key'), 'Could not copy')">Copy</Button>
+          <Button :size="buttonSize" variant="secondary" @click="run(copy(keyring.authPublicKey, t('security.publicKeyCopied')), t('security.copyFailed'))">{{ t('security.copy') }}</Button>
         </div>
       </template>
     </section>
 
-    <Card variant="danger" label="Irreversible" title="Use an existing recovery phrase">
-      <p class="hint">
-        Enter the phrase from another device to make this one the same owner. Save the current phrase first — replacing
-        it cannot be undone from here. The phrase is compared with what this device already knows, so you are only
-        asked about your files when it really is a different owner.
-      </p>
+    <Card variant="danger" :label="t('security.irreversible')" :title="t('security.usePhrase')">
+      <p class="hint">{{ t('security.usePhraseHint') }}</p>
       <textarea
         v-model="entered"
         class="entry"
         rows="3"
         spellcheck="false"
         autocomplete="off"
-        placeholder="twelve words separated by spaces"
+        :placeholder="t('security.phrasePlaceholder')"
         data-testid="recovery-phrase-entry"
       />
-      <p v-if="normalized && !enteredValid" class="invalid">Not a valid recovery phrase — check the words and their order.</p>
+      <p v-if="normalized && !enteredValid" class="invalid">{{ t('security.invalidPhrase') }}</p>
       <p v-else-if="verdict" class="hint" data-testid="phrase-verdict">{{ verdict }}</p>
       <div class="value-row">
         <Button
@@ -370,9 +372,9 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
           :variant="restoring ? 'primary' : 'danger'"
           :disabled="!canApply || replaceBusy"
           data-testid="replace-identity"
-          @click="run(beginReplace(), 'Could not replace the identity')"
+          @click="run(beginReplace(), t('security.replaceFailed'))"
         >
-          {{ restoring ? 'Restore identity' : 'Replace identity' }}
+          {{ restoring ? t('security.restore') : t('security.replace') }}
         </Button>
       </div>
     </Card>

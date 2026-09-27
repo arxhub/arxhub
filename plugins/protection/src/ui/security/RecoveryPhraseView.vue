@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Card } from '@arxhub/uikit/core'
 import { onBeforeUnmount, onMounted } from 'vue'
+import { t } from '../../i18n/messages'
 import PhraseWords from '../entry/PhraseWords.vue'
 
 // The twelve words, shown after the code. They are hidden the moment the screen is left — closed, or
@@ -20,9 +21,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <p class="text">Never show it to anyone. The screen hides the phrase when you leave it.</p>
+  <p class="text">{{ t('phrase.hideNote') }}</p>
   <div data-testid="recovery-phrase"><PhraseWords :words="words" /></div>
-  <Card notice variant="warning" icon="lu:triangle-alert" title="Anyone who knows the phrase gets access to everything. Don't take a screenshot." />
+  <Card notice variant="warning" icon="lu:triangle-alert" :title="t('phrase.warning')" />
 </template>
 
 <style scoped>

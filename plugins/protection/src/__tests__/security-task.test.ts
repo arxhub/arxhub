@@ -11,17 +11,9 @@ import {
   verifyUnlockCode,
 } from '@arxhub/plugin-keystore'
 import { describe, expect, it, vi } from 'vitest'
+import { t } from '../i18n/messages'
 import { IDENTITY_MNEMONIC_KEY } from '../identity'
-import {
-  CODES_DIFFER,
-  formatCountdown,
-  NO_PHRASE,
-  pairScreen,
-  SecurityTask,
-  type SecurityTaskDeps,
-  type SecurityTaskKind,
-  WRONG_CODE,
-} from '../security/security-task'
+import { formatCountdown, pairScreen, SecurityTask, type SecurityTaskDeps, type SecurityTaskKind } from '../security/security-task'
 
 const PHRASE = 'orbit velvet canyon mercy lunar harbor thrive pencil glacier noble sketch amber'
 const CODE = '314159'
@@ -90,7 +82,7 @@ describe('SecurityTask — asking for the code again', () => {
     const task = new SecurityTask('phrase', deps)
     await enter(task, '000000')
     expect(task.step.value).toBe('reentry')
-    expect(task.error.value).toBe(WRONG_CODE)
+    expect(task.error.value).toBe(t('task.wrongCode'))
     expect(task.code.value).toBe('')
     expect(task.refusals.value).toBe(1)
     expect(task.phrase.value).toBeNull()
@@ -123,7 +115,7 @@ describe('SecurityTask — asking for the code again', () => {
     const task = new SecurityTask('phrase', fakeDeps({ readPhrase: async () => null }))
     await enter(task, CODE)
     expect(task.step.value).toBe('reentry')
-    expect(task.error.value).toBe(NO_PHRASE)
+    expect(task.error.value).toBe(t('task.noPhrase'))
   })
 
   it('takes a legacy code at any length, with a confirm key rather than the sixth digit', async () => {
@@ -219,7 +211,7 @@ describe('SecurityTask — changing the code', () => {
     await enter(task, OTHER)
     await enter(task, '111111')
     expect(task.step.value).toBe('new-code')
-    expect(task.error.value).toBe(CODES_DIFFER)
+    expect(task.error.value).toBe(t('task.codesDiffer'))
     expect(deps.changeCode).not.toHaveBeenCalled()
   })
 

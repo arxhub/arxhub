@@ -5,6 +5,7 @@ import { Button } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { authStatus, describeRejection } from '../auth-status'
+import { t } from '../i18n/messages'
 import { KeyringExtension } from '../keyring-extension'
 import { closeAuthRejectedDialog } from './auth-dialog'
 
@@ -32,24 +33,24 @@ function openSecurity(): void {
 
     <dl class="auth-meta">
       <div v-if="rejection != null">
-        <dt>Refused</dt>
+        <dt>{{ t('auth.refused') }}</dt>
         <dd>{{ rejection.method }} {{ rejection.path }}</dd>
       </div>
       <div v-if="rejection != null">
-        <dt>Reason</dt>
-        <dd>{{ rejection.reason ?? 'not reported' }}</dd>
+        <dt>{{ t('auth.reason') }}</dt>
+        <dd>{{ rejection.reason ?? t('auth.notReported') }}</dd>
       </div>
       <!-- The key this device presents, so it can be compared with the one the server pinned without
            digging it out of a console. It is a public key; there is nothing here to leak. -->
       <div v-if="keyring != null">
-        <dt>This device</dt>
+        <dt>{{ t('auth.thisDevice') }}</dt>
         <dd>{{ keyring.authPublicKey }}</dd>
       </div>
     </dl>
 
     <div class="auth-actions">
-      <Button :size="buttonSize" variant="secondary" @click="closeAuthRejectedDialog()">Close</Button>
-      <Button v-if="copy.offerPhrase" :size="buttonSize" variant="primary" @click="openSecurity">Recovery phrase…</Button>
+      <Button :size="buttonSize" variant="secondary" @click="closeAuthRejectedDialog()">{{ t('common.close') }}</Button>
+      <Button v-if="copy.offerPhrase" :size="buttonSize" variant="primary" @click="openSecurity">{{ t('auth.openPhrase') }}</Button>
     </div>
   </div>
 </template>

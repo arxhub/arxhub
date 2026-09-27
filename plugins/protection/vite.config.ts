@@ -9,6 +9,7 @@ export default defineConfig((env) =>
       '@arxhub/crypto',
       '@arxhub/errors',
       '@arxhub/http',
+      '@arxhub/i18n',
       '@sinclair/typebox',
       '@arxhub/plugin-gateway/server',
       '@arxhub/plugin-keystore',

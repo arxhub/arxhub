@@ -29,8 +29,10 @@ import {
   pairingErrorFromBody,
   pairingExpired,
   pairingNotFound,
+  pairingRefused,
   pairingSasMismatch,
   pairingState,
+  pairingUnreachable,
   retryAfterOf,
 } from './errors'
 import type { PairingApp } from './pairing-routes'
@@ -46,7 +48,7 @@ function relayError(error: unknown): AppError | null {
   const rebuilt = pairingErrorFromBody((error as { json?: unknown }).json)
   if (rebuilt != null) return rebuilt
   if (isHttpError(error, 404)) return pairingNotFound()
-  return validation(`The server refused the pairing request (${String((error as { status: unknown }).status)})`)
+  return pairingRefused(String((error as { status: unknown }).status))
 }
 
 function pause(ms: number, signal: AbortSignal): Promise<void> {
@@ -168,7 +170,7 @@ export class PairingHost {
       await pollUntil(run.signal, this.options.pollMs ?? DEFAULT_POLL_MS, () => this.step(created.id))
     } catch (error) {
       if (run.signal.aborted) return
-      this.settleFailure(relayError(error) ?? validation('Could not reach the server'))
+      this.settleFailure(relayError(error) ?? pairingUnreachable())
     } finally {
       if (this.run === run) {
         this.run = null
@@ -195,7 +197,7 @@ export class PairingHost {
     try {
       await this.http.post('/invitations/:id/payload', { ciphertext: toB64Url(ciphertext) }, { params: { id } })
     } catch (error) {
-      await this.abandon(relayError(error) ?? validation('Could not reach the server'))
+      await this.abandon(relayError(error) ?? pairingUnreachable())
     }
   }
 
@@ -392,7 +394,7 @@ export class PairingJoiner {
         ? isAppError(run.signal.reason)
           ? run.signal.reason
           : pairingCancelled('Cancelled on this device.')
-        : (relayError(error) ?? validation('Could not reach the server'))
+        : (relayError(error) ?? pairingUnreachable())
       if (!run.signal.aborted) {
         this.error.value = reason
         this.phase.value =

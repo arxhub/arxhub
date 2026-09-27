@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PinEntry } from '@arxhub/plugin-keystore/ui'
 import { computed } from 'vue'
+import { t } from '../../i18n/messages'
 import type { SecurityTask } from '../../security/security-task'
 
 // One code on screen at a time: the code asked for again, a new one, or its repeat. Six digits submit
@@ -20,7 +21,7 @@ const invalid = computed(() => props.task.error.value != null && props.task.code
     :model-value="task.code.value"
     :label="label"
     :length="length"
-    :confirm-label="length == null ? 'Next' : undefined"
+    :confirm-label="length == null ? t('common.next') : undefined"
     :autocomplete="task.step.value === 'reentry' ? 'current-password' : 'new-password'"
     autofocus
     :disabled="task.busy.value || task.paused.value"

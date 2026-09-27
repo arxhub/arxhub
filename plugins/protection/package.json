@@ -25,6 +25,7 @@
   "dependencies": {
     "@arxhub/crypto": "workspace:*",
     "@arxhub/http": "workspace:*",
+    "@arxhub/i18n": "workspace:*",
     "@sinclair/typebox": "catalog:shared",
     "elysia": "catalog:server",
     "vue": "catalog:client"

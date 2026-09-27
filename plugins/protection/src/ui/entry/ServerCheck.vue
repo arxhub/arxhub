@@ -3,9 +3,12 @@ import { Field, Input, StatusDot } from '@arxhub/uikit/core'
 import { computed, useId } from 'vue'
 import type { EntryFlow } from '../../entry/entry-flow'
 import { type ServerPurpose, serverStatusLine } from '../../entry/server-status-line'
+import { t } from '../../i18n/messages'
 
 const props = defineProps<{ flow: EntryFlow; purpose: ServerPurpose }>()
 
+// What an address looks like, not words: the same in every language.
+const EXAMPLE_SERVER = 'https://hub.example.com'
 const id = useId()
 const line = computed(() => serverStatusLine(props.flow.serverStatus.value, props.purpose))
 const address = computed({
@@ -18,10 +21,10 @@ const address = computed({
   <div class="server-check">
     <!-- A browser bundle is served by its server, so there is nothing to type: the address is shown,
          and checked, as the page's own origin. -->
-    <Field v-if="flow.serverFixed" label="Server address">
+    <Field v-if="flow.serverFixed" :label="t('common.serverAddress')">
       <p class="fixed" data-testid="server-address">{{ flow.address.value }}</p>
     </Field>
-    <Field v-else label="Server address" :for="id">
+    <Field v-else :label="t('common.serverAddress')" :for="id">
       <Input
         :id="id"
         v-model="address"
@@ -30,7 +33,7 @@ const address = computed({
         autocomplete="url"
         autocapitalize="off"
         spellcheck="false"
-        placeholder="https://hub.example.com"
+        :placeholder="EXAMPLE_SERVER"
         data-testid="server-address"
         @keydown.enter.prevent="flow.checkServer()"
       />

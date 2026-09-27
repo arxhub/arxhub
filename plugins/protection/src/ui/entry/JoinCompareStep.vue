@@ -2,6 +2,8 @@
 import { Button, Card, GateLayout, StatusDot } from '@arxhub/uikit/core'
 import { computed } from 'vue'
 import type { EntryFlow } from '../../entry/entry-flow'
+import { errorText } from '../../error-text'
+import { t } from '../../i18n/messages'
 import SasDigits from './SasDigits.vue'
 
 // The new device's side of the handover. The owner confirms the digits here as well as on the first
@@ -15,27 +17,30 @@ const sas = computed(() => joiner.value?.sas.value ?? null)
 const matched = computed(() => joiner.value?.matched.value ?? false)
 const deciding = computed(() => phase.value === 'compare' && sas.value != null && !matched.value)
 const failed = computed(() => phase.value === 'failed' || phase.value === 'expired' || phase.value === 'cancelled')
-const reason = computed(() => joiner.value?.error.value?.message ?? 'The connection stopped.')
+const reason = computed(() => {
+  const error = joiner.value?.error.value
+  return error ? errorText(error) : t('common.connectionStopped')
+})
 </script>
 
 <template>
   <GateLayout center>
-    <template #title>{{ failed ? 'Not connected' : 'Compare the digits' }}</template>
-    <template v-if="!failed" #text>The first device should show the same digits. Confirm on both devices.</template>
+    <template #title>{{ failed ? t('common.notConnected') : t('common.compareDigits') }}</template>
+    <template v-if="!failed" #text>{{ t('entry.compare.text') }}</template>
 
     <template v-if="!failed">
       <SasDigits v-if="sas" :sas="sas" />
       <p v-if="!deciding" class="status" role="status" data-testid="join-status">
         <StatusDot tone="neutral" pulse />
-        <span>{{ sas ? 'Waiting for confirmation on the first device…' : 'Connecting to the first device…' }}</span>
+        <span>{{ sas ? t('entry.compare.waitingFirst') : t('entry.compare.connecting') }}</span>
       </p>
     </template>
     <Card v-else notice variant="danger" icon="lu:circle-alert" :title="reason" data-testid="join-error" />
 
     <template #actions>
       <template v-if="deciding">
-        <Button block variant="secondary" data-testid="join-mismatch" @click="flow.joinMismatch()">They don't match</Button>
-        <Button block variant="primary" data-testid="join-match" @click="flow.joinMatch()">They match</Button>
+        <Button block variant="secondary" data-testid="join-mismatch" @click="flow.joinMismatch()">{{ t('common.theyDontMatch') }}</Button>
+        <Button block variant="primary" data-testid="join-match" @click="flow.joinMatch()">{{ t('entry.compare.match') }}</Button>
       </template>
       <Button
         v-else
@@ -43,7 +48,7 @@ const reason = computed(() => joiner.value?.error.value?.message ?? 'The connect
         :variant="failed ? 'secondary' : 'ghost'"
         :icon="failed ? 'lu:chevron-left' : undefined"
         data-testid="join-cancel" @click="flow.cancelJoin()">
-        {{ failed ? 'Back' : 'Cancel' }}
+        {{ failed ? t('common.back') : t('common.cancel') }}
       </Button>
     </template>
   </GateLayout>

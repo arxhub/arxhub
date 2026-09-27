@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { GateLayout, Row } from '@arxhub/uikit/core'
 import type { EntryFlow } from '../../entry/entry-flow'
+import { t } from '../../i18n/messages'
 import EntryError from './EntryError.vue'
 
 defineProps<{ flow: EntryFlow }>()
+
+// The product's name, not copy: it reads the same in every language.
+const PRODUCT = 'ArxHub'
 </script>
 
 <template>
   <GateLayout center="mobile" mark="lu:lock">
-    <template #title>ArxHub</template>
-    <template #text>Documents, sheets and notes — on your devices, encrypted with your key.</template>
+    <template #title>{{ PRODUCT }}</template>
+    <template #text>{{ t('entry.welcome.text') }}</template>
 
     <template #actions>
       <EntryError :flow="flow" />
@@ -18,8 +22,8 @@ defineProps<{ flow: EntryFlow }>()
         choice
         next
         icon="lu:square-plus"
-        label="Create a new vault"
-        detail="First device — we'll set a code and a key"
+        :label="t('entry.welcome.newVault')"
+        :detail="t('entry.welcome.newVaultDetail')"
         :disabled="flow.busy.value"
         data-testid="entry-new-vault"
         @click="flow.chooseNew()"
@@ -29,8 +33,8 @@ defineProps<{ flow: EntryFlow }>()
         choice
         next
         icon="lu:smartphone"
-        label="Connect to my vault"
-        detail="I already have ArxHub on another device"
+        :label="t('entry.welcome.join')"
+        :detail="t('entry.welcome.joinDetail')"
         :disabled="flow.busy.value"
         data-testid="entry-join-vault"
         @click="flow.chooseJoin()"

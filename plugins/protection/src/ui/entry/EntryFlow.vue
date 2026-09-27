@@ -3,6 +3,7 @@ import type { KeyStore } from '@arxhub/plugin-keystore'
 import { CreateCode } from '@arxhub/plugin-keystore/ui'
 import { computed } from 'vue'
 import { type EntryFlow, entryStepNumber } from '../../entry/entry-flow'
+import { t } from '../../i18n/messages'
 import InviteCodeStep from './InviteCodeStep.vue'
 import JoinCompareStep from './JoinCompareStep.vue'
 import JoinMethodStep from './JoinMethodStep.vue'
@@ -26,7 +27,7 @@ const props = defineProps<{
 const step = computed(() => props.flow.step.value)
 const kicker = computed(() => {
   const number = entryStepNumber(step.value, props.flow.mode.value)
-  return number == null ? '' : `Step ${number} of 4`
+  return number == null ? '' : t('entry.step', { number })
 })
 </script>
 

@@ -3,6 +3,8 @@ import type { Keyring } from '@arxhub/crypto'
 import { Button, ModalSurface } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { computed, onBeforeUnmount, shallowRef, watch } from 'vue'
+import { errorText } from '../../error-text'
+import { t } from '../../i18n/messages'
 import { PairingHost } from '../../pairing/pairing-client'
 import { pairScreen, SecurityTask, type SecurityTaskDeps, type SecurityTaskKind } from '../../security/security-task'
 import CodeStep from './CodeStep.vue'
@@ -24,64 +26,67 @@ const task = new SecurityTask(props.kind, props.deps)
 const step = task.step
 const host = shallowRef<PairingHost | null>(null)
 
-const REENTRY_TEXT: Record<SecurityTaskKind, string> = {
-  phrase: 'To show the recovery phrase.',
-  pair: 'To show the connection QR — it hands out the vault key.',
-  'change-code': "This device's current code.",
-  'remove-lock': 'To remove the lock from this device.',
-  lock: '',
-}
+const reentryText = computed(() => {
+  switch (props.kind) {
+    case 'phrase':
+      return t('task.reentry.phrase')
+    case 'pair':
+      return t('task.reentry.pair')
+    case 'change-code':
+      return t('task.reentry.changeCode')
+    case 'remove-lock':
+      return t('task.reentry.removeLock')
+    default:
+      return ''
+  }
+})
 
-const CONFIRM_TEXT: Partial<Record<SecurityTaskKind, string>> = {
-  phrase: 'This device has no lock, so there is no code to ask for. Make sure nobody can see your screen.',
-  pair: 'This device has no lock, so there is no code to ask for. The QR hands out the vault key to whoever scans it first.',
-}
-
-const NEW_CODE_TEXT =
-  '6 digits. It stops whoever ends up with a copy of this profile, not someone who came for your vault and can spend an afternoon on it.'
+const confirmText = computed(() =>
+  props.kind === 'phrase' ? t('task.confirm.phrase') : props.kind === 'pair' ? t('task.confirm.pair') : undefined,
+)
 
 const pairShown = computed(() => (host.value == null ? 'preparing' : pairScreen(host.value.phase.value)))
 
 const title = computed(() => {
   switch (step.value) {
     case 'confirm':
-      return props.kind === 'pair' ? 'Connect a device' : 'Show recovery phrase'
+      return props.kind === 'pair' ? t('security.pair') : t('security.showPhrase')
     case 'reentry':
-      return 'Enter the code'
+      return t('task.enterCode')
     case 'phrase':
-      return 'Recovery phrase'
+      return t('common.recoveryPhrase')
     case 'new-code':
-      return props.kind === 'lock' ? 'Create a code' : 'New code'
+      return props.kind === 'lock' ? t('task.createCode') : t('task.newCode')
     case 'repeat-code':
-      return 'Repeat the code'
+      return t('task.repeatCode')
     case 'applying':
-      return props.kind === 'remove-lock' ? 'Removing the lock…' : 'Saving the code…'
+      return props.kind === 'remove-lock' ? t('task.removingLock') : t('task.savingCode')
     case 'pair':
       switch (pairShown.value) {
         case 'compare':
-          return 'Compare the digits'
+          return t('common.compareDigits')
         case 'done':
-          return 'Device connected'
+          return t('task.deviceConnected')
         case 'expired':
-          return 'The invitation expired'
+          return t('task.invitationExpired')
         case 'failed':
-          return 'Not connected'
+          return t('common.notConnected')
         default:
-          return 'Connect a device'
+          return t('security.pair')
       }
   }
-  return 'Security'
+  return t('security.title')
 })
 
 function report(error: unknown, title: string): void {
-  toaster.create({ title, description: error instanceof Error ? error.message : String(error), type: 'error' })
+  toaster.create({ title, description: errorText(error), type: 'error' })
 }
 
 async function submit(): Promise<void> {
   try {
     if ((await task.submit()) === 'applied') emit('applied')
   } catch (error) {
-    report(error, props.kind === 'remove-lock' ? 'Could not remove the lock' : 'Could not change the code')
+    report(error, props.kind === 'remove-lock' ? t('task.removeFailed') : t('task.changeFailed'))
   }
 }
 
@@ -89,7 +94,7 @@ async function confirm(): Promise<void> {
   try {
     if ((await task.confirm()) === 'applied') emit('applied')
   } catch (error) {
-    report(error, 'Could not continue')
+    report(error, t('task.continueFailed'))
   }
 }
 
@@ -104,7 +109,7 @@ watch(
     if (current !== 'pair' || host.value != null) return
     const mnemonic = task.phrase.value
     if (props.server == null || props.keyring == null || mnemonic == null) {
-      toaster.create({ title: 'Cannot connect a device', description: 'This device has no sync server or no identity.', type: 'error' })
+      toaster.create({ title: t('task.cannotPair'), description: t('task.cannotPairDetail'), type: 'error' })
       emit('close')
       return
     }
@@ -128,30 +133,30 @@ onBeforeUnmount(() => {
   <!-- A place of its own on the phone: the keypad and the phrase both want the screen. -->
   <ModalSurface open :title="title" full test-id="security-task" @close="close">
     <template v-if="step === 'confirm'">
-      <p class="text">{{ CONFIRM_TEXT[kind] }}</p>
+      <p class="text">{{ confirmText }}</p>
       <p v-if="task.error.value" class="error" role="alert">{{ task.error.value }}</p>
     </template>
 
     <CodeStep
       v-else-if="step === 'reentry'"
       :task="task"
-      :text="REENTRY_TEXT[kind]"
-      label="Unlock code"
+      :text="reentryText"
+      :label="t('task.unlockCode')"
       test-id="reentry-code"
       @submit="submit"
     />
-    <CodeStep v-else-if="step === 'new-code'" :task="task" :text="NEW_CODE_TEXT" label="New code" test-id="new-unlock-code" @submit="submit" />
+    <CodeStep v-else-if="step === 'new-code'" :task="task" :text="t('task.newCodeText')" :label="t('task.newCode')" test-id="new-unlock-code" @submit="submit" />
     <CodeStep
       v-else-if="step === 'repeat-code'"
       :task="task"
-      text="So you don't mistype it"
-      label="Repeat the code"
+:text="t('task.repeatText')"
+      :label="t('task.repeatCode')"
       test-id="repeat-unlock-code"
       @submit="submit"
     />
 
     <p v-else-if="step === 'applying'" class="text" role="status">
-      The keys on this device are being encrypted again. The app restarts when it is done.
+      {{ t('task.applying') }}
     </p>
 
     <RecoveryPhraseView v-else-if="step === 'phrase'" :words="task.words" @hide="task.hidePhrase()" />
@@ -160,16 +165,16 @@ onBeforeUnmount(() => {
 
     <template #footer>
       <template v-if="step === 'confirm'">
-        <Button block variant="secondary" @click="close">Cancel</Button>
-        <Button block variant="primary" :disabled="task.busy.value" data-testid="security-continue" @click="confirm">Continue</Button>
+        <Button block variant="secondary" @click="close">{{ t('common.cancel') }}</Button>
+        <Button block variant="primary" :disabled="task.busy.value" data-testid="security-continue" @click="confirm">{{ t('task.continue') }}</Button>
       </template>
       <Button v-else-if="step === 'reentry' || step === 'new-code'" block variant="ghost" :disabled="task.busy.value" @click="close">
-        Cancel
+        {{ t('common.cancel') }}
       </Button>
       <Button v-else-if="step === 'repeat-code'" block variant="ghost" :disabled="task.busy.value" @click="task.differentCode()">
-        Different code
+        {{ t('task.differentCode') }}
       </Button>
-      <Button v-else-if="step === 'phrase'" block variant="primary" data-testid="phrase-done" @click="close">Done</Button>
+      <Button v-else-if="step === 'phrase'" block variant="primary" data-testid="phrase-done" @click="close">{{ t('common.done') }}</Button>
       <template v-else-if="step === 'pair' && host">
         <template v-if="pairShown === 'compare'">
           <Button
@@ -177,28 +182,28 @@ onBeforeUnmount(() => {
             variant="secondary"
             :disabled="host.phase.value === 'sending'"
             data-testid="pairing-reject"
-            @click="run(host.reject(), 'Could not open a new invitation')"
+            @click="run(host.reject(), t('task.invitationFailed'))"
           >
-            They don't match
+            {{ t('common.theyDontMatch') }}
           </Button>
           <Button
             block
             variant="primary"
             :disabled="host.phase.value === 'sending'"
             data-testid="pairing-confirm"
-            @click="run(host.confirm(), 'Could not send the key')"
+            @click="run(host.confirm(), t('task.sendFailed'))"
           >
-            Match — send the key
+            {{ t('task.matchSend') }}
           </Button>
         </template>
-        <Button v-else-if="pairShown === 'done'" block variant="primary" @click="close">Done</Button>
+        <Button v-else-if="pairShown === 'done'" block variant="primary" @click="close">{{ t('common.done') }}</Button>
         <template v-else-if="pairShown === 'expired' || pairShown === 'failed'">
-          <Button block variant="secondary" @click="close">Close</Button>
-          <Button block variant="primary" data-testid="pairing-restart" @click="run(host.start(), 'Could not open a new invitation')">
-            New invitation
+          <Button block variant="secondary" @click="close">{{ t('common.close') }}</Button>
+          <Button block variant="primary" data-testid="pairing-restart" @click="run(host.start(), t('task.invitationFailed'))">
+            {{ t('task.newInvitation') }}
           </Button>
         </template>
-        <Button v-else block variant="secondary" data-testid="pairing-cancel" @click="close">Cancel</Button>
+        <Button v-else block variant="secondary" data-testid="pairing-cancel" @click="close">{{ t('common.cancel') }}</Button>
       </template>
     </template>
   </ModalSurface>

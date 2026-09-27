@@ -371,7 +371,10 @@ describe('EntryFlow — joining by the phrase', () => {
     flow.chooseJoin()
     flow.joinByPhrase()
     const words = phrase.split(' ')
-    flow.pastePhrase([...words.slice(1), words[0]].join(' '))
+    // A rotation of a random phrase passes its checksum about one time in sixteen; take the first that fails.
+    const rotations = words.map((_, shift) => [...words.slice(shift), ...words.slice(0, shift)].join(' '))
+    const broken = rotations.find((candidate) => !validateMnemonic(candidate)) ?? `${words.slice(1).join(' ')} zzzz`
+    flow.pastePhrase(broken)
     flow.phraseNext()
     expect(flow.step.value).toBe('join-phrase')
 

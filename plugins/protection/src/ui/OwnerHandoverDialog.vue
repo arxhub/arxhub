@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button, Card, modals } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
+import { t } from '../i18n/messages'
 
 // Both branches are irreversible and neither is safer than the other, so neither is offered as a
 // default: there is no primary button and no confirm-shaped pair to press through. Dismissing the
@@ -21,37 +22,28 @@ function choose(branch: () => void): void {
 
 <template>
   <div class="handover" :class="{ touch }">
-    <p class="lead">
-      This recovery phrase belongs to a different owner, and this device holds files. Whichever you choose cannot be
-      undone from here.
-    </p>
+    <p class="lead">{{ t('handover.lead') }}</p>
 
-    <Card title="Keep the local files">
-      <p class="branch">
-        Every file on this device stays where it is and is pushed into the new owner's history on the first sync. The
-        new owner ends up holding your files.
-      </p>
+    <Card :title="t('handover.keep')">
+      <p class="branch">{{ t('handover.keepText') }}</p>
       <div class="branch-action">
         <Button :size="buttonSize" variant="danger" data-testid="handover-keep" @click="choose(props.onKeepLocalFiles)">
-          Keep the local files
+          {{ t('handover.keep') }}
         </Button>
       </div>
     </Card>
 
-    <Card title="Take everything from the server">
-      <p class="branch">
-        Every file on this device is deleted now, and the new owner's files replace them on the first sync. Anything
-        here that was never synced is gone for good.
-      </p>
+    <Card :title="t('handover.take')">
+      <p class="branch">{{ t('handover.takeText') }}</p>
       <div class="branch-action">
         <Button :size="buttonSize" variant="danger" data-testid="handover-take-server" @click="choose(props.onTakeFromServer)">
-          Delete the local files
+          {{ t('handover.delete') }}
         </Button>
       </div>
     </Card>
 
     <div class="actions">
-      <Button :size="buttonSize" variant="secondary" @click="modals.close(props.modalId)">Cancel</Button>
+      <Button :size="buttonSize" variant="secondary" @click="modals.close(props.modalId)">{{ t('common.cancel') }}</Button>
     </div>
   </div>
 </template>

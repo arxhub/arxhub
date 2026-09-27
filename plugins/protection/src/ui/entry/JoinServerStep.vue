@@ -2,6 +2,7 @@
 import { Button, GateLayout } from '@arxhub/uikit/core'
 import { computed } from 'vue'
 import type { EntryFlow } from '../../entry/entry-flow'
+import { t } from '../../i18n/messages'
 import EntryError from './EntryError.vue'
 import ServerCheck from './ServerCheck.vue'
 
@@ -17,17 +18,17 @@ const checking = computed(() => status.value.kind === 'checking')
 <template>
   <GateLayout>
     <template #kicker>{{ kicker }}</template>
-    <template #title>Where is your vault</template>
-    <template #text>The address of the server your first device is connected to. It's in its Settings → Sync.</template>
+    <template #title>{{ t('entry.joinServer.title') }}</template>
+    <template #text>{{ t('entry.joinServer.text') }}</template>
 
     <ServerCheck :flow="flow" purpose="join" />
 
     <template #actions>
       <EntryError :flow="flow" />
-      <Button block variant="secondary" icon="lu:chevron-left" @click="flow.back()">Back</Button>
-      <Button v-if="ready" block data-testid="server-next" @click="flow.serverNext()">Next</Button>
+      <Button block variant="secondary" icon="lu:chevron-left" @click="flow.back()">{{ t('common.back') }}</Button>
+      <Button v-if="ready" block data-testid="server-next" @click="flow.serverNext()">{{ t('common.next') }}</Button>
       <Button v-else block icon="lu:server" :disabled="checking" data-testid="server-check" @click="flow.checkServer()">
-        Check
+        {{ t('entry.joinServer.check') }}
       </Button>
     </template>
   </GateLayout>

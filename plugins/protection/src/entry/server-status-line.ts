@@ -1,4 +1,5 @@
-import { formatBytes } from '@arxhub/stdlib/format/bytes'
+import { formatBytes } from '@arxhub/i18n'
+import { t } from '../i18n/messages'
 import type { ServerStatus } from './server-check'
 
 export interface ServerStatusLine {
@@ -16,26 +17,26 @@ export function serverStatusLine(status: ServerStatus, purpose: ServerPurpose): 
     case 'idle':
       return null
     case 'invalid':
-      return { tone: 'danger', text: "That isn't a server address — for example https://hub.example.com" }
+      return { tone: 'danger', text: t('common.notAddress') }
     case 'checking':
-      return { tone: 'neutral', text: 'Checking…', pending: true }
+      return { tone: 'neutral', text: t('entry.status.checking'), pending: true }
     case 'found': {
       const { summary } = status
       if (summary.empty) {
         return purpose === 'join'
-          ? { tone: 'warning', text: 'No vault for this phrase on this server yet' }
-          : { tone: 'success', text: 'Server responds · vault is empty' }
+          ? { tone: 'warning', text: t('entry.status.emptyJoin') }
+          : { tone: 'success', text: t('entry.status.emptyNew') }
       }
-      const documents = `${summary.documents.toLocaleString('en-US')} ${summary.documents === 1 ? 'document' : 'documents'}`
-      return { tone: 'success', text: `Vault found · ${documents} · ${formatBytes(summary.bytes)}` }
+      const documents = t('entry.status.documents', { count: summary.documents })
+      return { tone: 'success', text: t('entry.status.found', { documents, size: formatBytes(summary.bytes) }) }
     }
     case 'unreachable':
-      return { tone: 'danger', text: 'The server did not respond — check the address' }
+      return { tone: 'danger', text: t('entry.status.unreachable') }
     case 'other-vault':
-      return { tone: 'danger', text: 'This server belongs to another vault' }
+      return { tone: 'danger', text: t('entry.status.otherVault') }
     case 'refused':
       return status.reason === 'stale'
-        ? { tone: 'danger', text: "The server refused this device — check this device's clock" }
-        : { tone: 'danger', text: 'The server refused this device' }
+        ? { tone: 'danger', text: t('entry.status.refusedClock') }
+        : { tone: 'danger', text: t('entry.status.refused') }
   }
 }

@@ -1,9 +1,10 @@
 import { type AuthRejection, authRejections } from '@arxhub/crypto'
 import { readonly, shallowRef } from 'vue'
+import { t } from './i18n/messages'
 
-// What the user is told for each reason the server can refuse a signed request with. Kept as data next
-// to the state rather than inline in the footer's template so the wording is unit-testable and one
-// unknown reason from a newer server cannot render a blank dialog.
+// What the user is told for each reason the server can refuse a signed request with. Kept next to the
+// state rather than inline in the footer's template so the wording is unit-testable and one unknown
+// reason from a newer server cannot render a blank dialog.
 export interface RejectionCopy {
   // Status-bar label — short enough for a 32px strip.
   label: string
@@ -16,59 +17,35 @@ export interface RejectionCopy {
   offerPhrase: boolean
 }
 
-const UNKNOWN_KEY: RejectionCopy = {
-  label: 'Device not paired',
-  title: 'The server does not recognise this device',
-  detail:
-    'Requests are signed with this device’s identity, and the server is pinned to a different key. It refuses everything — the file tree, settings, sync — not just what you last tried.',
-  fix: 'Restore this device’s recovery phrase, or clear the pinned key on the server (delete state/protection/pinned-key in its data directory and restart it) to pair with this device instead.',
-  offerPhrase: true,
+type ReasonKey = 'unknownKey' | 'missing' | 'stale' | 'badSignature' | 'replay'
+
+// Whether restoring the phrase is the fix is a fact about the reason, not wording, so it stays out of the catalog.
+const REASONS: Record<string, { key: ReasonKey; offerPhrase: boolean }> = {
+  'unknown-key': { key: 'unknownKey', offerPhrase: true },
+  missing: { key: 'missing', offerPhrase: true },
+  stale: { key: 'stale', offerPhrase: false },
+  'bad-signature': { key: 'badSignature', offerPhrase: true },
+  replay: { key: 'replay', offerPhrase: false },
 }
 
-const COPY: Record<string, RejectionCopy> = {
-  'unknown-key': UNKNOWN_KEY,
-  missing: {
-    label: 'No identity',
-    title: 'Requests are going out unsigned',
-    detail: 'No device identity was installed, so the server has nothing to authenticate and refuses every request.',
-    fix: 'Reload the app. If it keeps happening, restore this device’s recovery phrase.',
-    offerPhrase: true,
-  },
-  stale: {
-    label: 'Clock out of sync',
-    title: 'This device’s clock disagrees with the server',
-    detail:
-      'A signature is only accepted inside a short freshness window, and this device’s clock is outside the server’s. Every request is refused as too old or too far ahead.',
-    fix: 'Correct the clock on this device or on the server — enabling automatic time on both is usually enough.',
-    offerPhrase: false,
-  },
-  'bad-signature': {
-    label: 'Signature refused',
-    title: 'The server could not verify this device’s signature',
-    detail:
-      'The signature did not match what the server computed for the request. Something between the two is altering requests, or the identity is damaged.',
-    fix: 'If a proxy sits in front of the server, check that it forwards the Host header and the request body unchanged.',
-    offerPhrase: true,
-  },
-  replay: {
-    label: 'Request refused',
-    title: 'The server saw this request twice',
-    detail: 'Each signed request may be sent once. The server had already seen this one, so it refused the repeat.',
-    fix: 'Reload the app and try again.',
-    offerPhrase: false,
-  },
+function copyFor(key: ReasonKey, offerPhrase: boolean): RejectionCopy {
+  return {
+    label: t(`auth.${key}.label`),
+    title: t(`auth.${key}.title`),
+    detail: t(`auth.${key}.detail`),
+    fix: t(`auth.${key}.fix`),
+    offerPhrase,
+  }
 }
 
 // A reason this build does not know about still gets a usable dialog: an unrecognised refusal is far
-// more likely to be a key mismatch than anything else, so it borrows that copy and says so.
+// more likely to be a key mismatch than anything else, so it borrows that copy and says so. Read on every
+// call, so the copy follows a language switch.
 export function describeRejection(reason: string | null): RejectionCopy {
-  if (reason == null)
-    return {
-      ...UNKNOWN_KEY,
-      title: 'The server refused this device',
-      fix: `${UNKNOWN_KEY.fix} Check the server log for the reason it recorded.`,
-    }
-  return COPY[reason] ?? { ...UNKNOWN_KEY, title: `The server refused this device (${reason})` }
+  const unknownKey = copyFor('unknownKey', true)
+  if (reason == null) return { ...unknownKey, title: t('auth.unknownReason'), fix: `${unknownKey.fix} ${t('auth.unknownReasonFix')}` }
+  const known = REASONS[reason]
+  return known ? copyFor(known.key, known.offerPhrase) : { ...unknownKey, title: t('auth.reasonTitle', { reason }) }
 }
 
 const rejection = shallowRef<AuthRejection | null>(null)
