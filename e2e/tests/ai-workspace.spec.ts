@@ -65,16 +65,16 @@ test.describe('ai workspace agent channel', () => {
       await expect(app.getByTestId('diff-band')).toHaveCount(0)
       const bar = app.getByTestId('object-bar')
       await expect(bar).toContainText(note)
-      await expect(bar).toContainText('1 правка')
-      await bar.getByRole('button', { name: 'Следующая правка', exact: true }).click()
-      await expect(bar).toContainText('1 из 1')
-      await expect(bar.getByRole('button', { name: 'Предыдущая правка', exact: true })).toBeVisible()
+      await expect(bar).toContainText('1 change')
+      await bar.getByRole('button', { name: 'Next change', exact: true }).click()
+      await expect(bar).toContainText('1 of 1')
+      await expect(bar.getByRole('button', { name: 'Previous change', exact: true })).toBeVisible()
       await bar.getByRole('button', { name: 'More actions', exact: true }).click()
       await app.getByRole('menuitem', { name: 'Back to proposal' }).click()
       await expect(proposal).toBeVisible()
       // Hidden, not unmounted: the diff layer is kept (v-show) so going back to it keeps its place.
       await expect(app.getByTestId('ai-workspace-diff')).toBeHidden()
-      await expect(bar).not.toContainText('1 из 1')
+      await expect(bar).not.toContainText('1 of 1')
     }
     // The phone keeps the session's commands in the band above the type row, the desktop under the proposal.
     const commands = (await isMobileFrame(app)) ? app.getByTestId('object-bar') : proposal

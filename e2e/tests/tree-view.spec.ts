@@ -60,10 +60,11 @@ test('settings uses the same rows as the file tree without an expander column', 
   if (!(await isMobileFrame(app))) {
     await appearance.focus()
     await app.keyboard.press('ArrowDown')
-    const storage = settings.getByRole('treeitem', { name: 'Storage', exact: true })
-    await expect(storage).toBeFocused()
+    // Language sits right under Appearance: both are how this device looks, and both apply on the spot.
+    const language = settings.getByRole('treeitem', { name: 'Language', exact: true })
+    await expect(language).toBeFocused()
     await expect(appearance).toHaveAttribute('aria-selected', 'true')
     await app.keyboard.press('Enter')
-    await expect(storage).toHaveAttribute('aria-selected', 'true')
+    await expect(language).toHaveAttribute('aria-selected', 'true')
   }
 })

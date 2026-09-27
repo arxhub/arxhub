@@ -72,8 +72,10 @@ export default defineConfig({
   // Each project sets its own baseURL because webServer is an array below — Playwright does not infer
   // one from a port in that shape (see the webServer doc comment on TestConfigWebServer).
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${desktopStand.webPort}` } },
-    { name: 'mobile', use: { ...devices['Pixel 7'], baseURL: `http://localhost:${mobileStand.webPort}` } },
+    // `locale` after the device spread: the specs assert English, and the app follows navigator.languages when no
+    // language is stored — a runner on a Russian system would otherwise boot the app in Russian (27-i18n).
+    { name: 'desktop', use: { ...devices['Desktop Chrome'], locale: 'en-US', baseURL: `http://localhost:${desktopStand.webPort}` } },
+    { name: 'mobile', use: { ...devices['Pixel 7'], locale: 'en-US', baseURL: `http://localhost:${mobileStand.webPort}` } },
   ],
 
   webServer: [
