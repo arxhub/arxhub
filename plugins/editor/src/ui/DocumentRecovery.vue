@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import { versionText } from '../document-history'
 import type { ArxEditorKit } from '../editor-extension'
 import { deserialize } from '../editor-format'
+import { t } from '../i18n/messages'
 
 const props = defineProps<{ kit: ArxEditorKit; saved: string; draft: string; conflict: boolean; busy: boolean; error: string }>()
 const emit = defineEmits<{ choose: [action: 'draft' | 'saved' | 'both'] }>()
@@ -21,15 +22,15 @@ const draftText = computed(() => preview(props.draft))
 </script>
 
 <template>
-  <Dialog open :title="conflict ? 'File changed outside this editor' : 'Recover unsaved draft'" size="lg" :close-on-escape="false" :close-on-interact-outside="false">
-    <p>{{ conflict ? 'The saved file differs from the version your draft started from. Choose which content to keep.' : 'This device has edits that did not reach the file before the editor closed.' }}</p>
-    <p>Saved file</p><ScrollArea class="preview"><pre aria-label="Saved file preview">{{ savedText }}</pre></ScrollArea>
-    <p>Your draft</p><ScrollArea class="preview"><pre aria-label="Draft preview">{{ draftText }}</pre></ScrollArea>
+  <Dialog open :title="conflict ? t('recovery.conflictTitle') : t('recovery.draftTitle')" size="lg" :close-on-escape="false" :close-on-interact-outside="false">
+    <p>{{ conflict ? t('recovery.conflictBody') : t('recovery.draftBody') }}</p>
+    <p>{{ t('recovery.saved') }}</p><ScrollArea class="preview"><pre :aria-label="t('recovery.savedAria')">{{ savedText }}</pre></ScrollArea>
+    <p>{{ t('recovery.draft') }}</p><ScrollArea class="preview"><pre :aria-label="t('recovery.draftAria')">{{ draftText }}</pre></ScrollArea>
     <p v-if="error" role="alert">{{ error }}</p>
     <template #footer>
-      <Button :size="buttonSize" variant="ghost" :disabled="busy" @click="emit('choose', 'saved')">Keep saved file</Button>
-      <Button :size="buttonSize" variant="secondary" :disabled="busy" @click="emit('choose', 'both')">Keep both</Button>
-      <Button :size="buttonSize" :disabled="busy" @click="emit('choose', 'draft')">{{ conflict ? 'Replace saved file with draft' : 'Recover draft' }}</Button>
+      <Button :size="buttonSize" variant="ghost" :disabled="busy" @click="emit('choose', 'saved')">{{ t('recovery.keepSaved') }}</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="busy" @click="emit('choose', 'both')">{{ t('recovery.keepBoth') }}</Button>
+      <Button :size="buttonSize" :disabled="busy" @click="emit('choose', 'draft')">{{ conflict ? t('recovery.replace') : t('recovery.recover') }}</Button>
     </template>
   </Dialog>
 </template>

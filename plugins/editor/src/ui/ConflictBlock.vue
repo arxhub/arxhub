@@ -5,6 +5,7 @@ import type { Node } from 'prosemirror-model'
 import { computed } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
 import { versionText } from '../document-history'
+import { t } from '../i18n/messages'
 
 const props = defineProps<ArxEditorControlProps>()
 const touch = useShellFrame() === 'mobile'
@@ -42,21 +43,21 @@ function keep(pick: 'local' | 'remote' | 'both') {
 
 <template>
   <div class="conflict-block" :class="{ touch }">
-    <p class="conflict-header">Conflict · this device / other device</p>
+    <p class="conflict-header">{{ t('conflict.header') }}</p>
     <div class="conflict-side">
-      <span class="conflict-label">This device</span>
+      <span class="conflict-label">{{ t('conflict.thisDevice') }}</span>
       <p v-if="localText">{{ localText }}</p>
-      <p v-else class="conflict-empty">Deleted on this device</p>
+      <p v-else class="conflict-empty">{{ t('conflict.deletedHere') }}</p>
     </div>
     <div class="conflict-side">
-      <span class="conflict-label">Other device</span>
+      <span class="conflict-label">{{ t('conflict.otherDevice') }}</span>
       <p v-if="remoteText">{{ remoteText }}</p>
-      <p v-else class="conflict-empty">Deleted on the other device</p>
+      <p v-else class="conflict-empty">{{ t('conflict.deletedThere') }}</p>
     </div>
     <div v-if="mode === 'editable'" class="conflict-actions">
-      <Button variant="secondary" :size="buttonSize" @click="keep('local')">Keep this device's</Button>
-      <Button variant="secondary" :size="buttonSize" @click="keep('remote')">Keep other device's</Button>
-      <Button variant="secondary" :size="buttonSize" @click="keep('both')">Keep both</Button>
+      <Button variant="secondary" :size="buttonSize" @click="keep('local')">{{ t('conflict.keepLocal') }}</Button>
+      <Button variant="secondary" :size="buttonSize" @click="keep('remote')">{{ t('conflict.keepRemote') }}</Button>
+      <Button variant="secondary" :size="buttonSize" @click="keep('both')">{{ t('conflict.keepBoth') }}</Button>
     </div>
   </div>
 </template>

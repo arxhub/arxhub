@@ -1,3 +1,4 @@
+import { formatDate } from '@arxhub/i18n'
 import { DiffExtension, type DiffResult } from '@arxhub/plugin-diff'
 import { type DiffPart, useDiffController } from '@arxhub/plugin-diff/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
@@ -8,6 +9,8 @@ import type { ArxHistoryStore, ArxSavedVersion } from '../document-history'
 import type { ArxEditorKit } from '../editor-extension'
 import { deserialize, serialize } from '../editor-format'
 import type { EditorMode } from '../editor-mode'
+import { reasonText } from '../errors'
+import { t } from '../i18n/messages'
 
 export interface DocumentVersionsProps {
   store: ArxHistoryStore
@@ -22,13 +25,18 @@ export interface DocumentVersionsProps {
   restore: (content: string, block?: string) => Promise<void>
 }
 
-function messageOf(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason)
+const messageOf = reasonText
+
+function versionName(versions: readonly ArxSavedVersion[], version: ArxSavedVersion): string {
+  return t('versions.version', { number: versions.length - versions.indexOf(version) })
+}
+
+function versionTime(version: ArxSavedVersion): string {
+  return formatDate(version.savedAt, { dateStyle: 'medium', timeStyle: 'medium' })
 }
 
 export function versionLabel(versions: readonly ArxSavedVersion[], version: ArxSavedVersion): string {
-  const number = versions.length - versions.indexOf(version)
-  return `Version ${number} · ${new Date(version.savedAt).toLocaleString()}`
+  return `${versionName(versions, version)} · ${versionTime(version)}`
 }
 
 // The saved versions of the open document against its live buffer: the list, the version being read, and the
@@ -59,7 +67,7 @@ export function useDocumentVersions(props: DocumentVersionsProps, close: () => v
     return {
       pathname: props.path,
       leftLabel: versionLabel(versions.value, version),
-      rightLabel: 'Current',
+      rightLabel: t('versions.current'),
       differ: 'arx',
       model: arxDiffNodes(before, after),
       source: () => {
@@ -71,10 +79,12 @@ export function useDocumentVersions(props: DocumentVersionsProps, close: () => v
   const controller = useDiffController(() => result.value)
 
   const parts = computed((): DiffPart[] =>
-    versions.value.map((version) => {
-      const [label, meta] = versionLabel(versions.value, version).split(' · ')
-      return { id: version.id, label, meta, icon: 'lu:history' }
-    }),
+    versions.value.map((version) => ({
+      id: version.id,
+      label: versionName(versions.value, version),
+      meta: versionTime(version),
+      icon: 'lu:history',
+    })),
   )
 
   // A restore works on a top-level block: a stop inside a container carries its top-level block's key.
@@ -82,7 +92,7 @@ export function useDocumentVersions(props: DocumentVersionsProps, close: () => v
     const stop = controller.currentStop.value
     return stop?.ref != null ? stop : null
   })
-  const blockLabel = computed(() => (blockStop.value?.change === 'added' ? 'Remove added block' : 'Restore selected block'))
+  const blockLabel = computed(() => (blockStop.value?.change === 'added' ? t('versions.removeAdded') : t('versions.restoreBlock')))
   const canRestore = computed(
     () => !restoring.value && !reading.value && raw.value !== '' && previewError.value === '' && props.mode === 'editable',
   )

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { readText } from '@arxhub/i18n'
 import { actionMenu, IconButton } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import type { Node } from 'prosemirror-model'
@@ -6,6 +7,7 @@ import type { EditorView } from 'prosemirror-view'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { insertBlock, moveBlocksTo } from '../block-actions'
 import { BlockSelection, selectedBlocks } from '../block-selection'
+import { t } from '../i18n/messages'
 import type { BlockCommand } from '../slash-commands'
 import { openBlockMenu } from './block-menu'
 
@@ -69,7 +71,7 @@ function insert(element: HTMLElement) {
   actionMenu.open(
     props.commands.map((command) => ({
       id: command.id,
-      label: command.label,
+      label: readText(command.label),
       icon: command.icon,
       onSelect: () => {
         if (props.view.isDestroyed) return
@@ -77,7 +79,7 @@ function insert(element: HTMLElement) {
         props.view.focus()
       },
     })),
-    { title: 'Insert block', x: rect.left, y: rect.bottom },
+    { title: t('blockMenu.insert'), x: rect.left, y: rect.bottom },
   )
 }
 
@@ -186,10 +188,10 @@ function cancel() {
 <template>
   <div v-if="position || dragging" class="block-handle" :style="dragging ? dragStyle : position ?? undefined" @mousedown.prevent
     @pointerdown.prevent="start" @pointermove="move" @pointerup="finish" @pointercancel="cancel" @lostpointercapture="cancel">
-    <IconButton :size="iconSize" icon="lu:grip-vertical" tooltip="Block actions" @click="$event.detail === 0 && open($event.currentTarget as HTMLElement)" />
+    <IconButton :size="iconSize" icon="lu:grip-vertical" :tooltip="t('blockMenu.actions')" @click="$event.detail === 0 && open($event.currentTarget as HTMLElement)" />
   </div>
   <div v-if="position && !dragging" class="block-insert" :style="[position, { marginTop: iconSize === 'xl' ? 'var(--size-xl)' : 'var(--size-xs)' }]" @mousedown.prevent>
-    <IconButton :size="iconSize" icon="lu:plus" tooltip="Insert block" @click="insert($event.currentTarget as HTMLElement)" />
+    <IconButton :size="iconSize" icon="lu:plus" :tooltip="t('blockMenu.insert')" @click="insert($event.currentTarget as HTMLElement)" />
   </div>
   <div v-if="dropLine" class="block-drop-line" :style="dropLine" aria-hidden="true" />
 </template>

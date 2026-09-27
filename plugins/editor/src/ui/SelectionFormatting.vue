@@ -5,6 +5,7 @@ import { TextSelection } from 'prosemirror-state'
 import type { EditorView } from 'prosemirror-view'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { ArxDocumentLinks } from '../document-links'
+import { t } from '../i18n/messages'
 import LinkDialog from './LinkDialog.vue'
 import { MARKS } from './toolbar-actions'
 
@@ -60,10 +61,10 @@ const actions = computed(() => {
     ...MARKS.map((action) => {
       const mark = state.schema.marks[action.mark.name]
       return {
-        id: action.label,
-        label: action.label,
+        id: action.id,
+        label: action.label(),
         icon: action.icon,
-        primary: action.label === 'Bold',
+        primary: action.id === 'bold',
         active: !!mark && state.doc.rangeHasMark(state.selection.from, state.selection.to, mark),
         run: () => {
           if (!mark || props.view.isDestroyed) return
@@ -74,7 +75,7 @@ const actions = computed(() => {
     }),
     {
       id: 'link',
-      label: 'Link',
+      label: t('marks.link'),
       icon: 'lu:link',
       run: () => {
         linkOpen.value = true

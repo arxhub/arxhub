@@ -4,6 +4,7 @@ import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
 import { selectedLabel, selectOptions } from '../editor-mode'
+import { t } from '../i18n/messages'
 
 const props = defineProps<ArxEditorControlProps>()
 const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
@@ -16,7 +17,7 @@ const chosen = computed(() => selectedLabel(props.node))
     v-if="node.type.name === 'task_item'"
     :model-value="node.attrs.checked === true"
     :disabled="mode === 'readonly'"
-    :aria-label="node.firstChild?.textContent || 'Task'"
+    :aria-label="node.firstChild?.textContent || t('control.task')"
     @update:model-value="change({ checked: $event })"
   />
   <div v-else class="select-block">
@@ -25,11 +26,11 @@ const chosen = computed(() => selectedLabel(props.node))
       <Dropdown>
         <template #trigger>
           <Button :size="buttonSize" variant="secondary" :disabled="mode === 'readonly'" :aria-label="node.attrs.label">
-            {{ chosen ?? 'Choose…' }}
+            {{ chosen ?? t('control.choose') }}
             <Icon name="lu:chevron-down" />
           </Button>
         </template>
-        <MenuItem value="clear" @select="change({ value: null })">Clear selection</MenuItem>
+        <MenuItem value="clear" @select="change({ value: null })">{{ t('control.clear') }}</MenuItem>
         <MenuItem v-for="option in choices" :key="option.id" :value="option.id" @select="change({ value: option.id })">
           {{ option.label }}
         </MenuItem>

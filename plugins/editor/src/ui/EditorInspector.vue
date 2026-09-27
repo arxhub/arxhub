@@ -7,6 +7,7 @@ import { computed, nextTick } from 'vue'
 import { changeInspectedBlock, inspect, inspectorKey, replaceInspectedBlock, runInspectedCommand, settingsLabel } from '../block-settings'
 import type { ArxEditorKit } from '../editor-extension'
 import type { EditorMode } from '../editor-mode'
+import { t } from '../i18n/messages'
 import { changePageProperties, pageProperties } from '../page-properties'
 import BlockSettings from './BlockSettings.vue'
 import PropertiesBlock from './PropertiesBlock.vue'
@@ -25,10 +26,10 @@ const node = computed(() => {
 const propertiesMode = computed(() => (props.mode === 'interactive' && !pageProperties(props.view.state.doc) ? 'readonly' : props.mode))
 const title = computed(() =>
   target.value?.kind === 'page'
-    ? 'Properties'
+    ? t('tools.properties')
     : node.value
-      ? (settingsLabel(node.value, props.kit.components) ?? 'Block settings')
-      : 'Block settings',
+      ? (settingsLabel(node.value, props.kit.components) ?? t('settings.blockSettings'))
+      : t('settings.blockSettings'),
 )
 const change = computed(() => {
   const pinned = target.value
@@ -52,7 +53,7 @@ async function close() {
   <InspectorPanel v-if="target && node" :title="title" :subtitle="path" @close="close">
     <PropertiesBlock v-if="target.kind === 'page'" :node="node" :mode="propertiesMode" :change="change" :replace="replace" />
     <template v-else>
-      <p v-if="mode !== 'editable'" class="settings-notice">Switch to Editable to change block settings.</p>
+      <p v-if="mode !== 'editable'" class="settings-notice">{{ t('settings.switchToEditable') }}</p>
       <fieldset :disabled="mode !== 'editable'">
         <BlockSettings :key="`${node.type.name}:${node.attrs.arxId ?? target.pos}`" :node="node" :mode="mode" :change="change" :replace="replace" :run="run" :sources="kit.dataSources" :definition="kit.components[node.type.name]" />
       </fieldset>

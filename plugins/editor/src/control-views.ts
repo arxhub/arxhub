@@ -4,6 +4,7 @@ import type { EditorProps } from 'prosemirror-view'
 import { shallowReactive } from 'vue'
 import type { ArxEditorComponent } from './editor-extension'
 import { type EditorMode, editorMode } from './editor-mode'
+import { t } from './i18n/messages'
 import AssetBlock from './ui/AssetBlock.vue'
 import CodeBlockTools from './ui/CodeBlockTools.vue'
 import ConflictBlock from './ui/ConflictBlock.vue'
@@ -68,7 +69,7 @@ export function createControlViews(components: Readonly<Record<string, ArxEditor
     host.addEventListener('focusin', selectControl)
     if (section) {
       const summary = document.createElement('summary')
-      summary.setAttribute('aria-label', `Toggle section: ${node.attrs.title}`)
+      summary.setAttribute('aria-label', t('section.toggle', { title: String(node.attrs.title) }))
       summary.append(host)
       dom.append(summary)
     } else dom.append(host)
@@ -120,7 +121,7 @@ export function createControlViews(components: Readonly<Record<string, ArxEditor
         if (next.type !== node.type) return false
         control.node = next
         control.mode = editorMode(view.state)
-        if (section) dom.firstElementChild?.setAttribute('aria-label', `Toggle section: ${next.attrs.title}`)
+        if (section) dom.firstElementChild?.setAttribute('aria-label', t('section.toggle', { title: String(next.attrs.title) }))
         if (task) dom.dataset.checked = String(next.attrs.checked)
         return true
       },

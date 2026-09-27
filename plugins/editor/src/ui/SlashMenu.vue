@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { readText } from '@arxhub/i18n'
 import { EmptyState, Icon, Row, ScrollArea } from '@arxhub/uikit/core'
 import type { EditorView } from 'prosemirror-view'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { t } from '../i18n/messages'
 import { type BlockCommand, canRunSlashCommand, matchingCommands, runSlashCommand, type SlashMenuState } from '../slash-commands'
 
 const props = defineProps<{ view: EditorView; menu: SlashMenuState; menuId: string; commands: readonly BlockCommand[] }>()
@@ -52,7 +54,7 @@ watch(
   <Teleport to="body">
   <div class="slash-menu" :style="position" @mousedown.prevent>
   <ScrollArea>
-  <div ref="list" class="slash-list" role="listbox" aria-label="Insert block" :id="menuId">
+  <div ref="list" class="slash-list" role="listbox" :aria-label="t('blockMenu.insert')" :id="menuId">
     <Row
       v-for="({ command, disabled }, index) in matches"
       :key="command.id"
@@ -65,9 +67,9 @@ watch(
       :disabled="disabled"
       @click="runSlashCommand(view.state, view.dispatch, command); view.focus()"
     >
-      <Icon :name="command.icon" />{{ command.label }}
+      <Icon :name="command.icon" />{{ readText(command.label) }}
     </Row>
-    <EmptyState v-if="!matches.length" compact icon="lu:search-x" text="No matching blocks" />
+    <EmptyState v-if="!matches.length" compact icon="lu:search-x" :text="t('slash.empty')" />
   </div>
   </ScrollArea>
   </div>

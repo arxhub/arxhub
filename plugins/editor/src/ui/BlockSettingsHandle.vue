@@ -5,6 +5,7 @@ import type { EditorView } from 'prosemirror-view'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { blockTarget, inspect, settingsAt, settingsLabel } from '../block-settings'
 import type { ArxEditorComponent } from '../editor-extension'
+import { t } from '../i18n/messages'
 
 const props = defineProps<{
   view: EditorView
@@ -72,7 +73,7 @@ function open() {
 </script>
 <template>
   <div v-if="target" class="block-settings-handle" :style="target.style" @mousedown.prevent>
-    <IconButton :size="iconSize" icon="lu:settings" :tooltip="`${target.label} settings`" @click="open" />
+    <IconButton :size="iconSize" icon="lu:settings" :tooltip="t('settings.tooltip', { label: target.label ?? '' })" @click="open" />
   </div>
 </template>
 <style scoped>

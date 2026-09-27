@@ -2,14 +2,15 @@
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { MAX_HIGHLIGHT_LENGTH } from '../code-highlighting'
 import type { ArxEditorControlProps } from '../control-views'
+import { t } from '../i18n/messages'
 
 defineProps<ArxEditorControlProps>()
 const touch = useShellFrame() === 'mobile'
 </script>
 
 <template>
-  <span class="language-label" :class="{ touch }">{{ node.attrs.language || 'Plain text' }}</span>
-  <span v-if="node.content.size > MAX_HIGHLIGHT_LENGTH" class="language-label" :class="{ touch }">Syntax highlighting paused for this large block.</span>
+  <span class="language-label" :class="{ touch }">{{ node.attrs.language || t('settings.plainText') }}</span>
+  <span v-if="node.content.size > MAX_HIGHLIGHT_LENGTH" class="language-label" :class="{ touch }">{{ t('codeBlock.highlightingPaused') }}</span>
 
 </template>
 

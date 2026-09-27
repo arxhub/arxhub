@@ -2,6 +2,7 @@ import { Mark, type Node } from 'prosemirror-model'
 import { type EditorState, Plugin, PluginKey } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { isRecord } from './document-migrations'
+import { t } from './i18n/messages'
 import { isSelectOptionList, selectedLabel as labelOf, newSelectOptionId, type SelectOption } from './select-options'
 
 export type EditorMode = 'readonly' | 'editable' | 'interactive'
@@ -120,7 +121,7 @@ export function modePlugin(
         role: 'textbox',
         'aria-multiline': 'true',
         'aria-readonly': String(editorMode(state) !== 'editable'),
-        'aria-label': 'Document',
+        'aria-label': t('document.aria'),
       }),
       decorations: (state) => {
         const mode = editorMode(state)

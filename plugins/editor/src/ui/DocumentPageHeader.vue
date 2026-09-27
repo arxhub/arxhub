@@ -4,6 +4,8 @@ import { Button, Icon } from '@arxhub/uikit/core'
 import { onUnmounted, ref, watch } from 'vue'
 import { useAssetSession } from '../asset-session'
 import type { DocumentAppearance } from '../document-appearance'
+import { reasonText } from '../errors'
+import { t } from '../i18n/messages'
 
 const props = defineProps<{ path: string; appearance: DocumentAppearance; disabled: boolean }>()
 const session = useAssetSession()
@@ -24,7 +26,7 @@ async function load() {
     const bytes = await session.store.read(cover)
     if (ticket === current) url.value = URL.createObjectURL(new Blob([Uint8Array.from(bytes).buffer], { type: cover.mime }))
   } catch (reason) {
-    if (ticket === current) error.value = reason instanceof Error ? reason.message : String(reason)
+    if (ticket === current) error.value = reasonText(reason)
   }
 }
 watch(
@@ -41,8 +43,8 @@ onUnmounted(() => {
 </script>
 <template>
   <header class="document-page-header">
-    <img v-if="url" class="document-cover" :src="url" alt="Page cover" @error="release(); error = 'The image could not be decoded'" />
-    <div v-if="error" role="alert">Could not load cover: {{ error }}<Button variant="ghost" @click="load">Retry cover</Button></div>
+    <img v-if="url" class="document-cover" :src="url" :alt="t('pageHeader.coverAlt')" @error="release(); error = t('pageHeader.coverUndecodable')" />
+    <div v-if="error" role="alert">{{ t('pageHeader.coverFailed', { reason: error }) }}<Button variant="ghost" @click="load">{{ t('pageHeader.retryCover') }}</Button></div>
     <div class="document-page-title">
       <Icon v-if="appearance.icon" :name="appearance.icon" :size="20" aria-hidden="true" />
       <DocumentName :path="path" inline :disabled="disabled" />

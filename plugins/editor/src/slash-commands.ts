@@ -1,3 +1,4 @@
+import { readText, type Text } from '@arxhub/i18n'
 import { chainCommands, setBlockType, wrapIn } from 'prosemirror-commands'
 import { closeHistory } from 'prosemirror-history'
 import type { Schema } from 'prosemirror-model'
@@ -8,23 +9,26 @@ import { arrangeColumns } from './columns'
 import { runPreparedCommand } from './command-state'
 import { editorMode } from './editor-mode'
 import { schema as defaultSchema } from './editor-schema'
+import { t } from './i18n/messages'
 import { insertTable } from './table-actions'
 
 export interface BlockCommand {
   id: string
-  label: string
+  // Contributed once, in configure(): a function keeps the menu in the language shown now.
+  label: Text
   icon: string
   keywords: string
   run: Command
 }
 
-// A fresh paragraph follows the leaf, so the caret has a textblock to land in after an atom.
+// A fresh paragraph follows the leaf, so the caret has a textblock to land in after an atom. `attrs` is read at
+// insertion, not when the menu is built: the words it writes into the file are in the language shown now.
 const insertLeaf =
-  (type: string): Command =>
+  (type: string, attrs?: () => Record<string, unknown>): Command =>
   (state, dispatch) => {
     const { schema } = state
     const { $from, empty } = state.selection
-    const leaf = schema.nodes[type]?.createAndFill()
+    const leaf = schema.nodes[type]?.createAndFill(attrs?.())
     if (!empty || !leaf || $from.parent.type !== schema.nodes.paragraph) return false
     const tr = state.tr
     const from = placeBlocks(tr, $from, [leaf, schema.nodes.paragraph.create()])
@@ -33,54 +37,100 @@ const insertLeaf =
     return true
   }
 
+// The schema's own defaults stay English: they are what an old file without the attribute reads as.
+export function defaultSelectAttrs(): Record<string, unknown> {
+  return {
+    label: t('select.defaultLabel'),
+    options: [
+      { id: 'not-started', label: t('select.defaultOptions.notStarted') },
+      { id: 'in-progress', label: t('select.defaultOptions.inProgress') },
+      { id: 'done', label: t('select.defaultOptions.done') },
+    ],
+  }
+}
+
+export function defaultSectionAttrs(): Record<string, unknown> {
+  return { title: t('blocks.sectionDefaultTitle') }
+}
+
 export function buildBlockCommands(schema: Schema): BlockCommand[] {
   return [
     {
       id: 'paragraph',
-      label: 'Paragraph',
+      label: () => t('blocks.paragraph'),
       icon: 'lu:pilcrow',
       keywords: 'text текст абзац',
       run: chainCommands(setBlockType(schema.nodes.paragraph), (state) => state.selection.$from.parent.type === schema.nodes.paragraph),
     },
     ...[1, 2, 3].map((level) => ({
       id: `heading-${level}`,
-      label: `Heading ${level}`,
+      label: () => t(`blocks.heading${level as 1 | 2 | 3}`),
       icon: `lu:heading-${level}`,
       keywords: `h${level} заголовок`,
       run: setBlockType(schema.nodes.heading, { level }),
     })),
-    { id: 'bullet-list', label: 'Bulleted list', icon: 'lu:list', keywords: 'ul список', run: wrapInList(schema.nodes.bullet_list) },
-    { id: 'ordered-list', label: 'Numbered list', icon: 'lu:list-ordered', keywords: 'ol список', run: wrapInList(schema.nodes.ordered_list) },
+    {
+      id: 'bullet-list',
+      label: () => t('blocks.bulletList'),
+      icon: 'lu:list',
+      keywords: 'ul список',
+      run: wrapInList(schema.nodes.bullet_list),
+    },
+    {
+      id: 'ordered-list',
+      label: () => t('blocks.orderedList'),
+      icon: 'lu:list-ordered',
+      keywords: 'ol список',
+      run: wrapInList(schema.nodes.ordered_list),
+    },
     {
       id: 'task-list',
-      label: 'Task list',
+      label: () => t('blocks.taskList'),
       icon: 'lu:list-checks',
       keywords: 'todo checkbox задачи галочка',
       run: wrapInList(schema.nodes.task_list),
     },
-    { id: 'quote', label: 'Quote', icon: 'lu:quote', keywords: 'blockquote цитата', run: wrapIn(schema.nodes.blockquote) },
-    { id: 'callout', label: 'Callout', icon: 'lu:info', keywords: 'info выноска', run: wrapIn(schema.nodes.callout) },
-    { id: 'code', label: 'Code block', icon: 'lu:code', keywords: 'код', run: setBlockType(schema.nodes.code_block) },
+    { id: 'quote', label: () => t('blocks.quote'), icon: 'lu:quote', keywords: 'blockquote цитата', run: wrapIn(schema.nodes.blockquote) },
+    { id: 'callout', label: () => t('blocks.callout'), icon: 'lu:info', keywords: 'info выноска', run: wrapIn(schema.nodes.callout) },
+    { id: 'code', label: () => t('blocks.code'), icon: 'lu:code', keywords: 'код', run: setBlockType(schema.nodes.code_block) },
     {
       id: 'section',
-      label: 'Collapsible section',
+      label: () => t('blocks.section'),
       icon: 'lu:chevrons-up-down',
       keywords: 'toggle details fold секция свернуть',
-      run: wrapIn(schema.nodes.section),
+      run: (state, dispatch, view) => wrapIn(schema.nodes.section, defaultSectionAttrs())(state, dispatch, view),
     },
-    { id: 'columns', label: 'Columns', icon: 'lu:columns-2', keywords: 'layout колонки', run: arrangeColumns(2) },
-    { id: 'table', label: 'Table', icon: 'lu:table', keywords: 'grid rows columns таблица', run: insertTable },
-    { id: 'divider', label: 'Divider', icon: 'lu:minus', keywords: 'hr разделитель', run: insertLeaf('horizontal_rule') },
+    { id: 'columns', label: () => t('blocks.columns'), icon: 'lu:columns-2', keywords: 'layout колонки', run: arrangeColumns(2) },
+    { id: 'table', label: () => t('blocks.table'), icon: 'lu:table', keywords: 'grid rows columns таблица', run: insertTable },
+    { id: 'divider', label: () => t('blocks.divider'), icon: 'lu:minus', keywords: 'hr разделитель', run: insertLeaf('horizontal_rule') },
     {
       id: 'data-view',
-      label: 'Collection',
+      label: () => t('blocks.collection'),
       icon: 'lu:layout-list',
       keywords: 'query tasks documents collection данные задачи документы подборка',
       run: insertLeaf('data_view'),
     },
-    { id: 'select', label: 'Dropdown', icon: 'lu:list-filter', keywords: 'select status список выбор статус', run: insertLeaf('select') },
-    { id: 'image', label: 'Image', icon: 'lu:image', keywords: 'picture photo изображение фото', run: insertLeaf('image_block') },
-    { id: 'attachment', label: 'File attachment', icon: 'lu:paperclip', keywords: 'upload file файл вложение', run: insertLeaf('attachment') },
+    {
+      id: 'select',
+      label: () => t('blocks.dropdown'),
+      icon: 'lu:list-filter',
+      keywords: 'select status список выбор статус',
+      run: insertLeaf('select', defaultSelectAttrs),
+    },
+    {
+      id: 'image',
+      label: () => t('blocks.image'),
+      icon: 'lu:image',
+      keywords: 'picture photo изображение фото',
+      run: insertLeaf('image_block'),
+    },
+    {
+      id: 'attachment',
+      label: () => t('blocks.attachment'),
+      icon: 'lu:paperclip',
+      keywords: 'upload file файл вложение',
+      run: insertLeaf('attachment'),
+    },
   ]
 }
 
@@ -97,7 +147,7 @@ export const slashKey = new PluginKey<SlashMenuState | null>('slash-commands')
 
 export function matchingCommands(query: string, commands: readonly BlockCommand[] = BLOCK_COMMANDS): BlockCommand[] {
   const needle = query.toLowerCase()
-  return commands.filter((command) => `${command.label} ${command.keywords}`.toLowerCase().includes(needle))
+  return commands.filter((command) => `${readText(command.label)} ${command.keywords}`.toLowerCase().includes(needle))
 }
 
 // A space is part of a name ("heading 2"), a second slash is a path (`path/to`) — the first keeps the

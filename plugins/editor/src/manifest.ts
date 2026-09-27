@@ -5,4 +5,5 @@ export const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Block editor for .arx documents',
+  descriptions: { ru: 'Блочный редактор документов .arx' },
 } satisfies PluginManifest

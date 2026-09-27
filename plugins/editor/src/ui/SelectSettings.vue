@@ -4,6 +4,7 @@ import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
 import { reconfigureSelect, selectOptions } from '../editor-mode'
+import { t } from '../i18n/messages'
 
 const props = defineProps<ArxEditorControlProps>()
 const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
@@ -26,10 +27,10 @@ watch(() => [props.node.attrs.arxId, props.node.attrs.label, props.node.attrs.op
 </script>
 <template>
     <form  class="select-config" @submit.prevent="apply" @keydown.stop>
-      <label>Label<Input v-model="label" aria-label="Dropdown label" /></label>
-      <label>Options, one per line<textarea v-model="options" aria-label="Dropdown options" rows="4" /></label>
+      <label>{{ t('select.label') }}<Input v-model="label" :aria-label="t('select.labelAria')" /></label>
+      <label>{{ t('select.options') }}<textarea v-model="options" :aria-label="t('select.optionsAria')" rows="4" /></label>
       <div class="select-value">
-        <Button :size="buttonSize" variant="secondary" type="submit" :disabled="!label.trim() || !lines.length">Apply</Button>
+        <Button :size="buttonSize" variant="secondary" type="submit" :disabled="!label.trim() || !lines.length">{{ t('select.apply') }}</Button>
 
       </div>
     </form>

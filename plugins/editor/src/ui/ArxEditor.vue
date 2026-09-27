@@ -26,7 +26,7 @@ import { codeHighlighting } from '../code-highlighting'
 import { columnsView } from '../columns-view'
 import { createControlViews } from '../control-views'
 import { type DocumentAppearance as Appearance, changeAppearance, documentAppearance } from '../document-appearance'
-import { documentBarMenu, documentBarSub, editorModeMenu } from '../document-bar'
+import { documentBarMenu, documentBarSub, editorModeMenu, modeLabel } from '../document-bar'
 import type { ArxDraft } from '../document-drafts'
 import { documentId, withDocumentId } from '../document-history'
 import { documentBlocks, documentHref, documentLinksPlugin, revealBlock } from '../document-links'
@@ -59,6 +59,8 @@ import LinkDialog from './LinkDialog.vue'
 import SelectionFormatting from './SelectionFormatting.vue'
 import SlashMenu from './SlashMenu.vue'
 import 'prosemirror-view/style/prosemirror.css'
+import { editorError, reasonText } from '../errors'
+import { t } from '../i18n/messages'
 
 // Fires this long after the last keystroke, mirroring the search plugin's index-queue debounce shape
 // (a burst of edits coalesces into one write, not one per keystroke).
@@ -114,10 +116,10 @@ const savedEdits = ref(0)
 const saving = ref(false)
 const saveError = ref(false)
 const saveStatus = computed(() => {
-  if (!canSave.value) return loadError.value ? 'Document unavailable' : 'Loading…'
-  if (saveError.value) return 'Save failed — retry Save'
-  if (saving.value) return 'Saving…'
-  return edits.value === savedEdits.value ? 'Saved' : 'Unsaved changes'
+  if (!canSave.value) return loadError.value ? t('status.unavailable') : t('status.loading')
+  if (saveError.value) return t('status.saveFailedRetry')
+  if (saving.value) return t('status.saving')
+  return edits.value === savedEdits.value ? t('status.saved') : t('status.unsaved')
 })
 // Conflicts left in the document by a three-way sync merge (arx-merge.ts) do not block autosave or
 // close — the document is perfectly valid with them in, that is the point of representing them in the
@@ -173,8 +175,7 @@ function buildPlugins() {
     documentLinksPlugin(
       () => props.path,
       extension.links,
-      (error) =>
-        toaster.create({ title: 'Could not open link', description: error instanceof Error ? error.message : String(error), type: 'error' }),
+      (error) => toaster.create({ title: t('toast.linkOpenFailed'), description: reasonText(error), type: 'error' }),
     ),
     documentSearchPlugin(() => {
       findOpen.value = true
@@ -255,7 +256,7 @@ const {
       const draft = extension.drafts?.list(props.path).find((entry) => entry.content !== baseContent)
       if (draft) recovery.value = { draft, saved: baseContent, conflict: draft.base !== baseContent }
     } catch (error) {
-      draftError.value = error instanceof Error ? error.message : String(error)
+      draftError.value = reasonText(error)
     }
     identityPending.value = true
     edits.value = 0
@@ -333,9 +334,9 @@ async function copyBlockLink() {
     if (!(await beforeClose())) throw validation('Save the document before copying its link.')
     const href = extension.links?.href ? await extension.links.href(props.path, block?.anchor) : documentHref(props.path, block?.anchor)
     await navigator.clipboard.writeText(href)
-    toaster.create({ title: block ? 'Block link copied' : 'Document link copied', type: 'success' })
+    toaster.create({ title: block ? t('toast.blockLinkCopied') : t('toast.documentLinkCopied'), type: 'success' })
   } catch {
-    toaster.create({ title: 'Could not copy link', description: 'The browser did not allow clipboard access.', type: 'error' })
+    toaster.create({ title: t('toast.copyFailed'), description: t('toast.clipboardDenied'), type: 'error' })
   }
 }
 
@@ -343,7 +344,7 @@ onUnmounted(documents.registerOpenView(() => props.path, reveal, beforeClose))
 
 async function doSave() {
   if (!view.value || !canSave.value) return
-  if (recovery.value) throw validation('Resolve the recovery choice before saving.')
+  if (recovery.value) throw editorError('RecoveryPendingError')
   const path = props.path
   const version = edits.value
   saving.value = true
@@ -352,13 +353,12 @@ async function doSave() {
     const saved = new TextDecoder().decode(await vfs.read(path))
     if (saved !== baseContent && saved !== content) {
       recovery.value = { draft: currentDraft(content), saved, conflict: true }
-      throw validation('The file changed outside this editor. Choose which version to keep.')
+      throw editorError('FileChangedOutsideError')
     }
     const id = documentId(view.value.state.doc)
     const write = async () => {
-      if (!canSave.value || props.path !== path) throw validation('The document moved or became unavailable while saving. Retry Save.')
-      if (new TextDecoder().decode(await vfs.read(path)) !== saved)
-        throw validation('The file changed during saving. Retry Save to compare versions.')
+      if (!canSave.value || props.path !== path) throw editorError('DocumentMovedWhileSavingError')
+      if (new TextDecoder().decode(await vfs.read(path)) !== saved) throw editorError('FileChangedWhileSavingError')
       await vfs.write(path, new TextEncoder().encode(content))
       baseContent = content
     }
@@ -374,7 +374,7 @@ async function doSave() {
       try {
         extension.drafts?.remove(draftId)
       } catch (error) {
-        draftError.value = String(error)
+        draftError.value = reasonText(error)
       }
     } else backupDraft()
     saveError.value = false
@@ -382,7 +382,7 @@ async function doSave() {
     saveError.value = true
     // Don't swallow a failed write — that silently loses the user's edits. Surface it loudly.
     arxhub.logger.error(`[editor] failed to save ${props.path}:`, error)
-    toaster.create({ title: 'Save failed', description: `Couldn't save ${props.path}`, type: 'error' })
+    toaster.create({ title: t('status.saveFailed'), description: t('toast.saveFailedPath', { path: props.path }), type: 'error' })
     throw error
   } finally {
     saving.value = false
@@ -398,7 +398,7 @@ function backupDraft() {
     extension.drafts.write(currentDraft())
     draftError.value = ''
   } catch (error) {
-    draftError.value = error instanceof Error ? error.message : String(error)
+    draftError.value = reasonText(error)
   }
 }
 async function checkExternal() {
@@ -436,10 +436,10 @@ async function resolveRecovery(action: 'draft' | 'saved' | 'both') {
     const latest = new TextDecoder().decode(await vfs.read(path))
     if (latest !== pending.saved) {
       recovery.value = { ...pending, saved: latest, conflict: true }
-      throw validation('The saved file changed again. Review the latest version.')
+      throw editorError('SavedFileChangedAgainError')
     }
     if (action === 'both') {
-      const copy = await documents.freePath(dirname(path), `${basename(path, '.arx')} recovered`, '.arx')
+      const copy = await documents.freePath(dirname(path), t('document.recoveredName', { name: basename(path, '.arx') }), '.arx')
       const doc = withDocumentId(deserialize(schema, pending.draft.content, kit.format), crypto.randomUUID())
       await vfs.write(copy, new TextEncoder().encode(serialize(doc, kit.format)))
       extension.drafts?.remove(pending.draft.id)
@@ -464,7 +464,7 @@ async function resolveRecovery(action: 'draft' | 'saved' | 'both') {
       await autosave.flush()
     }
   } catch (error) {
-    recoveryError.value = error instanceof Error ? error.message : String(error)
+    recoveryError.value = reasonText(error)
   } finally {
     recoveryBusy.value = false
   }
@@ -482,13 +482,13 @@ async function closeVersions(): Promise<void> {
 }
 
 async function restoreVersion(content: string, block?: string): Promise<void> {
-  if (mode.value !== 'editable' || !view.value || !canSave.value) throw validation('Switch to Editable to restore a version.')
+  if (mode.value !== 'editable' || !view.value || !canSave.value) throw editorError('RestoreNeedsEditableError')
   const id = documentId(view.value.state.doc)
-  if (!id) throw validation('The document has no history identity.')
+  if (!id) throw editorError('NoHistoryIdentityError')
   const restored = withDocumentId(deserialize(schema, content, kit.format), id)
-  if (!(await beforeClose())) throw validation('Your current draft could not be saved. Retry before restoring a version.')
+  if (!(await beforeClose())) throw editorError('DraftNotSavedError')
   const current = view.value
-  if (!current || !canSave.value || mode.value !== 'editable') throw validation('The document is no longer editable.')
+  if (!current || !canSave.value || mode.value !== 'editable') throw editorError('DocumentNotEditableError')
   const tr = block
     ? restoreVersionBlock(current.state, restored, block)
     : current.state.tr
@@ -611,7 +611,7 @@ function pickMode(current: EditorMode): void {
     editorModeMenu(current, (next) => {
       mode.value = next
     }),
-    { title: 'Editor mode' },
+    { title: t('modes.title') },
   )
 }
 const barMenu = computed(() =>
@@ -661,19 +661,19 @@ onUnmounted(
 const chromeTarget = usePanelChrome(() => ({
   icon: appearance.value.icon ?? undefined,
   status: loadError.value
-    ? { icon: 'lu:triangle-alert', label: 'Document unavailable', tone: 'danger' }
+    ? { icon: 'lu:triangle-alert', label: t('status.unavailable'), tone: 'danger' }
     : !canSave.value
-      ? { icon: 'lu:loader-circle', label: 'Loading document…' }
+      ? { icon: 'lu:loader-circle', label: t('status.loadingDocument') }
       : saveError.value
-        ? { icon: 'lu:triangle-alert', label: 'Save failed', tone: 'danger' }
+        ? { icon: 'lu:triangle-alert', label: t('status.saveFailed'), tone: 'danger' }
         : assets.pending.value
-          ? { icon: 'lu:upload', label: 'Uploading attachment…' }
+          ? { icon: 'lu:upload', label: t('status.uploading') }
           : saving.value
-            ? { icon: 'lu:loader-circle', label: 'Saving…' }
+            ? { icon: 'lu:loader-circle', label: t('status.saving') }
             : edits.value !== savedEdits.value
-              ? { icon: 'lu:circle-dot', label: 'Unsaved changes' }
+              ? { icon: 'lu:circle-dot', label: t('status.unsaved') }
               : undefined,
-  mode: mode.value === 'readonly' ? 'Read only' : mode.value === 'interactive' ? 'Interactive' : undefined,
+  mode: mode.value === 'editable' ? undefined : modeLabel(mode.value),
 }))
 </script>
 
@@ -683,16 +683,16 @@ const chromeTarget = usePanelChrome(() => ({
     <DocumentOutline v-if="outlineOpen && view && canSave" :view="view" :revision="revision" @close="outlineOpen = false" />
     <DocumentBacklinks v-if="backlinksOpen && extension.links" :links="extension.links" :path="path" @close="backlinksOpen = false" />
     <DocumentRecovery v-if="recovery" :kit="kit" :saved="recovery.saved" :draft="recovery.draft.content" :conflict="recovery.conflict" :busy="recoveryBusy" :error="recoveryError" @choose="resolveRecovery" />
-    <div v-if="draftError" class="editor-error" role="alert"><span>Draft backup unavailable: {{ draftError }}</span><Button :size="buttonSize" variant="secondary" @click="backupDraft()">Retry draft backup</Button></div>
+    <div v-if="draftError" class="editor-error" role="alert"><span>{{ t('panel.draftBackupUnavailable', { reason: draftError }) }}</span><Button :size="buttonSize" variant="secondary" @click="backupDraft()">{{ t('panel.retryDraftBackup') }}</Button></div>
     <div v-if="loadError" class="editor-error">
-      <span>{{ (loadError instanceof Error ? loadError.message : String(loadError)) || "Couldn't load this file." }} Saving is disabled.</span>
-      <Button :size="buttonSize" variant="secondary" @click="reload(path)">Retry</Button>
+      <span>{{ t('panel.savingDisabled', { reason: reasonText(loadError) || t('panel.loadFailed') }) }}</span>
+      <Button :size="buttonSize" variant="secondary" @click="reload(path)">{{ t('panel.retry') }}</Button>
     </div>
     <div v-if="assets.error.value" class="editor-error" role="alert">
-      <span>{{ assets.error.value }}</span><Button :size="buttonSize" variant="secondary" @click="assets.retry">Retry upload</Button><Button :size="buttonSize" variant="ghost" @click="assets.dismiss">Dismiss</Button>
+      <span>{{ assets.error.value }}</span><Button :size="buttonSize" variant="secondary" @click="assets.retry">{{ t('panel.retryUpload') }}</Button><Button :size="buttonSize" variant="ghost" @click="assets.dismiss">{{ t('panel.dismiss') }}</Button>
     </div>
-    <div v-if="saveError" class="editor-error" role="alert"><span>Save failed. Your changes are still in this editor.</span><Button :size="buttonSize" variant="ghost" :disabled="!canSave" @click="save">Retry save</Button></div>
-    <div v-if="conflictCount" class="editor-warning" role="status">{{ conflictCount }} unresolved conflict{{ conflictCount === 1 ? '' : 's' }}</div>
+    <div v-if="saveError" class="editor-error" role="alert"><span>{{ t('panel.saveFailedKept') }}</span><Button :size="buttonSize" variant="ghost" :disabled="!canSave" @click="save">{{ t('panel.retrySave') }}</Button></div>
+    <div v-if="conflictCount" class="editor-warning" role="status">{{ t('panel.conflicts', { count: conflictCount }) }}</div>
     <DocumentAppearance v-if="appearanceOpen" :appearance="appearance" @apply="applyAppearance" @close="appearanceOpen = false" />
     <DocumentVersionsPage v-if="versionsOpen && extension.history && historyId && view" :store="extension.history" :current="view.state.doc" :revision="revision" :document-id="historyId" :kit="kit" :mode="mode" :path="path" :title="displayName" :restore="restoreVersion" @close="closeVersions" />
     <div v-show="!versionsOpen" ref="editorBody" class="editor-body">
@@ -706,7 +706,7 @@ const chromeTarget = usePanelChrome(() => ({
     <BlockSettingsHandle v-if="view && editorEl && editorBody && canSave && mode === 'editable'" :view="view" :scroller="editorEl" :panel="editorBody" :revision="revision" :components="kit.components" />
     <EditorInspector v-if="view && canSave" :view="view" :revision="revision" :kit="kit" :mode="mode" :path="path" />
     </div>
-    <DocumentChrome v-show="!(touch && versionsOpen)" :target="chromeTarget" :status="assets.pending.value ? 'Uploading attachment…' : saveStatus" :mode="mode">
+    <DocumentChrome v-show="!(touch && versionsOpen)" :target="chromeTarget" :status="assets.pending.value ? t('status.uploading') : saveStatus" :mode="mode">
       <DocumentTools v-model:mode="mode" :view="view" :revision="revision" :on-save="save" :can-save="canSave" :busy="assets.pending.value > 0" :links="extension.links" :has-history="!!extension.history" :publication-actions="extension.publicationActions?.(path)" :path="path" :on-appearance="() => appearanceOpen = true" @properties="view && inspect(view, { kind: 'page' })" @find="findOpen = true" @outline="outlineOpen = true" @backlinks="backlinksOpen = true" @copy-link="copyBlockLink" @versions="versionsOpen = true" />
     </DocumentChrome>
     <LinkDialog v-if="bandLinkOpen && view" :view="view" :links="extension.links" :path="path" @close="bandLinkOpen = false" />

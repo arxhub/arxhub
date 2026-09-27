@@ -1,6 +1,7 @@
 import { validation } from '@arxhub/errors'
 import { isRecord } from './document-migrations'
 import type { ArxEditorContribution } from './editor-extension'
+import { t } from './i18n/messages'
 import type { PropertyField } from './properties'
 import PropertiesBlock from './ui/PropertiesBlock.vue'
 
@@ -71,7 +72,7 @@ export function propertiesContribution(): ArxEditorContribution {
           },
         ],
         toDOM: (node) => {
-          const summary = `Properties${node.attrs.favorite ? ' ★' : ''}${
+          const summary = `${t('blocks.properties')}${node.attrs.favorite ? ' ★' : ''}${
             Array.isArray(node.attrs.tags) && node.attrs.tags.length ? `: ${node.attrs.tags.join(', ')}` : ''
           }`
           return [

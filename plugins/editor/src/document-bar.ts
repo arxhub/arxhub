@@ -1,11 +1,16 @@
 import type { ActionItem } from '@arxhub/uikit/core'
 import type { EditorMode } from './editor-mode'
+import { t } from './i18n/messages'
 
-export const EDITOR_MODES: readonly { value: EditorMode; label: string; description: string }[] = [
-  { value: 'readonly', label: 'Read only', description: 'Read and copy; no changes' },
-  { value: 'editable', label: 'Editable', description: 'Write, format and arrange blocks' },
-  { value: 'interactive', label: 'Interactive', description: 'Change control values; protect text' },
-]
+export const EDITOR_MODES: readonly EditorMode[] = ['readonly', 'editable', 'interactive']
+
+export function modeLabel(mode: EditorMode): string {
+  return t(`modes.${mode}.label`)
+}
+
+export function modeDescription(mode: EditorMode): string {
+  return t(`modes.${mode}.description`)
+}
 
 export interface DocumentBarState {
   mode: EditorMode
@@ -36,35 +41,36 @@ export interface DocumentBarHandlers {
 // editing toolbar carries them for exactly as long as the keyboard is up.
 export function documentBarMenu(state: DocumentBarState, on: DocumentBarHandlers): ActionItem[] {
   const unavailable = !state.canSave
-  const mode = EDITOR_MODES.find((item) => item.value === state.mode)
   return [
-    { id: 'editor.outline', label: 'Document outline', icon: 'lu:list-tree', disabled: unavailable, onSelect: on.outline },
-    { id: 'editor.find', label: 'Find in document', icon: 'lu:search', disabled: unavailable, onSelect: on.find },
-    { id: 'editor.properties', label: 'Properties', icon: 'lu:tags', disabled: unavailable, onSelect: on.properties },
+    { id: 'editor.outline', label: t('tools.outline'), icon: 'lu:list-tree', disabled: unavailable, onSelect: on.outline },
+    { id: 'editor.find', label: t('tools.find'), icon: 'lu:search', disabled: unavailable, onSelect: on.find },
+    { id: 'editor.properties', label: t('tools.properties'), icon: 'lu:tags', disabled: unavailable, onSelect: on.properties },
     ...(state.hasHistory
-      ? [{ id: 'editor.versions', label: 'Saved versions', icon: 'lu:history', disabled: unavailable, onSelect: on.versions }]
+      ? [{ id: 'editor.versions', label: t('tools.versions'), icon: 'lu:history', disabled: unavailable, onSelect: on.versions }]
       : []),
     // One row that opens the choice rather than three rows beside the tools: the choice needs to say
     // which one is current, which a row of a flat menu has no way to.
     {
       id: 'editor.mode',
-      label: `Editor mode: ${mode?.label ?? state.mode}`,
+      label: t('modes.row', { mode: modeLabel(state.mode) }),
       icon: 'lu:pencil',
       disabled: state.busy,
       onSelect: () => on.mode(state.mode),
     },
     {
       id: 'editor.appearance',
-      label: 'Page icon and cover',
+      label: t('tools.appearance'),
       icon: 'lu:image',
       disabled: unavailable || state.busy || state.mode !== 'editable',
       onSelect: on.appearance,
     },
-    ...(state.mode !== 'readonly' ? [{ id: 'editor.save', label: 'Save', icon: 'lu:save', disabled: unavailable, onSelect: on.save }] : []),
+    ...(state.mode !== 'readonly'
+      ? [{ id: 'editor.save', label: t('tools.save'), icon: 'lu:save', disabled: unavailable, onSelect: on.save }]
+      : []),
     ...(state.hasLinks
       ? [
-          { id: 'editor.backlinks', label: 'Backlinks', icon: 'lu:link-2', disabled: unavailable, onSelect: on.backlinks },
-          { id: 'editor.copy-link', label: 'Copy link to block', icon: 'lu:link', disabled: unavailable, onSelect: on.copyLink },
+          { id: 'editor.backlinks', label: t('tools.backlinks'), icon: 'lu:link-2', disabled: unavailable, onSelect: on.backlinks },
+          { id: 'editor.copy-link', label: t('tools.copyLink'), icon: 'lu:link', disabled: unavailable, onSelect: on.copyLink },
         ]
       : []),
     ...state.publication.map((action) => ({ ...action, disabled: unavailable || state.busy || action.disabled })),
@@ -73,12 +79,12 @@ export function documentBarMenu(state: DocumentBarState, on: DocumentBarHandlers
 
 // The picker the mode row opens: the current mode is the one row that cannot be picked again.
 export function editorModeMenu(current: EditorMode, pick: (mode: EditorMode) => void): ActionItem[] {
-  return EDITOR_MODES.map((item) => ({
-    id: `editor.mode.${item.value}`,
-    label: item.value === current ? `${item.label} (current)` : item.label,
-    icon: item.value === 'readonly' ? 'lu:eye' : item.value === 'editable' ? 'lu:pencil' : 'lu:mouse-pointer-click',
-    disabled: item.value === current,
-    onSelect: () => pick(item.value),
+  return EDITOR_MODES.map((mode) => ({
+    id: `editor.mode.${mode}`,
+    label: mode === current ? t('modes.current', { mode: modeLabel(mode) }) : modeLabel(mode),
+    icon: mode === 'readonly' ? 'lu:eye' : mode === 'editable' ? 'lu:pencil' : 'lu:mouse-pointer-click',
+    disabled: mode === current,
+    onSelect: () => pick(mode),
   }))
 }
 
@@ -95,13 +101,12 @@ export interface DocumentBarStatus {
 // The quieter half of the band's name. Silent while all is well, as the desktop tab is: "Saved" on every
 // screen would be a word nobody reads, and the one that matters would then be missed.
 export function documentBarSub(status: DocumentBarStatus): string | undefined {
-  if (status.loadError) return 'Unavailable'
-  if (!status.canSave) return 'Loading…'
-  if (status.saveError) return 'Save failed'
-  if (status.uploading) return 'Uploading attachment…'
-  if (status.saving) return 'Saving…'
-  if (status.unsaved) return 'Unsaved changes'
-  if (status.mode === 'readonly') return 'Read only'
-  if (status.mode === 'interactive') return 'Interactive'
+  if (status.loadError) return t('status.unavailableShort')
+  if (!status.canSave) return t('status.loading')
+  if (status.saveError) return t('status.saveFailed')
+  if (status.uploading) return t('status.uploading')
+  if (status.saving) return t('status.saving')
+  if (status.unsaved) return t('status.unsaved')
+  if (status.mode !== 'editable') return modeLabel(status.mode)
   return undefined
 }

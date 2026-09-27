@@ -1,9 +1,11 @@
 import type { BlockRole, DiffBlock, DiffBlocksModel, DiffContainer, DiffCounts, DiffStop, DiffUnit, UnitChange } from '@arxhub/plugin-diff'
-import { pluralRu, wordDiff } from '@arxhub/plugin-diff'
+import { wordDiff } from '@arxhub/plugin-diff'
 import { Fragment, type Node, type Schema } from 'prosemirror-model'
 import { versionText } from './document-history'
 import { type ArxFormatConfig, isRecord } from './document-migrations'
 import { deserialize } from './editor-format'
+import type { en } from './i18n/en'
+import { messages, t } from './i18n/messages'
 import { type BlockDifference, comparable, versionDifferences } from './version-diff'
 
 type Move = { direction: 'up' | 'down'; distance: number }
@@ -25,42 +27,10 @@ interface Entry {
 
 const ITEM_TYPES = new Set(['list_item', 'task_item'])
 
-const TYPE_NAMES: Record<string, string> = {
-  paragraph: 'абзац',
-  heading: 'заголовок',
-  code_block: 'код',
-  blockquote: 'цитата',
-  bullet_list: 'список',
-  ordered_list: 'нумерованный список',
-  task_list: 'задачи',
-  list_item: 'пункт',
-  task_item: 'задача',
-  callout: 'выноска',
-  section: 'раздел',
-  columns: 'колонки',
-  column: 'колонка',
-  table: 'таблица',
-  table_row: 'строка таблицы',
-  horizontal_rule: 'разделитель',
-  image: 'изображение',
-}
+type TypeKey = `diff.types.${keyof typeof en.diff.types}`
+type ContainerKey = `diff.containers.${keyof typeof en.diff.containers}`
 
-const CONTAINER_LABELS: Record<string, string> = {
-  bullet_list: 'Список',
-  ordered_list: 'Список',
-  task_list: 'Задачи',
-  blockquote: 'Цитата',
-  callout: 'Выноска',
-  columns: 'Колонки',
-  column: 'Колонка',
-  table: 'Таблица',
-  list_item: 'Пункт',
-  task_item: 'Задача',
-  table_cell: 'Ячейка',
-  table_header: 'Ячейка',
-}
-
-// Attributes a note already names in words, so "изменены свойства" does not repeat them.
+// Attributes a note already names in words, so "properties changed" does not repeat them.
 const DESCRIBED_ATTRS = new Set(['arxId', 'checked', 'level', 'language'])
 
 export function arxDiffTexts(schema: Schema, left: string, right: string, format?: ArxFormatConfig): DiffBlocksModel {
@@ -96,18 +66,18 @@ function metadataUnit(before: Node, after: Node): DiffBlock | null {
   const keys = [...new Set([...Object.keys(oldProps), ...Object.keys(newProps)])].filter(
     (key) => JSON.stringify(oldProps[key]) !== JSON.stringify(newProps[key]),
   )
-  if (keys.length) notes.push(`изменены свойства документа: ${keys.join(', ')}`)
+  if (keys.length) notes.push(t('diff.documentPropertiesChanged', { keys: keys.join(', ') }))
   const oldLook = appearanceOf(before)
   const newLook = appearanceOf(after)
-  if (JSON.stringify(oldLook.icon) !== JSON.stringify(newLook.icon)) notes.push('изменена иконка')
-  if (JSON.stringify(oldLook.cover) !== JSON.stringify(newLook.cover)) notes.push('изменена обложка')
+  if (JSON.stringify(oldLook.icon) !== JSON.stringify(newLook.icon)) notes.push(t('diff.iconChanged'))
+  if (JSON.stringify(oldLook.cover) !== JSON.stringify(newLook.cover)) notes.push(t('diff.coverChanged'))
   if (!notes.length) return null
   return {
     kind: 'block',
     id: 'props',
     change: 'changed',
     role: 'other',
-    segments: [{ kind: 'equal', text: 'Свойства документа' }],
+    segments: [{ kind: 'equal', text: t('diff.documentProperties') }],
     note: notes.join(' · '),
   }
 }
@@ -259,25 +229,21 @@ function unitOf(entry: Entry, id: string): DiffUnit {
   if (!node) return leaf(id, 'equal', null, null)
   if (entry.change === 'changed' && entry.before && entry.after) {
     const unit = changedUnit(entry.before, entry.after, id)
-    // The note stays the edit's own; the view says "перемещён" from `move`, per column.
+    // The note stays the edit's own; the view says "moved" from `move`, per column.
     if (entry.move) unit.move = entry.move
     return unit
   }
   const unit = plain(node, id, entry.change)
   if (entry.move) {
     unit.move = entry.move
-    unit.note = entry.ghost ? `было здесь · перемещён ${directionWord(entry.move)}` : movedNote(entry.move)
+    unit.note = entry.ghost ? (entry.move.direction === 'up' ? t('diff.wasHereUp') : t('diff.wasHereDown')) : movedNote(entry.move)
   }
   if (entry.ghost) unit.ghost = true
   return unit
 }
 
-function directionWord(move: Move): string {
-  return move.direction === 'up' ? 'выше' : 'ниже'
-}
-
 function movedNote(move: Move): string {
-  return `перемещён ${directionWord(move)} на ${move.distance} ${pluralRu(move.distance, 'блок', 'блока', 'блоков')}`
+  return t(move.direction === 'up' ? 'diff.movedUp' : 'diff.movedDown', { count: move.distance })
 }
 
 // A block drawn as it is on one side: a leaf, or a container whose children all read as unchanged — the
@@ -291,7 +257,7 @@ function plain(node: Node, id: string, change: UnitChange): DiffUnit {
     id,
     change,
     label: labelOf(node),
-    summary: `${labelOf(node)} · ${children.length} ${pluralRu(children.length, 'пункт', 'пункта', 'пунктов')}`,
+    summary: `${labelOf(node)} · ${t('diff.items', { count: children.length })}`,
     children,
   }
   if (head) container.head = leaf(`${id}/head`, 'equal', null, head, node)
@@ -327,7 +293,7 @@ function changedUnit(before: Node, after: Node, id: string): DiffUnit {
   const own = attributeNotes(before, after, { ignoreText: true })
   if (own.length && !container.head) container.note = own.join(' · ')
   const changed = children.filter((child) => !child.ghost && child.change !== 'equal').length
-  container.summary = `${container.label} · ${changed} ${pluralRu(changed, 'пункт изменён', 'пункта изменено', 'пунктов изменено')} из ${children.filter((child) => !child.ghost && child.change !== 'removed').length}`
+  container.summary = `${container.label} · ${t('diff.changedItems', { count: changed, total: children.filter((child) => !child.ghost && child.change !== 'removed').length })}`
   return container
 }
 
@@ -363,20 +329,21 @@ function attributeNotes(before: Node, after: Node, options: { ignoreText: boolea
   const notes: string[] = []
   if (before.type !== after.type) notes.push(`${typeName(before)} → ${typeName(after)}`)
   if (before.type.name === 'task_item' && after.type.name === 'task_item' && Boolean(before.attrs.checked) !== Boolean(after.attrs.checked))
-    notes.push(after.attrs.checked ? 'задача отмечена' : 'отметка снята')
+    notes.push(after.attrs.checked ? t('diff.taskChecked') : t('diff.taskUnchecked'))
   if (before.type.name === 'heading' && after.type.name === 'heading' && before.attrs.level !== after.attrs.level)
-    notes.push(`заголовок: уровень ${before.attrs.level} → ${after.attrs.level}`)
+    notes.push(t('diff.headingLevel', { from: before.attrs.level, to: after.attrs.level }))
   if (before.type.name === 'code_block' && after.type.name === 'code_block' && before.attrs.language !== after.attrs.language)
-    notes.push(`язык: ${before.attrs.language || 'нет'} → ${after.attrs.language || 'нет'}`)
+    notes.push(
+      t('diff.language', { from: before.attrs.language || t('diff.languageNone'), to: after.attrs.language || t('diff.languageNone') }),
+    )
   if (before.type === after.type) {
     const keys = new Set([...Object.keys(before.attrs), ...Object.keys(after.attrs)])
     const changed = [...keys].filter(
       (key) => !DESCRIBED_ATTRS.has(key) && JSON.stringify(before.attrs[key]) !== JSON.stringify(after.attrs[key]),
     )
-    if (changed.length) notes.push(`изменены свойства: ${changed.join(', ')}`)
+    if (changed.length) notes.push(t('diff.attributesChanged', { keys: changed.join(', ') }))
   }
-  if (!notes.length && !options.ignoreText && !isContainer(after) && comparable(before) !== comparable(after))
-    notes.push('изменено форматирование')
+  if (!notes.length && !options.ignoreText && !isContainer(after) && comparable(before) !== comparable(after)) notes.push(t('diff.formatting'))
   return notes
 }
 
@@ -429,12 +396,14 @@ function textOf(node: Node): string {
 }
 
 function typeName(node: Node): string {
-  return TYPE_NAMES[node.type.name] ?? node.type.name
+  const key = `diff.types.${node.type.name}`
+  return messages.has(key) ? t(key as TypeKey) : node.type.name
 }
 
 function labelOf(node: Node): string {
-  if (node.type.name === 'section') return `Раздел «${String(node.attrs.title)}»`
-  return CONTAINER_LABELS[node.type.name] ?? node.type.name
+  if (node.type.name === 'section') return t('diff.section', { title: String(node.attrs.title) })
+  const key = `diff.containers.${node.type.name}`
+  return messages.has(key) ? t(key as ContainerKey) : node.type.name
 }
 
 // ---------------------------------------------------------------------------------------------- stops
@@ -463,7 +432,7 @@ function assignStops(unit: DiffUnit, stops: DiffStop[], ref: string | undefined)
   // Only the container's own attributes changed (a callout's type, a section's title): nothing below carries
   // the change, so the container itself is where navigation stops.
   if (!any) {
-    unit.note ??= 'изменено форматирование'
+    unit.note ??= t('diff.formatting')
     push(unit, 'changed')
   }
   return true

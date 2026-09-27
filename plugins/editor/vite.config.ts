@@ -13,6 +13,7 @@ export default defineConfig((env) =>
       '@arxhub/plugin-protection',
       '@arxhub/plugin-publish',
       '@arxhub/errors',
+      '@arxhub/i18n',
       '@arxhub/stdlib/collections/container',
       '@arxhub/stdlib/scheduling/debounced-task',
       '@arxhub/path',

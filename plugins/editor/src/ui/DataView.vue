@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { validation } from '@arxhub/errors'
+import { formatDate } from '@arxhub/i18n'
 import { Button, EmptyState, Input, Row } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
-import type { ArxDataItem, DataLayout } from '../data-sources'
+import { type ArxDataItem, type DataLayout, localDay } from '../data-sources'
 import { ArxEditorExtension } from '../editor-extension'
+import { editorError, reasonText } from '../errors'
+import { t } from '../i18n/messages'
 import DataBoardDesktop from './DataBoardDesktop.vue'
 import DataBoardMobile from './DataBoardMobile.vue'
 import DataListDesktop from './DataListDesktop.vue'
@@ -26,17 +28,20 @@ const busy = ref(false)
 const error = ref('')
 const refresh = ref(0)
 const truncated = ref(false)
-const month = ref(new Date().toISOString().slice(0, 7))
+const month = ref(localDay(Date.now()).slice(0, 7))
 const groups = computed(() => {
   const grouped = new Map<string, ArxDataItem[]>()
   for (const item of items.value) {
-    const key = layout.value === 'calendar' ? item.date : item.group || 'Other'
+    const key = layout.value === 'calendar' ? item.date : item.group || t('data.groups.ungrouped')
     if (!key || (layout.value === 'calendar' && !key.startsWith(month.value))) continue
     const entries = grouped.get(key) ?? []
     entries.push(item)
     grouped.set(key, entries)
   }
-  return [...grouped].sort(([a], [b]) => a.localeCompare(b)).map(([title, items]) => ({ title, items }))
+  // A day is stored as its YYYY-MM-DD key and named in the reader's language; read as a UTC day, so no
+  // timezone moves it to the day before.
+  const title = (key: string) => (layout.value === 'calendar' ? formatDate(`${key}T00:00:00Z`, { dateStyle: 'long', timeZone: 'UTC' }) : key)
+  return [...grouped].sort(([a], [b]) => a.localeCompare(b)).map(([key, items]) => ({ key, title: title(key), items }))
 })
 watch(
   [source, () => props.node.attrs.query, () => source.value?.revision?.value, refresh],
@@ -52,14 +57,14 @@ watch(
       truncated.value = false
     }
     try {
-      if (!source.value) throw validation('Enable the plugin that provides this data source. Built-in sources require Search.')
+      if (!source.value) throw editorError('DataSourceUnavailableError')
       const result = await source.value.load(String(props.node.attrs.query))
       if (active) {
         items.value = result.items.slice(0, 200)
         truncated.value = !!result.truncated || result.items.length > 200
       }
     } catch (reason) {
-      if (active) error.value = reason instanceof Error ? reason.message : String(reason)
+      if (active) error.value = reasonText(reason)
     } finally {
       if (active) busy.value = false
     }
@@ -70,27 +75,27 @@ async function open(item: ArxDataItem) {
   try {
     await editor.links?.open(item.path, item.anchor)
   } catch (reason) {
-    error.value = reason instanceof Error ? reason.message : String(reason)
+    error.value = reasonText(reason)
   }
 }
 </script>
 
 <template>
-  <section class="data-view" :class="{ touch }" aria-label="Collection" :aria-busy="busy">
+  <section class="data-view" :class="{ touch }" :aria-label="t('blocks.collection')" :aria-busy="busy">
     <div class="data-options">
-      <Button :size="buttonSize" variant="ghost" @click="refresh++">Refresh data</Button>
+      <Button :size="buttonSize" variant="ghost" @click="refresh++">{{ t('data.refresh') }}</Button>
     </div>
-    <p v-if="busy && !items.length" role="status">Loading data…</p><p v-if="error" role="alert">{{ error }}</p>
+    <p v-if="busy && !items.length" role="status">{{ t('data.loading') }}</p><p v-if="error" role="alert">{{ error }}</p>
     <component :is="board" v-if="layout === 'board'" :groups="groups" @open="open" />
     <template v-else-if="layout === 'calendar'">
-      <Input v-model="month" type="month" aria-label="Calendar month" />
-      <section v-for="group in groups" :key="group.title"><h3>{{ group.title }}</h3><Row v-for="item in group.items" :key="item.id" as="button" type="button" wrap @click="open(item)">{{ item.title }}</Row></section>
-      <EmptyState v-if="!busy && !error && !groups.length" compact icon="lu:calendar" text="No dated items in this month." />
+      <Input v-model="month" type="month" :aria-label="t('data.calendarMonth')" />
+      <section v-for="group in groups" :key="group.key"><h3>{{ group.title }}</h3><Row v-for="item in group.items" :key="item.id" as="button" type="button" wrap @click="open(item)">{{ item.title }}</Row></section>
+      <EmptyState v-if="!busy && !error && !groups.length" compact icon="lu:calendar" :text="t('data.noDated')" />
     </template>
     <component :is="list" v-else :items="items" @open="open" />
-    <EmptyState v-if="!busy && !error && !items.length" compact icon="lu:search-x" text="No matching items." />
-    <p v-if="truncated">Showing the first 200 items. Narrow the filter to see more.</p>
-    <p class="data-help">Results open their source documents.</p><p v-if="layout === 'calendar' && node.attrs.source === 'documents'" class="data-help">Dates show when documents were last modified.</p>
+    <EmptyState v-if="!busy && !error && !items.length" compact icon="lu:search-x" :text="t('data.noMatching')" />
+    <p v-if="truncated">{{ t('data.truncated', { count: 200 }) }}</p>
+    <p class="data-help">{{ t('data.help') }}</p><p v-if="layout === 'calendar' && node.attrs.source === 'documents'" class="data-help">{{ t('data.datesHelp') }}</p>
   </section>
 </template>
 

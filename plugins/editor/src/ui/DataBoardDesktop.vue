@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { Row, ScrollArea } from '@arxhub/uikit/core'
 import type { ArxDataItem } from '../data-sources'
+import { t } from '../i18n/messages'
 
 defineProps<{ groups: { title: string; items: ArxDataItem[] }[] }>()
 const emit = defineEmits<{ open: [item: ArxDataItem] }>()
 </script>
 <template>
   <ScrollArea axis="x" class="data-board">
-    <div class="data-board-grid" aria-label="Grouped results" :style="{ minWidth: `${groups.length * 216 - 16}px` }"><section v-for="group in groups" :key="group.title"><h3>{{ group.title }} · {{ group.items.length }}</h3><Row v-for="item in group.items" :key="item.id" as="button" type="button" wrap @click="emit('open', item)">{{ item.title }}</Row></section></div>
+    <div class="data-board-grid" :aria-label="t('data.grouped')" :style="{ minWidth: `${groups.length * 216 - 16}px` }"><section v-for="group in groups" :key="group.title"><h3>{{ group.title }} · {{ group.items.length }}</h3><Row v-for="item in group.items" :key="item.id" as="button" type="button" wrap @click="emit('open', item)">{{ item.title }}</Row></section></div>
   </ScrollArea>
 </template>
 <style scoped>

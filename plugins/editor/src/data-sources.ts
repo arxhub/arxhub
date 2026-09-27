@@ -1,8 +1,15 @@
+import type { Text } from '@arxhub/i18n'
 import type { BlockAnchor } from '@arxhub/plugin-documents'
 import type { SearchExtension } from '@arxhub/plugin-search'
 import type { Ref } from 'vue'
+import { t } from './i18n/messages'
 
-export type DataLayout = 'list' | 'board' | 'calendar'
+const DATA_LAYOUTS = ['list', 'board', 'calendar'] as const
+export type DataLayout = (typeof DATA_LAYOUTS)[number]
+
+export function isLayout(value: unknown): value is DataLayout {
+  return DATA_LAYOUTS.some((layout) => layout === value)
+}
 export interface ArxDataItem {
   id: string
   title: string
@@ -12,7 +19,8 @@ export interface ArxDataItem {
   date?: string
 }
 export interface ArxDataSource {
-  label: string
+  // Contributed once, in configure(); read when the settings draw.
+  label: Text
   layouts: readonly DataLayout[]
   revision?: Ref<number>
   load(query: string): Promise<{ items: ArxDataItem[]; truncated?: boolean }>
@@ -21,7 +29,7 @@ export interface ArxDataSource {
 export function searchDataSources(search: SearchExtension): Record<string, ArxDataSource> {
   return {
     tasks: {
-      label: 'Tasks',
+      label: () => t('data.sources.tasks'),
       layouts: ['list', 'board'],
       revision: search.revision,
       async load(query) {
@@ -36,13 +44,13 @@ export function searchDataSources(search: SearchExtension): Record<string, ArxDa
             title: row.content,
             path: row.doc_path,
             anchor: { text: row.content, skip: row.skip },
-            group: row.checked ? 'Completed' : 'Incomplete',
+            group: row.checked ? t('data.groups.completed') : t('data.groups.incomplete'),
           })),
         }
       },
     },
     documents: {
-      label: 'Documents',
+      label: () => t('data.sources.documents'),
       layouts: ['list', 'board', 'calendar'],
       revision: search.revision,
       async load(query) {
@@ -56,11 +64,19 @@ export function searchDataSources(search: SearchExtension): Record<string, ArxDa
             id: row.path,
             path: row.path,
             title: row.title,
-            group: row.dir || 'Vault',
-            date: new Date(Number(row.mtime)).toISOString().slice(0, 10),
+            group: row.dir || t('data.groups.vault'),
+            date: localDay(Number(row.mtime)),
           })),
         }
       },
     },
   }
+}
+
+// The calendar day on this device's clock: a note saved at 01:00 belongs to that day, not to the UTC one
+// before it.
+export function localDay(ms: number): string {
+  const date = new Date(ms)
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }

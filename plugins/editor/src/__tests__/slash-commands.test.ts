@@ -1,7 +1,8 @@
+import { setLanguagePreference } from '@arxhub/i18n'
 import { history, undo } from 'prosemirror-history'
 import type { Node } from 'prosemirror-model'
 import { EditorState, TextSelection } from 'prosemirror-state'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { emptyDoc } from '../editor-format'
 import { buildKeymap } from '../editor-keymap'
 import { editorModeKey, modePlugin } from '../editor-mode'
@@ -225,5 +226,46 @@ describe('slash insertion', () => {
     })
     expect(state.doc.lastChild?.type.name).toBe('paragraph')
     expect(state.doc.firstChild?.childCount).toBe(1)
+  })
+})
+
+describe('words an insertion writes into the file', () => {
+  function insert(id: string): Node {
+    let state = editor()
+    state = state.apply(state.tr.insertText('/'))
+    const command = BLOCK_COMMANDS.find((candidate) => candidate.id === id)
+    if (!command) throw new Error(`no command ${id}`)
+    runSlashCommand(
+      state,
+      (tr) => {
+        state = state.apply(tr)
+      },
+      command,
+    )
+    return state.doc
+  }
+
+  function first(doc: Node, type: string): Node {
+    let found: Node | null = null
+    doc.descendants((node) => {
+      if (!found && node.type.name === type) found = node
+      return !found
+    })
+    if (!found) throw new Error(`no ${type}`)
+    return found
+  }
+
+  afterEach(() => setLanguagePreference('system'))
+
+  it('are in the language shown at the moment of insertion', () => {
+    setLanguagePreference('ru')
+    expect(first(insert('section'), 'section').attrs.title).toBe('Раздел')
+    const select = first(insert('select'), 'select')
+    expect(select.attrs.label).toBe('Статус')
+    expect(select.attrs.options.map((option: { label: string }) => option.label)).toEqual(['Не начато', 'В работе', 'Готово'])
+
+    setLanguagePreference('en')
+    expect(first(insert('section'), 'section').attrs.title).toBe('Section')
+    expect(first(insert('select'), 'select').attrs.label).toBe('Status')
   })
 })

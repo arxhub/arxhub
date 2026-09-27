@@ -24,6 +24,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/i18n": "workspace:*",
     "prosemirror-tables": "catalog:client",
     "@codemirror/language": "catalog:client",
     "@codemirror/language-data": "catalog:client",

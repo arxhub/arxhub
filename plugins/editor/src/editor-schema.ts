@@ -6,6 +6,7 @@ import { tableNodes } from 'prosemirror-tables'
 import { assetNodes } from './asset-schema'
 import { columnNodes } from './columns'
 import { isRecord } from './document-migrations'
+import { t } from './i18n/messages'
 import { safeLink } from './link-commands'
 import { isSelectOptionList, legacySelectOptions, selectedLabel } from './select-options'
 
@@ -52,7 +53,7 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
       toDOM: (node) => [
         'div',
         { 'data-arx-data-view': '', 'data-source': node.attrs.source, 'data-layout': node.attrs.layout, 'data-query': node.attrs.query },
-        `Data view: ${node.attrs.source}`,
+        t('blocks.dataView', { source: node.attrs.source }),
       ],
     },
     unknown_block: {
@@ -86,7 +87,7 @@ const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')
         },
       ],
       toDOM: (node: Node) =>
-        ['div', { 'data-arx-unknown': JSON.stringify(node.attrs) }, `Unavailable block: ${node.attrs.raw.type ?? 'unknown'}`] as const,
+        ['div', { 'data-arx-unknown': JSON.stringify(node.attrs) }, t('unknown.title', { type: node.attrs.raw.type ?? 'unknown' })] as const,
     },
     section: {
       group: 'block',

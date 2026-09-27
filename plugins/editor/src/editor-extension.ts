@@ -1,5 +1,6 @@
 import { Extension } from '@arxhub/core'
 import { illegalState } from '@arxhub/errors'
+import type { Text } from '@arxhub/i18n'
 import { Container } from '@arxhub/stdlib/collections/container'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { type MarkSpec, type NodeSpec, Schema } from 'prosemirror-model'
@@ -22,7 +23,7 @@ export interface ArxEditorComponent {
   component: Component
   // Optional inspector UI, receiving the same node/mode/change/replace contract as the block.
   settings?: Component
-  settingsLabel?: string
+  settingsLabel?: Text
   tag?: 'div' | 'li'
   content?: boolean
 }

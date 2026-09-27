@@ -3,6 +3,7 @@ import { DiffBand, DiffView } from '@arxhub/plugin-diff/ui'
 import { type ActionItem, Strip } from '@arxhub/uikit/core'
 import { useBackStack } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
+import { t } from '../i18n/messages'
 import { type DocumentVersionsProps, useDocumentVersions } from './use-document-versions'
 
 const props = defineProps<DocumentVersionsProps>()
@@ -20,7 +21,7 @@ useBackStack(
 const actions = computed((): ActionItem[] => [
   {
     id: 'versions.restore',
-    label: restoring.value ? 'Restoring…' : 'Restore this version',
+    label: restoring.value ? t('versions.restoring') : t('versions.restore'),
     icon: 'lu:history',
     disabled: !canRestore.value,
     onSelect: () => void state.restore(),
@@ -32,18 +33,18 @@ const actions = computed((): ActionItem[] => [
     disabled: !blockStop.value || !canRestore.value,
     onSelect: () => void state.restoreBlock(),
   },
-  { id: 'versions.refresh', label: 'Refresh versions', icon: 'lu:refresh-cw', disabled: restoring.value, onSelect: state.refresh },
+  { id: 'versions.refresh', label: t('versions.refresh'), icon: 'lu:refresh-cw', disabled: restoring.value, onSelect: state.refresh },
 ])
 </script>
 
 <template>
-  <div class="versions" role="region" aria-label="Saved versions">
+  <div class="versions" role="region" :aria-label="t('tools.versions')">
     <div class="notes">
-      <p v-if="loading" role="status">Loading versions…</p>
-      <p v-if="reading" role="status">Loading version…</p>
+      <p v-if="loading" role="status">{{ t('versions.loadingList') }}</p>
+      <p v-if="reading" role="status">{{ t('versions.loadingOne') }}</p>
       <p v-if="error" role="alert">{{ error }}</p>
       <p v-if="previewError" role="alert">{{ previewError }}</p>
-      <p v-if="!loading && !error && !versions.length">History starts when this document is saved.</p>
+      <p v-if="!loading && !error && !versions.length">{{ t('versions.empty') }}</p>
     </div>
     <DiffView v-if="result" class="diff" :result="result" :controller="controller" :title="title" icon="lu:file-text" :open-document="() => emit('close')" />
     <!-- A band of its own, not the editor's status chrome: that one pads and wraps, and the band's keys are
@@ -54,7 +55,7 @@ const actions = computed((): ActionItem[] => [
         :title="title"
         icon="lu:file-text"
         :parts="parts"
-        parts-title="Saved versions"
+        :parts-title="t('tools.versions')"
         :active-part="selected?.id"
         :actions="actions"
         :open-document="() => emit('close')"

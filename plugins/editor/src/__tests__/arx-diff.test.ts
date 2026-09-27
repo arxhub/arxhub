@@ -1,6 +1,7 @@
+import { setLanguagePreference } from '@arxhub/i18n'
 import type { DiffBlock, DiffBlocksModel, DiffContainer, DiffUnit } from '@arxhub/plugin-diff'
 import { type Node, Schema } from 'prosemirror-model'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { arxDiffNodes, arxDiffTexts } from '../arx-diff'
 import { identityNodes } from '../block-identity'
 import { schema as base } from '../editor-schema'
@@ -13,6 +14,11 @@ const item = (id: string, text = id, ...nested: Node[]) => schema.node('list_ite
 const list = (id: string, ...items: Node[]) => schema.node('bullet_list', { arxId: id }, items)
 const task = (id: string, checked: boolean, text = id) => schema.node('task_item', { arxId: id, checked }, [p(`${id}-p`, text)])
 const tasks = (id: string, ...items: Node[]) => schema.node('task_list', { arxId: id }, items)
+
+// The diff's words were written in Russian first; the assertions stay in that language, which also
+// exercises the one/few/many plural forms the English catalog does not have.
+beforeAll(() => setLanguagePreference('ru'))
+afterAll(() => setLanguagePreference('system'))
 
 function visible(model: DiffBlocksModel): DiffUnit[] {
   return model.units.filter((unit) => !unit.ghost)
@@ -144,7 +150,7 @@ describe('arx differ', () => {
     expect(moved?.move).toEqual({ direction: 'up', distance: 4 })
     expect(moved?.note).toBe('перемещён выше на 4 блока')
     expect(ghost?.move).toEqual({ direction: 'up', distance: 4 })
-    expect(ghost?.note).toBe('было здесь · перемещён выше')
+    expect(ghost?.note).toBe('был здесь · перемещён выше')
     expect(ghost?.stop).toBeUndefined()
     expect(model.units.map((unit) => (unit as DiffBlock).segments[0].text + (unit.ghost ? '*' : ''))).toEqual(['e', 'a', 'b', 'c', 'd', 'e*'])
     expect(model.stops.map((stop) => stop.change)).toEqual(['moved'])
@@ -267,7 +273,7 @@ describe('arx differ', () => {
     expect(live.move).toEqual({ direction: 'up', distance: 3 })
     expect(live.segments.some((s) => s.kind === 'added')).toBe(true)
     expect(ghost.change).toBe('moved')
-    expect(ghost.note).toBe('было здесь · перемещён выше')
+    expect(ghost.note).toBe('был здесь · перемещён выше')
     expect(ghost.segments).toEqual([{ kind: 'equal', text: 'd' }])
     expect(model.units.at(-1)).toBe(ghost)
     expect(model.stops.map((stop) => stop.change)).toEqual(['changed'])

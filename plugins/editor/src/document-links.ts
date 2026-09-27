@@ -1,4 +1,3 @@
-import { validation } from '@arxhub/errors'
 import { dirname, join, normalize } from '@arxhub/path'
 import type { BlockAnchor } from '@arxhub/plugin-documents'
 import type { Node } from 'prosemirror-model'
@@ -7,6 +6,7 @@ import type { Ref } from 'vue'
 import { documentId } from './document-history'
 import { findDocumentMatches } from './document-search'
 import { editorMode } from './editor-mode'
+import { editorError } from './errors'
 import { safeLink } from './link-commands'
 
 export interface DocumentDestination {
@@ -138,7 +138,7 @@ export function documentLinksPlugin(path: () => string, links: ArxDocumentLinks 
             return true
           }
           event.preventDefault()
-          report(validation('This document link is unavailable.'))
+          report(editorError('DocumentLinkUnavailableError'))
           return true
         },
       },

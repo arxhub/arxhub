@@ -4,6 +4,7 @@ import { type Command, Plugin, PluginKey, TextSelection } from 'prosemirror-stat
 import { Decoration, DecorationSet, type EditorView } from 'prosemirror-view'
 import { expandDocumentPosition } from './document-navigation'
 import { editorMode } from './editor-mode'
+import { t } from './i18n/messages'
 
 export interface DocumentMatch {
   from: number
@@ -115,7 +116,7 @@ export const replaceDocumentMatch =
 export function documentHeadings(doc: Node): { pos: number; level: number; title: string }[] {
   const headings: { pos: number; level: number; title: string }[] = []
   doc.descendants((node, pos) => {
-    if (node.type.name === 'heading') headings.push({ pos: pos + 1, level: node.attrs.level, title: node.textContent || 'Untitled heading' })
+    if (node.type.name === 'heading') headings.push({ pos: pos + 1, level: node.attrs.level, title: node.textContent || t('outline.untitled') })
     return !node.isTextblock
   })
   return headings

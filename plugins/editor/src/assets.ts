@@ -1,5 +1,7 @@
 import { validation } from '@arxhub/errors'
+import { formatBytes } from '@arxhub/i18n'
 import type { VirtualFileSystem } from '@arxhub/vfs'
+import { editorError } from './errors'
 
 export interface ArxAsset {
   path: string
@@ -13,6 +15,8 @@ export interface ArxAssetStore {
   read(asset: ArxAsset): Promise<Uint8Array>
 }
 
+const MAX_ATTACHMENT_SIZE = 64 * 1024 * 1024
+
 export const isImageAsset = (mime: string): boolean => /^image\/(png|jpeg|gif|webp|avif|bmp)$/.test(mime)
 
 export function validateAssetPath(value: unknown): void {
@@ -23,7 +27,7 @@ export function validateAssetPath(value: unknown): void {
 export function createAssetStore(vfs: Pick<VirtualFileSystem, 'read' | 'write'>): ArxAssetStore {
   return {
     async put(file) {
-      if (file.size > 64 * 1024 * 1024) throw validation('Attachments can be up to 64 MB')
+      if (file.size > MAX_ATTACHMENT_SIZE) throw editorError('AttachmentTooLargeError', { size: formatBytes(MAX_ATTACHMENT_SIZE) })
       const filename = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').slice(-120) || 'file'
       const path = `attachments/${crypto.randomUUID()}-${filename}`
       await vfs.write(path, new Uint8Array(await file.arrayBuffer()))

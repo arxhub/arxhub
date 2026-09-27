@@ -7,6 +7,8 @@ import { type ArxAsset, type ArxAssetStore, isImageAsset } from './assets'
 import { insertBlock } from './block-actions'
 import { runPreparedCommand } from './command-state'
 import { editorMode } from './editor-mode'
+import { editorError, reasonText } from './errors'
+import { t } from './i18n/messages'
 
 const positions = new PluginKey<Map<number, SelectionBookmark>>('asset-insertion-positions')
 type PositionChange = { add: number; bookmark: SelectionBookmark } | { remove: number }
@@ -33,7 +35,7 @@ export function createAssetSession(store: ArxAssetStore) {
       .catch((failure: unknown) => {
         if (!disposed) {
           discardJob?.()
-          error.value = failure instanceof Error ? failure.message : 'Upload failed'
+          error.value = reasonText(failure) || t('asset.uploadFailed')
           discardJob = discard ?? null
           retryJob = () => {
             discardJob = null
@@ -75,7 +77,7 @@ export function createAssetSession(store: ArxAssetStore) {
         if (!uploaded.has(file)) uploaded.set(file, await store.put(file))
       }
       if (disposed || view.isDestroyed) return
-      if (editorMode(view.state) !== 'editable') throw illegalState('Switch to Editable to finish inserting the attachment')
+      if (editorMode(view.state) !== 'editable') throw editorError('AttachmentNeedsEditableError')
       const saved = positions.getState(view.state)?.get(key)
       if (!saved) return
       const tr = view.state.tr.setSelection(saved.resolve(view.state.doc))
@@ -84,7 +86,7 @@ export function createAssetSession(store: ArxAssetStore) {
         tr,
         insertBlock({
           id: 'uploaded-assets',
-          label: 'Attachments',
+          label: () => t('asset.uploaded'),
           icon: 'lu:paperclip',
           keywords: '',
           run: (state, dispatch) => {

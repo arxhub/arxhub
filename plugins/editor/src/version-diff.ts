@@ -1,6 +1,6 @@
-import { validation } from '@arxhub/errors'
 import type { Node } from 'prosemirror-model'
 import type { EditorState, Transaction } from 'prosemirror-state'
+import { editorError } from './errors'
 
 export interface BlockDifference {
   key: string
@@ -70,7 +70,7 @@ export function versionDifferences(current: Node, previous: Node): BlockDifferen
 
 export function restoreVersionBlock(state: EditorState, previous: Node, key: string): Transaction {
   const change = versionDifferences(state.doc, previous).find((item) => item.key === key)
-  if (!change) throw validation('This block changed since the comparison. Refresh the version preview.')
+  if (!change) throw editorError('BlockChangedSinceComparisonError')
   const position = (index: number) => state.doc.children.slice(0, index).reduce((pos, node) => pos + node.nodeSize, 0)
   const tr = state.tr
   if (change.after && change.kind !== 'moved') {
@@ -85,7 +85,7 @@ export function restoreVersionBlock(state: EditorState, previous: Node, key: str
     }
     return tr.delete(from, from + change.after.nodeSize)
   }
-  if (!change.before) throw validation('The saved version has no block to restore.')
+  if (!change.before) throw editorError('VersionBlockMissingError')
   let target = state.doc.content.size
   for (const next of previous.children.slice(change.oldIndex + 1)) {
     const index = state.doc.children.findIndex((node) =>

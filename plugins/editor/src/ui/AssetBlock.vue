@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { formatBytes } from '@arxhub/i18n'
 import { Button, Icon } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useAssetSession } from '../asset-session'
 import { type ArxAsset, isImageAsset } from '../assets'
 import type { ArxEditorControlProps } from '../control-views'
+import { reasonText } from '../errors'
+import { t } from '../i18n/messages'
 
 const props = defineProps<ArxEditorControlProps>()
 const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
@@ -38,7 +41,7 @@ async function load() {
     if (current !== ticket) return
     url.value = URL.createObjectURL(new Blob([Uint8Array.from(bytes).buffer], { type: asset.mime }))
   } catch (error) {
-    if (current === ticket) loadError.value = error instanceof Error ? error.message : 'Could not load attachment'
+    if (current === ticket) loadError.value = reasonText(error) || t('asset.loadFailed')
   } finally {
     if (current === ticket) loading.value = false
   }
@@ -68,7 +71,7 @@ async function choose(event: Event) {
   input.value = ''
   if (!file || props.mode !== 'editable') return
   if (image.value && !isImageAsset(file.type)) {
-    loadError.value = 'Choose a PNG, JPEG, GIF, WebP, AVIF or BMP image'
+    loadError.value = t('asset.wrongType')
     return
   }
   await session.upload(file, (asset) => props.change({ ...asset })).catch(() => {})
@@ -79,7 +82,7 @@ async function download() {
   if (!url.value) return
   const link = document.createElement('a')
   link.href = url.value
-  link.download = props.node.attrs.name || 'attachment'
+  link.download = props.node.attrs.name || t('asset.defaultName')
   link.click()
 }
 </script>
@@ -87,22 +90,22 @@ async function download() {
 <template>
   <figure class="asset-block" :style="image ? { width: `${node.attrs.width}%` } : undefined">
     <input v-if="mode === 'editable'" ref="fileInput" type="file" hidden :accept="image ? 'image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp' : undefined"
-      :aria-label="image ? 'Choose image file' : 'Choose attachment file'" @change="choose" />
+      :aria-label="image ? t('asset.chooseImageFile') : t('asset.chooseAttachmentFile')" @change="choose" />
     <template v-if="node.attrs.path">
-      <img v-if="image && url" :src="url" :alt="node.attrs.alt || node.attrs.name" draggable="false" loading="lazy" decoding="async" @error="loadError = 'Could not display this image'" />
-      <div v-if="!image" class="asset-actions"><Icon name="lu:paperclip" /><span>{{ node.attrs.name }}</span><span class="asset-meta">{{ Math.ceil(node.attrs.size / 1024) }} KB</span></div>
-      <span v-if="loading" role="status">Loading attachment…</span>
-      <div v-if="loadError" class="asset-actions" role="alert"><span>{{ loadError }}</span><Button :size="buttonSize" variant="secondary" @click="load">Retry attachment</Button></div>
+      <img v-if="image && url" :src="url" :alt="node.attrs.alt || node.attrs.name" draggable="false" loading="lazy" decoding="async" @error="loadError = t('asset.imageUndisplayable')" />
+      <div v-if="!image" class="asset-actions"><Icon name="lu:paperclip" /><span>{{ node.attrs.name }}</span><span class="asset-meta">{{ formatBytes(node.attrs.size) }}</span></div>
+      <span v-if="loading" role="status">{{ t('asset.loading') }}</span>
+      <div v-if="loadError" class="asset-actions" role="alert"><span>{{ loadError }}</span><Button :size="buttonSize" variant="secondary" @click="load">{{ t('asset.retry') }}</Button></div>
       <figcaption v-if="node.attrs.caption">{{ node.attrs.caption }}</figcaption>
       <div class="asset-actions">
-        <Button :size="buttonSize" variant="ghost" :disabled="loading" @click="download">Download</Button>
+        <Button :size="buttonSize" variant="ghost" :disabled="loading" @click="download">{{ t('asset.download') }}</Button>
 
       </div>
     </template>
     <div v-else class="asset-empty">
       <Icon :name="image ? 'lu:image' : 'lu:paperclip'" />
-      <Button v-if="mode === 'editable'" :size="buttonSize" variant="secondary" :disabled="session.pending.value > 0" @click="fileInput?.click()">{{ image ? 'Choose image' : 'Choose file' }}</Button>
-      <span v-else>{{ image ? 'No image selected' : 'No file selected' }}</span>
+      <Button v-if="mode === 'editable'" :size="buttonSize" variant="secondary" :disabled="session.pending.value > 0" @click="fileInput?.click()">{{ image ? t('asset.chooseImage') : t('asset.chooseFile') }}</Button>
+      <span v-else>{{ image ? t('asset.noImage') : t('asset.noFile') }}</span>
       <span v-if="loadError" role="alert">{{ loadError }}</span>
     </div>
 

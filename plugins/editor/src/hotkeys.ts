@@ -1,4 +1,5 @@
 import type { HotkeyBinding, HotkeysExtension } from '@arxhub/plugin-hotkeys'
+import { t } from './i18n/messages'
 
 export const PROSEMIRROR_LAYER = 'editor:arxhub.editor'
 
@@ -12,17 +13,17 @@ export const PROSEMIRROR_LAYER = 'editor:arxhub.editor'
 // of the APPLICATION, and a list that reached down to Enter would be the beginning of the registry
 // learning about the caret.
 export const PROSEMIRROR_BINDINGS: HotkeyBinding[] = [
-  { id: 'editor.find', chord: 'Mod-f', layer: PROSEMIRROR_LAYER, title: 'Find in document' },
-  { id: 'editor.continue-after-block', chord: 'Mod-Enter', layer: PROSEMIRROR_LAYER, title: 'Continue after block' },
-  { id: 'editor.bold', chord: 'Mod-b', layer: PROSEMIRROR_LAYER, title: 'Bold' },
-  { id: 'editor.italic', chord: 'Mod-i', layer: PROSEMIRROR_LAYER, title: 'Italic' },
-  { id: 'editor.code', chord: 'Mod-`', layer: PROSEMIRROR_LAYER, title: 'Inline code' },
-  { id: 'editor.heading-1', chord: 'Mod-Alt-1', layer: PROSEMIRROR_LAYER, title: 'Heading 1' },
-  { id: 'editor.heading-2', chord: 'Mod-Alt-2', layer: PROSEMIRROR_LAYER, title: 'Heading 2' },
-  { id: 'editor.heading-3', chord: 'Mod-Alt-3', layer: PROSEMIRROR_LAYER, title: 'Heading 3' },
-  { id: 'editor.undo', chord: 'Mod-z', layer: PROSEMIRROR_LAYER, title: 'Undo' },
-  { id: 'editor.redo', chord: 'Mod-Shift-z', layer: PROSEMIRROR_LAYER, title: 'Redo' },
-  { id: 'editor.redo-alt', chord: 'Mod-y', layer: PROSEMIRROR_LAYER, title: 'Redo' },
+  { id: 'editor.find', chord: 'Mod-f', layer: PROSEMIRROR_LAYER, title: () => t('tools.find') },
+  { id: 'editor.continue-after-block', chord: 'Mod-Enter', layer: PROSEMIRROR_LAYER, title: () => t('hotkeys.continueAfterBlock') },
+  { id: 'editor.bold', chord: 'Mod-b', layer: PROSEMIRROR_LAYER, title: () => t('marks.bold') },
+  { id: 'editor.italic', chord: 'Mod-i', layer: PROSEMIRROR_LAYER, title: () => t('marks.italic') },
+  { id: 'editor.code', chord: 'Mod-`', layer: PROSEMIRROR_LAYER, title: () => t('marks.inlineCode') },
+  { id: 'editor.heading-1', chord: 'Mod-Alt-1', layer: PROSEMIRROR_LAYER, title: () => t('blocks.heading1') },
+  { id: 'editor.heading-2', chord: 'Mod-Alt-2', layer: PROSEMIRROR_LAYER, title: () => t('blocks.heading2') },
+  { id: 'editor.heading-3', chord: 'Mod-Alt-3', layer: PROSEMIRROR_LAYER, title: () => t('blocks.heading3') },
+  { id: 'editor.undo', chord: 'Mod-z', layer: PROSEMIRROR_LAYER, title: () => t('tools.undo') },
+  { id: 'editor.redo', chord: 'Mod-Shift-z', layer: PROSEMIRROR_LAYER, title: () => t('tools.redo') },
+  { id: 'editor.redo-alt', chord: 'Mod-y', layer: PROSEMIRROR_LAYER, title: () => t('tools.redo') },
 ]
 
 // Declared ONCE for the viewer type, from `configure()`, and never from a panel's `onMounted`.

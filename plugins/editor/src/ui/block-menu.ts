@@ -7,27 +7,43 @@ import { selectBlocks, selectedBlocks } from '../block-selection'
 import { BLOCK_TRANSFORMS, transformBlocks } from '../block-transforms'
 import { arrangeColumns } from '../columns'
 import { buildKeymap } from '../editor-keymap'
+import { t } from '../i18n/messages'
 import { TABLE_ACTIONS } from '../table-actions'
 
 export function openBlockMenu(view: EditorView, x: number, y: number): void {
   const items = [
-    { id: 'up', label: 'Move block up', icon: 'lu:arrow-up' },
-    { id: 'down', label: 'Move block down', icon: 'lu:arrow-down' },
-    { id: 'duplicate', label: 'Duplicate block', icon: 'lu:copy' },
-    { id: 'delete', label: 'Delete block', icon: 'lu:trash-2' },
+    { id: 'up', label: t('blockMenu.up'), icon: 'lu:arrow-up' },
+    { id: 'down', label: t('blockMenu.down'), icon: 'lu:arrow-down' },
+    { id: 'duplicate', label: t('blockMenu.duplicate'), icon: 'lu:copy' },
+    { id: 'delete', label: t('blockMenu.delete'), icon: 'lu:trash-2' },
   ] as const
   actionMenu.open(
     [
       ...[
-        { id: 'paragraph-before', label: 'Add paragraph before block', icon: 'lu:arrow-up-to-line', run: insertParagraphBeside('before') },
-        { id: 'paragraph-after', label: 'Add paragraph after block', icon: 'lu:arrow-down-to-line', run: insertParagraphBeside('after') },
-        { id: 'continue', label: 'Continue outside container', icon: 'lu:corner-down-right', run: continueAfterBlock },
-        { id: 'indent', label: 'Indent list item', icon: 'lu:list-indent-increase', run: buildKeymap(view.state.schema).Tab },
-        { id: 'outdent', label: 'Outdent list item', icon: 'lu:list-indent-decrease', run: buildKeymap(view.state.schema)['Shift-Tab'] },
+        {
+          id: 'paragraph-before',
+          label: () => t('blockMenu.paragraphBefore'),
+          icon: 'lu:arrow-up-to-line',
+          run: insertParagraphBeside('before'),
+        },
+        {
+          id: 'paragraph-after',
+          label: () => t('blockMenu.paragraphAfter'),
+          icon: 'lu:arrow-down-to-line',
+          run: insertParagraphBeside('after'),
+        },
+        { id: 'continue', label: () => t('blockMenu.continue'), icon: 'lu:corner-down-right', run: continueAfterBlock },
+        { id: 'indent', label: () => t('blockMenu.indent'), icon: 'lu:list-indent-increase', run: buildKeymap(view.state.schema).Tab },
+        {
+          id: 'outdent',
+          label: () => t('blockMenu.outdent'),
+          icon: 'lu:list-indent-decrease',
+          run: buildKeymap(view.state.schema)['Shift-Tab'],
+        },
         ...(isInTable(view.state) ? TABLE_ACTIONS.filter((action) => action.id !== 'header') : []),
       ].map((action) => ({
         id: action.id,
-        label: action.label,
+        label: action.label(),
         icon: action.icon,
         disabled: !action.run(view.state),
         onSelect: () => {
@@ -48,14 +64,14 @@ export function openBlockMenu(view: EditorView, x: number, y: number): void {
           },
         }),
       ),
-      { id: 'transform', label: 'Turn into', icon: 'lu:repeat-2', onSelect: () => openTransformMenu(view, x, y) },
+      { id: 'transform', label: t('blockMenu.turnInto'), icon: 'lu:repeat-2', onSelect: () => openTransformMenu(view, x, y) },
       ...(
         [
-          { id: 'current', label: 'Select block', icon: 'lu:square-dashed' },
-          { id: 'parent', label: 'Select parent block', icon: 'lu:corner-left-up' },
-          { id: 'next', label: 'Select next block too', icon: 'lu:arrow-down-to-line' },
-          { id: 'previous', label: 'Select previous block too', icon: 'lu:arrow-up-to-line' },
-          { id: 'all', label: 'Select all blocks', icon: 'lu:layers' },
+          { id: 'current', label: t('blockMenu.selectCurrent'), icon: 'lu:square-dashed' },
+          { id: 'parent', label: t('blockMenu.selectParent'), icon: 'lu:corner-left-up' },
+          { id: 'next', label: t('blockMenu.selectNext'), icon: 'lu:arrow-down-to-line' },
+          { id: 'previous', label: t('blockMenu.selectPrevious'), icon: 'lu:arrow-up-to-line' },
+          { id: 'all', label: t('blockMenu.selectAll'), icon: 'lu:layers' },
         ] as const
       ).map((item) => ({
         ...item,
@@ -67,7 +83,7 @@ export function openBlockMenu(view: EditorView, x: number, y: number): void {
         },
       })),
     ],
-    { title: (selectedBlocks(view.state)?.count ?? 1) > 1 ? `${selectedBlocks(view.state)?.count} selected blocks` : 'Current block', x, y },
+    { title: selectionTitle(selectedBlocks(view.state)?.count ?? 1), x, y },
   )
 }
 
@@ -77,6 +93,7 @@ function openTransformMenu(view: EditorView, x: number, y: number): void {
     [
       ...BLOCK_TRANSFORMS.map((item) => ({
         ...item,
+        label: item.label(),
         disabled: !transformBlocks(item.id)(view.state),
         onSelect: () => {
           if (view.isDestroyed) return
@@ -86,7 +103,7 @@ function openTransformMenu(view: EditorView, x: number, y: number): void {
       })),
       {
         id: 'columns',
-        label: 'Columns',
+        label: t('blocks.columns'),
         icon: 'lu:columns-2',
         disabled: !arrangeColumns(2)(view.state),
         onSelect: () => {
@@ -97,6 +114,10 @@ function openTransformMenu(view: EditorView, x: number, y: number): void {
         },
       },
     ],
-    { title: 'Turn into', x, y },
+    { title: t('blockMenu.turnInto'), x, y },
   )
+}
+
+function selectionTitle(count: number): string {
+  return count > 1 ? t('blockMenu.selected', { count }) : t('blockMenu.current')
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { DiffView } from '@arxhub/plugin-diff/ui'
 import { Button, IconButton, Row, ScrollArea, Strip } from '@arxhub/uikit/core'
+import { t } from '../i18n/messages'
 import { type DocumentVersionsProps, useDocumentVersions, versionLabel } from './use-document-versions'
 
 const props = defineProps<DocumentVersionsProps>()
@@ -17,15 +18,15 @@ function onKeydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <div class="versions" role="region" aria-label="Saved versions" @keydown="onKeydown">
+  <div class="versions" role="region" :aria-label="t('tools.versions')" @keydown="onKeydown">
     <aside class="side">
-      <Strip title="Saved versions" flush-actions>
+      <Strip :title="t('tools.versions')" flush-actions>
         <template #actions>
-          <IconButton size="lg" icon="lu:x" aria-label="Close versions" tooltip="Close versions" :disabled="restoring" @click="emit('close')" />
+          <IconButton size="lg" icon="lu:x" :aria-label="t('versions.close')" :tooltip="t('versions.close')" :disabled="restoring" @click="emit('close')" />
         </template>
       </Strip>
       <ScrollArea class="list">
-        <nav aria-label="Saved document versions">
+        <nav :aria-label="t('versions.nav')">
           <Row
             v-for="version in versions"
             :key="version.id"
@@ -39,19 +40,19 @@ function onKeydown(event: KeyboardEvent): void {
             {{ versionLabel(versions, version) }}
           </Row>
         </nav>
-        <p v-if="store.limit">Up to {{ store.limit }} saved versions are kept per document.</p>
-        <p v-if="!loading && !error && !versions.length">History starts when this document is saved.</p>
-        <p v-if="loading" role="status">Loading versions…</p>
-        <p v-if="reading" role="status">Loading version…</p>
+        <p v-if="store.limit">{{ t('versions.limit', { limit: store.limit }) }}</p>
+        <p v-if="!loading && !error && !versions.length">{{ t('versions.empty') }}</p>
+        <p v-if="loading" role="status">{{ t('versions.loadingList') }}</p>
+        <p v-if="reading" role="status">{{ t('versions.loadingOne') }}</p>
         <p v-if="error" role="alert">{{ error }}</p>
         <p v-if="previewError" role="alert">{{ previewError }}</p>
-        <p v-if="selected && mode === 'editable'">Your current draft will be saved before restoring this version.</p>
-        <p v-else-if="selected">Switch to Editable to restore a version.</p>
+        <p v-if="selected && mode === 'editable'">{{ t('versions.draftWillSave') }}</p>
+        <p v-else-if="selected">{{ t('versions.switchToEditable') }}</p>
       </ScrollArea>
       <div class="commands">
-        <Button size="sm" variant="ghost" :disabled="restoring" @click="state.refresh">Refresh versions</Button>
+        <Button size="sm" variant="ghost" :disabled="restoring" @click="state.refresh">{{ t('versions.refresh') }}</Button>
         <Button size="sm" variant="secondary" :disabled="!blockStop || !canRestore" @click="state.restoreBlock">{{ blockLabel }}</Button>
-        <Button size="sm" variant="secondary" :disabled="!canRestore" @click="state.restore()">{{ restoring ? 'Restoring…' : 'Restore this version' }}</Button>
+        <Button size="sm" variant="secondary" :disabled="!canRestore" @click="state.restore()">{{ restoring ? t('versions.restoring') : t('versions.restore') }}</Button>
       </div>
     </aside>
     <div class="main">

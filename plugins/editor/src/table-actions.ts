@@ -17,6 +17,7 @@ import {
 } from 'prosemirror-tables'
 import { placeBlocks } from './block-placement'
 import { editorMode } from './editor-mode'
+import { t } from './i18n/messages'
 
 export const insertTable: Command = (state, dispatch) => {
   const {
@@ -56,18 +57,18 @@ const selectCells =
   }
 
 export const TABLE_ACTIONS = [
-  { id: 'select-row', label: 'Select row', icon: 'lu:rows-3', run: selectCells(true) },
-  { id: 'select-column', label: 'Select column', icon: 'lu:columns-3', run: selectCells(false) },
-  { id: 'row-before', label: 'Insert row above', icon: 'lu:arrow-up-to-line', run: addRowBefore },
-  { id: 'row-after', label: 'Insert row below', icon: 'lu:arrow-down-to-line', run: addRowAfter },
-  { id: 'column-before', label: 'Insert column left', icon: 'lu:arrow-left-to-line', run: addColumnBefore },
-  { id: 'column-after', label: 'Insert column right', icon: 'lu:arrow-right-to-line', run: addColumnAfter },
-  { id: 'header', label: 'Toggle header row', icon: 'lu:panel-top', run: toggleHeaderRow },
-  { id: 'merge', label: 'Merge cells', icon: 'lu:combine', run: mergeCells },
-  { id: 'split', label: 'Split cell', icon: 'lu:split', run: splitCell },
-  { id: 'delete-row', label: 'Delete row', icon: 'lu:trash-2', run: deleteRow },
-  { id: 'delete-column', label: 'Delete column', icon: 'lu:trash-2', run: deleteColumn },
-  { id: 'delete-table', label: 'Delete table', icon: 'lu:trash-2', run: deleteTable },
+  { id: 'select-row', label: () => t('table.selectRow'), icon: 'lu:rows-3', run: selectCells(true) },
+  { id: 'select-column', label: () => t('table.selectColumn'), icon: 'lu:columns-3', run: selectCells(false) },
+  { id: 'row-before', label: () => t('table.rowBefore'), icon: 'lu:arrow-up-to-line', run: addRowBefore },
+  { id: 'row-after', label: () => t('table.rowAfter'), icon: 'lu:arrow-down-to-line', run: addRowAfter },
+  { id: 'column-before', label: () => t('table.columnBefore'), icon: 'lu:arrow-left-to-line', run: addColumnBefore },
+  { id: 'column-after', label: () => t('table.columnAfter'), icon: 'lu:arrow-right-to-line', run: addColumnAfter },
+  { id: 'header', label: () => t('table.header'), icon: 'lu:panel-top', run: toggleHeaderRow },
+  { id: 'merge', label: () => t('table.merge'), icon: 'lu:combine', run: mergeCells },
+  { id: 'split', label: () => t('table.split'), icon: 'lu:split', run: splitCell },
+  { id: 'delete-row', label: () => t('table.deleteRow'), icon: 'lu:trash-2', run: deleteRow },
+  { id: 'delete-column', label: () => t('table.deleteColumn'), icon: 'lu:trash-2', run: deleteColumn },
+  { id: 'delete-table', label: () => t('table.deleteTable'), icon: 'lu:trash-2', run: deleteTable },
 ].map((action) => {
   const run: Command = (state, dispatch, view) =>
     editorMode(state) === 'editable' && action.run(state, dispatch ? (tr) => dispatch(closeHistory(tr)) : undefined, view)

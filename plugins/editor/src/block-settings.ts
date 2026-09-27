@@ -1,25 +1,28 @@
+import { readText } from '@arxhub/i18n'
 import type { Attrs, Node } from 'prosemirror-model'
 import { type Command, type EditorState, NodeSelection, Plugin, PluginKey, Selection } from 'prosemirror-state'
 import type { EditorView } from 'prosemirror-view'
 import type { ArxEditorComponent } from './editor-extension'
 import { editorMode } from './editor-mode'
+import { t } from './i18n/messages'
 
 export type InspectorTarget = { kind: 'page' } | { kind: 'block'; pos: number; type: string; id: string | null } | null
 export const inspectorKey = new PluginKey<InspectorTarget>('arx-inspector')
-export const BLOCK_SETTINGS_LABELS: Readonly<Record<string, string>> = {
-  columns: 'Columns',
-  table: 'Table',
-  select: 'Dropdown',
-  data_view: 'Collection',
-  code_block: 'Code',
-  image_block: 'Image',
-  attachment: 'Attachment',
-  callout: 'Callout',
-  section: 'Section',
+const BLOCK_SETTINGS_LABELS: Readonly<Record<string, () => string>> = {
+  columns: () => t('settings.labels.columns'),
+  table: () => t('settings.labels.table'),
+  select: () => t('settings.labels.select'),
+  data_view: () => t('settings.labels.dataView'),
+  code_block: () => t('settings.labels.code'),
+  image_block: () => t('settings.labels.image'),
+  attachment: () => t('settings.labels.attachment'),
+  callout: () => t('settings.labels.callout'),
+  section: () => t('settings.labels.section'),
 }
 export function settingsLabel(node: Node, components: Readonly<Record<string, ArxEditorComponent>> = {}): string | null {
   const definition = components[node.type.name]
-  return definition?.settings ? (definition.settingsLabel ?? node.type.name) : (BLOCK_SETTINGS_LABELS[node.type.name] ?? null)
+  if (definition?.settings) return readText(definition.settingsLabel) ?? node.type.name
+  return BLOCK_SETTINGS_LABELS[node.type.name]?.() ?? null
 }
 export function settingsAt(state: EditorState, pos: number, components: Readonly<Record<string, ArxEditorComponent>> = {}): number | null {
   const $pos = state.doc.resolve(Math.max(0, Math.min(pos, state.doc.content.size)))

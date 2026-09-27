@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button, ChipInput, Icon, IconButton, Input } from '@arxhub/uikit/core'
 import type { ArxEditorControlProps } from '../control-views'
+import { t } from '../i18n/messages'
 import { usePropertiesBlock } from './use-properties-block'
 
 const props = defineProps<ArxEditorControlProps>()
@@ -8,14 +9,14 @@ const { attrs, editable, canFavorite, setTags, onFavoriteToggle, updateField, ad
 </script>
 
 <template>
-  <section class="properties-block" aria-label="Document properties">
+  <section class="properties-block" :aria-label="t('properties.region')">
     <div class="properties-row">
       <ChipInput
         class="tags"
         :model-value="attrs.tags"
         :disabled="!editable"
-        placeholder="Add tag…"
-        aria-label="Tags"
+        :placeholder="t('properties.addTag')"
+        :aria-label="t('properties.tags')"
         @update:model-value="setTags"
       />
       <IconButton
@@ -23,8 +24,8 @@ const { attrs, editable, canFavorite, setTags, onFavoriteToggle, updateField, ad
         :icon="attrs.favorite ? 'lu:star' : 'lu:star-off'"
         :active="attrs.favorite"
         :disabled="!canFavorite"
-        tooltip="Favorite"
-        aria-label="Favorite"
+        :tooltip="t('properties.favorite')"
+        :aria-label="t('properties.favorite')"
         @click="onFavoriteToggle"
       />
     </div>
@@ -34,26 +35,26 @@ const { attrs, editable, canFavorite, setTags, onFavoriteToggle, updateField, ad
         <Input
           :model-value="field.key"
           :disabled="!editable"
-          aria-label="Field name"
-          placeholder="Field"
+          :aria-label="t('properties.fieldName')"
+          :placeholder="t('properties.field')"
           @update:model-value="updateField(index, { key: $event })"
         />
         <Input
           :model-value="field.value"
           :disabled="!editable"
-          aria-label="Field value"
-          placeholder="Value"
+          :aria-label="t('properties.fieldValue')"
+          :placeholder="t('properties.value')"
           @update:model-value="updateField(index, { value: $event })"
         />
-        <IconButton v-if="editable" size="sm" icon="lu:x" aria-label="Remove field" @click="removeFieldRow(index)" />
+        <IconButton v-if="editable" size="sm" icon="lu:x" :aria-label="t('properties.removeField')" @click="removeFieldRow(index)" />
       </div>
       <Button v-if="editable" size="sm" variant="ghost" @click="addFieldRow">
         <Icon name="lu:plus" :size="14" />
-        Add field
+        {{ t('properties.addField') }}
       </Button>
     </div>
 
-    <p v-if="attrs.subject?.path" class="subject">for {{ attrs.subject.path }}</p>
+    <p v-if="attrs.subject?.path" class="subject">{{ t('properties.subject', { path: attrs.subject.path }) }}</p>
   </section>
 </template>
 

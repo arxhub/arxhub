@@ -25,7 +25,9 @@ import { createDocumentIcons } from './document-icons'
 import { createDocumentLinkStore } from './document-link-store'
 import { ArxEditorExtension } from './editor-extension'
 import { deserialize, serialize } from './editor-format'
+import { reasonText } from './errors'
 import { declareProseMirrorChords } from './hotkeys'
+import { t } from './i18n/messages'
 import { manifest } from './manifest'
 import { arxPathFor, isMarkdownPath, markdownToArx } from './md-to-arx'
 import { ensureProperties } from './properties'
@@ -45,7 +47,7 @@ export const EDITOR_VIEWER: DocumentViewer = {
   // rather than derived from `id`: the two strings are equal today, and a lookup that relied on that
   // would break silently the day one of them changed.
   panelId: PANEL_ID,
-  title: 'Document',
+  title: () => t('document.viewer'),
   extensions: ['.arx'],
   component: ArxEditor,
   // Ahead of the plain text editor, so a format with a richer viewer is not claimed by the plain one.
@@ -148,6 +150,7 @@ export class ArxEditorPlugin extends Plugin {
     // the frames read the type registry (F-14/F-16). Dropping it before that takes this editor off the
     // screen.
     const { store } = ctx.extensions.get(PanelStoreExtension)
+    // design-ignore: a document panel's definition title is only a seed, never drawn — its tab shows the file's name.
     store.registerPanel({
       id: EDITOR_VIEWER.panelId,
       title: 'ArxEditor',
@@ -183,7 +186,7 @@ export class ArxEditorPlugin extends Plugin {
     return [
       {
         id: 'convert-to-arx',
-        label: 'Convert to .arx',
+        label: t('convert.action'),
         icon: 'lu:file-symlink',
         opensObject: true,
         onSelect: () => {
@@ -191,7 +194,7 @@ export class ArxEditorPlugin extends Plugin {
           // menu entry that does nothing — the same policy as the explorer's own runAction.
           this.convert(path, explorer, shell, vault).catch((error) => {
             this.logger.error(`[editor] failed to convert ${path} to .arx:`, error)
-            toaster.create({ title: 'Could not convert to .arx', description: reasonOf(error), type: 'error' })
+            toaster.create({ title: t('convert.failed'), description: reasonOf(error), type: 'error' })
           })
         },
       },
@@ -229,13 +232,13 @@ export class ArxEditorPlugin extends Plugin {
     if (warnings.length > 0) {
       for (const warning of warnings) this.logger.warn(`[editor] converting ${path}: ${warning}`)
       toaster.create({
-        title: `Converted to ${name}`,
-        description: `${basename(path)} was left in place. ${warnings.length} thing${warnings.length === 1 ? '' : 's'} markdown says could not be kept as-is — see the log.`,
+        title: t('convert.done', { name }),
+        description: t('convert.lossy', { name: basename(path), count: warnings.length }),
         type: 'warning',
       })
       return
     }
-    toaster.create({ title: `Converted to ${name}`, description: `${basename(path)} was left in place.`, type: 'success' })
+    toaster.create({ title: t('convert.done', { name }), description: t('convert.leftInPlace', { name: basename(path) }), type: 'success' })
   }
 
   // A-48: every file gets a way to hold tags, a favourite flag and key/value fields. An `.arx` document
@@ -254,13 +257,13 @@ export class ArxEditorPlugin extends Plugin {
     return [
       {
         id: 'properties',
-        label: 'Properties…',
+        label: t('propertiesCard.action'),
         icon: 'lu:tags',
         opensObject: true,
         onSelect: () => {
           this.openPropertiesCard(path, explorer, shell, vault, repository).catch((error) => {
             this.logger.error(`[editor] failed to open properties for ${path}:`, error)
-            toaster.create({ title: 'Could not open properties', description: reasonOf(error), type: 'error' })
+            toaster.create({ title: t('propertiesCard.failed'), description: reasonOf(error), type: 'error' })
           })
         },
       },
@@ -292,9 +295,9 @@ function confirmReplace(name: string): Promise<boolean> {
   return new Promise((resolve) => {
     let confirmed = false
     modals.openConfirmModal({
-      title: 'Replace file',
-      content: `"${name}" already exists. Replace it with the converted note?`,
-      labels: { confirm: 'Replace', cancel: 'Cancel' },
+      title: t('convert.replaceTitle'),
+      content: t('convert.replaceContent', { name }),
+      labels: { confirm: t('convert.replace'), cancel: t('convert.cancel') },
       confirmProps: { danger: true },
       onConfirm: () => {
         confirmed = true
@@ -305,6 +308,5 @@ function confirmReplace(name: string): Promise<boolean> {
 }
 
 function reasonOf(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error ?? '')
-  return message.trim() || 'The reason was not reported — see the log.'
+  return reasonText(error).trim() || t('unknownReason')
 }

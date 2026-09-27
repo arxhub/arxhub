@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { Row } from '@arxhub/uikit/core'
 import type { ArxDataItem } from '../data-sources'
+import { t } from '../i18n/messages'
 
 defineProps<{ items: ArxDataItem[] }>()
 const emit = defineEmits<{ open: [item: ArxDataItem] }>()
 </script>
 
 <template>
-  <div aria-label="Data list">
+  <div :aria-label="t('data.list')">
     <Row v-for="item in items" :key="item.id" as="button" type="button" wrap @click="emit('open', item)">
       <span class="item-content">
         <span class="title">{{ item.title }}</span>

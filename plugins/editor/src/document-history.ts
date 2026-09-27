@@ -3,6 +3,7 @@ import type { FileHistory } from '@arxhub/sync'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import type { Node } from 'prosemirror-model'
 import { isRecord } from './document-migrations'
+import { editorError } from './errors'
 
 export interface ArxSavedVersion {
   id: string
@@ -53,7 +54,7 @@ export function createSnapshotHistory(
   const migrations = new Map<string, Promise<void>>()
   const history = () => {
     const value = resolve()
-    if (!value) throw validation('File history is unavailable')
+    if (!value) throw editorError('FileHistoryUnavailableError')
     return value
   }
   async function migrate(id: string): Promise<void> {
@@ -119,7 +120,7 @@ export function createSnapshotHistory(
     async read(id, version) {
       await migrate(id)
       const entry = (await history().list({ identity: id })).find((item) => item.id === version.id && item.hash === version.hash)
-      if (!entry) throw validation('This saved version is unavailable')
+      if (!entry) throw editorError('SavedVersionUnavailableError')
       return { content: decoder.decode(await history().read({ identity: id }, entry)), path: entry.path.slice('vault/'.length) }
     },
     async record(id, content, path) {

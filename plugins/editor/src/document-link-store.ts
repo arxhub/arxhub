@@ -1,4 +1,3 @@
-import { validation } from '@arxhub/errors'
 import { basename } from '@arxhub/path'
 import type { SearchExtension } from '@arxhub/plugin-search'
 import type { VirtualFileSystem } from '@arxhub/vfs'
@@ -8,6 +7,7 @@ import { documentId, withDocumentId } from './document-history'
 import { type ArxDocumentLinks, type DocumentDestination, documentBlocks, documentHref } from './document-links'
 import type { ArxFormatConfig } from './document-migrations'
 import { deserialize, emptyDoc, serialize } from './editor-format'
+import { editorError } from './errors'
 
 export function createDocumentLinkStore(
   vfs: VirtualFileSystem,
@@ -22,11 +22,11 @@ export function createDocumentLinkStore(
     return { raw, doc: raw.length ? deserialize(schema(), raw, format?.()) : emptyDoc(schema()) }
   }
   async function prepare(path: string) {
-    if (!(await flush(path))) throw validation('Save the destination document before creating its link.')
+    if (!(await flush(path))) throw editorError('LinkDestinationUnsavedError')
     const { raw, doc } = await read(path)
     const prepared = identifyBlocks(withDocumentId(doc, documentId(doc) ?? crypto.randomUUID()))
     if (!prepared.eq(doc)) {
-      if (new TextDecoder().decode(await vfs.read(path)) !== raw) throw validation('The destination changed. Retry creating its link.')
+      if (new TextDecoder().decode(await vfs.read(path)) !== raw) throw editorError('LinkDestinationChangedError')
       await vfs.write(path, new TextEncoder().encode(serialize(prepared, format?.())))
     }
     return prepared
@@ -57,12 +57,7 @@ export function createDocumentLinkStore(
         if (raw && typeof raw === 'object' && 'documentId' in raw && raw.documentId === anchor.documentId) matches.push(file.pathname)
       }
       const target = matches.includes(path) ? path : matches.length === 1 ? matches[0] : null
-      if (!target)
-        throw validation(
-          matches.length
-            ? 'Several documents have this identity. Open the intended copy directly.'
-            : 'The linked document is no longer available.',
-        )
+      if (!target) throw editorError(matches.length ? 'DocumentIdentityAmbiguousError' : 'LinkedDocumentMissingError')
       await open(target, anchor)
     },
     async documents(query) {
@@ -86,7 +81,7 @@ export function createDocumentLinkStore(
       return documentBlocks(await prepare(path))
     },
     async backlinks(path) {
-      if (!search) throw validation('Enable the Search plugin to see backlinks.')
+      if (!search) throw editorError('BacklinksUnavailableError')
       const id = path.toLowerCase().endsWith('.arx') ? documentId((await read(path)).doc) : null
       const result = await search.query<DocumentDestination>(
         `SELECT DISTINCT d.path, d.title FROM ref r JOIN document d ON d.path = r.src_path WHERE r.target_path = $1 OR ($2::text IS NOT NULL AND strpos(r.target_raw, 'document=' || $2) > 0) ORDER BY d.path LIMIT 100`,

@@ -4,6 +4,7 @@ import { ScrollArea } from '@arxhub/uikit/core'
 import { computed } from 'vue'
 import type { ArxEditorControlProps } from '../control-views'
 import { isRecord } from '../document-migrations'
+import { t } from '../i18n/messages'
 
 const props = defineProps<ArxEditorControlProps>()
 const raw = computed(() => props.node.attrs.raw)
@@ -16,10 +17,10 @@ function textOf(value: unknown): string {
 
 <template>
   <div class="unknown-block">
-    <strong>Unavailable block: {{ raw.type }}</strong>
-    <p>This block needs a compatible editor plugin. Its original data is preserved when you save.</p>
+    <strong>{{ t('unknown.title', { type: String(raw.type) }) }}</strong>
+    <p>{{ t('unknown.body') }}</p>
     <p v-if="textOf(raw)" class="preserved-text">{{ textOf(raw) }}</p>
-    <details><summary>Preserved data</summary><ScrollArea axis="both" class="preserved-data"><pre>{{ JSON.stringify(raw, null, 2) }}</pre></ScrollArea></details>
+    <details><summary>{{ t('unknown.preserved') }}</summary><ScrollArea axis="both" class="preserved-data"><pre>{{ JSON.stringify(raw, null, 2) }}</pre></ScrollArea></details>
   </div>
 </template>
 

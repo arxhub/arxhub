@@ -2,6 +2,7 @@
 import { Button, IconButton, Input } from '@arxhub/uikit/core'
 import { ref } from 'vue'
 import { revealDocumentMatch } from '../document-search'
+import { t } from '../i18n/messages'
 import { type DocumentFindProps, useDocumentFind } from './use-document-find'
 
 const props = defineProps<DocumentFindProps>()
@@ -11,23 +12,23 @@ const replacing = ref(false)
 </script>
 
 <template>
-  <section ref="root" class="document-find" role="search" aria-label="Find in document" @keydown.esc.stop.prevent="emit('close')">
+  <section ref="root" class="document-find" role="search" :aria-label="t('tools.find')" @keydown.esc.stop.prevent="emit('close')">
     <div class="query-row">
-      <Input v-model="query" class="find-input" aria-label="Find text" placeholder="Find in document" @keydown.enter.prevent="revealDocumentMatch(view, $event.shiftKey ? -1 : 1)" />
-      <IconButton size="xl" icon="lu:x" tooltip="Close find" @click="emit('close')" />
+      <Input v-model="query" class="find-input" :aria-label="t('find.aria')" :placeholder="t('tools.find')" @keydown.enter.prevent="revealDocumentMatch(view, $event.shiftKey ? -1 : 1)" />
+      <IconButton size="xl" icon="lu:x" :tooltip="t('find.close')" @click="emit('close')" />
     </div>
     <div class="options-row">
-      <span class="find-count" role="status">{{ search?.matches.length ? `${search.index + 1} of ${search.matches.length}` : 'No matches' }}</span>
-      <IconButton size="xl" icon="lu:case-sensitive" tooltip="Match case" :active="matchCase" :aria-pressed="matchCase" @click="matchCase = !matchCase" />
-      <IconButton size="xl" icon="lu:chevron-up" tooltip="Previous match" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, -1)" />
-      <IconButton size="xl" icon="lu:chevron-down" tooltip="Next match" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, 1)" />
-      <IconButton v-if="mode === 'editable'" size="xl" icon="lu:replace" tooltip="Replace text" :active="replacing" :aria-expanded="replacing" @click="replacing = !replacing" />
+      <span class="find-count" role="status">{{ search?.matches.length ? t('find.count', { index: search.index + 1, total: search.matches.length }) : t('find.none') }}</span>
+      <IconButton size="xl" icon="lu:case-sensitive" :tooltip="t('find.matchCase')" :active="matchCase" :aria-pressed="matchCase" @click="matchCase = !matchCase" />
+      <IconButton size="xl" icon="lu:chevron-up" :tooltip="t('find.previous')" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, -1)" />
+      <IconButton size="xl" icon="lu:chevron-down" :tooltip="t('find.next')" :disabled="!search?.matches.length" @click="revealDocumentMatch(view, 1)" />
+      <IconButton v-if="mode === 'editable'" size="xl" icon="lu:replace" :tooltip="t('find.replaceText')" :active="replacing" :aria-expanded="replacing" @click="replacing = !replacing" />
     </div>
     <template v-if="mode === 'editable' && replacing">
-      <Input v-model="replacement" aria-label="Replace with" placeholder="Replace with" @keydown.enter.prevent="replace()" />
+      <Input v-model="replacement" :aria-label="t('find.replaceWith')" :placeholder="t('find.replaceWith')" @keydown.enter.prevent="replace()" />
       <div class="replace-actions">
-        <Button variant="secondary" size="lg" :disabled="!search?.matches.length" @click="replace()">Replace</Button>
-        <Button variant="secondary" size="lg" :disabled="!search?.matches.length" @click="replace(true)">Replace all</Button>
+        <Button variant="secondary" size="lg" :disabled="!search?.matches.length" @click="replace()">{{ t('find.replace') }}</Button>
+        <Button variant="secondary" size="lg" :disabled="!search?.matches.length" @click="replace(true)">{{ t('find.replaceAll') }}</Button>
       </div>
     </template>
   </section>

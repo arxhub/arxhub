@@ -4,18 +4,20 @@ import type { Command } from 'prosemirror-state'
 import { BlockSelection, selectedBlocks } from './block-selection'
 import { runPreparedCommand } from './command-state'
 import { editorMode } from './editor-mode'
+import { t } from './i18n/messages'
 
+// Labels are read when the menu opens, so it speaks the language shown then.
 export const BLOCK_TRANSFORMS = [
-  { id: 'paragraph', label: 'Paragraph', icon: 'lu:pilcrow' },
-  { id: 'heading-1', label: 'Heading 1', icon: 'lu:heading-1' },
-  { id: 'heading-2', label: 'Heading 2', icon: 'lu:heading-2' },
-  { id: 'heading-3', label: 'Heading 3', icon: 'lu:heading-3' },
-  { id: 'bullet_list', label: 'Bulleted list', icon: 'lu:list' },
-  { id: 'ordered_list', label: 'Numbered list', icon: 'lu:list-ordered' },
-  { id: 'task_list', label: 'Task list', icon: 'lu:list-checks' },
-  { id: 'blockquote', label: 'Quote', icon: 'lu:quote' },
-  { id: 'callout', label: 'Callout', icon: 'lu:info' },
-  { id: 'code_block', label: 'Code block', icon: 'lu:code' },
+  { id: 'paragraph', label: () => t('blocks.paragraph'), icon: 'lu:pilcrow' },
+  { id: 'heading-1', label: () => t('blocks.heading1'), icon: 'lu:heading-1' },
+  { id: 'heading-2', label: () => t('blocks.heading2'), icon: 'lu:heading-2' },
+  { id: 'heading-3', label: () => t('blocks.heading3'), icon: 'lu:heading-3' },
+  { id: 'bullet_list', label: () => t('blocks.bulletList'), icon: 'lu:list' },
+  { id: 'ordered_list', label: () => t('blocks.orderedList'), icon: 'lu:list-ordered' },
+  { id: 'task_list', label: () => t('blocks.taskList'), icon: 'lu:list-checks' },
+  { id: 'blockquote', label: () => t('blocks.quote'), icon: 'lu:quote' },
+  { id: 'callout', label: () => t('blocks.callout'), icon: 'lu:info' },
+  { id: 'code_block', label: () => t('blocks.code'), icon: 'lu:code' },
 ] as const
 
 type Target = (typeof BLOCK_TRANSFORMS)[number]['id']

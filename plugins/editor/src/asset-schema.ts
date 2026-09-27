@@ -1,6 +1,7 @@
 import { validation } from '@arxhub/errors'
 import type { NodeSpec } from 'prosemirror-model'
 import { validateAssetPath } from './assets'
+import { t } from './i18n/messages'
 
 function assetNode(image: boolean): NodeSpec {
   return {
@@ -63,7 +64,7 @@ function assetNode(image: boolean): NodeSpec {
     toDOM: (node) => [
       'div',
       { 'data-arx-asset': image ? 'image' : 'file', 'data-asset': JSON.stringify(node.attrs) },
-      node.attrs.caption || node.attrs.name || (image ? 'Image' : 'File attachment'),
+      node.attrs.caption || node.attrs.name || t(image ? 'blocks.image' : 'blocks.attachment'),
     ],
   }
 }

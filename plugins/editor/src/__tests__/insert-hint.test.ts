@@ -1,3 +1,4 @@
+import { readText } from '@arxhub/i18n'
 import { EditorState, TextSelection } from 'prosemirror-state'
 import type { DecorationSet } from 'prosemirror-view'
 import { describe, expect, it } from 'vitest'
@@ -24,8 +25,8 @@ function hints(mode: EditorMode, cursor: number): { from: number; to: number; te
 
 describe('insert hint', () => {
   it('marks the empty paragraph holding the caret, and only that one', () => {
-    expect(hints('editable', 12)).toEqual([{ ...emptyParagraph, text: INSERT_HINT }])
-    expect(hints('editable', 16)).toEqual([{ ...taskParagraph, text: INSERT_HINT }])
+    expect(hints('editable', 12)).toEqual([{ ...emptyParagraph, text: readText(INSERT_HINT) }])
+    expect(hints('editable', 16)).toEqual([{ ...taskParagraph, text: readText(INSERT_HINT) }])
   })
 
   it('shows nothing for a paragraph with text, and nothing outside editable', () => {
