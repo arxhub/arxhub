@@ -6,6 +6,7 @@ import {
   toSchemaReference,
 } from '@arxhub/sql'
 import type { SearchExtension } from '../search-extension'
+import { rejectionText } from '../search-texts'
 
 export type SchemaReferenceLoad = { ok: true; tables: SqlSchemaReferenceTable[] } | { ok: false; message: string }
 
@@ -22,7 +23,7 @@ export async function loadSchemaReference(search: SearchExtension): Promise<Sche
   // mid-table, and a table missing its last columns reads as the whole of it.
   const answer = await search.readOnly<SqlSchemaReferenceRow>(SCHEMA_REFERENCE_SQL, [], { maxRows: SCHEMA_REFERENCE_MAX_ROWS })
   // Not cached: a failure is the one outcome worth trying again on the next opening.
-  if (!answer.ok) return { ok: false, message: answer.message }
+  if (!answer.ok) return { ok: false, message: rejectionText(answer) }
   cached = toSchemaReference(answer.rows)
   return { ok: true, tables: cached }
 }

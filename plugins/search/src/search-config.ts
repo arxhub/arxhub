@@ -15,93 +15,73 @@ import { DEFAULT_DEBOUNCE_MS } from './index-queue'
 // `sqlMaxRows` — because the form shows the key under every control as its signature line, and the group
 // a setting belongs to is then readable in the value itself. TOML quotes such a key ("sql.maxRows" = 500)
 // rather than nesting it, which round-trips exactly; a nested table would not reach the form at all,
-// because the field model reads top-level properties only.
-export const SearchConfigSchema = Type.Object(
-  {
-    'sql.maxRows': Type.Integer({
-      title: 'Row limit',
-      description: 'Rows a console query may return. Anything past this is dropped and the console says so.',
-      group: 'SQL console',
-      default: DEFAULT_MAX_ROWS,
-      minimum: 1,
+// because the field model reads top-level properties only. The words for each field — and for each `group`
+// id — are the catalog's (`config` in i18n/en.ts): the schema describes the file, the catalog the screen.
+export const SearchConfigSchema = Type.Object({
+  'sql.maxRows': Type.Integer({
+    group: 'sql',
+    default: DEFAULT_MAX_ROWS,
+    minimum: 1,
+  }),
+  'sql.timeoutMs': Type.Integer({
+    group: 'sql',
+    unit: 'ms',
+    default: DEFAULT_TIMEOUT_MS,
+    minimum: 1,
+  }),
+  'search.snippetsPerDocument': Type.Integer({
+    group: 'search',
+    default: DEFAULT_SNIPPETS_PER_DOCUMENT,
+    // At least one: a result is never a bare path (BE 4.7.4) — a document nothing matched inside is
+    // still shown with its opening block — so zero is a value the search could not have honoured.
+    minimum: 1,
+    maximum: 10,
+  }),
+  'search.snippetWords': Type.Integer({
+    group: 'search',
+    unit: 'words',
+    default: DEFAULT_SNIPPET_WORDS,
+    minimum: 4,
+    maximum: 100,
+  }),
+  'search.fuzzyThreshold': Type.Number({
+    group: 'search',
+    default: DEFAULT_FUZZY_THRESHOLD,
+    minimum: 0,
+    maximum: 1,
+    multipleOf: 0.05,
+  }),
+  'index.debounceMs': Type.Integer({
+    group: 'index',
+    unit: 'ms',
+    default: DEFAULT_DEBOUNCE_MS,
+    minimum: 0,
+  }),
+  'index.maxFileSize': Type.Integer({
+    group: 'index',
+    unit: 'bytes',
+    default: DEFAULT_MAX_FILE_SIZE,
+    minimum: 1,
+  }),
+  // Separate from the prose limit: a format read by its owner's extractor (a PDF, a workbook) is larger
+  // per word of text than a note is, and under 2 MiB most PDFs would be found by name only.
+  'index.maxExtractedFileSize': Type.Integer({
+    group: 'index',
+    unit: 'bytes',
+    default: DEFAULT_MAX_EXTRACTED_FILE_SIZE,
+    minimum: 1,
+  }),
+  // Optional, unlike the numbers above, and not for want of a default: an empty list is the normal state
+  // of this setting, so a reader is never asked for one. A required field that is legitimately empty also
+  // blocks the global save the moment the section is opened — the form counts an unedited empty required
+  // field as invalid while deliberately not showing why.
+  'index.exclude': Type.Optional(
+    Type.Array(Type.String(), {
+      group: 'index',
+      default: [],
     }),
-    'sql.timeoutMs': Type.Integer({
-      title: 'Time limit',
-      description: 'How long a console query may run. Applied to the statement — see the note in the console.',
-      group: 'SQL console',
-      unit: 'ms',
-      default: DEFAULT_TIMEOUT_MS,
-      minimum: 1,
-    }),
-    'search.snippetsPerDocument': Type.Integer({
-      title: 'Snippets per document',
-      description: 'How many matching fragments a result row shows under its title.',
-      group: 'Search',
-      default: DEFAULT_SNIPPETS_PER_DOCUMENT,
-      // At least one: a result is never a bare path (BE 4.7.4) — a document nothing matched inside is
-      // still shown with its opening block — so zero is a value the search could not have honoured.
-      minimum: 1,
-      maximum: 10,
-    }),
-    'search.snippetWords': Type.Integer({
-      title: 'Snippet length',
-      description: 'Words of context around a match.',
-      group: 'Search',
-      unit: 'words',
-      default: DEFAULT_SNIPPET_WORDS,
-      minimum: 4,
-      maximum: 100,
-    }),
-    'search.fuzzyThreshold': Type.Number({
-      title: 'Title match tolerance',
-      description: 'How close a title has to be to count as a match on its own. 1 means identical — which turns fuzzy titles off.',
-      group: 'Search',
-      default: DEFAULT_FUZZY_THRESHOLD,
-      minimum: 0,
-      maximum: 1,
-      multipleOf: 0.05,
-    }),
-    'index.debounceMs': Type.Integer({
-      title: 'Pause after a write',
-      description: 'How long after the last save a note is reindexed. Saving is not one write, so nothing is gained by reacting to each.',
-      group: 'Index',
-      unit: 'ms',
-      default: DEFAULT_DEBOUNCE_MS,
-      minimum: 0,
-    }),
-    'index.maxFileSize': Type.Integer({
-      title: 'Largest file to read',
-      description: 'A file past this size is indexed by its name and metadata only. Changing it rebuilds the index.',
-      group: 'Index',
-      unit: 'bytes',
-      default: DEFAULT_MAX_FILE_SIZE,
-      minimum: 1,
-    }),
-    // Separate from the prose limit: a format read by its owner's extractor (a PDF, a workbook) is larger
-    // per word of text than a note is, and under 2 MiB most PDFs would be found by name only.
-    'index.maxExtractedFileSize': Type.Integer({
-      title: 'Largest file to extract',
-      description: 'The same limit for formats read by their own plugin — PDFs, workbooks, .arx documents. Changing it rebuilds the index.',
-      group: 'Index',
-      unit: 'bytes',
-      default: DEFAULT_MAX_EXTRACTED_FILE_SIZE,
-      minimum: 1,
-    }),
-    // Optional, unlike the numbers above, and not for want of a default: an empty list is the normal state
-    // of this setting, so a reader is never asked for one. A required field that is legitimately empty also
-    // blocks the global save the moment the section is opened — the form counts an unedited empty required
-    // field as invalid while deliberately not showing why.
-    'index.exclude': Type.Optional(
-      Type.Array(Type.String(), {
-        title: 'Paths not to index',
-        description: 'Glob masks, matched against the path inside the content store. Changing this rebuilds the index.',
-        group: 'Index',
-        default: [],
-      }),
-    ),
-  },
-  { description: 'What the index covers, how search reads it, and the limits a console query runs under.' },
-)
+  ),
+})
 
 export type SearchConfig = Static<typeof SearchConfigSchema>
 

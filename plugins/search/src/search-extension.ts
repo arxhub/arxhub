@@ -1,5 +1,6 @@
 import type { PluginConfig } from '@arxhub/config'
 import { Extension, type ExtensionArgs } from '@arxhub/core'
+import { formatNumber } from '@arxhub/i18n'
 import {
   type DocumentExtractor,
   type Indexer,
@@ -18,6 +19,7 @@ import {
 import { ref, shallowRef } from 'vue'
 import { searchIndexUnavailable } from './errors'
 import { ExtractorRegistry } from './extractor-registry'
+import { t } from './i18n/messages'
 import { DEFAULT_SEARCH_SETTINGS, reindexRequired, type SearchSettings } from './search-config'
 
 // opening — the index is being opened, nothing can be asked yet. ready — it answers. scanning — it
@@ -39,6 +41,8 @@ export class SearchExtension extends Extension {
   readonly processed = ref(0)
   readonly lastScan = ref<Date | null>(null)
   readonly error = ref<string | null>(null)
+  // The same failure as thrown, beside its English text: the status line translates it by its code.
+  readonly failure = shallowRef<unknown>(null)
   // Bumped every time the index's contents may have moved under a reader — a walk making progress, a saved
   // note reindexed, a deleted one swept. A counter rather than a count, because an edit that leaves the
   // number of documents alone still changes what a query answers, and a list already on screen has no other
@@ -116,8 +120,8 @@ export class SearchExtension extends Extension {
   // What the shell background line shows while the index opens or a walk runs — no owner, same wording as
   // the Search rail and settings section (`useIndexStatus`).
   busyWork(): { label: string } | null {
-    if (this.status.value === 'opening') return { label: 'Opening the index…' }
-    if (this.status.value === 'scanning') return { label: `Indexing… ${this.processed.value} processed` }
+    if (this.status.value === 'opening') return { label: t('index.opening') }
+    if (this.status.value === 'scanning') return { label: t('index.indexing', { processed: formatNumber(this.processed.value) }) }
     return null
   }
 

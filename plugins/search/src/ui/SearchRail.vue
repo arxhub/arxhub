@@ -4,6 +4,7 @@ import { DEFAULT_SEARCH_LIMIT, SEARCH_QUALIFIERS } from '@arxhub/sql'
 import { IconButton, ScrollArea, SearchField, SectionLabel, StatusDot, Strip } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onUnmounted, ref } from 'vue'
+import { t } from '../i18n/messages'
 import { SearchExtension } from '../search-extension'
 import SearchFilters from './SearchFilters.vue'
 // biome-ignore lint/style/useImportType: used in the template and as InstanceType<typeof SearchResultList>
@@ -39,17 +40,17 @@ const controller = createSearchController({
 // What each qualifier narrows by. Driven off the parser's own list, so the hint cannot promise a filter
 // the parser does not understand — and a qualifier added there without a line here shows up unexplained
 // rather than silently missing.
-const QUALIFIER_DOES: Record<(typeof SEARCH_QUALIFIERS)[number], string> = {
-  title: 'match the heading only',
-  path: 'match the file path',
-  tag: 'a #tag in the note',
-  ext: 'a file extension',
-  in: 'a folder to look inside',
-  is: 'favorite — is:favorite',
-  prop: 'a properties field — prop:key=value',
+const QUALIFIER_DOES: Record<(typeof SEARCH_QUALIFIERS)[number], () => string> = {
+  title: () => t('qualifiers.title'),
+  path: () => t('qualifiers.path'),
+  tag: () => t('qualifiers.tag'),
+  ext: () => t('qualifiers.ext'),
+  in: () => t('qualifiers.in'),
+  is: () => t('qualifiers.is'),
+  prop: () => t('qualifiers.prop'),
 }
 
-const QUALIFIER_HINTS = SEARCH_QUALIFIERS.map((name) => ({ name, does: QUALIFIER_DOES[name] }))
+const qualifierHints = computed(() => SEARCH_QUALIFIERS.map((name) => ({ name, does: QUALIFIER_DOES[name]() })))
 
 const field = ref<InstanceType<typeof SearchField> | null>(null)
 const list = ref<InstanceType<typeof SearchResultList> | null>(null)
@@ -81,10 +82,7 @@ function reset(): void {
   focusInput()
 }
 
-const countLabel = computed(() => {
-  const total = controller.totalCount.value
-  return total === 1 ? '1 document' : `${total} documents`
-})
+const countLabel = computed(() => t('rail.documents', { count: controller.totalCount.value }))
 
 onUnmounted(controller.dispose)
 </script>
@@ -95,8 +93,8 @@ onUnmounted(controller.dispose)
       <SearchField
         ref="field"
         v-model="query"
-        placeholder="Search notes…"
-        aria-label="Search"
+        :placeholder="t('rail.placeholder')"
+        :aria-label="t('rail.label')"
         autofocus
         :disabled="index.unavailable.value"
         @keydown.down.prevent="enterList"
@@ -119,7 +117,7 @@ onUnmounted(controller.dispose)
         <span>{{ countLabel }}</span>
         <!-- The list is cut, and a total that is bigger than what is on screen has to say so — otherwise
              the missing rows read as "not found". -->
-        <span v-if="controller.hasMore.value" class="muted">list truncated</span>
+        <span v-if="controller.hasMore.value" class="muted">{{ t('rail.truncated') }}</span>
       </template>
     </div>
 
@@ -135,9 +133,9 @@ onUnmounted(controller.dispose)
          under the field as a bare "title: path: tag: ext: in:" — which names the filters without saying
          what any of them does. Same facts, in the space that was already going spare. -->
     <ScrollArea v-else class="results-filler" content-class="results-filler-content">
-      <SectionLabel>Narrow a search</SectionLabel>
+      <SectionLabel>{{ t('rail.narrow') }}</SectionLabel>
       <dl class="qualifiers">
-        <div v-for="qualifier in QUALIFIER_HINTS" :key="qualifier.name" class="qualifier">
+        <div v-for="qualifier in qualifierHints" :key="qualifier.name" class="qualifier">
           <dt>{{ qualifier.name }}:</dt>
           <dd>{{ qualifier.does }}</dd>
         </div>
@@ -157,11 +155,11 @@ onUnmounted(controller.dispose)
         <IconButton
           size="lg"
           icon="lu:refresh-cw"
-          tooltip="Reindex"
+          :tooltip="t('index.reindex')"
           :disabled="index.unavailable.value || index.busy.value"
           @click="index.reindex()"
         />
-        <IconButton size="lg" icon="lu:database" tooltip="SQL console" @click="sqlConsole.open()" />
+        <IconButton size="lg" icon="lu:database" :tooltip="t('rail.sqlConsole')" @click="sqlConsole.open()" />
       </template>
     </Strip>
   </div>

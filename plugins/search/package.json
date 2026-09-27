@@ -22,6 +22,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/i18n": "workspace:*",
     "@arxhub/config": "workspace:*",
     "@arxhub/path": "workspace:*",
     "@sinclair/typebox": "catalog:shared",

@@ -26,7 +26,7 @@ describe('the settings schema', () => {
 
   it('groups the fields so the generated form reads as three sections in declaration order', () => {
     const groups = Object.values(SearchConfigSchema.properties).map((field) => (field as { group?: string }).group)
-    expect(groups).toEqual(['SQL console', 'SQL console', 'Search', 'Search', 'Search', 'Index', 'Index', 'Index', 'Index'])
+    expect(groups).toEqual(['sql', 'sql', 'search', 'search', 'search', 'index', 'index', 'index', 'index'])
   })
 
   it('names no widget: every field describes its data and lets the settings kit choose the control', () => {

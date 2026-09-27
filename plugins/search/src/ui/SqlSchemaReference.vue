@@ -4,6 +4,7 @@ import type { SqlSchemaReferenceColumn, SqlSchemaReferenceTable } from '@arxhub/
 import { ScrollArea } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted, ref, shallowRef } from 'vue'
+import { t } from '../i18n/messages'
 import { SearchExtension } from '../search-extension'
 import { loadSchemaReference } from './sql-schema-reference'
 
@@ -23,9 +24,9 @@ onMounted(async () => {
 // `not null`: almost every column is NOT NULL, and the one that can be missing is what changes a query.
 function marks(column: SqlSchemaReferenceColumn): string[] {
   const found: string[] = []
-  if (column.primaryKey) found.push('primary key')
-  if (column.nullable) found.push('nullable')
-  if (column.generated) found.push('generated')
+  if (column.primaryKey) found.push(t('schema.primaryKey'))
+  if (column.nullable) found.push(t('schema.nullable'))
+  if (column.generated) found.push(t('schema.generated'))
   return found
 }
 </script>
@@ -33,13 +34,13 @@ function marks(column: SqlSchemaReferenceColumn): string[] {
 <template>
   <!-- Read from the catalog of the live index, never from a description of the DDL kept beside it: a
        query is written while looking at the fields, and a second copy of the schema drifts (A-26). -->
-  <section class="schema" aria-label="Index schema">
+  <section class="schema" :aria-label="t('schema.label')">
     <!-- Both axes: three fixed columns are wider than a narrow panel, and the old scroller let them scroll sideways. -->
     <ScrollArea axis="both" class="schema-scroll" content-class="schema-content">
       <p v-if="failure" class="state" role="alert" data-testid="sql-schema-error">
-        The schema could not be read: {{ failure }}
+        {{ t('schema.failed', { reason: failure }) }}
       </p>
-      <p v-else-if="tables == null" class="state">Reading the schema from the index…</p>
+      <p v-else-if="tables == null" class="state">{{ t('schema.reading') }}</p>
 
       <article v-for="table in tables ?? []" :key="table.name" class="table">
         <h2 class="table-name">{{ table.name }}</h2>
@@ -50,10 +51,10 @@ function marks(column: SqlSchemaReferenceColumn): string[] {
             <code class="column-type">{{ column.type }}</code>
             <span class="column-meaning">
               <span v-if="marks(column).length" class="column-marks">{{ marks(column).join(' · ') }}</span>
-              <span class="column-description">{{ column.description || 'No note for this column.' }}</span>
+              <span class="column-description">{{ column.description || t('schema.noNote') }}</span>
               <!-- What a join is written from, so it is stated rather than inferred from the name. -->
               <span v-if="column.references" class="column-reference">
-                references <code>{{ column.references }}</code>
+                {{ t('schema.references') }} <code>{{ column.references }}</code>
               </span>
             </span>
           </li>

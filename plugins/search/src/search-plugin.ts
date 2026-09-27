@@ -8,6 +8,7 @@ import { createIndexer, type IndexerStatus, openSqlIndex, reconcileExtractors, t
 import { VaultVfs, VaultWatcher } from '@arxhub/vfs'
 import { markRaw, watch } from 'vue'
 import { SEARCH_SETTINGS_SECTION, SEARCH_TYPE_ID, SQL_CONSOLE_PANEL } from './contributions'
+import { t } from './i18n/messages'
 import { createIndexQueue, type IndexQueue } from './index-queue'
 import { manifest } from './manifest'
 import { openWithRetry } from './open-index'
@@ -60,18 +61,18 @@ export class SearchPlugin extends Plugin {
     ctx.extensions.get(ShellExtension).types.register({
       id: SEARCH_TYPE_ID,
       icon: 'lu:search',
-      title: 'Search',
+      title: () => t('type.title'),
       order: 10,
       pinned: false,
       content: markRaw(SearchLayout),
-      summary: () => 'Full text and SQL',
+      summary: () => t('type.summary'),
     })
 
     // The console is a content panel on the workspace store, not a screen of its own: the owner opens it
     // from the Search rail and it sits beside the notes, in whichever frame is running (FR-236).
     ctx.extensions.get(PanelStoreExtension).store.registerPanel({
       id: SQL_CONSOLE_PANEL,
-      title: 'SQL console',
+      title: () => t('console.title'),
       icon: 'lu:terminal',
       component: SqlConsolePanel,
     })
@@ -81,7 +82,7 @@ export class SearchPlugin extends Plugin {
     // offer to rebuild it — and a rebuild applies at once instead of joining the staged change set.
     ctx.extensions.get(SettingsExtension).register({
       id: SEARCH_SETTINGS_SECTION,
-      title: 'Search',
+      title: () => t('settings.title'),
       icon: 'lu:search',
       order: 12,
       component: markRaw(SearchSettingsPage),
@@ -217,6 +218,7 @@ export class SearchPlugin extends Plugin {
       // index asks `status` first and finds `failed`.
       this.logger.error('Could not open the search index — search is unavailable this session', error)
       search.error.value = error instanceof Error ? error.message : String(error)
+      search.failure.value = error
       search.status.value = 'failed'
     } finally {
       // However this ended, nothing more is coming: a caller awaiting readiness is let go here, with

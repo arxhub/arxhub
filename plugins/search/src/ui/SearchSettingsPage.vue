@@ -5,8 +5,10 @@ import { Button, PageLayout, StatusDot } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onMounted, ref } from 'vue'
 import { SEARCH_SETTINGS_SECTION } from '../contributions'
+import { messages, t } from '../i18n/messages'
 import { type SearchConfig, SearchConfigSchema, toSearchSettings } from '../search-config'
 import { SearchExtension } from '../search-extension'
+import { errorText } from '../search-texts'
 import { useIndexStatus } from './use-index-status'
 
 const arxhub = useArxHub()
@@ -20,7 +22,7 @@ const form = ref<{ revert: () => void } | null>(null)
 const loadError = ref<string | null>(null)
 
 const fieldCount = computed(() => Object.keys(SearchConfigSchema.properties).length)
-const meta = computed(() => [`${fieldCount.value} fields`, 'storage/search/config.toml'])
+const meta = computed(() => [t('settings.fields', { count: fieldCount.value }), 'storage/search/config.toml'])
 
 // Read once, on mount. The staged draft is read inside the same step rather than watched: reading it
 // reactively would re-seed the form from its own output on every keystroke.
@@ -32,7 +34,7 @@ onMounted(async () => {
     // A section that cannot read its file must not offer to write one: a form seeded from defaults would
     // save those defaults over settings it never saw.
     arxhub.logger.error('[search] could not load the search settings', error)
-    loadError.value = error instanceof Error ? error.message : String(error)
+    loadError.value = errorText(error)
   }
   draft.value = staged
 })
@@ -42,7 +44,7 @@ onMounted(async () => {
 function onChange(next: { values: Record<string, unknown>; changedKeys: string[]; invalid: boolean }): void {
   settings.changes.stage({
     sectionId: SEARCH_SETTINGS_SECTION,
-    title: 'Search',
+    title: t('settings.title'),
     values: next.values,
     keys: next.changedKeys,
     invalid: next.invalid,
@@ -57,8 +59,8 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
       const rebuild = search.applySettings(toSearchSettings(snapshot as SearchConfig))
       if (!rebuild) return
       toaster.create({
-        title: 'Rebuilding the index',
-        description: 'What the index covers changed, so it is being built again from the content store.',
+        title: t('settings.rebuilding'),
+        description: t('settings.rebuildingDescription'),
         type: 'info',
       })
       // search.reindex(), not the status view's control: the control is inert while a walk runs, and a
@@ -67,7 +69,7 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
       // apply that triggered it spans every section, so holding it open would look like a hung button.
       search.reindex().catch((error: unknown) => {
         arxhub.logger.error('[search] the rebuild after a settings change failed', error)
-        toaster.create({ title: 'Could not rebuild the index', description: String(error), type: 'error' })
+        toaster.create({ title: t('index.rebuildFailed'), description: errorText(error), type: 'error' })
       })
     },
     revert: () => form.value?.revert(),
@@ -76,7 +78,7 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
 </script>
 
 <template>
-  <PageLayout title="Search" :description="SearchConfigSchema.description" :meta="meta">
+  <PageLayout :title="t('settings.title')" :description="t('settings.description')" :meta="meta">
     <div class="index-state">
       <div class="state-line">
         <StatusDot :tone="index.tone.value" :pulse="index.scanning.value" />
@@ -91,14 +93,14 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
         data-testid="search-settings-reindex"
         @click="index.reindex()"
       >
-        Reindex
+        {{ t('index.reindex') }}
       </Button>
     </div>
 
     <p v-if="loadError" class="load-error" role="alert">
-      The settings file could not be read, so nothing here can be saved over it: {{ loadError }}
+      {{ t('settings.loadFailed', { reason: loadError }) }}
     </p>
-    <ConfigForm v-else ref="form" :schema="SearchConfigSchema" :values="values" :draft="draft" @change="onChange" />
+    <ConfigForm v-else ref="form" :schema="SearchConfigSchema" :values="values" :draft="draft" :messages="messages" @change="onChange" />
   </PageLayout>
 </template>
 

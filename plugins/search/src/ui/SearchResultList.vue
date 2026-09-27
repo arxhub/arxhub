@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { formatNumber } from '@arxhub/i18n'
 import { DocumentsExtension, folderOf } from '@arxhub/plugin-documents'
 import { type SearchDocument, type SearchSnippet, snippetSegments } from '@arxhub/sql'
 // biome-ignore lint/correctness/noUnusedImports: Row, ScrollArea and SectionLabel are used in the template
 import { EmptyState, Row, ScrollArea, SectionLabel } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, useId, watch } from 'vue'
+import { t } from '../i18n/messages'
 import { useOpenDocument } from './use-open-document'
 
 const props = withDefaults(
@@ -38,7 +40,7 @@ const touch = useShellFrame() === 'mobile'
 const idPrefix = useId()
 
 function placeOf(path: string): string {
-  const folder = folderOf(path) ?? 'Vault'
+  const folder = folderOf(path) ?? t('results.vault')
   return props.context == null ? folder : `${props.context} · ${folder}`
 }
 
@@ -147,7 +149,7 @@ defineExpose({ enter })
       ref="listEl"
       class="results-list"
       role="listbox"
-      aria-label="Search results"
+      :aria-label="t('results.label')"
       tabindex="0"
       :aria-activedescendant="activeDescendant"
       @keydown.down.prevent="move(1)"
@@ -157,7 +159,7 @@ defineExpose({ enter })
     >
       <!-- A finder lists documents the way the vault does — kind, name, folder — rather than as a path to
            read: the folder is what tells two "Budget 2026" apart. -->
-      <SectionLabel v-if="!snippets" inset>Results · {{ documents.length }}</SectionLabel>
+      <SectionLabel v-if="!snippets" inset>{{ t('results.heading', { count: formatNumber(documents.length) }) }}</SectionLabel>
       <template v-for="(entry, index) in entries" :key="entry.key">
         <Row
           v-if="entry.kind === 'document' && !snippets"
@@ -225,7 +227,7 @@ defineExpose({ enter })
   <!-- Outside the list rather than a row inside it: a listbox holds options, and "nothing matches" is not
        something to select. It says what was searched, not what is currently in the field. -->
   <EmptyState v-else-if="answered !== ''" fill icon="lu:search-x" data-testid="search-empty">
-    Nothing matches <span class="term">{{ answered }}</span>
+    {{ t('results.nothingMatches') }} <span class="term">{{ answered }}</span>
   </EmptyState>
 </template>
 

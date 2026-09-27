@@ -1,5 +1,6 @@
 import type { SqlReadOnlyFailure, SqlReadOnlyResult, SqlReadOnlySuccess, SqlRow } from '@arxhub/sql'
 import { type Ref, ref, shallowRef } from 'vue'
+import { t } from '../i18n/messages'
 
 export interface SqlConsoleController {
   readonly running: Ref<boolean>
@@ -67,8 +68,10 @@ export interface SqlCell {
 }
 
 export function formatCell(value: unknown): SqlCell {
+  // design-ignore: `null` is the SQL keyword the console's reader types into the query, not a word to translate.
   if (value === null || value === undefined) return { text: 'null', nullish: true, blank: false }
-  if (value === '') return { text: '(empty)', nullish: false, blank: true }
+
+  if (value === '') return { text: t('console.empty'), nullish: false, blank: true }
   if (typeof value === 'string') return { text: value, nullish: false, blank: false }
   if (value instanceof Date) return { text: value.toISOString(), nullish: false, blank: false }
   if (typeof value === 'object') return { text: stringify(value), nullish: false, blank: false }

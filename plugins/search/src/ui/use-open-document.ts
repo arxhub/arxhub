@@ -1,6 +1,7 @@
 import { DOCUMENTS_TYPE_ID } from '@arxhub/plugin-documents'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
+import { t } from '../i18n/messages'
 
 // What a result row hands the opener: the matched text, and — when the index has it — the exact place
 // to land on rather than merely the first one that reads the same. `blockId` is the unit in its format's
@@ -36,7 +37,7 @@ export function useOpenDocument(): OpenDocument {
           }
     shell.workspace.openObject(DOCUMENTS_TYPE_ID, { id: path, ...(anchor ? { at: anchor } : {}) }).catch((error) => {
       arxhub.logger.error(`[search] failed to open ${path}`, error)
-      toaster.create({ title: 'Could not open the note', description: path, type: 'error' })
+      toaster.create({ title: t('results.openFailed'), description: path, type: 'error' })
     })
   }
 

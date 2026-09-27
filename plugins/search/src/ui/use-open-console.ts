@@ -4,6 +4,7 @@ import { ShellExtension } from '@arxhub/plugin-shell'
 import { useNavHost } from '@arxhub/plugin-shell/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { SQL_CONSOLE_PANEL } from '../contributions'
+import { t } from '../i18n/messages'
 
 export interface OpenConsole {
   open(): void
@@ -22,7 +23,7 @@ export function useOpenConsole(): OpenConsole {
   function open(): void {
     shell.workspace.activateType(DOCUMENTS_TYPE_ID)
     navHost?.navigated?.()
-    store.openPanel(SQL_CONSOLE_PANEL, {}, 'SQL console', undefined, () => true)
+    store.openPanel(SQL_CONSOLE_PANEL, {}, t('console.title'), undefined, () => true)
   }
 
   return { open }

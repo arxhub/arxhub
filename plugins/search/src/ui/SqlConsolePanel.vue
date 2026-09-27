@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { formatNumber } from '@arxhub/i18n'
 import { CodeEditor } from '@arxhub/plugin-codemirror/ui'
 // biome-ignore lint/correctness/noUnusedImports: ScrollArea is used in template
 import { EmptyState, modals, ScrollArea, Strip } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
+import { t } from '../i18n/messages'
 import { SearchExtension } from '../search-extension'
+import { rejectionText } from '../search-texts'
 import SqlConsoleActions from './SqlConsoleActions.vue'
 import SqlSchemaReference from './SqlSchemaReference.vue'
 import { createSqlConsoleController, formatCell, type SqlCell } from './sql-console-controller'
@@ -17,9 +20,15 @@ const search = arxhub.extensions.get(SearchExtension)
 const query = useConsoleQuery()
 const controller = createSqlConsoleController({ readOnly: (sql) => search.readOnly(sql) })
 const schemaOpen = ref(false)
+// SQL, not interface text: the same in every language, like the table names it reaches for.
+const QUERY_PLACEHOLDER = 'SELECT path, title FROM document LIMIT 10'
 
 const limits = computed(() => search.settings.value)
-const meta = computed(() => ['read only', `${limits.value.maxRows} row limit`, `${limits.value.timeoutMs} ms limit`])
+const meta = computed(() => [
+  t('console.readOnly'),
+  t('console.rowLimit', { count: formatNumber(limits.value.maxRows) }),
+  t('console.timeLimit', { ms: formatNumber(limits.value.timeoutMs) }),
+])
 
 const canRun = computed(() => !controller.running.value && query.value.trim() !== '')
 
@@ -37,9 +46,9 @@ function useExample(): void {
     return
   }
   modals.openConfirmModal({
-    title: 'Replace the query?',
-    children: 'The example replaces what is in the editor. The query you typed is not kept.',
-    labels: { confirm: 'Replace', cancel: 'Keep mine' },
+    title: t('console.replaceTitle'),
+    children: t('console.replaceBody'),
+    labels: { confirm: t('console.replace'), cancel: t('console.keep') },
     onConfirm: () => {
       query.value = SQL_CONSOLE_EXAMPLE
     },
@@ -60,8 +69,7 @@ const table = computed((): { fields: { name: string; type: string }[]; rows: Sql
 const summary = computed(() => {
   const result = controller.result.value
   if (result == null) return null
-  const rows = result.rowCount === 1 ? '1 row' : `${result.rowCount} rows`
-  return `${rows} · ${result.durationMs.toFixed(0)} ms`
+  return `${t('console.rows', { count: result.rowCount })} · ${t('console.duration', { ms: formatNumber(Math.round(result.durationMs)) })}`
 })
 </script>
 
@@ -71,7 +79,7 @@ const summary = computed(() => {
        header against a note's 40px. The limits stay in the strip — they are state a query is read
        against — and the description moved into the body, which is read once. -->
   <div class="sql-console" data-testid="sql-console">
-    <Strip title="SQL console" flush-actions>
+    <Strip :title="t('console.title')" flush-actions>
       <template #actions>
         <SqlConsoleActions
           :can-run="canRun"
@@ -86,16 +94,13 @@ const summary = computed(() => {
 
     <ScrollArea class="console" content-class="console-content">
       <p class="limits">{{ meta.join(' · ') }}</p>
-      <p class="about">
-        Ask the index a question in SQL. A query runs inside a read-only transaction, so nothing here can change the
-        index — the files of the content store are the source of truth either way.
-      </p>
+      <p class="about">{{ t('console.about') }}</p>
       <div class="editor">
         <CodeEditor
           v-model="query"
           language="sql"
-          aria-label="Query"
-          placeholder="SELECT path, title FROM document LIMIT 10"
+          :aria-label="t('console.query')"
+          :placeholder="QUERY_PLACEHOLDER"
           submit-on-mod-enter
           @submit="run"
         />
@@ -104,9 +109,9 @@ const summary = computed(() => {
       <!-- Under the editor, with the offset the DBMS gave, and the query text left exactly as it was: a
            refusal is something to fix in place, not a reason to retype (FE 2.2). -->
       <div v-if="controller.failure.value" class="failure" role="alert" data-testid="sql-console-error">
-        <span class="failure-message">{{ controller.failure.value.message }}</span>
+        <span class="failure-message">{{ rejectionText(controller.failure.value) }}</span>
         <span v-if="controller.failure.value.position != null" class="failure-where">
-          at character {{ controller.failure.value.position }}
+          {{ t('console.at', { position: controller.failure.value.position }) }}
         </span>
         <span v-if="controller.failure.value.code" class="failure-code">{{ controller.failure.value.code }}</span>
       </div>
@@ -119,8 +124,8 @@ const summary = computed(() => {
         <EmptyState
           v-if="table.rows.length === 0"
           icon="lu:table"
-          text="The query ran and matched nothing."
-          hint="Not a refusal — there is simply no row like that."
+          :text="t('console.noMatch')"
+          :hint="t('console.noMatchHint')"
           data-testid="sql-console-empty"
         />
         <ScrollArea v-else axis="x" class="table-scroll">
@@ -144,7 +149,7 @@ const summary = computed(() => {
           </table>
         </ScrollArea>
       </div>
-      <EmptyState v-else-if="!controller.answered.value" icon="lu:database" text="Write a query and run it." hint="Nothing has been asked yet." />
+      <EmptyState v-else-if="!controller.answered.value" icon="lu:database" :text="t('console.idle')" :hint="t('console.idleHint')" />
 
       <!-- The page frame used to carry this in a pinned footer. A panel has no footer, and the run
            summary belongs next to the result it describes rather than at the bottom of the panel. -->
@@ -152,9 +157,9 @@ const summary = computed(() => {
         <span v-if="summary" class="summary">{{ summary }}</span>
         <!-- Rows past the limit are gone, and a table that says nothing about it reads as the whole answer. -->
         <span v-if="controller.result.value?.truncated" class="truncated" data-testid="sql-console-truncated">
-          cut at {{ limits.maxRows }} rows — the query matched more
+          {{ t('console.cut', { count: formatNumber(limits.maxRows) }) }}
         </span>
-        <span v-else-if="!summary" class="summary muted">no result yet</span>
+        <span v-else-if="!summary" class="summary muted">{{ t('console.noResult') }}</span>
       </div>
     </ScrollArea>
   </div>

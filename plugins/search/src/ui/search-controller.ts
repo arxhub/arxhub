@@ -1,6 +1,7 @@
 import { hasErrorCode } from '@arxhub/errors'
 import type { SearchDocument, SearchOptions, SearchResult } from '@arxhub/sql'
-import { type Ref, ref, watch } from 'vue'
+import { computed, type Ref, ref, shallowRef, watch } from 'vue'
+import { errorText, regexErrorText, warningText } from '../search-texts'
 import type { SearchPreferences } from './search-preferences'
 
 // How long after the last keystroke the search runs. A search is three statements against the index, so
@@ -38,16 +39,17 @@ export interface SearchController {
   readonly totalCount: Ref<number>
   // The list is cut at `limit` — there is more in the index than what is on screen.
   readonly hasMore: Ref<boolean>
-  readonly warnings: Ref<string[]>
+  // In the reader's language: computed over what the engine said, so a language switch re-reads them.
+  readonly warnings: Readonly<Ref<string[]>>
   // The query the list on screen answers. The empty state shows this rather than the field, so it says
   // what was searched instead of what is being typed right now.
   readonly answered: Ref<string>
   readonly searching: Ref<boolean>
   // The query itself is wrong — an expression that does not parse. Belongs at the input, and the previous
   // list stays where it was (FR-232).
-  readonly queryError: Ref<string | null>
+  readonly queryError: Readonly<Ref<string | null>>
   // The search could not be run at all. Belongs in the results area.
-  readonly resultsError: Ref<string | null>
+  readonly resultsError: Readonly<Ref<string | null>>
   // Runs the current query now, skipping the debounce.
   flush(): Promise<void>
   dispose(): void
@@ -59,11 +61,15 @@ export function createSearchController(options: SearchControllerOptions): Search
   const documents = ref<SearchDocument[]>([])
   const totalCount = ref(0)
   const hasMore = ref(false)
-  const warnings = ref<string[]>([])
+  const rawWarnings = ref<string[]>([])
   const answered = ref('')
   const searching = ref(false)
-  const queryError = ref<string | null>(null)
-  const resultsError = ref<string | null>(null)
+  // The failures as they came, translated on read: the text follows a language switch without a new search.
+  const queryFailure = ref<string | null>(null)
+  const resultsFailure = shallowRef<{ error: unknown } | null>(null)
+  const warnings = computed(() => rawWarnings.value.map(warningText))
+  const queryError = computed(() => (queryFailure.value == null ? null : regexErrorText(queryFailure.value)))
+  const resultsError = computed(() => (resultsFailure.value == null ? null : errorText(resultsFailure.value.error)))
 
   let timer: ReturnType<typeof setTimeout> | null = null
   let revalidateTimer: ReturnType<typeof setTimeout> | null = null
@@ -83,10 +89,10 @@ export function createSearchController(options: SearchControllerOptions): Search
     documents.value = []
     totalCount.value = 0
     hasMore.value = false
-    warnings.value = []
+    rawWarnings.value = []
     answered.value = ''
-    queryError.value = null
-    resultsError.value = null
+    queryFailure.value = null
+    resultsFailure.value = null
   }
 
   async function run(): Promise<void> {
@@ -109,10 +115,10 @@ export function createSearchController(options: SearchControllerOptions): Search
       documents.value = result.documents
       totalCount.value = result.totalCount
       hasMore.value = result.hasMore
-      warnings.value = result.warnings
+      rawWarnings.value = result.warnings
       answered.value = input
-      queryError.value = null
-      resultsError.value = null
+      queryFailure.value = null
+      resultsFailure.value = null
     } catch (error) {
       if (id <= applied) return
       applied = id
@@ -120,9 +126,9 @@ export function createSearchController(options: SearchControllerOptions): Search
       // owner was reading stays. Anything else means the search did not happen at all, which belongs where
       // the results would have been.
       if (hasErrorCode(error, 'SearchRegexInvalidError')) {
-        queryError.value = error.body.message
+        queryFailure.value = error.body.message
       } else {
-        resultsError.value = error instanceof Error ? error.message : String(error)
+        resultsFailure.value = { error }
         onError?.(error)
       }
     } finally {

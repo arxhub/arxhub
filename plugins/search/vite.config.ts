@@ -9,6 +9,7 @@ export default defineConfig((env) =>
       '@arxhub/config/ui',
       '@arxhub/core',
       '@arxhub/errors',
+      '@arxhub/i18n',
       '@arxhub/logger',
       '@arxhub/plugin-codemirror',
       '@arxhub/plugin-codemirror/ui',

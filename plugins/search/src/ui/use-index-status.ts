@@ -1,6 +1,9 @@
+import { formatDate, formatNumber } from '@arxhub/i18n'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { type ComputedRef, computed, type Ref, ref } from 'vue'
+import { t } from '../i18n/messages'
 import { SearchExtension } from '../search-extension'
+import { errorText } from '../search-texts'
 
 export interface IndexStatusView {
   // The index is still being opened. Its bring-up is detached from the boot, so this is what the first
@@ -35,14 +38,18 @@ export function useIndexStatus(): IndexStatusView {
   )
 
   const text = computed(() => {
-    if (unavailable.value) return `Search is unavailable: ${search.error.value ?? 'the index did not open.'}`
+    if (unavailable.value) {
+      const failure = search.failure.value
+      const reason = failure != null ? errorText(failure) : (search.error.value ?? t('index.didNotOpen'))
+      return t('index.unavailable', { reason })
+    }
     // Said rather than left blank: the alternative reads "0 in index", which is a claim about the content
     // store and not about a database that has not answered yet.
-    if (opening.value) return 'Opening the index…'
-    if (scanning.value) return `Indexing… ${search.processed.value} processed`
+    if (opening.value) return t('index.opening')
+    if (scanning.value) return t('index.indexing', { processed: formatNumber(search.processed.value) })
     const at = search.lastScan.value
-    const scanned = at == null ? '' : ` · scanned ${at.toLocaleTimeString()}`
-    return `${search.documentCount.value} in index${scanned}`
+    const count = formatNumber(search.documentCount.value)
+    return at == null ? t('index.holds', { count }) : t('index.holdsScanned', { count, time: formatDate(at, { timeStyle: 'medium' }) })
   })
 
   function reindex(): void {
@@ -54,7 +61,7 @@ export function useIndexStatus(): IndexStatusView {
       .then(() => search.reindex())
       .catch((error: unknown) => {
         arxhub.logger.error('[search] the reindex failed', error)
-        toaster.create({ title: 'Could not rebuild the index', description: String(error), type: 'error' })
+        toaster.create({ title: t('index.rebuildFailed'), description: errorText(error), type: 'error' })
       })
       .finally(() => {
         requested.value = false
