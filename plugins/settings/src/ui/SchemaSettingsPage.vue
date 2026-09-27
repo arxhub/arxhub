@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PluginConfig } from '@arxhub/config'
 import { ConfigForm } from '@arxhub/config/ui'
+import type { Messages } from '@arxhub/i18n'
 import { PageLayout } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import type { TObject } from '@sinclair/typebox'
@@ -12,6 +13,8 @@ const props = defineProps<{
   title: string
   schema: TObject
   config: PluginConfig
+  description?: string
+  messages?: Messages
 }>()
 
 const arxhub = useArxHub()
@@ -67,7 +70,7 @@ function onChange(next: { values: Record<string, unknown>; changedKeys: string[]
 </script>
 
 <template>
-  <PageLayout :title="title" :description="schema.description">
-    <ConfigForm ref="form" :schema="schema" :values="values" :draft="draft" @change="onChange" />
+  <PageLayout :title="title" :description="description ?? schema.description">
+    <ConfigForm ref="form" :schema="schema" :values="values" :draft="draft" :messages="messages" @change="onChange" />
   </PageLayout>
 </template>

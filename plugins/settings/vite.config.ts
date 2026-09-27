@@ -14,6 +14,7 @@ export default defineConfig((env) =>
       '@arxhub/plugin-vfs',
       '@arxhub/vfs',
       '@arxhub/config',
+      '@arxhub/i18n',
       'vue',
     ],
   }),

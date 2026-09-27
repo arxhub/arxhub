@@ -1,5 +1,6 @@
 import type { PluginConfig } from '@arxhub/config'
 import { Extension, type ExtensionArgs } from '@arxhub/core'
+import type { Messages, Text } from '@arxhub/i18n'
 import type { TObject } from '@sinclair/typebox'
 import { type Component, markRaw, ref, shallowRef } from 'vue'
 import { createPendingChanges, type PendingChanges } from './pending-changes'
@@ -9,7 +10,9 @@ import { createPendingChanges, type PendingChanges } from './pending-changes'
 // plugin's scoped `config` service (where the form reads/writes config.toml) OR a custom `component`.
 export interface SettingsSection {
   id: string
-  title: string
+  title: Text
+  // Under the title of a schema page. Unset — the schema's own `description`.
+  description?: Text
   icon?: string
   order?: number
   schema?: TObject
@@ -17,6 +20,8 @@ export interface SettingsSection {
   // `schema` is set — the schema form persists through it, so a section can never write outside its
   // owner's sandbox.
   config?: PluginConfig
+  // The owner's catalog, for a schema page: its `config` section names the fields (see @arxhub/config/ui).
+  messages?: Messages
   component?: Component
 }
 

@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@arxhub/config": "workspace:*",
+    "@arxhub/i18n": "workspace:*",
     "vue": "catalog:client"
   },
   "devDependencies": {

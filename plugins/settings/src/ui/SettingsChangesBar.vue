@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { errorReason } from '@arxhub/i18n'
 import { useHotkeys } from '@arxhub/plugin-hotkeys/ui'
 import { typeLayerId } from '@arxhub/plugin-shell'
 import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
@@ -6,6 +7,7 @@ import { Button, StatusDot } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, watch } from 'vue'
 import { SETTINGS_TYPE_ID } from '../contributions'
+import { t } from '../i18n/messages'
 import { SettingsExtension } from '../settings-extension'
 
 const arxhub = useArxHub()
@@ -18,9 +20,9 @@ const fields = computed(() => changes.fieldCount.value)
 const sections = computed(() => changes.sectionCount.value)
 
 const summary = computed(() => {
-  if (changes.saving.value) return 'Applying…'
-  const field = `${fields.value} unsaved change${fields.value === 1 ? '' : 's'}`
-  return sections.value > 1 ? `${field} across ${sections.value} sections` : field
+  if (changes.saving.value) return t('changes.applying')
+  const field = t('changes.fields', { count: fields.value })
+  return sections.value > 1 ? t('changes.across', { count: sections.value, changes: field }) : field
 })
 
 const tone = computed(() => {
@@ -31,7 +33,7 @@ const tone = computed(() => {
 async function apply(): Promise<void> {
   const applied = fields.value
   await changes.saveAll()
-  if (changes.sectionCount.value === 0) toaster.create({ title: `Applied ${applied} change${applied === 1 ? '' : 's'}`, type: 'success' })
+  if (changes.sectionCount.value === 0) toaster.create({ title: t('changes.applied', { count: applied }), type: 'success' })
 }
 
 // A save failure is a condition on the shared pending-changes state, not an outcome only this
@@ -41,7 +43,11 @@ watch(
   () => changes.lastError.value,
   (failure) => {
     if (!failure) return
-    toaster.create({ title: `Could not save ${failure.title}`, description: String(failure.error), type: 'error' })
+    toaster.create({
+      title: t('changes.saveFailed', { name: failure.title }),
+      description: errorReason(failure.error, t('changes.unreported')),
+      type: 'error',
+    })
   },
 )
 
@@ -64,7 +70,7 @@ useHotkeys(hotkeys, [
     id: 'settings.save-all',
     chord: 'Mod-s',
     layer: typeLayerId(SETTINGS_TYPE_ID),
-    title: 'Save & apply settings',
+    title: () => t('changes.hotkey'),
     when: () => sections.value > 0 && !changes.invalid.value,
     run: () => void apply(),
   },
@@ -78,13 +84,13 @@ useHotkeys(hotkeys, [
       <span class="headline">{{ summary }}</span>
       <span v-if="!mobile" class="detail">{{ changes.staged.value.map((c) => `${c.title}: ${c.keys.join(', ')}`).join(' · ') }}</span>
     </div>
-    <span v-if="changes.invalid.value" class="blocked">Fix the highlighted fields to apply</span>
+    <span v-if="changes.invalid.value" class="blocked">{{ t('changes.blocked') }}</span>
     <!-- Drawn per platform from the one function that knows how (F-02): the sign used to be typed
          in, and read "⌘S" on Linux and Windows, where it is Ctrl. A phone has no Mod key. -->
     <kbd v-else-if="!mobile" class="shortcut">{{ hotkeys.label('Mod-s') }}</kbd>
-    <Button :size="buttonSize" variant="secondary" :disabled="changes.saving.value" @click="changes.revertAll()">Revert</Button>
+    <Button :size="buttonSize" variant="secondary" :disabled="changes.saving.value" @click="changes.revertAll()">{{ t('changes.revert') }}</Button>
     <Button :size="buttonSize" variant="primary" :disabled="changes.saving.value || changes.invalid.value" @click="apply">
-      Save &amp; apply
+      {{ t('changes.apply') }}
     </Button>
   </div>
 </template>

@@ -4,6 +4,7 @@ import { EmptyState } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted, watch } from 'vue'
 import { SETTINGS_TYPE_ID } from '../contributions'
+import { t } from '../i18n/messages'
 import { SettingsExtension } from '../settings-extension'
 import SettingsChangesBar from './SettingsChangesBar.vue'
 import SettingsPageHost from './SettingsPageHost.vue'
@@ -34,7 +35,7 @@ onMounted(() => {
       <div v-for="id in settings.openedIds.value" v-show="id === settings.activeId.value" :key="id" class="settings-page">
         <SettingsPageHost :section-id="id" />
       </div>
-      <EmptyState v-if="settings.openedIds.value.length === 0" fill icon="lu:settings" text="No plugin has registered a settings section." />
+      <EmptyState v-if="settings.openedIds.value.length === 0" fill icon="lu:settings" :text="t('page.none')" />
     </div>
     <SettingsChangesBar />
   </div>

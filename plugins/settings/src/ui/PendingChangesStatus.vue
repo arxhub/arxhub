@@ -4,6 +4,7 @@ import { StatusDot } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { SETTINGS_TYPE_ID } from '../contributions'
+import { t } from '../i18n/messages'
 import { SettingsExtension } from '../settings-extension'
 
 const arxhub = useArxHub()
@@ -21,9 +22,9 @@ function openSettings(): void {
 </script>
 
 <template>
-  <button v-if="count > 0" type="button" class="pending" :class="{ touch }" title="Unsaved settings changes" @click="openSettings">
+  <button v-if="count > 0" type="button" class="pending" :class="{ touch }" :title="t('pending.title')" @click="openSettings">
     <StatusDot :tone="settings.changes.invalid.value ? 'danger' : 'warning'" />
-    <span>{{ count }} unsaved setting{{ count === 1 ? '' : 's' }}</span>
+    <span>{{ t('pending.count', { count }) }}</span>
   </button>
 </template>
 
