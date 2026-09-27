@@ -5,6 +5,7 @@ export const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Keyboard ownership: layered chord registry and dispatch',
+  descriptions: { ru: 'Клавиатура: слои сочетаний клавиш и их обработка' },
   // `PluginManifest` has no `dependsOn`, so "the shell is up, the keyboard is not" is a reachable
   // state: ⌘K opens nothing, ⌘B does nothing, and the nav column still advertises a chord that no
   // longer exists. Worse, the editors' declarations would go with it and the ⌘B collision this plugin

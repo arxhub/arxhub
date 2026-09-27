@@ -1,5 +1,6 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
 import { createEventBus, type TypedEventBus } from '@arxhub/events'
+import type { Text } from '@arxhub/i18n'
 import { type ComputedRef, computed, markRaw, shallowRef } from 'vue'
 import {
   ChordError,
@@ -26,7 +27,8 @@ export interface HotkeyBinding {
   readonly chord: string
   // Which layer it lives in. `app` is the bottom of the stack and always present.
   readonly layer: string
-  readonly title: string
+  // What the chord does, in the reader's language — read when it is shown, so a switch reaches it.
+  readonly title: Text
   // Checked at resolution, not at registration: a binding whose condition is false is skipped and the
   // stack keeps going down. ⌘B on a frame with no navigation column is the worked example — nobody
   // claims it, so it reaches the system unchanged.

@@ -22,7 +22,8 @@
     "test": "vitest"
   },
   "dependencies": {
-    "vue": "catalog:client"
+    "vue": "catalog:client",
+    "@arxhub/i18n": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/logger": "workspace:*",
