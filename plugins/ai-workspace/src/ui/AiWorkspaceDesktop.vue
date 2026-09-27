@@ -1,20 +1,32 @@
 <script setup lang="ts">
 import { DiffView, useDiffController } from '@arxhub/plugin-diff/ui'
 import { Button, PageLayout, Row, ScrollArea, Segmented } from '@arxhub/uikit/core'
-import { type AiWorkspaceCore, type AiWorkspaceProps, changeLabel, MODE_OPTIONS, useAiWorkspace } from './use-ai-workspace'
+import { computed } from 'vue'
+import { t } from '../i18n/messages'
+import { errorText } from './error-text'
+import {
+  type AiWorkspaceCore,
+  type AiWorkspaceProps,
+  changeLabel,
+  modeOptions,
+  statusLabel,
+  statusLine,
+  useAiWorkspace,
+} from './use-ai-workspace'
 
 const props = defineProps<AiWorkspaceProps & { state?: AiWorkspaceCore }>()
 const state = useAiWorkspace(props, props.state)
 const { sessions, active, selectedPath, selectedChange, selectedName, diffMode, busy, error, archived, comparing, diff } = state
 const controller = useDiffController(() => diff.result.value)
+const modes = computed(modeOptions)
 </script>
 
 <template>
-  <PageLayout title="AI workspace" description="Review agent worktree sessions before they enter the main vault.">
-    <p v-if="error" role="alert">{{ error }}</p>
+  <PageLayout :title="t('title')" :description="t('description')">
+    <p v-if="error" role="alert">{{ errorText(error) }}</p>
     <div class="layout">
       <ScrollArea class="list">
-        <nav aria-label="AiWorkspace sessions">
+        <nav :aria-label="t('sessionsNav')">
           <Row
             v-for="session in sessions"
             :key="session.sessionId"
@@ -23,50 +35,50 @@ const controller = useDiffController(() => diff.result.value)
             :selected="active?.sessionId === session.sessionId"
             @click="state.selectSession(session)"
           >
-            {{ session.status }} · {{ session.sessionId }}
+            {{ statusLabel(session.status) }} · {{ session.sessionId }}
           </Row>
-          <p v-if="!sessions.length">No agent sessions yet.</p>
+          <p v-if="!sessions.length">{{ t('empty') }}</p>
         </nav>
       </ScrollArea>
-      <section v-if="active" data-testid="ai-workspace-proposal" class="proposal" aria-label="AiWorkspace proposal">
-        <p>Status: {{ active.status }}{{ active.result ? ` (${active.result})` : '' }}</p>
-        <p>Base: {{ active.baseSnapshotHash }}</p>
-        <h2>Changes</h2>
+      <section v-if="active" data-testid="ai-workspace-proposal" class="proposal" :aria-label="t('proposal')">
+        <p>{{ statusLine(active) }}</p>
+        <p>{{ t('base', { hash: active.baseSnapshotHash }) }}</p>
+        <h2>{{ t('changes') }}</h2>
         <ul class="changes">
           <li v-for="change in active.changes" :key="change.pathname + change.kind">
             <Row as="button" type="button" class="change" :selected="selectedPath === change.pathname" @click="state.selectChange(change.pathname)">
               {{ changeLabel(change) }}
             </Row>
-            <Button size="sm" variant="ghost" :disabled="busy || archived" @click.stop="state.openInDocuments(change.pathname)">Open</Button>
+            <Button size="sm" variant="ghost" :disabled="busy || archived" @click.stop="state.openInDocuments(change.pathname)">{{ t('open') }}</Button>
           </li>
         </ul>
         <div v-if="selectedChange" class="diff-panel">
-          <Segmented v-model="diffMode" :options="MODE_OPTIONS" aria-label="Compare mode" />
-          <p v-if="comparing || diff.loading.value" role="status">Loading diff…</p>
+          <Segmented v-model="diffMode" :options="modes" :aria-label="t('compareMode')" />
+          <p v-if="comparing || diff.loading.value" role="status">{{ t('loadingDiff') }}</p>
           <p v-if="diff.error.value" role="alert">{{ diff.error.value }}</p>
           <div v-if="diff.result.value" class="diff-frame" data-testid="ai-workspace-diff">
             <DiffView class="diff" :result="diff.result.value" :controller="controller" :title="selectedName" :open-document="() => state.openInDocuments()" />
           </div>
         </div>
-        <h2>Sources</h2>
+        <h2>{{ t('sources') }}</h2>
         <ul data-testid="ai-workspace-sources">
-          <li v-if="!active.sources.length">No sources cited yet.</li>
+          <li v-if="!active.sources.length">{{ t('noSources') }}</li>
           <li v-for="source in active.sources" :key="source.pathname + source.excerpt">
             <button type="button" class="source-btn" :disabled="busy" @click="state.openSource(source.pathname, source.excerpt)">
               {{ source.pathname }} — {{ source.excerpt }}
             </button>
           </li>
         </ul>
-        <h2>Actions</h2>
+        <h2>{{ t('actions') }}</h2>
         <ul>
           <li v-for="(action, index) in active.actions" :key="index">
-            {{ action.tool }}{{ action.pathname ? ` · ${action.pathname}` : '' }} · {{ action.ok ? 'ok' : 'error' }}
+            {{ action.tool }}{{ action.pathname ? ` · ${action.pathname}` : '' }} · {{ action.ok ? t('actionOk') : t('actionError') }}
           </li>
         </ul>
         <div class="actions">
-          <Button :disabled="busy || archived" @click="state.run('accept')">Accept all</Button>
-          <Button variant="secondary" :disabled="busy || archived" @click="state.run('reject')">Reject</Button>
-          <Button variant="ghost" :disabled="busy" @click="state.refresh">Refresh</Button>
+          <Button :disabled="busy || archived" @click="state.run('accept')">{{ t('acceptAll') }}</Button>
+          <Button variant="secondary" :disabled="busy || archived" @click="state.run('reject')">{{ t('reject') }}</Button>
+          <Button variant="ghost" :disabled="busy" @click="state.refresh">{{ t('refresh') }}</Button>
         </div>
       </section>
     </div>

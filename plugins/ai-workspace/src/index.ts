@@ -1,4 +1,4 @@
-export { acceptBlocked, applyAcceptWithMerge, mergerPathname } from './accept-with-merge'
+export { applyAcceptWithMerge, mergerPathname } from './accept-with-merge'
 export { AiWorkspaceExtension } from './ai-workspace-extension'
 export { AiWorkspacePlugin } from './ai-workspace-plugin'
 export { AI_WORKSPACE_TYPE_ID } from './contributions'

@@ -1,6 +1,5 @@
 import { apiBaseUrl, Plugin, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner, signingMiddleware } from '@arxhub/crypto'
-import { illegalState, notFound } from '@arxhub/errors'
 import { createHttpClient } from '@arxhub/http'
 import { DOCUMENTS_TYPE_ID, DocumentsExtension } from '@arxhub/plugin-documents'
 import { KeyringExtension } from '@arxhub/plugin-protection'
@@ -12,6 +11,8 @@ import { applyAcceptWithMerge } from './accept-with-merge'
 import { AiWorkspaceExtension } from './ai-workspace-extension'
 import { base64ToBytes } from './bytes-wire'
 import { AI_WORKSPACE_TYPE_ID } from './contributions'
+import { aiWorkspaceError } from './errors'
+import { t } from './i18n/messages'
 import { AI_WORKSPACE_NAMESPACE, manifest } from './manifest'
 import type { CompareMode } from './session-store'
 import type { CompareWire, SessionView } from './session-view'
@@ -126,11 +127,11 @@ export class AiWorkspacePlugin extends Plugin {
         const path = pathname.replace(/^\/+/, '')
         const file = documents.vfs.file(path)
         if (!(await file.exists())) {
-          throw notFound(`Source file is not available: ${path}`)
+          throw aiWorkspaceError('AiSourceMissing', 404, { path })
         }
         const text = excerpt.trim()
         const opened = await shell.workspace.openObject(DOCUMENTS_TYPE_ID, text ? { id: path, at: { text } } : { id: path })
-        if (opened == null) throw illegalState(`Could not open source: ${path}`)
+        if (opened == null) throw aiWorkspaceError('AiSourceNotOpened', 500, { path })
       },
     }))
   }
@@ -139,7 +140,7 @@ export class AiWorkspacePlugin extends Plugin {
     super.configure(ctx)
     ctx.extensions.get(ShellExtension).types.register({
       id: AI_WORKSPACE_TYPE_ID,
-      title: 'AI workspace',
+      title: () => t('title'),
       icon: 'lu:bot',
       pinned: false,
       order: 80,
@@ -147,9 +148,9 @@ export class AiWorkspacePlugin extends Plugin {
       bar: () => aiWorkspaceBar(aiWorkspaceState(ctx.extensions.get(AiWorkspaceExtension))),
       summary: () => {
         const count = aiWorkspaceState(ctx.extensions.get(AiWorkspaceExtension)).sessions.value.length
-        return `${count} ${count === 1 ? 'session' : 'sessions'}`
+        return t('sessionCount', { count })
       },
-      sheet: { title: 'Sessions', content: markRaw(AiSessionsSheet) },
+      sheet: { title: () => t('sessions'), content: markRaw(AiSessionsSheet) },
     })
 
     if (ctx.services.has(VaultWatcher) && ctx.extensions.has(DocumentsExtension)) {

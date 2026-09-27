@@ -19,6 +19,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/i18n": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:server",
     "elysia": "catalog:server",
     "nanoid": "catalog:shared",

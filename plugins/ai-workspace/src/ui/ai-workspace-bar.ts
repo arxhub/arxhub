@@ -2,7 +2,8 @@ import { posix } from '@arxhub/path'
 import { type DiffController, diffBarControls, sheetIcon, sheetMeta } from '@arxhub/plugin-diff/ui'
 import type { ObjectBar, ObjectBarPart } from '@arxhub/plugin-shell'
 import type { ActionItem } from '@arxhub/uikit/core'
-import { type AiWorkspaceCore, CHANGE_ICONS, MODE_OPTIONS } from './use-ai-workspace'
+import { t } from '../i18n/messages'
+import { type AiWorkspaceCore, CHANGE_ICONS, kindLabel, modeOptions, statusLabel } from './use-ai-workspace'
 
 // Part ids say which list they came from: a proposal file and a workbook's sheet share one parts sheet.
 const FILE = 'file:'
@@ -30,26 +31,26 @@ export function aiWorkspaceBar(state: AiWorkspaceCore): ObjectBar | null {
   const session = state.active.value
   const refresh = {
     id: 'ai.refresh',
-    label: 'Refresh',
+    label: t('refresh'),
     icon: 'lu:refresh-cw',
     disabled: state.busy.value,
     onSelect: () => void state.refresh(),
   }
   if (session == null) {
     const count = state.sessions.value.length
-    return { icon: 'lu:bot', name: 'AI workspace', sub: `${count} ${count === 1 ? 'session' : 'sessions'}`, actions: [refresh] }
+    return { icon: 'lu:bot', name: t('title'), sub: t('sessionCount', { count }), actions: [refresh] }
   }
   const settled = state.busy.value || state.archived.value
   const accept: ActionItem = {
     id: 'ai.accept',
-    label: 'Accept all',
+    label: t('acceptAll'),
     icon: 'lu:check',
     disabled: settled,
     onSelect: () => void finish(state, 'accept'),
   }
   const reject: ActionItem = {
     id: 'ai.reject',
-    label: 'Reject',
+    label: t('reject'),
     icon: 'lu:x',
     tone: 'danger',
     disabled: settled,
@@ -60,10 +61,10 @@ export function aiWorkspaceBar(state: AiWorkspaceCore): ObjectBar | null {
   return {
     icon: 'lu:bot',
     name: session.sessionId,
-    sub: session.status,
-    parts: files.length === 0 ? undefined : { title: 'Proposal files', items: files, pick: (id) => pickPart(state, null, id, true) },
+    sub: statusLabel(session.status),
+    parts: files.length === 0 ? undefined : { title: t('proposalFiles'), items: files, pick: (id) => pickPart(state, null, id, true) },
     actions: [accept, refresh],
-    menu: [{ id: 'ai.sessions', label: 'All sessions', icon: 'lu:list', onSelect: () => state.selectSession(null) }, reject],
+    menu: [{ id: 'ai.sessions', label: t('allSessions'), icon: 'lu:list', onSelect: () => state.selectSession(null) }, reject],
   }
 }
 
@@ -77,7 +78,7 @@ function fileParts(state: AiWorkspaceCore, sheets: ObjectBarPart[]): ObjectBarPa
     const file: ObjectBarPart = {
       id: FILE + change.pathname,
       title: posix.basename(change.pathname),
-      subtitle: change.kind,
+      subtitle: kindLabel(change.kind),
       icon: CHANGE_ICONS[change.kind],
       selected,
     }
@@ -98,7 +99,7 @@ function pickPart(state: AiWorkspaceCore, controller: DiffController | null, id:
 function diffBar(state: AiWorkspaceCore, controller: DiffController | null, accept: ActionItem, reject: ActionItem): ObjectBar {
   const back: ActionItem = {
     id: 'ai.back',
-    label: 'Back to proposal',
+    label: t('backToProposal'),
     icon: 'lu:arrow-left',
     onSelect: () =>
       afterSheet(() => {
@@ -107,7 +108,7 @@ function diffBar(state: AiWorkspaceCore, controller: DiffController | null, acce
   }
   const mode: ActionItem = {
     id: 'ai.mode',
-    label: `Mode: ${MODE_OPTIONS.find((option) => option.value !== state.diffMode.value)?.label ?? ''}`,
+    label: t('mode', { mode: modeOptions().find((option) => option.value !== state.diffMode.value)?.label ?? '' }),
     icon: 'lu:git-compare',
     onSelect: state.toggleMode,
   }
@@ -133,7 +134,7 @@ function diffBar(state: AiWorkspaceCore, controller: DiffController | null, acce
     name: state.selectedName.value,
     sub: controls.sub || undefined,
     // A chevron promises a choice; one file with no sheets under it is none.
-    parts: items.length > 1 ? { title: 'Proposal files', items, pick: (id) => pickPart(state, controller, id, false) } : undefined,
+    parts: items.length > 1 ? { title: t('proposalFiles'), items, pick: (id) => pickPart(state, controller, id, false) } : undefined,
     actions: controls.actions,
     menu: [...controls.menu, mode, back, accept, reject],
   }

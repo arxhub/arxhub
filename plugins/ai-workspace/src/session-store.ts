@@ -1,26 +1,9 @@
-import { AppError, notFound, validation } from '@arxhub/errors'
+import { notFound, validation } from '@arxhub/errors'
 import type { VirtualFileSystem } from '@arxhub/vfs'
 import { nanoid } from 'nanoid'
 import { bytesToBase64 } from './bytes-wire'
+import { aiWorkspaceError } from './errors'
 import type { CompareWire } from './session-view'
-
-function archivedError(): AppError {
-  return new AppError({
-    code: 'AiWorkspaceSessionArchivedError',
-    statusCode: 409,
-    title: 'Session archived',
-    message: 'Archived sessions do not accept tool calls or a second accept',
-  })
-}
-
-function acceptBlocked(message: string): AppError {
-  return new AppError({
-    code: 'AiWorkspaceAcceptBlockedError',
-    statusCode: 409,
-    title: 'Accept blocked',
-    message,
-  })
-}
 
 export type SessionStatus = 'open' | 'proposed' | 'archived'
 export type SessionResult = 'accepted' | 'rejected' | null
@@ -141,7 +124,7 @@ export class AiSessionStore {
   async requireOpen(sessionId: string): Promise<SessionMeta> {
     const meta = await this.readMeta(sessionId)
     if (meta.status === 'archived') {
-      throw archivedError()
+      throw aiWorkspaceError('AiWorkspaceSessionArchivedError', 409)
     }
     return meta
   }
@@ -390,7 +373,7 @@ export class AiSessionStore {
       if (await main.exists()) {
         const current = await main.readText()
         if (current !== content && current !== base) {
-          throw acceptBlocked(`Accept blocked: conflict on ${change.pathname}`)
+          throw aiWorkspaceError('AiWorkspaceAcceptConflictError', 409, { path: change.pathname })
         }
       }
       await main.writeText(content)

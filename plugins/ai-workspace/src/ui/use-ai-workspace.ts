@@ -3,6 +3,7 @@ import { posix } from '@arxhub/path'
 import type { DiffRequest } from '@arxhub/plugin-diff'
 import { type DiffController, type DiffPart, useDiff } from '@arxhub/plugin-diff/ui'
 import { computed, effectScope, onMounted, ref, shallowRef, watch } from 'vue'
+import { t } from '../i18n/messages'
 import type { ChangeKind, CompareMode } from '../session-store'
 import type { CompareResult, SessionChange, SessionView } from '../session-view'
 
@@ -15,10 +16,11 @@ export interface AiWorkspaceProps {
   openSource: (pathname: string, excerpt: string) => Promise<void>
 }
 
-export const MODE_OPTIONS = [
-  { value: 'agent', label: 'Agent (base → worktree)' },
-  { value: 'apply', label: 'Apply (worktree → main)' },
-]
+const MODES = ['agent', 'apply'] as const satisfies readonly CompareMode[]
+
+export function modeOptions(): { value: CompareMode; label: string }[] {
+  return MODES.map((value) => ({ value, label: t(`modes.${value}`) }))
+}
 
 export const CHANGE_ICONS: Record<ChangeKind, string> = {
   modified: 'lu:square-pen',
@@ -27,17 +29,41 @@ export const CHANGE_ICONS: Record<ChangeKind, string> = {
   renamed: 'lu:move',
 }
 
-function messageOf(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason)
+// The server's words for a session and a change are wire values; one it sends that this build does not know
+// is shown as it came rather than dropped.
+function known<const K extends string>(keys: readonly K[], value: string, read: (key: K) => string): string {
+  const key = keys.find((k) => k === value)
+  return key == null ? value : read(key)
+}
+
+export function statusLabel(status: string): string {
+  return known(['open', 'proposed', 'archived'] as const, status, (key) => t(`sessionStatus.${key}`))
+}
+
+export function resultLabel(result: string): string {
+  return known(['accepted', 'rejected'] as const, result, (key) => t(`sessionResult.${key}`))
+}
+
+export function kindLabel(kind: ChangeKind): string {
+  return t(`changeKind.${kind}`)
+}
+
+// The compare answer names its two sides in English (the server has no language); the view names them in the reader's.
+export function sideLabel(label: string): string {
+  return known(['Base', 'Worktree', 'Main'] as const, label, (key) => t(`sides.${key}`))
 }
 
 export function sessionDetail(session: SessionView): string {
-  const count = session.changes.length
-  return `${session.status} · ${count} ${count === 1 ? 'change' : 'changes'}`
+  return `${statusLabel(session.status)} · ${t('changeCount', { count: session.changes.length })}`
 }
 
 export function changeLabel(change: SessionChange): string {
-  return `${change.kind} · ${change.fromPath && change.toPath ? `${change.fromPath} → ${change.toPath}` : change.pathname}`
+  return `${kindLabel(change.kind)} · ${change.fromPath && change.toPath ? `${change.fromPath} → ${change.toPath}` : change.pathname}`
+}
+
+export function statusLine(session: SessionView): string {
+  const status = statusLabel(session.status)
+  return session.result ? t('statusWithResult', { status, result: resultLabel(session.result) }) : t('status', { status })
 }
 
 // Which session and change are open. It outlives a component when the type's own page, the phone's band and its
@@ -50,7 +76,7 @@ export function createAiWorkspaceState(props: AiWorkspaceProps) {
   const selectedPath = ref<string | null>(null)
   const diffMode = ref<CompareMode>('agent')
   const busy = ref(false)
-  const error = ref('')
+  const error = shallowRef<unknown>(null)
   const compared = shallowRef<{ pathname: string; answer: CompareResult } | null>(null)
   const comparing = ref(false)
   let compareTicket = 0
@@ -65,8 +91,8 @@ export function createAiWorkspaceState(props: AiWorkspaceProps) {
       pathname: current.pathname,
       left: current.answer.left,
       right: current.answer.right,
-      leftLabel: current.answer.leftLabel,
-      rightLabel: current.answer.rightLabel,
+      leftLabel: sideLabel(current.answer.leftLabel),
+      rightLabel: sideLabel(current.answer.rightLabel),
     }
   })
   // The phone reads one change at a time: the diff takes the screen the proposal had.
@@ -86,14 +112,14 @@ export function createAiWorkspaceState(props: AiWorkspaceProps) {
       return
     }
     comparing.value = true
-    error.value = ''
+    error.value = null
     try {
       const answer = await props.compare(session.sessionId, pathname, diffMode.value)
       if (ticket === compareTicket) compared.value = { pathname, answer }
     } catch (reason) {
       if (ticket === compareTicket) {
         compared.value = null
-        error.value = messageOf(reason)
+        error.value = reason
       }
     } finally {
       if (ticket === compareTicket) comparing.value = false
@@ -118,7 +144,7 @@ export function createAiWorkspaceState(props: AiWorkspaceProps) {
   }
 
   async function refresh(): Promise<void> {
-    error.value = ''
+    error.value = null
     try {
       sessions.value = await props.loadSessions()
       const previous = active.value?.sessionId
@@ -131,18 +157,18 @@ export function createAiWorkspaceState(props: AiWorkspaceProps) {
         null
       active.value = preferred
     } catch (reason) {
-      error.value = messageOf(reason)
+      error.value = reason
     }
   }
 
   async function guarded(work: () => Promise<void>): Promise<boolean> {
     busy.value = true
-    error.value = ''
+    error.value = null
     try {
       await work()
       return true
     } catch (reason) {
-      error.value = messageOf(reason)
+      error.value = reason
       return false
     } finally {
       busy.value = false
@@ -226,7 +252,7 @@ export function useAiWorkspace(props: AiWorkspaceProps, shared?: AiWorkspaceCore
     (state.active.value?.changes ?? []).map((change) => ({
       id: change.pathname,
       label: posix.basename(change.pathname),
-      meta: change.kind,
+      meta: kindLabel(change.kind),
       icon: CHANGE_ICONS[change.kind],
     })),
   )

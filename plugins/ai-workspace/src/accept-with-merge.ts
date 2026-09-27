@@ -1,17 +1,8 @@
-import { AppError } from '@arxhub/errors'
+import { aiWorkspaceError } from './errors'
 import type { ChangeEntry } from './session-store'
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
-
-export function acceptBlocked(message: string): AppError {
-  return new AppError({
-    code: 'AiWorkspaceAcceptBlockedError',
-    statusCode: 409,
-    title: 'Accept blocked',
-    message,
-  })
-}
 
 function isStagingPath(pathname: string): boolean {
   return pathname.replace(/^\/+/, '').startsWith('_ai-workspace/')
@@ -43,7 +34,7 @@ export async function applyAcceptWithMerge(deps: ApplyAcceptDeps): Promise<void>
     const paths = [change.pathname, change.fromPath, change.toPath].filter((p): p is string => !!p)
     for (const path of new Set(paths)) {
       const ok = await deps.beforeClose(path)
-      if (!ok) throw acceptBlocked(`Unsaved changes blocked accept on ${path}`)
+      if (!ok) throw aiWorkspaceError('AiWorkspaceAcceptUnsavedError', 409, { path })
     }
   }
 
@@ -76,7 +67,7 @@ export async function applyAcceptWithMerge(deps: ApplyAcceptDeps): Promise<void>
       encoder.encode(ours),
       encoder.encode(theirs),
     )
-    if (merged == null) throw acceptBlocked(`Accept blocked: conflict on ${path}`)
+    if (merged == null) throw aiWorkspaceError('AiWorkspaceAcceptConflictError', 409, { path })
     await deps.writeVault(path, decoder.decode(merged))
   }
 

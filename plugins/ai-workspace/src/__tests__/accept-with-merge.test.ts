@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { acceptBlocked, applyAcceptWithMerge, mergerPathname } from '../accept-with-merge'
+import { applyAcceptWithMerge, mergerPathname } from '../accept-with-merge'
 import type { ChangeEntry } from '../session-store'
 
 describe('mergerPathname', () => {
@@ -74,7 +74,7 @@ describe('applyAcceptWithMerge', () => {
     expect(writes).toEqual([['note.md', 'merged\n']])
   })
 
-  test('throws AiWorkspaceAcceptBlockedError when merger declines', async () => {
+  test('throws AiWorkspaceAcceptConflictError when merger declines', async () => {
     await expect(
       applyAcceptWithMerge({
         changes: [{ pathname: 'note.md', kind: 'modified' }],
@@ -89,7 +89,7 @@ describe('applyAcceptWithMerge', () => {
         mergeContent: async () => null,
         archive: async () => {},
       }),
-    ).rejects.toMatchObject({ body: { code: 'AiWorkspaceAcceptBlockedError', statusCode: 409 } })
+    ).rejects.toMatchObject({ body: { code: 'AiWorkspaceAcceptConflictError', statusCode: 409, path: 'note.md' } })
   })
 
   test('skips staging paths', async () => {
@@ -115,11 +115,5 @@ describe('applyAcceptWithMerge', () => {
       archive: async () => {},
     })
     expect(writes).toEqual([['note.md', 'agent\n']])
-  })
-
-  test('acceptBlocked helper shapes the error', () => {
-    const err = acceptBlocked('x')
-    expect(err.body.code).toBe('AiWorkspaceAcceptBlockedError')
-    expect(err.body.statusCode).toBe(409)
   })
 })
