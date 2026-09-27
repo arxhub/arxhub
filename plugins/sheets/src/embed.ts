@@ -49,7 +49,7 @@ export const sheetContribution: ArxEditorContribution = {
   commands: (schema) => [
     {
       id: 'spreadsheet-embed',
-      label: t('title'),
+      label: t('embed.insert'),
       icon: 'lu:table-2',
       keywords: 'excel sheet таблица формулы',
       run: (state, dispatch) => {

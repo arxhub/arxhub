@@ -98,6 +98,7 @@ export const en = {
     retrySave: 'Retry save',
   },
   embed: {
+    insert: 'Spreadsheet',
     open: 'Open spreadsheet',
     configure: 'Configure spreadsheet',
     empty: 'Choose a spreadsheet file and range to display.',

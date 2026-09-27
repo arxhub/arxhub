@@ -103,6 +103,8 @@ export const ru: Translation<typeof en> = {
     retrySave: 'Сохранить снова',
   },
   embed: {
+    // Not the plain «Таблица»: the editor's own table block already carries that name in the same menu.
+    insert: 'Электронная таблица',
     open: 'Открыть таблицу',
     configure: 'Настроить таблицу',
     empty: 'Выберите файл таблицы и диапазон для показа.',
