@@ -1,11 +1,12 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
+import type { Text } from '@arxhub/i18n'
 import { shallowRef } from 'vue'
 
 // A theme is a whole unit, the way an editor's colour theme is — not a brightness switch. Its CSS
 // ships already loaded and scoped to `[data-arxhub-theme='<id>']`; selecting one flips the attribute.
 export interface Theme {
   id: string
-  title: string
+  title: Text
   // Whether the theme paints on a dark or a light base. Not a mode the user picks: it is a property
   // of the theme, and it tells the shared colour scales (danger, warning) which variant to use.
   base: 'light' | 'dark'

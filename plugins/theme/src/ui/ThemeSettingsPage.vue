@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { readText } from '@arxhub/i18n'
 import { PageLayout } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
+import { t } from '../i18n/messages'
 import { ThemeExtension } from '../theme-extension'
 
 const emit = defineEmits<{ select: [id: string] }>()
@@ -14,10 +16,10 @@ const touch = useShellFrame() === 'mobile'
 
 <template>
   <PageLayout
-    title="Appearance"
-    description="A theme is a whole unit — a dark theme is a different theme, not a switch on this one."
+    :title="t('appearance.title')"
+    :description="t('appearance.description')"
   >
-    <div class="grid" :class="{ touch }" role="radiogroup" aria-label="Theme">
+    <div class="grid" :class="{ touch }" role="radiogroup" :aria-label="t('appearance.theme')">
       <button
         v-for="theme in themes.themes.value"
         :key="theme.id"
@@ -39,7 +41,7 @@ const touch = useShellFrame() === 'mobile'
           <span class="swatch accent" />
           <span class="swatch text" />
         </span>
-        <span class="title">{{ theme.title }}</span>
+        <span class="title">{{ readText(theme.title) }}</span>
       </button>
     </div>
   </PageLayout>

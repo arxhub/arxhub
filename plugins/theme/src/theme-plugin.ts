@@ -3,6 +3,7 @@ import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { SettingsExtension } from '@arxhub/plugin-settings'
 import { Type } from '@sinclair/typebox'
 import { h, markRaw } from 'vue'
+import { t } from './i18n/messages'
 import { manifest } from './manifest'
 import type { Theme } from './theme-extension'
 import { ThemeExtension } from './theme-extension'
@@ -11,7 +12,7 @@ import ThemeSettingsPage from './ui/ThemeSettingsPage.vue'
 // Optional with no typebox default on purpose: with a default, an absent key reads back as 'default'
 // and "the owner chose light" cannot be told apart from "the owner chose nothing".
 export const ThemeConfigSchema = Type.Object({
-  theme: Type.Optional(Type.String({ title: 'Theme' })),
+  theme: Type.Optional(Type.String()),
 })
 
 // With no theme named, the default family follows the base already on the document — which the pre-paint
@@ -51,7 +52,7 @@ export class ThemePlugin extends Plugin {
     const config = ctx.services.get(PluginConfig)
     ctx.extensions.get(SettingsExtension).register({
       id: 'appearance',
-      title: 'Appearance',
+      title: () => t('appearance.title'),
       icon: 'lu:palette',
       order: 5,
       component: markRaw({
