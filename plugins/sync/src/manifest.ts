@@ -5,6 +5,7 @@ export const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Manual sync between local VFS and a remote ArxHub server',
+  descriptions: { ru: 'Синхронизация хранилища с сервером ArxHub' },
 } satisfies PluginManifest
 
 export const serverManifest = {
@@ -13,4 +14,5 @@ export const serverManifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Serves the batched sync object-store protocol over HTTP',
+  descriptions: { ru: 'Серверная часть синхронизации по HTTP' },
 } satisfies PluginManifest

@@ -1,5 +1,6 @@
-import { formatBytes } from '@arxhub/stdlib/format/bytes'
+import { formatBytes, formatNumber } from '@arxhub/i18n'
 import type { FetchProgress } from '@arxhub/sync'
+import { t } from '../i18n/messages'
 
 export interface DownloadFacts {
   // 0–100, for the bar.
@@ -18,8 +19,8 @@ export function downloadFacts(progress: FetchProgress | null): DownloadFacts {
   const percent = bytesTotal > 0 ? (bytesDone / bytesTotal) * 100 : filesTotal > 0 ? (filesDone / filesTotal) * 100 : 100
   return {
     percent: Math.min(100, Math.round(percent)),
-    documents: `${filesDone.toLocaleString('en-US')} of ${filesTotal.toLocaleString('en-US')}`,
-    downloaded: `${formatBytes(bytesDone)} of ${formatBytes(bytesTotal)}`,
+    documents: t('download.of', { done: formatNumber(filesDone), total: formatNumber(filesTotal) }),
+    downloaded: t('download.of', { done: formatBytes(bytesDone), total: formatBytes(bytesTotal) }),
     cloud: formatBytes(cloudBytes),
   }
 }

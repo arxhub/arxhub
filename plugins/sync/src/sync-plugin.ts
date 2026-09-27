@@ -9,26 +9,23 @@ import { EncryptedSyncRemote, HttpSyncRemote, SYNC_NAMESPACE, SyncEngine } from 
 import { type Static, Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
 import { adoptEntryServer } from './entry-server'
+import { syncSettingsUnreadable } from './errors'
+import { messages, t } from './i18n/messages'
 import { manifest } from './manifest'
 import { SyncExtension } from './sync-extension'
 import SyncActions from './ui/SyncActions.vue'
 import SyncStatus from './ui/SyncStatus.vue'
 
+// The words of each field live in the package catalog (`config` section), keyed by the field's key.
 export const SyncConfigSchema = Type.Object({
   // The server ORIGIN (e.g. https://hub.example.com) — the /sync route prefix is appended here.
-  serverUrl: Type.String({ title: 'Server URL', description: 'ArxHub server origin, e.g. https://hub.example.com', default: '' }),
+  serverUrl: Type.String({ default: '' }),
   // Auto-sync cadence in seconds. A no-change sync is ~1 request (getHead) and sync() no-ops while one
   // is already running, so polling is cheap; the manual footer button stays for an immediate push.
   // 0 disables the poll (manual-only).
   // Device-local (A-20): a phone on a weak connection must not impose its cadence on a desktop, while
   // the server address means the same thing everywhere and stays shared.
-  autoSyncSeconds: Type.Number({
-    title: 'Auto-sync interval (seconds)',
-    description: '0 to sync manually only',
-    default: 30,
-    minimum: 0,
-    deviceLocal: true,
-  }),
+  autoSyncSeconds: Type.Number({ default: 30, minimum: 0, deviceLocal: true }),
 })
 
 export class SyncPlugin extends Plugin {
@@ -60,7 +57,15 @@ export class SyncPlugin extends Plugin {
 
     const config = ctx.services.get(PluginConfig)
     const settings = ctx.extensions.get(SettingsExtension)
-    settings.register({ id: 'sync', title: 'Sync', icon: 'lu:refresh-cw', schema: SyncConfigSchema, order: 10, config })
+    settings.register({
+      id: 'sync',
+      title: () => t('settings.title'),
+      icon: 'lu:refresh-cw',
+      schema: SyncConfigSchema,
+      order: 10,
+      config,
+      messages,
+    })
 
     // The server address and the auto-sync cadence both apply without a restart: every write of this
     // section is routed through the same applyConfig() startSync uses on boot.
@@ -82,7 +87,7 @@ export class SyncPlugin extends Plugin {
       id: 'arxhub.sync',
       kind: 'status',
       component: markRaw(SyncStatus),
-      busy: () => (sync.status.value === 'syncing' ? { label: 'Syncing…' } : null),
+      busy: () => (sync.status.value === 'syncing' ? { label: t('status.syncing') } : null),
     })
     shell.status.register({ id: 'arxhub.sync.actions', kind: 'action', component: markRaw(SyncActions) })
   }
@@ -110,7 +115,7 @@ export class SyncPlugin extends Plugin {
     const message = error instanceof Error ? error.message : String(error)
     sync.status.value = 'error'
     sync.lastError.value = message
-    sync.failInitialDownload(message)
+    sync.failInitialDownload(message, error)
     this.logger.error('Could not initialize sync', error)
   }
 
@@ -149,7 +154,8 @@ export class SyncPlugin extends Plugin {
     const cfg = await config.tryRead(SyncConfigSchema)
     if (this.stopping) return
     if (cfg == null) {
-      ctx.extensions.get(SyncExtension).failInitialDownload("Could not read this device's sync settings")
+      const error = syncSettingsUnreadable()
+      ctx.extensions.get(SyncExtension).failInitialDownload(error.message, error)
       return
     }
     const keyring = ctx.extensions.get(KeyringExtension)

@@ -1,0 +1,45 @@
+export const en = {
+  settings: { title: 'Sync' },
+  config: {
+    serverUrl: { title: 'Server URL', description: 'ArxHub server origin, e.g. https://hub.example.com' },
+    autoSyncSeconds: { title: 'Auto-sync interval (seconds)', description: '0 to sync manually only' },
+  },
+  status: {
+    syncing: 'Syncing…',
+    failed: 'Sync failed',
+    synced: 'Synced {when}',
+    never: 'Not synced',
+  },
+  actions: {
+    syncNow: 'Sync now',
+    sync: 'Sync',
+    settings: 'Sync settings',
+  },
+  conflicts: {
+    resolved: { one: 'A sync conflict was resolved', other: '{count} sync conflicts were resolved' },
+    keptOne: 'Your version was kept; the other device\'s edit is at "{path}".',
+    keptMany: "Your versions were kept; the other device's edits are in: {paths}.",
+    unresolved: { one: '{count} conflict in "{path}"', other: '{count} conflicts in "{path}"' },
+    openToResolve: 'Open it to resolve.',
+    editOverDelete: 'Edit kept over a deletion: {path}',
+  },
+  download: {
+    step: 'Step 4 of 4',
+    here: 'Your vault is here',
+    downloading: 'Downloading your vault',
+    documents: 'Documents',
+    downloaded: 'Downloaded',
+    cloud: 'Stay in the cloud until opened',
+    of: '{done} of {total}',
+    stopped: 'The download stopped',
+    kept: 'What already arrived is kept — trying again continues from there.',
+    keepOpen: "Don't close or minimize the app while downloading. If it closes anyway, the download continues from the same place next time.",
+    threshold: "Files over {size} MB (videos, archives) aren't downloaded ahead — they open on demand. Change this in Settings → Storage.",
+    retry: 'Try again',
+    open: 'Open ArxHub',
+    busy: 'Downloading…',
+  },
+  errors: {
+    SyncSettingsUnreadableError: { title: 'Sync settings unreadable', message: "Could not read this device's sync settings" },
+  },
+} as const

@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { formatRelative } from '@arxhub/i18n'
 import { StatusDot } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onUnmounted, ref, watch } from 'vue'
+import { t } from '../i18n/messages'
 import { SyncExtension } from '../sync-extension'
 
 const arxhub = useArxHub()
@@ -14,11 +16,9 @@ const touch = useShellFrame() === 'mobile'
 watch(sync.lastConflicts, (conflicts) => {
   if (conflicts.length === 0) return
   toaster.create({
-    title: conflicts.length === 1 ? 'A sync conflict was resolved' : `${conflicts.length} sync conflicts were resolved`,
+    title: t('conflicts.resolved', { count: conflicts.length }),
     description:
-      conflicts.length === 1
-        ? `Your version was kept; the other device's edit is at "${conflicts[0]}".`
-        : `Your versions were kept; the other device's edits are in: ${conflicts.join(', ')}.`,
+      conflicts.length === 1 ? t('conflicts.keptOne', { path: conflicts[0] ?? '' }) : t('conflicts.keptMany', { paths: conflicts.join(', ') }),
     type: 'warning',
   })
 })
@@ -30,8 +30,8 @@ watch(sync.lastConflicts, (conflicts) => {
 watch(sync.lastUnresolved, (unresolved) => {
   for (const { pathname, count } of unresolved) {
     toaster.create({
-      title: `${count} conflict${count === 1 ? '' : 's'} in "${pathname}"`,
-      description: 'Open it to resolve.',
+      title: t('conflicts.unresolved', { count, path: pathname }),
+      description: t('conflicts.openToResolve'),
       type: 'warning',
     })
   }
@@ -43,7 +43,7 @@ watch(sync.lastUnresolved, (unresolved) => {
 watch(sync.lastDecisions, (decisions) => {
   for (const { pathname, kind } of decisions) {
     if (kind !== 'edit-over-delete') continue
-    toaster.create({ title: `Edit kept over a deletion: ${pathname}`, type: 'warning' })
+    toaster.create({ title: t('conflicts.editOverDelete', { path: pathname }), type: 'warning' })
   }
 })
 
@@ -61,24 +61,21 @@ const state = computed<'never' | 'synced' | 'syncing' | 'error'>(() => {
   return sync.lastSynced.value ? 'synced' : 'never'
 })
 
+// Clamped to now: a clock that stepped back must not read as "in 3 seconds".
 function relative(from: Date): string {
-  const s = Math.max(0, Math.round((now.value - from.getTime()) / 1000))
-  if (s < 60) return `${s}s ago`
-  const m = Math.round(s / 60)
-  if (m < 60) return `${m}m ago`
-  return `${Math.round(m / 60)}h ago`
+  return formatRelative(Math.min(from.getTime(), now.value), now.value, 'short')
 }
 
 const statusLabel = computed(() => {
   switch (state.value) {
     case 'syncing':
-      return 'Syncing…'
+      return t('status.syncing')
     case 'error':
-      return 'Sync failed'
+      return t('status.failed')
     case 'synced':
-      return `Synced ${relative(sync.lastSynced.value as Date)}`
+      return t('status.synced', { when: relative(sync.lastSynced.value as Date) })
     default:
-      return 'Not synced'
+      return t('status.never')
   }
 })
 

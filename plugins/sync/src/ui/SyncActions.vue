@@ -4,6 +4,7 @@ import { ShellExtension } from '@arxhub/plugin-shell'
 import { Icon } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
+import { t } from '../i18n/messages'
 import { SyncExtension } from '../sync-extension'
 
 const arxhub = useArxHub()
@@ -27,15 +28,17 @@ function openSettings(): void {
     <button
       type="button"
       class="fx-item"
-      aria-label="Sync now"
-      title="Sync now"
+      :aria-label="t('actions.syncNow')"
+      :title="t('actions.syncNow')"
       :disabled="syncing || !sync.engine"
       @click="sync.sync({ full: true })"
     >
       <Icon name="lu:refresh-cw" :size="touch ? 16 : 14" :class="{ spin: syncing }" />
-      Sync
+      <!-- The phone's status block is one line beside the states, and the approved mock puts sync there as an
+           icon alone; the aria-label names it either way. -->
+      <template v-if="!touch">{{ t('actions.sync') }}</template>
     </button>
-    <button type="button" class="fx-item" aria-label="Sync settings" title="Sync settings" @click="openSettings">
+    <button type="button" class="fx-item" :aria-label="t('actions.settings')" :title="t('actions.settings')" @click="openSettings">
       <Icon name="lu:settings" :size="touch ? 16 : 14" />
     </button>
   </div>

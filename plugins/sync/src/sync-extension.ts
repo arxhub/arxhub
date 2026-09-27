@@ -15,6 +15,9 @@ export interface InitialDownload {
   status: InitialDownloadStatus
   progress: FetchProgress | null
   error: string | null
+  // What `error` came from, for the gate to say in the reader's language — `error` itself stays the
+  // English message logs and tests read.
+  cause?: unknown
 }
 
 // What the plugin does around a first download that the extension cannot: finishing the join once the
@@ -34,6 +37,7 @@ export class SyncExtension extends Extension {
   readonly status = ref<SyncStatus>('idle')
   readonly lastSynced = ref<Date | null>(null)
   readonly lastError = ref<string | null>(null)
+  readonly lastFailure = shallowRef<unknown>(null)
   // Conflict copies the MOST RECENT sync round wrote (vault paths, cleared at the start of the next
   // round) — the only way today a user learns a conflict exists at all short of stumbling on a
   // `conflict-*` file while browsing. Not cumulative across rounds: a UI reacting to it (a toast) is
@@ -102,9 +106,9 @@ export class SyncExtension extends Extension {
     return this.initialHooks != null && this.initialDownload.value.status !== 'done'
   }
 
-  failInitialDownload(message: string): void {
+  failInitialDownload(message: string, cause?: unknown): void {
     if (this.initialHooks == null) return
-    this.initialDownload.value = { ...this.initialDownload.value, status: 'failed', error: message }
+    this.initialDownload.value = { ...this.initialDownload.value, status: 'failed', error: message, cause }
   }
 
   // The joining device's first round: full, reported as it goes, and finished (config written, entry
@@ -131,7 +135,12 @@ export class SyncExtension extends Extension {
       unsubscribe()
     }
     if (this.status.value === 'error') {
-      this.initialDownload.value = { ...this.initialDownload.value, status: 'failed', error: this.lastError.value }
+      this.initialDownload.value = {
+        ...this.initialDownload.value,
+        status: 'failed',
+        error: this.lastError.value,
+        cause: this.lastFailure.value,
+      }
       return
     }
     try {
@@ -142,16 +151,18 @@ export class SyncExtension extends Extension {
         ...this.initialDownload.value,
         status: 'failed',
         error: error instanceof Error ? error.message : String(error),
+        cause: error,
       }
       return
     }
     this.initialHooks = null
-    this.initialDownload.value = { ...this.initialDownload.value, status: 'done', error: null }
+    this.initialDownload.value = { ...this.initialDownload.value, status: 'done', error: null, cause: undefined }
   }
 
   private async runRound(engine: SyncEngine, options: { full?: boolean }): Promise<void> {
     this.status.value = 'syncing'
     this.lastError.value = null
+    this.lastFailure.value = null
     this.lastConflicts.value = []
     this.lastUnresolved.value = []
     this.lastDecisions.value = []
@@ -168,6 +179,7 @@ export class SyncExtension extends Extension {
       // Don't swallow: log for diagnostics and expose the message so the footer can surface it.
       this.logger.error('Sync failed', error)
       this.lastError.value = error instanceof Error ? error.message : String(error)
+      this.lastFailure.value = error
       this.status.value = 'error'
     } finally {
       // storage/ has no watcher of its own. Signal consumers before the asynchronous pending refresh,
