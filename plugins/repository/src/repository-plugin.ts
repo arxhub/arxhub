@@ -7,10 +7,12 @@ import { VfsExtension } from '@arxhub/plugin-vfs'
 import { Repo } from '@arxhub/sync'
 import { PluginVfs, RootVfs, VaultWatcher } from '@arxhub/vfs'
 import { type Static, Type } from '@sinclair/typebox'
+import { messages, t } from './i18n/messages'
 import { manifest } from './manifest'
 import { RepositoryExtension } from './repository-extension'
 import { DEFAULT_TEXT_EXTENSIONS, textMerger, toTextExtensions } from './text-merger'
 
+// The words of each field live in the package catalog (`config` section), keyed by the field's key.
 export const RepositoryConfigSchema = Type.Object({
   // Device-local (A-20): a phone with little storage keeps a small slice of the vault on disk while a
   // desktop may keep everything, and the two must not agree by sync. A file already on disk stays
@@ -20,26 +22,12 @@ export const RepositoryConfigSchema = Type.Object({
   //
   // 20 MB by default, not "everything" (A-45, owner 2026-09-15): a film or a raw export arriving from
   // another device is not downloaded until this one opens it; a note, a photo, a PDF always is.
-  materializeUpTo: Type.Number({
-    title: 'Keep files up to (MB) on this device',
-    description: '0 keeps everything on this device; larger files stay on the server until opened',
-    default: 20,
-    minimum: 0,
-    deviceLocal: true,
-    unit: 'MB',
-  }),
+  materializeUpTo: Type.Number({ default: 20, minimum: 0, deviceLocal: true }),
   // Synced, not device-local: which files are text is a fact about the vault, and two devices merging the
   // same note by two different rules would produce two different files. Optional for the reason
   // `index.exclude` in plugins/search is — an empty list is a legitimate value ("merge nothing as text"),
   // and a required field that is empty blocks the global save from the moment the section opens.
-  'merge.textExtensions': Type.Optional(
-    Type.Array(Type.String(), {
-      title: 'Merge as text',
-      description:
-        'Files with these extensions are merged line by line when both devices edited them; what still disagrees is marked in the file. Anything else becomes a conflict copy beside the original.',
-      default: [...DEFAULT_TEXT_EXTENSIONS],
-    }),
-  ),
+  'merge.textExtensions': Type.Optional(Type.Array(Type.String(), { default: [...DEFAULT_TEXT_EXTENSIONS] })),
 })
 
 export class RepositoryPlugin extends Plugin {
@@ -78,7 +66,15 @@ export class RepositoryPlugin extends Plugin {
 
     const config = ctx.services.get(PluginConfig)
     const settings = ctx.extensions.get(SettingsExtension)
-    settings.register({ id: 'repository', title: 'Storage', icon: 'lu:hard-drive', schema: RepositoryConfigSchema, order: 9, config })
+    settings.register({
+      id: 'repository',
+      title: () => t('settings.title'),
+      icon: 'lu:hard-drive',
+      schema: RepositoryConfigSchema,
+      order: 9,
+      config,
+      messages,
+    })
 
     const repository = ctx.extensions.get(RepositoryExtension)
     this.unregisterPendingRanges = ctx.extensions.get(VfsExtension).registerPendingRangeSource({

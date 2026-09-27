@@ -1,11 +1,18 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { illegalState, validation } from '@arxhub/errors'
+import { validation } from '@arxhub/errors'
 import { join } from '@arxhub/path'
 import type { KeyringExtension } from '@arxhub/plugin-protection'
 import { FileHistory, type Repo, type Snapshot } from '@arxhub/sync'
 import type { RangeReader, VirtualFileSystem } from '@arxhub/vfs'
 import { ref, type ShallowRef, shallowRef } from 'vue'
 import { type ContentMergerRegistration, ContentMergerRegistry } from './content-mergers'
+import {
+  repositoryFileOffline,
+  repositoryRangeOffline,
+  repositoryStorageChanged,
+  repositoryStorageOffline,
+  repositoryVersionOffline,
+} from './errors'
 import { migrateRepositoryStore, REPO_STORE_PATH } from './store-migration'
 
 const VAULT_PREFIX = 'vault/'
@@ -64,7 +71,7 @@ export class RepositoryExtension extends Extension {
       this.repo,
       () => this.ready(),
       async (snapshot, path) => {
-        if (!this.remote) throw illegalState('Connect to the sync server to download this version.')
+        if (!this.remote) throw repositoryVersionOffline()
         await this.remote.fetchFile(snapshot, path)
       },
     )
@@ -111,7 +118,7 @@ export class RepositoryExtension extends Extension {
   // an actionable refusal when there is no remote to fetch from, rather than opening a truncated file.
   async materializeIfPending(vaultPath: string): Promise<void> {
     if (!(await this.isPending(vaultPath))) return
-    if (!this.remote) throw illegalState('This file is on the server — turn sync on to open it.')
+    if (!this.remote) throw repositoryFileOffline()
     await this.remote.materialize(join('vault', vaultPath))
     await this.refreshPending()
   }
@@ -124,7 +131,7 @@ export class RepositoryExtension extends Extension {
     const prefix = `${storage}/`
     const pending = (await this.repo.pendingPaths()).filter((path) => path.startsWith(prefix) && includes(path.slice(prefix.length)))
     if (pending.length === 0) return
-    if (!this.remote) throw illegalState(`Storage for plugin "${pluginName}" is on the server — turn sync on before using it.`)
+    if (!this.remote) throw repositoryStorageOffline(pluginName)
     for (const path of pending) await this.remote.materialize(path)
   }
 
@@ -138,7 +145,7 @@ export class RepositoryExtension extends Extension {
       const prefix = `${storage}/`
       const pending = (await this.repo.pendingPaths()).filter((path) => path.startsWith(prefix) && includes(path.slice(prefix.length)))
       if (pending.length > 0) {
-        throw illegalState(`Storage for plugin "${pluginName}" changed while it was being prepared — retry the action.`)
+        throw repositoryStorageChanged(pluginName)
       }
       await this.repo.add(storage)
       return work()
@@ -148,7 +155,7 @@ export class RepositoryExtension extends Extension {
   async openPendingRangeReader(vaultPath: string): Promise<RangeReader | null> {
     await this.ready()
     return this.repo.openPendingRangeReader(join('vault', vaultPath), async (hashes) => {
-      if (!this.remote) throw illegalState('This part of the file is not cached — turn sync on and retry.')
+      if (!this.remote) throw repositoryRangeOffline()
       await this.remote.fetchChunks(hashes)
     })
   }

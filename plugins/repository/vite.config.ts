@@ -5,6 +5,7 @@ export default defineConfig((env) =>
   createVueConfig(__dirname, env, {
     entries: ['src/index.ts', 'src/manifest.ts'],
     external: [
+      '@arxhub/i18n',
       '@arxhub/config',
       '@arxhub/core',
       '@arxhub/errors',
