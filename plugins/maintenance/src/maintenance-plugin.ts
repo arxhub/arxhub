@@ -3,6 +3,7 @@ import { SettingsExtension } from '@arxhub/plugin-settings'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { markRaw } from 'vue'
 import type { BootPolicy } from './boot-policy'
+import { t } from './i18n/messages'
 import { MaintenanceExtension } from './maintenance-extension'
 import { manifest } from './manifest'
 import MaintenanceStatus from './ui/MaintenanceStatus.vue'
@@ -33,7 +34,7 @@ export class MaintenancePlugin extends Plugin {
 
     ctx.extensions.get(SettingsExtension).register({
       id: 'plugins',
-      title: 'Plugins',
+      title: () => t('page.title'),
       icon: 'lu:puzzle',
       order: 850,
       component: markRaw(PluginsSettingsPage),

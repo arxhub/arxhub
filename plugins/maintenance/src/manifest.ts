@@ -5,6 +5,7 @@ export const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Plugin switches and the maintenance-mode boot',
+  descriptions: { ru: 'Переключатели плагинов и запуск в режиме обслуживания' },
   // The switch that turns other plugins off cannot be one of the things you can turn off.
   essential: true,
 } satisfies PluginManifest

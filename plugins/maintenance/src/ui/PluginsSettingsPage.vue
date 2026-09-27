@@ -2,8 +2,9 @@
 import { Button, modals, PageLayout, Switch } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, reactive, ref } from 'vue'
+import { t } from '../i18n/messages'
 import { MaintenanceExtension } from '../maintenance-extension'
-import { pluginLabel } from '../plugin-label'
+import { pluginDescription, pluginLabel } from '../plugin-label'
 
 const arxhub = useArxHub()
 const policy = arxhub.extensions.get(MaintenanceExtension).policy
@@ -36,11 +37,9 @@ function setMaintenance(on: boolean): void {
 
 function confirmMaintenance(): void {
   modals.openConfirmModal({
-    title: 'Restart in maintenance mode',
-    content:
-      'Only essential plugins will load — no explorer, no editors, no sync. Use it when the app will not start ' +
-      'normally. You can leave it again from this page.',
-    labels: { confirm: 'Restart', cancel: 'Cancel' },
+    title: t('page.confirmTitle'),
+    content: t('page.confirmText'),
+    labels: { confirm: t('page.confirm'), cancel: t('page.cancel') },
     onConfirm: () => setMaintenance(true),
   })
 }
@@ -52,22 +51,19 @@ function reset(): void {
 </script>
 
 <template>
-  <PageLayout title="Plugins" description="Which plugins this device loads. A switch takes effect on the next start.">
+  <PageLayout :title="t('page.title')" :description="t('page.description')">
     <div class="plugins-body" :class="{ touch: mobile }">
     <section v-if="arxhub.maintenance" class="banner">
       <div>
-        <p class="banner-title">Maintenance mode is on</p>
-        <p class="hint">Only essential plugins are running. Switch off whatever broke, then leave maintenance mode.</p>
+        <p class="banner-title">{{ t('page.bannerTitle') }}</p>
+        <p class="hint">{{ t('page.bannerHint') }}</p>
       </div>
-      <Button :size="buttonSize" @click="setMaintenance(false)">Leave and restart</Button>
+      <Button :size="buttonSize" @click="setMaintenance(false)">{{ t('page.leave') }}</Button>
     </section>
 
     <section class="block">
-      <h3 class="block-title">Installed plugins</h3>
-      <p class="hint">
-        A plugin that is switched off does not load at all — it registers nothing and its settings disappear with it.
-        Essential plugins keep the app itself running and cannot be switched off.
-      </p>
+      <h3 class="block-title">{{ t('page.installed') }}</h3>
+      <p class="hint">{{ t('page.installedHint') }}</p>
 
       <ul class="list">
         <li v-for="plugin in plugins" :key="plugin.name" class="row" :class="{ touch: mobile }">
@@ -75,15 +71,15 @@ function reset(): void {
             <p class="row-title">
               <span class="name">{{ pluginLabel(plugin.name) }}</span>
               <span class="version">{{ plugin.version }}</span>
-              <span v-if="plugin.essential" class="tag">essential</span>
-              <span v-else-if="!plugin.enabled" class="tag">not running</span>
+              <span v-if="plugin.essential" class="tag">{{ t('page.essential') }}</span>
+              <span v-else-if="!plugin.enabled" class="tag">{{ t('page.notRunning') }}</span>
             </p>
-            <p v-if="plugin.description" class="hint">{{ plugin.description }}</p>
+            <p v-if="pluginDescription(plugin)" class="hint">{{ pluginDescription(plugin) }}</p>
           </div>
           <Switch
             :model-value="plugin.essential || enabled[plugin.name]"
             :disabled="plugin.essential"
-            :aria-label="`Enable ${pluginLabel(plugin.name)}`"
+            :aria-label="t('page.enable', { name: pluginLabel(plugin.name) })"
             :data-testid="`plugin-switch-${plugin.name}`"
             @update:model-value="toggle(plugin.name, $event)"
           />
@@ -91,20 +87,17 @@ function reset(): void {
       </ul>
 
       <div v-if="pending" class="pending" role="status">
-        <span class="hint">Plugin changes apply on the next start.</span>
-        <Button :size="buttonSize" @click="restart">Restart now</Button>
+        <span class="hint">{{ t('page.pending') }}</span>
+        <Button :size="buttonSize" @click="restart">{{ t('page.restartNow') }}</Button>
       </div>
     </section>
 
     <section class="block">
-      <h3 class="block-title">Recovery</h3>
-      <p class="hint">
-        If the app stops starting at all, it shows a crash screen with the same switches. Maintenance mode is the same
-        thing from the inside: boot the essentials only, fix what broke, come back.
-      </p>
+      <h3 class="block-title">{{ t('page.recovery') }}</h3>
+      <p class="hint">{{ t('page.recoveryHint') }}</p>
       <div class="row-actions">
         <Button v-if="!arxhub.maintenance" :size="buttonSize" variant="secondary" @click="confirmMaintenance">
-          Restart in maintenance mode
+          {{ t('page.enterMaintenance') }}
         </Button>
         <Button
           v-if="anyDisabled || arxhub.maintenance"
@@ -112,7 +105,7 @@ function reset(): void {
           variant="secondary"
           @click="reset"
         >
-          Reset all switches
+          {{ t('page.reset') }}
         </Button>
       </div>
     </section>

@@ -1,0 +1,88 @@
+export const en = {
+  // What a plugin is doing, said in words rather than as the method name.
+  phase: {
+    setup: 'preparing',
+    create: 'registering',
+    configure: 'wiring',
+    start: 'starting',
+  },
+  // The same phases after "failed while …" / "stopped while …" — Russian needs another case there.
+  phaseDuring: {
+    setup: 'preparing',
+    create: 'registering',
+    configure: 'wiring',
+    start: 'starting',
+  },
+  boot: {
+    title: 'Starting ArxHub',
+    ready: { one: '{ready} of {count} plugin ready', other: '{ready} of {count} plugins ready' },
+    off: 'switched off',
+    done: 'ready',
+    failed: 'failed while {phase}',
+    loading: 'loading',
+    waiting: 'waiting',
+  },
+  crash: {
+    title: 'ArxHub could not start',
+    failed: {
+      one: '{count} plugin failed during startup. Turn the plugin off to boot without it — your files are untouched.',
+      other: '{count} plugins failed during startup. Turn the plugin off to boot without it — your files are untouched.',
+    },
+    outside: 'The boot failed outside any plugin, so there is nothing specific to switch off.',
+    maintenanceNote: 'This was already a maintenance boot: only essential plugins ran, and one of them is what broke.',
+    whatBroke: 'What broke',
+    boot: 'Boot',
+    stackTrace: 'Stack trace',
+    howFar: 'How far it got',
+    loaded: 'loaded',
+    failedWhile: 'failed while {phase}',
+    stoppedWhile: 'stopped while {phase}',
+    neverStarted: 'never started',
+    plugins: 'Plugins',
+    pluginsHint:
+      'Unchecked plugins will not load on the next start. Essential ones keep the app and this screen working, so they cannot be switched off.',
+    essential: 'essential',
+    failedBadge: 'failed',
+    apply: 'Apply and restart ({count} changed)',
+    restart: 'Restart',
+    continue: 'Continue anyway',
+    enterMaintenance: 'Restart in maintenance mode',
+    leaveMaintenance: 'Leave maintenance mode',
+    copy: 'Copy report',
+    copied: 'Report copied',
+    copyFailed: 'Could not copy — shown below',
+    reset: 'Reset all switches',
+  },
+  status: {
+    label: 'Maintenance mode',
+    title: 'Only essential plugins are running',
+  },
+  page: {
+    title: 'Plugins',
+    description: 'Which plugins this device loads. A switch takes effect on the next start.',
+    bannerTitle: 'Maintenance mode is on',
+    bannerHint: 'Only essential plugins are running. Switch off whatever broke, then leave maintenance mode.',
+    leave: 'Leave and restart',
+    installed: 'Installed plugins',
+    installedHint:
+      'A plugin that is switched off does not load at all — it registers nothing and its settings disappear with it. Essential plugins keep the app itself running and cannot be switched off.',
+    essential: 'essential',
+    notRunning: 'not running',
+    enable: 'Enable {name}',
+    pending: 'Plugin changes apply on the next start.',
+    restartNow: 'Restart now',
+    recovery: 'Recovery',
+    recoveryHint:
+      'If the app stops starting at all, it shows a crash screen with the same switches. Maintenance mode is the same thing from the inside: boot the essentials only, fix what broke, come back.',
+    enterMaintenance: 'Restart in maintenance mode',
+    reset: 'Reset all switches',
+    confirmTitle: 'Restart in maintenance mode',
+    confirmText:
+      'Only essential plugins will load — no explorer, no editors, no sync. Use it when the app will not start normally. You can leave it again from this page.',
+    confirm: 'Restart',
+    cancel: 'Cancel',
+  },
+  errors: {
+    BootCompositionError: { title: 'Bad composition', message: "This build's plugin list cannot boot. {message}" },
+  },
+} as const

@@ -5,7 +5,9 @@ import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, reactive, ref } from 'vue'
 import type { BootLedger } from '../boot-ledger'
 import type { BootPolicy } from '../boot-policy'
-import { pluginLabel } from '../plugin-label'
+import { t } from '../i18n/messages'
+import { phaseDuring } from '../phase-label'
+import { pluginDescription, pluginLabel } from '../plugin-label'
 
 const props = defineProps<{
   error: unknown
@@ -39,13 +41,11 @@ const changed = computed(() => switchable.value.filter((it) => enabled[it.name] 
 // is left out here — it is already listed, with its switch, in the section below.
 const reached = computed(() => (props.ledger?.entries ?? []).filter((it) => it.state !== 'off'))
 
-const LEDGER_PHASE: Record<string, string> = { setup: 'preparing', create: 'registering', configure: 'wiring', start: 'starting' }
-
 function ledgerState(entry: { state: string; phase: string | null }): string {
-  if (entry.state === 'ready') return 'loaded'
-  if (entry.state === 'failed') return `failed while ${LEDGER_PHASE[entry.phase ?? ''] ?? entry.phase}`
-  if (entry.state === 'running') return `stopped while ${LEDGER_PHASE[entry.phase ?? ''] ?? entry.phase}`
-  return 'never started'
+  if (entry.state === 'ready') return t('crash.loaded')
+  if (entry.state === 'failed') return t('crash.failedWhile', { phase: phaseDuring(entry.phase) })
+  if (entry.state === 'running') return t('crash.stoppedWhile', { phase: phaseDuring(entry.phase) })
+  return t('crash.neverStarted')
 }
 
 const busy = ref(false)
@@ -118,37 +118,34 @@ function copyReport(): void {
   <!-- The gate is not <main> on purpose: the app's own main landmark is what tells the rest of the suite
        (and a screen reader) that the app itself came up, and a crash screen must not answer to that. -->
   <GateLayout class="crash" role="alertdialog" width="page">
-    <template #title>ArxHub could not start</template>
+    <template #title>{{ t('crash.title') }}</template>
     <template #text>
       <template v-if="failures.length > 0">
-        {{ failures.length }} plugin{{ failures.length > 1 ? 's' : '' }} failed during startup. Turn the plugin off to boot
-        without it — your files are untouched.
+        {{ t('crash.failed', { count: failures.length }) }}
       </template>
-      <template v-else>The boot failed outside any plugin, so there is nothing specific to switch off.</template>
+      <template v-else>{{ t('crash.outside') }}</template>
     </template>
 
     <div class="report">
-      <p v-if="maintenance" class="note">
-        This was already a maintenance boot: only essential plugins ran, and one of them is what broke.
-      </p>
+      <p v-if="maintenance" class="note">{{ t('crash.maintenanceNote') }}</p>
 
       <section class="block">
-        <h2 class="block-title">What broke</h2>
+        <h2 class="block-title">{{ t('crash.whatBroke') }}</h2>
         <div v-for="(failure, i) in failures" :key="i" class="failure">
           <p class="failure-head">
-            <strong>{{ failure.plugin == null ? 'Boot' : pluginLabel(failure.plugin) }}</strong>
+            <strong>{{ failure.plugin == null ? t('crash.boot') : pluginLabel(failure.plugin) }}</strong>
             <span class="phase">{{ failure.phase }}()</span>
           </p>
           <p class="failure-message">{{ message(failure.error) }}</p>
           <details>
-            <summary>Stack trace</summary>
+            <summary>{{ t('crash.stackTrace') }}</summary>
             <ScrollArea class="trace"><pre class="trace-text">{{ trace(failure.error) }}</pre></ScrollArea>
           </details>
         </div>
         <div v-if="failures.length === 0" class="failure">
           <p class="failure-message">{{ message(error) }}</p>
           <details>
-            <summary>Stack trace</summary>
+            <summary>{{ t('crash.stackTrace') }}</summary>
             <ScrollArea class="trace"><pre class="trace-text">{{ trace(error) }}</pre></ScrollArea>
           </details>
         </div>
@@ -157,7 +154,7 @@ function copyReport(): void {
       <!-- What the failure alone cannot say: the plugin it names is one of many, and which of the others
            were already through is most of what tells a broken plugin apart from a broken order. -->
       <section v-if="reached.length > 0" class="block">
-        <h2 class="block-title">How far it got</h2>
+        <h2 class="block-title">{{ t('crash.howFar') }}</h2>
         <ul class="ledger">
           <Row v-for="entry in reached" :key="entry.name" as="li" plain :class="`ledger-row--${entry.state}`">
             <span class="ledger-text">
@@ -169,35 +166,32 @@ function copyReport(): void {
       </section>
 
       <section class="block">
-        <h2 class="block-title">Plugins</h2>
-        <p class="hint">
-          Unchecked plugins will not load on the next start. Essential ones keep the app and this screen working, so they
-          cannot be switched off.
-        </p>
+        <h2 class="block-title">{{ t('crash.plugins') }}</h2>
+        <p class="hint">{{ t('crash.pluginsHint') }}</p>
         <ul class="plugins" :class="{ touch }">
           <li v-for="plugin in catalog" :key="plugin.name" class="plugin" :class="{ 'plugin--blamed': culprits.has(plugin.name) }">
             <div class="plugin-label">
               <Switch v-model="enabled[plugin.name]" :label="pluginLabel(plugin.name)" :disabled="plugin.essential || busy" />
-              <Badge v-if="plugin.essential">essential</Badge>
-              <Badge v-if="culprits.has(plugin.name)" variant="danger">failed</Badge>
+              <Badge v-if="plugin.essential">{{ t('crash.essential') }}</Badge>
+              <Badge v-if="culprits.has(plugin.name)" variant="danger">{{ t('crash.failedBadge') }}</Badge>
             </div>
-            <p v-if="plugin.description" class="plugin-description">{{ plugin.description }}</p>
+            <p v-if="pluginDescription(plugin)" class="plugin-description">{{ pluginDescription(plugin) }}</p>
           </li>
         </ul>
       </section>
 
       <footer class="actions">
         <Button variant="primary" :disabled="busy" @click="apply()">
-          {{ changed.length > 0 ? `Apply and restart (${changed.length} changed)` : 'Restart' }}
+          {{ changed.length > 0 ? t('crash.apply', { count: changed.length }) : t('crash.restart') }}
         </Button>
-        <Button v-if="continuable" variant="secondary" :disabled="busy" @click="onContinue">Continue anyway</Button>
-        <Button v-if="!maintenance" variant="secondary" :disabled="busy" @click="apply(true)">Restart in maintenance mode</Button>
-        <Button v-else variant="secondary" :disabled="busy" @click="apply(false)">Leave maintenance mode</Button>
+        <Button v-if="continuable" variant="secondary" :disabled="busy" @click="onContinue">{{ t('crash.continue') }}</Button>
+        <Button v-if="!maintenance" variant="secondary" :disabled="busy" @click="apply(true)">{{ t('crash.enterMaintenance') }}</Button>
+        <Button v-else variant="secondary" :disabled="busy" @click="apply(false)">{{ t('crash.leaveMaintenance') }}</Button>
         <Button variant="ghost" :disabled="busy" @click="copyReport">
-          {{ copyState === 'copied' ? 'Report copied' : copyState === 'failed' ? 'Could not copy — shown below' : 'Copy report' }}
+          {{ copyState === 'copied' ? t('crash.copied') : copyState === 'failed' ? t('crash.copyFailed') : t('crash.copy') }}
         </Button>
         <Button v-if="policy.disabled.length > 0 || maintenance" variant="ghost" :disabled="busy" @click="resetPolicy">
-          Reset all switches
+          {{ t('crash.reset') }}
         </Button>
       </footer>
 

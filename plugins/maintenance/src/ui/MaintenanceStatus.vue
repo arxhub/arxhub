@@ -2,6 +2,7 @@
 import { SETTINGS_TYPE_ID, SettingsExtension } from '@arxhub/plugin-settings'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
+import { t } from '../i18n/messages'
 
 const arxhub = useArxHub()
 const shell = arxhub.extensions.get(ShellExtension)
@@ -15,8 +16,8 @@ function openPlugins(): void {
 </script>
 
 <template>
-  <button class="maintenance" :class="{ touch }" type="button" title="Only essential plugins are running" @click="openPlugins">
-    Maintenance mode
+  <button class="maintenance" :class="{ touch }" type="button" :title="t('status.title')" @click="openPlugins">
+    {{ t('status.label') }}
   </button>
 </template>
 
