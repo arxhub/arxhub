@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { Button, Card, ModalSurface } from '@arxhub/uikit/core'
+import { Button, Card, Interpolated, ModalSurface } from '@arxhub/uikit/core'
+import { messages, t } from '../i18n/messages'
 
 defineProps<{ open: boolean; busy?: boolean; error?: string | null }>()
 const emit = defineEmits<{ close: []; erase: [] }>()
 </script>
 
 <template>
-  <ModalSurface :open="open" title="Forgot the code?" size="md" @close="emit('close')">
-    <p class="copy">The code can't be recovered — without it the key on this device can't be read. That's what protects your data.</p>
+  <ModalSurface :open="open" :title="t('forgot.title')" size="md" @close="emit('close')">
+    <p class="copy">{{ t('forgot.lost') }}</p>
     <p class="copy">
-      If you have the <strong>recovery phrase</strong> and your vault is on a server, you won't lose anything: erase this device and connect it again.
+      <Interpolated :text="messages.raw('forgot.phrase')">
+        <template #phrase><strong>{{ t('forgot.phraseWord') }}</strong></template>
+      </Interpolated>
     </p>
-    <Card notice variant="warning" icon="lu:triangle-alert" title="Without the phrase and a server, this device's documents will be lost." />
+    <Card notice variant="warning" icon="lu:triangle-alert" :title="t('forgot.warning')" />
     <p v-if="error" class="error" role="alert">{{ error }}</p>
-    <Button block variant="danger" solid :disabled="busy" data-testid="erase-device" @click="emit('erase')">Erase and connect again</Button>
+    <Button block variant="danger" solid :disabled="busy" data-testid="erase-device" @click="emit('erase')">{{ t('forgot.erase') }}</Button>
   </ModalSurface>
 </template>
 

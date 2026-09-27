@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button, Input } from '@arxhub/uikit/core'
+import { t } from '../i18n/messages'
 import type { PinEntryProps } from './pin-entry'
 import { usePinEntry } from './use-pin-entry'
 
@@ -68,7 +69,7 @@ defineExpose({ focus })
           @mousedown.prevent
           @click="press(key)"
         >
-          {{ key === 'delete' ? 'Delete' : key }}
+          {{ key === 'delete' ? t('pad.delete') : key }}
         </button>
       </template>
     </div>

@@ -1,4 +1,5 @@
 import { computed, markRaw, type Ref, ref } from 'vue'
+import { t } from './i18n/messages'
 
 const FAILURES_BEFORE_BACKOFF = 3
 const MAX_BACKOFF_SECONDS = 30
@@ -32,7 +33,7 @@ export class CodeBackoff {
 
   // "Wrong code — try again in 4s" while a pause runs, else null.
   get message(): string | null {
-    return this.active.value ? `Wrong code — try again in ${this.remaining.value}s` : null
+    return this.active.value ? t('unlock.backoff', { seconds: this.remaining.value }) : null
   }
 
   fail(): void {

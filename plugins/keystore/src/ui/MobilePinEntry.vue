@@ -2,6 +2,7 @@
 import { Icon } from '@arxhub/uikit/core'
 import { computed } from 'vue'
 import { UNLOCK_CODE_LENGTH } from '../device-lock'
+import { t } from '../i18n/messages'
 import type { PinEntryProps } from './pin-entry'
 import { usePinEntry } from './use-pin-entry'
 
@@ -61,7 +62,7 @@ defineExpose({ focus })
       <!-- Always in the layout, so a message appearing does not move the keypad under the thumb. -->
       <span class="error" role="alert">{{ error }}</span>
     </label>
-    <div class="pad" role="group" aria-label="Numeric keypad" @keydown="onKeypadKeydown">
+    <div class="pad" role="group" :aria-label="t('pad.keypad')" @keydown="onKeypadKeydown">
       <template v-for="(key, index) in PAD_KEYS" :key="index">
         <button
           v-if="key === '' && confirmKey"
@@ -81,7 +82,7 @@ defineExpose({ focus })
           :class="{ delete: key === 'delete' }"
           type="button"
           :disabled="disabled || (key === 'delete' && !modelValue)"
-          :aria-label="key === 'delete' ? 'Delete last digit' : key"
+          :aria-label="key === 'delete' ? t('pad.deleteLast') : key"
           :data-testid="`pin-key-${key}`"
           @click="press(key, $event.detail !== 0)"
         >

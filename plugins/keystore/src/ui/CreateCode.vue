@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { describeError } from '@arxhub/i18n'
 import { Button, GateLayout } from '@arxhub/uikit/core'
 import { nextTick, ref, watch } from 'vue'
 import { enableDeviceLock, UNLOCK_CODE_LENGTH } from '../device-lock'
+import { t } from '../i18n/messages'
 import type { KeyStore } from '../keystore'
 import PinEntry from './PinEntry.vue'
 
@@ -45,7 +47,7 @@ async function submit(): Promise<void> {
   if (code.value !== confirmCode.value) {
     confirmCode.value = ''
     await nextTick()
-    error.value = "The codes don't match — try again"
+    error.value = t('create.mismatch')
     invalid.value = true
     return
   }
@@ -56,7 +58,7 @@ async function submit(): Promise<void> {
   try {
     props.onDone(await enableDeviceLock(props.inner, code.value))
   } catch (e) {
-    error.value = `Could not set up the lock: ${String(e)}`
+    error.value = t('create.failed', { reason: describeError(e)?.message || String(e) })
     invalid.value = true
     busy.value = false
   }
@@ -74,16 +76,16 @@ function differentCode(): void {
 <template>
   <GateLayout>
     <template v-if="kicker" #kicker>{{ kicker }}</template>
-    <template #title>{{ step === 'choose' ? 'Create a code' : 'Repeat the code' }}</template>
+    <template #title>{{ step === 'choose' ? t('create.title') : t('create.repeatTitle') }}</template>
     <template #text>
-      {{ step === 'choose' ? '6 digits. The code protects the key on this device — it cannot be recovered.' : "So you don't mistype it" }}
+      {{ step === 'choose' ? t('create.text') : t('create.repeatText') }}
     </template>
 
     <PinEntry
       v-if="step === 'choose'"
       key="choose"
       v-model="code"
-      label="New code"
+      :label="t('create.label')"
       :length="UNLOCK_CODE_LENGTH"
       autocomplete="new-password"
       autofocus
@@ -97,7 +99,7 @@ function differentCode(): void {
       v-else
       key="confirm"
       v-model="confirmCode"
-      label="Repeat the code"
+      :label="t('create.repeatLabel')"
       :length="UNLOCK_CODE_LENGTH"
       autocomplete="new-password"
       autofocus
@@ -109,8 +111,8 @@ function differentCode(): void {
     />
 
     <template v-if="step === 'confirm' || onBack" #actions>
-      <Button v-if="step === 'confirm'" block variant="ghost" icon="lu:chevron-left" :disabled="busy" @click="differentCode">Different code</Button>
-      <Button v-else block variant="ghost" icon="lu:chevron-left" :disabled="busy" @click="onBack?.()">Back</Button>
+      <Button v-if="step === 'confirm'" block variant="ghost" icon="lu:chevron-left" :disabled="busy" @click="differentCode">{{ t('create.different') }}</Button>
+      <Button v-else block variant="ghost" icon="lu:chevron-left" :disabled="busy" @click="onBack?.()">{{ t('create.back') }}</Button>
     </template>
   </GateLayout>
 </template>

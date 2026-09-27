@@ -5,6 +5,7 @@ export const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Client-local secure key/secret storage',
+  descriptions: { ru: 'Ключи и секреты, хранящиеся на этом устройстве' },
   // The store the identity was already resolved from before start(); requests are signed with it.
   essential: true,
 } satisfies PluginManifest

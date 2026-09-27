@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { hasErrorCode } from '@arxhub/errors'
+import { describeError } from '@arxhub/i18n'
 import { Button, GateLayout } from '@arxhub/uikit/core'
 import { toaster, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import { deviceCodeBackoff } from '../code-backoff'
 import { type CodeShape, resetDeviceKeyStore, UNLOCK_CODE_LENGTH, unlockDeviceKeyStore } from '../device-lock'
+import { t } from '../i18n/messages'
 import type { KeyStore } from '../keystore'
 import CreateCode from './CreateCode.vue'
 import ForgotCode from './ForgotCode.vue'
@@ -40,6 +42,8 @@ const fixedLength = computed(() => (props.codeShape === 'digits-6' ? UNLOCK_CODE
 const backoff = deviceCodeBackoff
 const backoffActive = backoff.active
 const shownError = computed(() => backoff.message ?? error.value)
+// The product's name, not copy: it reads the same in every language.
+const PRODUCT = 'ArxHub'
 
 // The next digit is a new attempt: the refusal of the last one is no longer what the screen is about.
 watch(code, (value) => {
@@ -66,13 +70,13 @@ async function submitUnlock(): Promise<void> {
     // Said after the door is open: a longer code still works, it only keeps the confirm key. The toaster
     // is a store, so the shell's Toaster shows it when it mounts a moment later.
     if (attempt.length > UNLOCK_CODE_LENGTH) {
-      toaster.create({ title: 'Your code is longer than 6 digits — change it in Settings → Security', type: 'info' })
+      toaster.create({ title: t('unlock.longer'), type: 'info' })
     }
     props.onDone(store)
   } catch (e) {
     const wrong = hasErrorCode(e, 'UnlockFailedError')
     // Anything that is not a failed unlock is a real fault and must not read as a typo.
-    error.value = wrong ? 'Wrong code' : `Could not unlock this device: ${String(e)}`
+    error.value = wrong ? t('unlock.wrong') : t('unlock.failed', { reason: describeError(e)?.message || String(e) })
     invalid.value = true
     if (wrong) backoff.fail()
     busy.value = false
@@ -90,7 +94,7 @@ async function erase(): Promise<void> {
     if (props.onErased) props.onErased()
     else window.location.reload()
   } catch (e) {
-    eraseError.value = `Could not erase this device: ${String(e)}`
+    eraseError.value = t('unlock.eraseFailed', { reason: describeError(e)?.message || String(e) })
     busy.value = false
   }
 }
@@ -100,15 +104,15 @@ async function erase(): Promise<void> {
   <CreateCode v-if="mode === 'setup'" :inner="inner" :on-done="onDone" />
 
   <GateLayout v-else center anchor="end" mark="lu:lock">
-    <template #title>ArxHub</template>
-    <template v-if="!touch" #text>Enter this device's code</template>
+    <template #title>{{ PRODUCT }}</template>
+    <template v-if="!touch" #text>{{ t('unlock.prompt') }}</template>
 
     <PinEntry
       ref="entry"
       v-model="code"
-      label="Unlock code"
+      :label="t('unlock.label')"
       :length="fixedLength"
-      confirm-label="Unlock"
+      :confirm-label="t('unlock.confirm')"
       autocomplete="current-password"
       autofocus
       :disabled="busy || backoffActive"
@@ -119,7 +123,7 @@ async function erase(): Promise<void> {
     />
 
     <template #recovery>
-      <Button block variant="ghost" :disabled="busy" @click="forgotOpen = true">Forgot the code?</Button>
+      <Button block variant="ghost" :disabled="busy" @click="forgotOpen = true">{{ t('unlock.forgot') }}</Button>
     </template>
   </GateLayout>
 

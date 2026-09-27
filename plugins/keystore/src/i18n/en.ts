@@ -1,0 +1,43 @@
+export const en = {
+  unlock: {
+    prompt: "Enter this device's code",
+    label: 'Unlock code',
+    confirm: 'Unlock',
+    forgot: 'Forgot the code?',
+    wrong: 'Wrong code',
+    backoff: 'Wrong code — try again in {seconds}s',
+    failed: 'Could not unlock this device: {reason}',
+    longer: 'Your code is longer than 6 digits — change it in Settings → Security',
+    eraseFailed: 'Could not erase this device: {reason}',
+  },
+  create: {
+    title: 'Create a code',
+    text: '6 digits. The code protects the key on this device — it cannot be recovered.',
+    label: 'New code',
+    repeatTitle: 'Repeat the code',
+    repeatText: "So you don't mistype it",
+    repeatLabel: 'Repeat the code',
+    mismatch: "The codes don't match — try again",
+    failed: 'Could not set up the lock: {reason}',
+    different: 'Different code',
+    back: 'Back',
+  },
+  forgot: {
+    title: 'Forgot the code?',
+    lost: "The code can't be recovered — without it the key on this device can't be read. That's what protects your data.",
+    phrase: "If you have the {phrase} and your vault is on a server, you won't lose anything: erase this device and connect it again.",
+    phraseWord: 'recovery phrase',
+    warning: "Without the phrase and a server, this device's documents will be lost.",
+    erase: 'Erase and connect again',
+  },
+  pad: {
+    keypad: 'Numeric keypad',
+    deleteLast: 'Delete last digit',
+    delete: 'Delete',
+  },
+  errors: {
+    UnlockFailedError: { title: 'Unlock failed', message: 'That code did not unlock this device.' },
+    UnlockCodeLengthError: { title: 'Unlock code has the wrong length', message: 'An unlock code is exactly 6 digits.' },
+    UnlockCodeNotNumericError: { title: 'Unlock code must be digits', message: 'An unlock code is digits only — it is entered on the keypad.' },
+  },
+} as const
