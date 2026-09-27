@@ -5,4 +5,5 @@ export const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Viewers for images, audio, video and PDF',
+  descriptions: { ru: 'Просмотр изображений, аудио, видео и PDF' },
 } satisfies PluginManifest

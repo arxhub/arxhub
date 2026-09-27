@@ -1,8 +1,9 @@
+import { describeError, formatBytes } from '@arxhub/i18n'
 import { basename } from '@arxhub/path'
-import { formatBytes } from '@arxhub/stdlib/format/bytes'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { canOpenExternally, openExternally, VaultVfs } from '@arxhub/vfs'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { t } from '../i18n/messages'
 import { mediaOf, resolveMediaSource } from '../media'
 
 // Everything a media viewer knows about its file, shared by both frames' realizations: each draws its own
@@ -17,8 +18,8 @@ export function useMedia(path: () => string) {
       await openExternally(vfs, path())
     } catch (error) {
       arxhub.logger.error(`[preview] failed to open ${path()} in the system app:`, error)
-      const description = error instanceof Error ? error.message : String(error ?? '')
-      toaster.create({ type: 'error', title: 'Could not open the file in the system app', description })
+      const description = describeError(error)?.message || (error instanceof Error ? error.message : String(error ?? ''))
+      toaster.create({ type: 'error', title: t('openExternalFailed'), description })
     }
   }
 
@@ -27,7 +28,9 @@ export function useMedia(path: () => string) {
   const url = ref('')
   const size = ref<number | null>(null)
   const loading = ref(false)
-  const error = ref('')
+  // A function rather than the text, so a message on screen follows a language switch.
+  const failure = shallowRef<(() => string) | null>(null)
+  const error = computed(() => failure.value?.() ?? '')
   // Whether the bytes came through JS (a blob) or the element streams them itself (a URL) — what the
   // meta line says, because the difference is the difference between "seeks" and "loaded whole".
   const streamed = ref(false)
@@ -44,11 +47,11 @@ export function useMedia(path: () => string) {
   async function load() {
     const current = ++ticket
     release()
-    error.value = ''
+    failure.value = null
     size.value = null
     const kind = media.value
     if (kind == null) {
-      error.value = 'Not a media file'
+      failure.value = () => t('media.notMedia')
       return
     }
     loading.value = true
@@ -58,7 +61,8 @@ export function useMedia(path: () => string) {
       size.value = source.size
       if (source.kind === 'too-large') {
         streamed.value = false
-        error.value = `${formatBytes(source.size)} is too large to load without streaming on this device`
+        const tooLarge = source.size
+        failure.value = () => t('media.tooLarge', { size: formatBytes(tooLarge) })
         return
       }
       streamed.value = source.kind === 'url'
@@ -70,7 +74,7 @@ export function useMedia(path: () => string) {
     } catch (cause) {
       if (current !== ticket) return
       arxhub.logger.error(`[preview] could not load ${path()}`, cause)
-      error.value = cause instanceof Error ? cause.message : 'Could not load the file'
+      failure.value = () => describeError(cause)?.message || (cause instanceof Error ? cause.message : t('media.loadFailed'))
     } finally {
       if (current === ticket) loading.value = false
     }
@@ -78,7 +82,7 @@ export function useMedia(path: () => string) {
 
   const meta = computed(() => {
     if (size.value == null) return ''
-    return streamed.value ? `${formatBytes(size.value)} · streamed` : formatBytes(size.value)
+    return streamed.value ? t('media.streamed', { size: formatBytes(size.value) }) : formatBytes(size.value)
   })
 
   watch(path, () => void load(), { immediate: true })

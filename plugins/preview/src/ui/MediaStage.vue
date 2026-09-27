@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ScrollArea } from '@arxhub/uikit/core'
+import { t } from '../i18n/messages'
 import type { MediaState } from './use-media'
 
 defineProps<{ path: string; state: MediaState }>()
@@ -7,7 +8,7 @@ defineProps<{ path: string; state: MediaState }>()
 
 <template>
   <ScrollArea axis="both" class="media-stage" content-class="media-stage-inner">
-    <p v-if="state.loading.value" class="media-state">Loading…</p>
+    <p v-if="state.loading.value" class="media-state">{{ t('loading') }}</p>
     <template v-else-if="state.error.value">
       <p class="media-state">{{ state.error.value }}</p>
       <p class="media-path">{{ path }}</p>

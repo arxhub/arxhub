@@ -7,6 +7,7 @@ export default defineConfig((env) =>
     external: [
       '@arxhub/core',
       '@arxhub/errors',
+      '@arxhub/i18n',
       '@arxhub/path',
       '@arxhub/plugin-documents',
       '@arxhub/plugin-documents/ui',
@@ -14,7 +15,6 @@ export default defineConfig((env) =>
       '@arxhub/plugin-panels/ui',
       '@arxhub/plugin-search',
       '@arxhub/plugin-vfs',
-      '@arxhub/stdlib/format/bytes',
       '@arxhub/uikit',
       '@arxhub/vfs',
       'pdfjs-dist',

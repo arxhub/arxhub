@@ -1,3 +1,5 @@
+import { t } from './i18n/messages'
+
 // Pure PDF layout helpers — the parts of PdfPanel.vue that do not touch pdf.js or the DOM, so they can
 // be unit tested. pdf.js itself needs a real document and a canvas; it cannot run in vitest here.
 
@@ -31,7 +33,7 @@ export function canvasPixelSize(cssWidth: number, cssHeight: number, devicePixel
 }
 
 export function formatPageCount(count: number): string {
-  return `${count} ${count === 1 ? 'page' : 'pages'}`
+  return t('pdf.pageCount', { count })
 }
 
 // A search hit names its page as the anchor's `part` ('12'). The file may have lost pages since it was
@@ -55,5 +57,5 @@ export function pageAtOffset(offset: number, pageHeight: number, gap: number, co
 }
 
 export function formatPageOf(page: number, count: number): string {
-  return `Page ${page} of ${count}`
+  return t('pdf.pageOf', { page, count })
 }

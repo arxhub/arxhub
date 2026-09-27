@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { formatNumber } from '@arxhub/i18n'
 import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { stepZoomValue } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onUnmounted } from 'vue'
+import { t } from '../i18n/messages'
 import { DEFAULT_ZOOM, formatPageOf, MAX_ZOOM, MIN_ZOOM, ZOOM_STEP } from '../pdf'
 
 const props = defineProps<{
@@ -29,10 +31,10 @@ onUnmounted(
       parts:
         props.pageCount > 0
           ? {
-              title: 'Pages',
+              title: t('pdf.pages'),
               items: Array.from({ length: props.pageCount }, (_, i) => ({
                 id: String(i + 1),
-                title: `Page ${i + 1}`,
+                title: t('pdf.page', { page: i + 1 }),
                 selected: i + 1 === props.page,
               })),
               pick: (id: string) => props.onPage(Number(id)),
@@ -41,14 +43,14 @@ onUnmounted(
       actions: [
         {
           id: 'preview.zoom-out',
-          label: 'Zoom out',
+          label: t('pdf.zoomOut'),
           icon: 'lu:zoom-out',
           disabled: props.zoom <= MIN_ZOOM,
           onSelect: () => props.onZoom(stepZoomValue(props.zoom, -1, scale)),
         },
         {
           id: 'preview.zoom-in',
-          label: 'Zoom in',
+          label: t('pdf.zoomIn'),
           icon: 'lu:zoom-in',
           disabled: props.zoom >= MAX_ZOOM,
           onSelect: () => props.onZoom(stepZoomValue(props.zoom, 1, scale)),
@@ -57,7 +59,7 @@ onUnmounted(
       menu: [
         {
           id: 'preview.zoom-reset',
-          label: `Reset zoom (${Math.round(props.zoom * 100)}%)`,
+          label: t('pdf.zoomReset', { percent: formatNumber(Math.round(props.zoom * 100) / 100, { style: 'percent' }) }),
           icon: 'lu:maximize-2',
           disabled: props.zoom === DEFAULT_ZOOM,
           onSelect: () => props.onZoom(DEFAULT_ZOOM),

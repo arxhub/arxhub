@@ -1,3 +1,4 @@
+import { setLanguagePreference } from '@arxhub/i18n'
 import { describe, expect, test } from 'vitest'
 import { canvasPixelSize, clampZoom, fitWidthSize, formatPageCount, formatPageOf, MAX_ZOOM, MIN_ZOOM, pageAtOffset, pageOfAnchor } from '../pdf'
 
@@ -44,6 +45,18 @@ describe('formatPageCount', () => {
     expect(formatPageCount(1)).toBe('1 page')
     expect(formatPageCount(0)).toBe('0 pages')
     expect(formatPageCount(42)).toBe('42 pages')
+  })
+
+  test('takes the Russian form the count asks for', () => {
+    setLanguagePreference('ru')
+    try {
+      expect(formatPageCount(1)).toBe('1 страница')
+      expect(formatPageCount(3)).toBe('3 страницы')
+      expect(formatPageCount(11)).toBe('11 страниц')
+      expect(formatPageCount(21)).toBe('21 страница')
+    } finally {
+      setLanguagePreference('en')
+    }
   })
 })
 

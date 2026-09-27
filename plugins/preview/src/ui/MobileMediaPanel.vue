@@ -2,6 +2,7 @@
 import { DocumentsExtension } from '@arxhub/plugin-documents'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onUnmounted } from 'vue'
+import { t } from '../i18n/messages'
 import MediaStage from './MediaStage.vue'
 import type { MediaState } from './use-media'
 
@@ -23,7 +24,7 @@ onUnmounted(
           ? [
               {
                 id: 'preview.open-external',
-                label: 'Open in system app',
+                label: t('openExternal'),
                 icon: 'lu:external-link',
                 onSelect: () => void props.state.openInSystemApp(),
               },

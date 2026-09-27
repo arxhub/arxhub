@@ -1,12 +1,13 @@
 <script setup lang="ts">
+import { describeError, formatBytes } from '@arxhub/i18n'
 import { type BlockAnchor, DocumentsExtension } from '@arxhub/plugin-documents'
 import { VfsExtension } from '@arxhub/plugin-vfs'
-import { formatBytes } from '@arxhub/stdlib/format/bytes'
 // biome-ignore lint/style/useImportType: used in the template and as InstanceType<typeof ScrollArea>
 import { ScrollArea } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { getDocument, type PDFDocumentProxy, RenderingCancelledException, type RenderTask } from 'pdfjs-dist/legacy/build/pdf.mjs'
-import { computed, onBeforeUnmount, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, reactive, ref, shallowRef, watch } from 'vue'
+import { t } from '../i18n/messages'
 import { canvasPixelSize, DEFAULT_ZOOM, fitWidthSize, formatPageCount, pageAtOffset, pageOfAnchor } from '../pdf'
 import { createPdfRangeLoadingTask, type PdfRangeLoadingTask } from '../pdf-range'
 import { configurePdfWorker } from '../pdf-worker'
@@ -21,7 +22,9 @@ const vfs = arxhub.extensions.get(VfsExtension)
 const documents = arxhub.extensions.get(DocumentsExtension)
 
 const loading = ref(false)
-const error = ref('')
+// What went wrong, kept as a function so the message follows a language switch while it is on screen.
+const failure = shallowRef<(() => string) | null>(null)
+const error = computed(() => failure.value?.() ?? '')
 const size = ref<number | null>(null)
 const zoom = ref(DEFAULT_ZOOM)
 const stageWidth = ref(0)
@@ -71,6 +74,11 @@ async function closeDoc() {
   if (closing != null) await closing.destroy()
 }
 
+// A failure the catalog can name is said in the reader's language; pdf.js's own reasons are English only.
+function failureText(cause: unknown, fallback: () => string): () => string {
+  return () => describeError(cause)?.message || (cause instanceof Error ? cause.message : fallback())
+}
+
 function rangeFailure(current: number, task: PdfRangeLoadingTask<PDFDocumentProxy>, cause: unknown): void {
   if (current !== ticket || loadingTask !== task) return
   // Invalidate every getPage/render continuation before clearing the document. The failed task tears
@@ -88,7 +96,7 @@ function rangeFailure(current: number, task: PdfRangeLoadingTask<PDFDocumentProx
   pages.length = 0
   loading.value = false
   arxhub.logger.error(`[preview] could not read ${props.path}: ${cause instanceof Error ? cause.message : String(cause)}`, cause)
-  error.value = cause instanceof Error ? cause.message : 'Could not read the PDF'
+  failure.value = failureText(cause, () => t('pdf.readFailed'))
   // Idempotent: the range helper starts this teardown as soon as the read rejects. Awaiting is not
   // needed to show the error, and containing the promise keeps a cleanup failure out of the console.
   void task.destroy().catch((cleanupCause: unknown) => arxhub.logger.error('[preview] could not close the failed PDF task', cleanupCause))
@@ -98,7 +106,7 @@ async function load() {
   const current = ++ticket
   await closeDoc()
   if (current !== ticket) return
-  error.value = ''
+  failure.value = null
   size.value = null
   baseSize.value = null
   pages.length = 0
@@ -139,7 +147,7 @@ async function load() {
     loadingTask = null
     doc = null
     arxhub.logger.error(`[preview] could not load ${props.path}`, cause)
-    error.value = cause instanceof Error ? cause.message : 'Could not open the PDF'
+    failure.value = failureText(cause, () => t('pdf.openFailed'))
     // Show the failure in this tick. Worker teardown may take longer and a new path may start while it
     // runs; it must not let this old catch resume later and overwrite the new panel state.
     void failedTask
@@ -337,7 +345,7 @@ onBeforeUnmount(() => {
       :on-page="showPage"
     >
       <ScrollArea ref="stageArea" axis="both" class="pdf-stage" content-class="pdf-stage-inner">
-        <p v-if="loading" class="media-state">Loading…</p>
+        <p v-if="loading" class="media-state">{{ t('loading') }}</p>
         <template v-else-if="error">
           <p class="media-state">{{ error }}</p>
           <p class="media-path">{{ path }}</p>
