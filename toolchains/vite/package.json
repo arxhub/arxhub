@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "build": "tsc && vite build",
+    "prepare": "tsc && vite build",
     "test": "vitest"
   },
   "dependencies": {
