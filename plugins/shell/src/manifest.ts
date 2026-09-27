@@ -6,6 +6,7 @@ const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'App shell layout with the tab-type navigation registry',
+  descriptions: { ru: 'Оболочка приложения и реестр типов' },
   // Nothing renders without the frame.
   essential: true,
 } satisfies PluginManifest

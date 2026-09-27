@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { readText } from '@arxhub/i18n'
 import { Button, Strip } from '@arxhub/uikit/core'
 import type { TabTypeCreate } from '../tab-type'
 
@@ -17,7 +18,7 @@ const props = defineProps<{ create: TabTypeCreate | null }>()
 <template>
   <Strip v-if="props.create != null" class="dock" data-testid="dock">
     <template #actions>
-      <Button variant="secondary" size="sm" data-testid="dock-create" @click="props.create?.run()">{{ props.create.title }}</Button>
+      <Button variant="secondary" size="sm" data-testid="dock-create" @click="props.create?.run()">{{ readText(props.create.title) }}</Button>
     </template>
   </Strip>
 </template>

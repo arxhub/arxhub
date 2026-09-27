@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button, Icon, OverflowActions, Strip } from '@arxhub/uikit/core'
+import { t } from '../../i18n/messages'
 import type { ObjectBar } from '../tab-type'
 
 // The band above the type row: where I am inside the type, and what can be done to it. Every type's band
@@ -27,7 +28,7 @@ const emit = defineEmits<{ parts: [] }>()
       class="actions"
       :actions="props.bar.actions ?? []"
       :menu="props.bar.menu ?? []"
-      more-label="More actions"
+      :more-label="t('moreActions')"
       :more-title="props.bar.name"
     >
       <template #leading>

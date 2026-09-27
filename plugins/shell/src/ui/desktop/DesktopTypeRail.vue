@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { readText } from '@arxhub/i18n'
 import { NavItem, ScrollArea } from '@arxhub/uikit/core'
+import { t } from '../../i18n/messages'
 import type { TypeRowItem } from '../workspace'
 
 // The first level of navigation. The same set of types the phone puts in a row along the bottom, stood
@@ -12,12 +14,13 @@ defineEmits<{ select: [typeId: string]; sheet: [] }>()
 // A count is part of what the key says, so it belongs in the accessible name and not only in the
 // badge — "Documents" and "Documents, 3 open" are different controls to someone who cannot see the dot.
 function label(item: TypeRowItem): string {
-  return item.count > 0 ? `${item.type.title}, ${item.count} open` : item.type.title
+  const title = readText(item.type.title)
+  return item.count > 0 ? t('typeOpen', { title, count: item.count }) : title
 }
 </script>
 
 <template>
-  <nav class="type-rail" aria-label="Types">
+  <nav class="type-rail" :aria-label="t('types')">
     <ScrollArea passive class="type-scroll" content-class="type-list">
       <NavItem
         v-for="item in props.row"
@@ -29,7 +32,7 @@ function label(item: TypeRowItem): string {
         :data-testid="`type-${item.type.id}`"
         @click="$emit('select', item.type.id)"
       />
-      <NavItem icon="lu:layout-grid" title="Open or switch to" @click="$emit('sheet')" />
+      <NavItem icon="lu:layout-grid" :title="t('sheet.title')" @click="$emit('sheet')" />
     </ScrollArea>
   </nav>
 </template>

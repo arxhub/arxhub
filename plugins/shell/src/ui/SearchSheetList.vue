@@ -2,6 +2,7 @@
 import { EmptyState, IconButton, Row, SectionLabel } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, nextTick, ref, watch } from 'vue'
+import { t } from '../i18n/messages'
 import { useSheetLayer } from './hotkeys'
 import { chooseEntry, type SheetEntry, type SheetSection, sheetSections } from './search-sheet'
 import type { TabTypeRegistry } from './tab-type-registry'
@@ -88,7 +89,7 @@ function choose(entry: SheetEntry): void {
       >
         <span v-if="entry.meta" class="sheet-row-meta">{{ entry.meta }}</span>
         <template v-if="closable(section, entry)" #trailing>
-          <IconButton icon="lu:x" size="row" :aria-label="`Close ${entry.title}`" @click="workspace.closeType(entry.typeId)" />
+          <IconButton icon="lu:x" size="row" :aria-label="t('sheet.close', { title: entry.title })" @click="workspace.closeType(entry.typeId)" />
         </template>
       </Row>
     </section>

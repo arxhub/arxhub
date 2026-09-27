@@ -2,6 +2,7 @@
 import { modals } from '@arxhub/uikit/core'
 import { armExitGuard, leaveApp, useShellFrame } from '@arxhub/uikit/hooks'
 import { onUnmounted } from 'vue'
+import { t } from '../../i18n/messages'
 
 // On a phone the gesture that closes a sheet is the gesture that leaves the app, so the one back too
 // many throws the owner out of ArxHub without a word — and there is no forward gesture to come back
@@ -15,9 +16,9 @@ if (useShellFrame() === 'mobile') {
   onUnmounted(
     armExitGuard(() => {
       modals.openConfirmModal({
-        title: 'Leave ArxHub?',
-        children: 'Nothing is left to close, so back leaves the app.',
-        labels: { confirm: 'Exit', cancel: 'Cancel' },
+        title: t('exit.title'),
+        children: t('exit.message'),
+        labels: { confirm: t('exit.confirm'), cancel: t('exit.cancel') },
         // Dismissing the question — the close button, a tap outside, back again — is a cancel, which
         // is why leaving hangs off this one callback and off nothing else (F-13).
         onConfirm: leaveApp,

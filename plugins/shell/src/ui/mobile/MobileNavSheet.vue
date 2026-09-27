@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { readText } from '@arxhub/i18n'
 import { BottomSheet, SearchField } from '@arxhub/uikit/core'
 import { computed, ref, watch } from 'vue'
 import type { TabType } from '../tab-type'
@@ -34,7 +35,7 @@ function browsing(): void {
   <BottomSheet
     :open="props.open && props.type?.nav != null"
     variant="full"
-    :title="props.type?.nav?.title ?? props.type?.title ?? ''"
+    :title="readText(props.type?.nav?.title ?? props.type?.title) ?? ''"
     @close="emit('close')"
     @scroll="browsing"
   >

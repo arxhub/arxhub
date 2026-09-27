@@ -2,6 +2,7 @@
 import { PageLayout } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { ref } from 'vue'
+import { t } from '../i18n/messages'
 
 const props = defineProps<{ version: string; repository?: string }>()
 const state = ref<'idle' | 'checking' | 'current' | 'available' | 'failed'>('idle')
@@ -29,22 +30,22 @@ async function checkForUpdates(): Promise<void> {
 
 <template>
   <PageLayout
-    title="About"
-    description="Quote this version when reporting a problem — the session log records it too."
+    :title="t('about.title')"
+    :description="t('about.description')"
   >
     <div class="about-row" :class="{ touch }">
-      <span class="label">Version</span>
+      <span class="label">{{ t('about.version') }}</span>
       <code class="value" data-testid="app-version">{{ props.version }}</code>
     </div>
     <div class="update-row" :class="{ touch }">
       <button class="update-button" type="button" :disabled="state === 'checking'" @click="checkForUpdates">
-        {{ state === 'checking' ? 'Checking…' : 'Check for updates' }}
+        {{ state === 'checking' ? t('about.checking') : t('about.check') }}
       </button>
-      <span v-if="state === 'current'" class="update-message">You are up to date.</span>
-      <span v-else-if="state === 'failed'" class="update-message update-error">Could not check GitHub Releases.</span>
+      <span v-if="state === 'current'" class="update-message">{{ t('about.current') }}</span>
+      <span v-else-if="state === 'failed'" class="update-message update-error">{{ t('about.failed') }}</span>
       <template v-else-if="state === 'available' && latest">
-        <span class="update-message">Version {{ latest.version }} is available.</span>
-        <a class="update-link" :href="latest.url" target="_blank" rel="noreferrer">Open download page</a>
+        <span class="update-message">{{ t('about.available', { version: latest.version }) }}</span>
+        <a class="update-link" :href="latest.url" target="_blank" rel="noreferrer">{{ t('about.download') }}</a>
       </template>
     </div>
   </PageLayout>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { EmptyState } from '@arxhub/uikit/core'
 import { computed, ref, watch } from 'vue'
+import { t } from '../i18n/messages'
 import TypeStageView from './TypeStageView.vue'
 import type { TabTypeRegistry } from './tab-type-registry'
 import { stagesOf } from './type-stage'
@@ -45,5 +46,5 @@ const nothing = computed(() => !stages.value.some((it) => it.typeId === activeTy
 
 <template>
   <TypeStageView v-for="stage in stages" :key="stage.typeId" :view="stage.view" :type-id="stage.typeId" :visible="stage.typeId === activeTypeId" />
-  <EmptyState v-if="nothing" fill icon="lu:layers" text="Nothing is open." :hint="hint" />
+  <EmptyState v-if="nothing" fill icon="lu:layers" :text="t('stage.nothing')" :hint="hint" />
 </template>

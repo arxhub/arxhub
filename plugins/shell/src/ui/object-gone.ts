@@ -1,10 +1,16 @@
 import { type FunctionalComponent, h } from 'vue'
+import { t } from '../i18n/messages'
 
 // One wording for every kind of object. A per-type one would be more precise for a note, but it falls
 // through the cracks between rounds: types added later simply will not write one, and the rule "a tab
 // does not disappear silently" would stop applying exactly where it is needed most.
-export const OBJECT_GONE_TITLE = 'This object is gone'
-export const OBJECT_GONE_MESSAGE = 'It may have been renamed or deleted on another device. The tab stayed so the loss is visible.'
+export function objectGoneTitle(): string {
+  return t('gone.title')
+}
+
+export function objectGoneMessage(): string {
+  return t('gone.message')
+}
 
 export interface ObjectGoneProps {
   title?: string
@@ -25,9 +31,9 @@ export interface ObjectGoneProps {
 // the thing that broke.
 export const ObjectGoneView: FunctionalComponent<ObjectGoneProps> = (props) => {
   return h('div', { class: 'object-gone' }, [
-    h('p', { class: 'object-gone-title' }, OBJECT_GONE_TITLE),
+    h('p', { class: 'object-gone-title' }, objectGoneTitle()),
     ...(props.title == null ? [] : [h('p', { class: 'object-gone-name' }, props.title)]),
-    h('p', { class: 'object-gone-message' }, OBJECT_GONE_MESSAGE),
+    h('p', { class: 'object-gone-message' }, objectGoneMessage()),
     ...(props.onClose == null
       ? []
       : [
@@ -41,7 +47,7 @@ export const ObjectGoneView: FunctionalComponent<ObjectGoneProps> = (props) => {
               // open from the sheet; closing here is only about removing the reminder.
               onClick: () => props.onClose?.(),
             },
-            'Close tab',
+            t('gone.close'),
           ),
         ]),
   ])

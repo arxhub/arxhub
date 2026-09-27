@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@arxhub/uikit/core'
 import { computed } from 'vue'
+import { t } from '../../i18n/messages'
 import type { StatusRegistry } from '../status'
 import type { Workspace } from '../workspace'
 
@@ -32,7 +33,7 @@ const owned = computed(() => props.status.busy.value.filter((it) => it.owner != 
         type="button"
         class="owner"
         :data-testid="`busy-owner-${work.id}`"
-        :aria-label="`Go to what is running: ${work.label}`"
+        :aria-label="t('status.goTo', { label: work.label })"
         @click="work.owner && props.workspace.activateObject(work.owner.typeId, work.owner.objectKey)"
       >
         <Icon name="lu:arrow-right" :size="14" />

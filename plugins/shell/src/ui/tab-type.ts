@@ -1,3 +1,4 @@
+import type { Text } from '@arxhub/i18n'
 import type { ActionItem } from '@arxhub/uikit/core'
 import type { Component } from 'vue'
 
@@ -75,11 +76,11 @@ export interface ObjectsRole {
 // phone) and one identity.
 export interface TabTypeNav {
   component: Component
-  title?: string
+  title?: Text
   icon?: string
   // What the road into the navigation leads to, as the second line of its row in the phone's second-tap
   // sheet ("All documents · search"). Unset — the row has one line.
-  detail?: string
+  detail?: Text
   // The key the column's width and collapsed state are remembered under. Defaults to the type id:
   // width is remembered per type.
   widthKey?: string
@@ -88,7 +89,7 @@ export interface TabTypeNav {
 // Creating an object. A type with nothing to create (a player) does not declare the role — and there
 // is no button: a missing role is not masked by a dead control.
 export interface TabTypeCreate {
-  title: string
+  title: Text
   icon?: string
   run(): void | Promise<void>
 }
@@ -96,7 +97,7 @@ export interface TabTypeCreate {
 // The role "what is open" — separate from tabs. For a player that is the queue: forty tracks, one of
 // which is open. You cannot derive that from the contents of a panel store without lying.
 export interface TabTypeOpen {
-  title: string
+  title: Text
   // A count of the type's own instead of the number of tabs. Not declared — tabs are counted.
   //
   // This is what "forty tracks in the queue is not forty tabs" rests on. BOTH frames read it, and it
@@ -167,7 +168,7 @@ export interface ObjectBar {
 // `useNavHost().navigated()`, the same call a navigation already makes on the desktop.
 export interface TabTypeSheet {
   // What the sheet lists, shown after the type's own title ("Budget · Months"). Unset — the type's title.
-  title?: string
+  title?: Text
   // Replaces the default body: the months of Budget, the sessions of AI.
   content?: Component
   // Pinned under the body, above the keyboard: the Documents' "Find a document…" field.
@@ -194,7 +195,8 @@ interface TabTypeBase {
   id: string
   // Icon spec string resolved by uikit's Icon registry.
   icon: string
-  title: string
+  // Read at render time (`readText`): registered once, it has to follow a language switch.
+  title: Text
   order?: number
   nav?: TabTypeNav
   create?: TabTypeCreate

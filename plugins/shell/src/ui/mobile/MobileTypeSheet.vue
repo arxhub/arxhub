@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { readText } from '@arxhub/i18n'
 import { BottomSheet, EmptyState, IconButton, Row, SearchField, SectionLabel, Separator } from '@arxhub/uikit/core'
 import { computed, ref, watch } from 'vue'
+import { t } from '../../i18n/messages'
 import { secondTapOf } from '../second-tap'
 import type { TabType } from '../tab-type'
 import type { Workspace } from '../workspace'
@@ -16,7 +18,8 @@ const mode = computed(() => (props.type == null ? null : secondTapOf(props.type)
 const title = computed(() => {
   const type = props.type
   if (type == null) return ''
-  return type.sheet?.title == null ? type.title : `${type.title} · ${type.sheet.title}`
+  const own = readText(type.title)
+  return type.sheet?.title == null ? own : `${own} · ${readText(type.sheet.title)}`
 })
 const anchor = computed(() => props.type?.sheet?.anchor ?? (mode.value === 'tabs' ? 'end' : 'start'))
 
@@ -50,13 +53,13 @@ function drop(key: string): void {
 <template>
   <BottomSheet :open="props.open && mode != null" :title="title" :anchor="anchor" @close="emit('close')">
     <template v-if="props.type != null">
-      <component :is="find?.results" v-if="finding" :query="query" :context="props.type.title" @opened="emit('close')" />
+      <component :is="find?.results" v-if="finding" :query="query" :context="readText(props.type.title)" @opened="emit('close')" />
       <component :is="props.type.sheet?.content" v-else-if="mode === 'content'" :type-id="props.type.id" />
 
       <template v-else-if="mode === 'tabs'">
-        <SectionLabel v-if="tabs.length" inset>Tabs · {{ tabs.length }}</SectionLabel>
+        <SectionLabel v-if="tabs.length" inset>{{ t('tabs.heading', { count: tabs.length }) }}</SectionLabel>
         <!-- With a navigation below, no tabs is just a shorter sheet: the browse row is the whole answer. -->
-        <EmptyState v-else-if="props.type.nav == null" compact icon="lu:layers" text="Nothing is open in this type yet." />
+        <EmptyState v-else-if="props.type.nav == null" compact icon="lu:layers" :text="t('tabs.empty')" />
         <!-- The second line says which tab is the current one in words, not only by the wash: the folder is
              one tap away in the vault, and "which of these am I in" is what this list is opened for. -->
         <Row
@@ -66,15 +69,15 @@ function drop(key: string): void {
           type="button"
           :icon="tab.icon ?? props.type.icon"
           :label="tab.title"
-          :detail="tab.key === activeKey ? 'Current tab' : 'Open'"
+          :detail="tab.key === activeKey ? t('tabs.current') : t('tabs.open')"
           :selected="tab.key === activeKey"
           :aria-current="tab.key === activeKey ? 'true' : undefined"
           :data-testid="`open:${tab.typeId}:${tab.key}`"
           @click="pick(tab.key)"
         >
-          <span v-if="tab.gone" class="note">Gone</span>
+          <span v-if="tab.gone" class="note">{{ t('tabs.gone') }}</span>
           <template #trailing>
-            <IconButton size="row" icon="lu:x" :aria-label="`Close ${tab.title}`" @click="drop(tab.key)" />
+            <IconButton size="row" icon="lu:x" :aria-label="t('sheet.close', { title: tab.title })" @click="drop(tab.key)" />
           </template>
         </Row>
         <!-- The road from what is open to everything that could be: the type's own navigation, whole
@@ -85,8 +88,8 @@ function drop(key: string): void {
             as="button"
             type="button"
             :icon="props.type.nav.icon ?? 'lu:folder'"
-            :label="props.type.nav.title ?? props.type.title"
-            :detail="props.type.nav.detail"
+            :label="readText(props.type.nav.title ?? props.type.title)"
+            :detail="readText(props.type.nav.detail)"
             next
             data-testid="type-sheet-browse"
             @click="emit('browse')"

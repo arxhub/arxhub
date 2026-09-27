@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ScrollArea } from '@arxhub/uikit/core'
 import { onBeforeUnmount, ref } from 'vue'
+import { t } from '../../i18n/messages'
 import type { TabTypeNav } from '../tab-type'
 import { NAV_MAX, NAV_MIN } from './use-nav-column'
 
@@ -67,8 +68,8 @@ onBeforeUnmount(() => stop?.())
       class="reveal"
       data-testid="nav-toggle"
       :aria-expanded="false"
-      aria-label="Expand navigation"
-      title="Expand navigation"
+      :aria-label="t('nav.expand')"
+      :title="t('nav.expand')"
       @click="emit('toggle')"
     />
 
@@ -82,7 +83,7 @@ onBeforeUnmount(() => stop?.())
       role="separator"
       aria-orientation="vertical"
       tabindex="0"
-      :aria-label="`Resize ${title} navigation`"
+      :aria-label="t('nav.resize', { title })"
       :aria-valuemin="NAV_MIN"
       :aria-valuemax="NAV_MAX"
       :aria-valuenow="width"
@@ -90,7 +91,7 @@ onBeforeUnmount(() => stop?.())
       @keydown.right.prevent="emit('resize', width + 16)"
       @keydown.home.prevent="emit('resize', NAV_MIN)"
       @keydown.end.prevent="emit('resize', NAV_MAX)"
-      title="Drag or use arrow keys to resize"
+      :title="t('nav.resizeHint')"
       @pointerdown="startResize"
     />
   </div>

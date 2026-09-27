@@ -1,3 +1,5 @@
+import { readText } from '@arxhub/i18n'
+import { t } from '../i18n/messages'
 import type { TabType } from './tab-type'
 import type { TabTypeRegistry } from './tab-type-registry'
 import type { Workspace } from './workspace'
@@ -43,8 +45,8 @@ export interface SheetSection {
 // which this sheet cannot answer until the objects section exists.
 export function sheetSections(workspace: Workspace, types: TabTypeRegistry): SheetSection[] {
   return [
-    { id: 'open', title: 'Currently open', empty: 'Nothing is open yet.', entries: openEntries(workspace, types) },
-    { id: 'new', title: 'Open new', empty: 'No types are registered.', entries: types.all.value.map((type) => typeEntry('new', type)) },
+    { id: 'open', title: t('sheet.open'), empty: t('sheet.openEmpty'), entries: openEntries(workspace, types) },
+    { id: 'new', title: t('sheet.new'), empty: t('sheet.newEmpty'), entries: types.all.value.map((type) => typeEntry('new', type)) },
   ]
 }
 
@@ -60,11 +62,14 @@ export function typeSections(workspace: Workspace, types: TabTypeRegistry, shown
   return [
     {
       id: 'open',
-      title: 'Currently open',
-      empty: 'Nothing is open yet.',
+      title: t('sheet.open'),
+      empty: t('sheet.openEmpty'),
       entries: open.map((type) => {
         const count = workspace.tabsOf(type.id).length
-        const detail = [count > 0 ? `${count} open` : (type.summary?.() ?? null), shown.has(type.id) ? null : 'not in the row']
+        const detail = [
+          count > 0 ? t('sheet.openCount', { count }) : (type.summary?.() ?? null),
+          shown.has(type.id) ? null : t('sheet.notInRow'),
+        ]
           .filter((part) => part != null && part !== '')
           .join(' · ')
           .replace(/^./, (first) => first.toUpperCase())
@@ -73,8 +78,8 @@ export function typeSections(workspace: Workspace, types: TabTypeRegistry, shown
     },
     {
       id: 'new',
-      title: 'Open new',
-      empty: 'Everything is open.',
+      title: t('sheet.new'),
+      empty: t('sheet.allOpen'),
       entries: types.all.value
         .filter((type) => !openIds.has(type.id))
         .map((type) => {
@@ -110,7 +115,7 @@ function openEntries(workspace: Workspace, types: TabTypeRegistry): SheetEntry[]
       objectKey: tab.key,
       // A tab whose object is gone says so instead of naming its type: the type is the least useful
       // thing to know about a row that will not open.
-      meta: tab.gone ? 'Gone' : type.title,
+      meta: tab.gone ? t('tabs.gone') : readText(type.title),
     }))
   })
 }
@@ -118,5 +123,5 @@ function openEntries(workspace: Workspace, types: TabTypeRegistry): SheetEntry[]
 // The section is part of the row's id, not decoration: an open type legitimately appears in both
 // sections, and two rows sharing an id would be two rows a test cannot tell apart.
 function typeEntry(section: SheetSection['id'], type: TabType): SheetEntry {
-  return { id: `${section}:${type.id}`, title: type.title, icon: type.icon, typeId: type.id }
+  return { id: `${section}:${type.id}`, title: readText(type.title), icon: type.icon, typeId: type.id }
 }

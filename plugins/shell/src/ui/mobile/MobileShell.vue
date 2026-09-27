@@ -2,6 +2,7 @@
 import { ActionMenuHost, ModalsProvider, Toaster } from '@arxhub/uikit/core'
 import { provideShellFrame, useKeyboardInset } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
+import { t } from '../../i18n/messages'
 import { useOpenSheetKey } from '../hotkeys'
 import { provideNavHost } from '../nav-host'
 import { secondTapOf } from '../second-tap'
@@ -61,7 +62,10 @@ provideNavHost({
   navigated: () => (layer.value = null),
   revealActive: true,
   icon: 'lu:x',
-  label: 'Close',
+  // A getter, so the label follows a language switch: the host is provided once, read on every render.
+  get label() {
+    return t('nav.close')
+  },
 })
 
 function toggle(which: Layer): void {
@@ -88,7 +92,7 @@ useOpenSheetKey(() => {
       <!-- Switching type is the most frequent operation on this frame, and it must not unmount what is
            open: a return to Documents would otherwise be a freshly mounted editor — scroll at the top,
            undo history gone, selection lost (F-05). -->
-      <TypeStage :workspace="workspace" :types="types" hint="Pick a type in the row below." />
+      <TypeStage :workspace="workspace" :types="types" :hint="t('stage.pickMobile')" />
     </main>
 
     <!-- Three bands from the bottom up: the type row (not while typing), the object's band (only if its

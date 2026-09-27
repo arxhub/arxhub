@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { readText } from '@arxhub/i18n'
 import { NavItem } from '@arxhub/uikit/core'
 import { computed } from 'vue'
+import { t } from '../../i18n/messages'
 import type { TypeRowItem } from '../workspace'
 import { fitTypeRow } from './type-row'
 
@@ -16,7 +18,8 @@ const fitted = computed(() => fitTypeRow(props.row))
 // what the key says: "Documents" and "Documents, 3 open" are different controls to someone who cannot
 // see the badge.
 function label(item: TypeRowItem): string {
-  return item.count > 0 ? `${item.type.title}, ${item.count} open` : item.type.title
+  const title = readText(item.type.title)
+  return item.count > 0 ? t('typeOpen', { title, count: item.count }) : title
 }
 
 // A second tap on your own type opens its second level — what a tap on the tab counter does in a phone's
@@ -28,7 +31,7 @@ function tap(item: TypeRowItem): void {
 </script>
 
 <template>
-  <nav class="type-row" aria-label="Types">
+  <nav class="type-row" :aria-label="t('types')">
     <NavItem
       v-for="item in fitted.shown"
       :key="item.type.id"
@@ -43,7 +46,7 @@ function tap(item: TypeRowItem): void {
          yet, and the status block this frame has no permanent bar for. -->
     <NavItem
       icon="lu:ellipsis"
-      :title="fitted.hidden > 0 ? `More, ${fitted.hidden} not in the row` : 'More'"
+      :title="fitted.hidden > 0 ? t('moreHidden', { count: fitted.hidden }) : t('more')"
       :open="props.moreOpen"
       :count="fitted.hidden"
       data-testid="arxhub.shell.search"

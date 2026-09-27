@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { readText } from '@arxhub/i18n'
 import { APP_LAYER } from '@arxhub/plugin-hotkeys'
 import { useHotkeys } from '@arxhub/plugin-hotkeys/ui'
 import { ActionMenuHost, ModalsProvider, Toaster } from '@arxhub/uikit/core'
 import { provideShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
+import { t } from '../../i18n/messages'
 import { useHotkeysExtension, useOpenSheetKey } from '../hotkeys'
 import { provideNavHost } from '../nav-host'
 import TypeStage from '../TypeStage.vue'
@@ -53,7 +55,10 @@ const hotkeys = useHotkeysExtension()
 provideNavHost({
   dismiss: () => column.value?.toggle(),
   icon: 'lu:panel-left-close',
-  label: `Collapse navigation (${hotkeys.label('Mod-b')})`,
+  // A getter, so the label follows a language switch: the host is provided once, read on every render.
+  get label() {
+    return t('nav.collapseWith', { chord: hotkeys.label('Mod-b') })
+  },
 })
 
 // Open or switch to, on ⌘K, from anywhere — including from inside a note.
@@ -71,7 +76,7 @@ useHotkeys(hotkeys, [
     id: 'shell.toggle-nav-column',
     chord: 'Mod-b',
     layer: APP_LAYER,
-    title: 'Collapse navigation',
+    title: () => t('nav.collapse'),
     when: () => column.value != null,
     run: () => column.value?.toggle(),
   },
@@ -89,7 +94,7 @@ useHotkeys(hotkeys, [
       <DesktopNavColumn
         v-if="activeType?.nav != null && column != null"
         :nav="activeType.nav"
-        :title="activeType.nav.title ?? activeType.title"
+        :title="readText(activeType.nav.title ?? activeType.title)"
         :width="column.width.value"
         :collapsed="column.collapsed.value"
         @resize="column?.setWidth($event)"
@@ -105,7 +110,7 @@ useHotkeys(hotkeys, [
         <main class="content">
           <!-- Switching type is the row's basic operation, and it unmounts nothing: every type entered
                this session stays on its own stage and only the active one is shown (F-05). -->
-          <TypeStage :workspace="workspace" :types="types" hint="Pick a type on the left." />
+          <TypeStage :workspace="workspace" :types="types" :hint="t('stage.pickDesktop')" />
         </main>
       </div>
     </div>

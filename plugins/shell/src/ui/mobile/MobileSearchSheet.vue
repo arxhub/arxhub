@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { BottomSheet } from '@arxhub/uikit/core'
 import { computed } from 'vue'
+import { t } from '../../i18n/messages'
 import SearchSheetList from '../SearchSheetList.vue'
 import { typeSections } from '../search-sheet'
 import type { StatusRegistry } from '../status'
@@ -28,7 +29,7 @@ const sections = computed(() => {
 </script>
 
 <template>
-  <BottomSheet :open="props.open" label="Open or switch to" @close="emit('close')">
+  <BottomSheet :open="props.open" :label="t('sheet.title')" @close="emit('close')">
     <div v-if="states.length || actions.length" class="status-block">
       <div class="states">
         <component :is="item.component" v-for="item in states" :key="item.id" />
@@ -43,14 +44,14 @@ const sections = computed(() => {
 
 <style scoped>
 /* The head of the list, not a card inside it: a band at the rows' own height and inset, set off from the
-   sections below by the hairline a region keeps inside itself. One line at any width: on a narrow phone
-   the states give way (truncated) and the actions keep their place at the end, rather than the band
-   wrapping to twice its height and pushing the list down. */
+   sections below by the hairline a region keeps inside itself. The states wrap onto a second line rather
+   than truncating: Russian labels ("Не синхронизировано") do not fit one 360px line beside the actions, and
+   a state cut mid-word says nothing. The actions keep their place at the end of the first line. */
 .status-block {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  height: var(--size-xl);
+  min-height: var(--size-xl);
   padding: 0 16px;
   border-bottom: 1px solid var(--gray-4);
   color: var(--gray-11);
@@ -60,21 +61,18 @@ const sections = computed(() => {
 .actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0 12px;
   min-width: 0;
 }
 
 .states {
   flex: 1 1 auto;
-  overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .states > :deep(*) {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 0 0 auto;
+  max-width: 100%;
 }
 
 .actions {

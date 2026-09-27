@@ -2,6 +2,7 @@ import { APP_LAYER, HotkeysExtension } from '@arxhub/plugin-hotkeys'
 import { useHotkeyLayer, useHotkeys } from '@arxhub/plugin-hotkeys/ui'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import type { Ref } from 'vue'
+import { t } from '../i18n/messages'
 
 // The shell's side of the keyboard: the layer ids both frames push, and the two chords the frame owns.
 //
@@ -35,7 +36,7 @@ export function useHotkeysExtension(): HotkeysExtension {
 // not a library's — and so is the special case for Shift, which existed because ⌘⇧K is the editor's
 // own insert-link chord: a different chord is simply a different entry.
 export function useOpenSheetKey(open: () => void): void {
-  useHotkeys(useHotkeysExtension(), [{ id: 'shell.open-sheet', chord: 'Mod-k', layer: APP_LAYER, title: 'Open or switch to', run: open }])
+  useHotkeys(useHotkeysExtension(), [{ id: 'shell.open-sheet', chord: 'Mod-k', layer: APP_LAYER, title: () => t('sheet.title'), run: open }])
 }
 
 // The sheet, while it is up, is the only thing the keyboard talks to. Pushed from the list rather than

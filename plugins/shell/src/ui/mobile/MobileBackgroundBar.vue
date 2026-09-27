@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { t } from '../../i18n/messages'
 import type { StatusRegistry } from '../status'
 import type { Workspace } from '../workspace'
 
@@ -31,7 +32,7 @@ function goToOwner(): void {
     @click="goToOwner"
   >
     <span class="label">{{ first.label }}</span>
-    <span v-if="rest > 0" class="rest">and {{ rest }} more</span>
+    <span v-if="rest > 0" class="rest">{{ t('status.rest', { count: rest }) }}</span>
     <span class="track" aria-hidden="true">
       <span
         class="fill"
