@@ -22,7 +22,8 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@arxhub/vfs-http": "workspace:*"
+    "@arxhub/vfs-http": "workspace:*",
+    "@arxhub/i18n": "workspace:*"
   },
   "devDependencies": {
     "@arxhub/sync": "workspace:*",

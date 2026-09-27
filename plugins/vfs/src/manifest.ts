@@ -5,6 +5,7 @@ export const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Virtual file system provider for ArxHub',
+  descriptions: { ru: 'Виртуальная файловая система ArxHub' },
   // Every plugin's config and state is a file; without the VFS there is nothing to read them from.
   essential: true,
 } satisfies PluginManifest
@@ -15,4 +16,5 @@ export const serverManifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Serves a VirtualFileSystem over HTTP for browser-mode clients',
+  descriptions: { ru: 'Файловая система по HTTP для браузерных клиентов' },
 } satisfies PluginManifest

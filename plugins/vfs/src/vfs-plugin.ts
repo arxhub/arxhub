@@ -11,6 +11,7 @@ import {
   type VirtualFileSystem,
   watchTree,
 } from '@arxhub/vfs'
+import { messages } from './i18n/messages'
 import { manifest } from './manifest'
 import { PendingAwareVaultFileSystem, PendingRangeBroker, VfsExtension } from './range-reader'
 
@@ -29,6 +30,9 @@ export class VfsPlugin extends Plugin {
   // The native watch's own unsubscribe, once the detached start-up has one — null while it is still
   // opening, and stays null forever on a backend that has none to give (vfs-http).
   private nativeWatch: Promise<(() => void) | null> | null = null
+  // Nothing in this plugin calls `t`, and under "sideEffects": false a bare import of the catalog would be
+  // dropped from the bundle — taking the translations of every VFS error code with it.
+  readonly catalog = messages
 
   constructor({ fs, ...args }: VfsPluginArgs) {
     super(args, manifest)
