@@ -15,23 +15,23 @@ const glyph = touch ? 16 : 14
 async function copy(): Promise<void> {
   try {
     await navigator.clipboard.writeText(props.node.textContent)
-    toaster.create({ title: 'Code copied', type: 'success' })
+    toaster.create({ title: t('codeBlock.copied'), type: 'success' })
   } catch {
-    toaster.create({ title: 'Could not copy code', description: 'The browser did not allow clipboard access.', type: 'error' })
+    toaster.create({ title: t('codeBlock.copyFailed'), description: t('codeBlock.copyFailedDetail'), type: 'error' })
   }
 }
 </script>
 
 <template>
   <Strip v-if="mode === 'editable' && settings">
-    <Button :size="buttonSize" variant="ghost" :aria-label="`Code language: ${language}`" @click="settings()">
+    <Button :size="buttonSize" variant="ghost" :aria-label="t('codeBlock.languageAria', { language })" @click="settings()">
       {{ language }}
       <Icon name="lu:chevron-down" :size="glyph" />
     </Button>
     <template #actions>
       <Button :size="buttonSize" variant="ghost" @click="copy">
         <Icon name="lu:copy" :size="glyph" />
-        Copy
+        {{ t('codeBlock.copy') }}
       </Button>
     </template>
   </Strip>
@@ -39,7 +39,7 @@ async function copy(): Promise<void> {
     <template #actions>
       <Button :size="buttonSize" variant="ghost" @click="copy">
         <Icon name="lu:copy" :size="glyph" />
-        Copy
+        {{ t('codeBlock.copy') }}
       </Button>
     </template>
   </Strip>

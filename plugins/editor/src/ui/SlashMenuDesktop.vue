@@ -71,7 +71,7 @@ watch(
   <div class="slash-menu" :style="position" @mousedown.prevent>
   <!-- What is typed after "/" is the filter; it stays in the document, so the caret never leaves the text. -->
   <div ref="head" class="slash-head">
-    <Row plain icon="lu:search"><span :class="{ placeholder: !menu.query }">{{ menu.query ? `/${menu.query}` : 'Type to filter' }}</span></Row>
+    <Row plain icon="lu:search"><span :class="{ placeholder: !menu.query }">{{ menu.query ? `/${menu.query}` : t('slash.typeToFilter') }}</span></Row>
     <Separator orientation="horizontal" />
   </div>
   <ScrollArea class="slash-area">

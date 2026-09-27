@@ -213,6 +213,11 @@ export const ru: Translation<typeof en> = {
   },
   codeBlock: {
     highlightingPaused: 'Подсветка синтаксиса приостановлена: блок слишком большой.',
+    languageAria: 'Язык кода: {language}',
+    copy: 'Копировать',
+    copied: 'Код скопирован',
+    copyFailed: 'Не удалось скопировать код',
+    copyFailedDetail: 'Браузер не дал доступа к буферу обмена.',
   },
   conflict: {
     header: 'Конфликт · это устройство / другое устройство',
@@ -367,6 +372,8 @@ export const ru: Translation<typeof en> = {
   },
   slash: {
     empty: 'Подходящих блоков нет',
+    typeToFilter: 'Введите текст для фильтра',
+    filter: 'Фильтр блоков',
   },
   unknown: {
     title: 'Недоступный блок: {type}',

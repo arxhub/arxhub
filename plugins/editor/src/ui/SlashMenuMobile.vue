@@ -78,7 +78,7 @@ function onFieldKeydown(event: KeyboardEvent): void {
     <TileGrid v-if="tiles.length" :id="menuId" :items="tiles" :active-id="shown" :label="t('blockMenu.insert')" @select="select" @highlight="highlighted = $event" />
     <EmptyState v-else compact icon="lu:search-x" :text="t('slash.empty')" />
     <template #footer>
-      <SearchField v-model="filter" flush aria-label="Filter blocks" placeholder="Filter blocks" @keydown="onFieldKeydown" />
+      <SearchField v-model="filter" flush :aria-label="t('slash.filter')" :placeholder="t('slash.filter')" @keydown="onFieldKeydown" />
     </template>
   </BottomSheet>
 </template>

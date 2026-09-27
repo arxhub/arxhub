@@ -206,6 +206,11 @@ export const en = {
   },
   codeBlock: {
     highlightingPaused: 'Syntax highlighting paused for this large block.',
+    languageAria: 'Code language: {language}',
+    copy: 'Copy',
+    copied: 'Code copied',
+    copyFailed: 'Could not copy code',
+    copyFailedDetail: 'The browser did not allow clipboard access.',
   },
   conflict: {
     header: 'Conflict · this device / other device',
@@ -360,6 +365,8 @@ export const en = {
   },
   slash: {
     empty: 'No matching blocks',
+    typeToFilter: 'Type to filter',
+    filter: 'Filter blocks',
   },
   unknown: {
     title: 'Unavailable block: {type}',
