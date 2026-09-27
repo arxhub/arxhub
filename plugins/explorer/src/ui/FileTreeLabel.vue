@@ -4,6 +4,7 @@ import { InlineNameInput } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
+import { t } from '../i18n/messages'
 import { useFileActions } from './use-file-actions'
 
 const props = defineProps<{ node: TreeNode }>()
@@ -27,7 +28,7 @@ function commitRename(editedName: string) {
   // The editor displays the visible name; the domain restores any hidden extension on commit.
   const newName = displayName.value.fullName(editedName)
   if (newName !== basename(props.node.entry.pathname)) {
-    actions.runAction(explorer.renameEntry(props.node.entry.pathname, newName), `rename to ${newName}`)
+    actions.runAction(explorer.renameEntry(props.node.entry.pathname, newName), `rename to ${newName}`, t('failed.rename', { name: newName }))
   }
 }
 
@@ -37,6 +38,6 @@ function cancelRename() {
 </script>
 
 <template>
-  <InlineNameInput v-if="renaming" v-model="renameValue" label="New name" commit-on-blur @commit="commitRename" @cancel="cancelRename" />
+  <InlineNameInput v-if="renaming" v-model="renameValue" :label="t('tree.newName')" commit-on-blur @commit="commitRename" @cancel="cancelRename" />
   <template v-else>{{ displayName.text }}</template>
 </template>

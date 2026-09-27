@@ -7,6 +7,7 @@ import { actionMenu, Icon, type TreeDragDropOptions, TreeView, type TreeViewNode
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onMounted, ref, watch } from 'vue'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
+import { t } from '../i18n/messages'
 import FileRowActions from './FileRowActions.vue'
 import FileTreeLabel from './FileTreeLabel.vue'
 import { fileIcon } from './file-icon'
@@ -22,7 +23,7 @@ function mapNode(node: TreeNode): TreeViewNode<TreeNode> {
     id: node.entry.pathname,
     label: explorer.displayName(node).text,
     ariaLabel: basename(node.entry.pathname),
-    description: node.pending ? 'On the server — opens on demand' : undefined,
+    description: node.pending ? t('tree.pending') : undefined,
     icon: explorer.iconFor(node) ?? fileIcon(node),
     branch: node.entry.kind === 'dir',
     children: node.children?.map(mapNode),
@@ -35,7 +36,10 @@ const moving = ref(false)
 const dragDrop: TreeDragDropOptions<TreeNode> | undefined =
   useShellFrame() === 'desktop'
     ? {
-        rootLabel: 'Move to vault root',
+        // A getter so the label follows a language switch: the options object itself is created once.
+        get rootLabel() {
+          return t('tree.moveToRoot')
+        },
         canDrag: ({ data }) => !moving.value && !explorer.renamingPath.value && !data.pending,
         canDrop: ({ data: source }, target) => explorer.canMoveEntry(source.entry.pathname, target?.data.entry.pathname ?? explorer.root),
       }
@@ -54,6 +58,7 @@ function move(source: TreeViewNode<TreeNode>, target: TreeViewNode<TreeNode> | n
       }
     })(),
     `move ${source.ariaLabel ?? source.label}`,
+    t('failed.move', { name: source.ariaLabel ?? source.label }),
   )
 }
 
@@ -69,7 +74,7 @@ function activate({ data: node }: TreeViewNode<TreeNode>) {
 
 function toggle({ data: node }: TreeViewNode<TreeNode>, expanded: boolean) {
   if (explorer.renamingPath.value === node.entry.pathname) return
-  if (expanded) actions.runAction(explorer.expand(node), 'expand the folder')
+  if (expanded) actions.runAction(explorer.expand(node), 'expand the folder', t('failed.expand'))
   else explorer.collapse(node)
 }
 
@@ -110,6 +115,7 @@ onMounted(() => {
       }
     })(),
     'load the files',
+    t('failed.load'),
   )
 })
 watch(
@@ -132,7 +138,7 @@ function onRootContextMenu(event: MouseEvent) {
     <TreeView
       class="file-tree"
       :nodes="nodes"
-      label="Files"
+      :label="t('tree.label')"
       :selected-id="explorer.selectedPath.value"
       :expanded-ids="expandedIds"
       :drag-drop="dragDrop"
@@ -145,7 +151,7 @@ function onRootContextMenu(event: MouseEvent) {
     >
       <template #label="{ node }"><FileTreeLabel :node="node.data" /></template>
       <template #actions="{ node }">
-        <Icon v-if="node.data.propertiesCardPath" name="lu:tags" :size="14" aria-label="Has properties" class="properties-glyph" />
+        <Icon v-if="node.data.propertiesCardPath" name="lu:tags" :size="14" :aria-label="t('tree.hasProperties')" class="properties-glyph" />
         <FileRowActions v-if="explorer.renamingPath.value !== node.id" :title="node.ariaLabel ?? node.label" :items="() => actions.getNodeActions(node.data)" />
       </template>
     </TreeView>

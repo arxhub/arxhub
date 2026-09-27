@@ -1,3 +1,4 @@
+import { describeError, readText } from '@arxhub/i18n'
 import { basename, dirname } from '@arxhub/path'
 import { DOCUMENTS_TYPE_ID } from '@arxhub/plugin-documents'
 import { ShellExtension } from '@arxhub/plugin-shell'
@@ -5,8 +6,10 @@ import { useNavHost } from '@arxhub/plugin-shell/ui'
 import { type ActionItem, modals } from '@arxhub/uikit/core'
 import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { canOpenExternally, openExternally, type VirtualFileSystem } from '@arxhub/vfs'
+import { isImportIncomplete } from '../errors'
 import { ExplorerExtension, type TreeNode } from '../explorer-extension'
-import { describeImport } from '../import-files'
+import { t } from '../i18n/messages'
+import { describeImport, describeImportFailure } from '../import-files'
 import { pickFiles } from './pick-files'
 
 // Pure so the rule is unit-testable without the Vue plumbing the composable needs: a file (not a
@@ -21,8 +24,11 @@ export function offersExternalOpen(node: TreeNode, vfs: VirtualFileSystem): bool
 // server that refused this device, 'Not Found' for a path that vanished under us); anything without one
 // still has to say something rather than render 'undefined'.
 function reasonOf(error: unknown): string {
+  if (isImportIncomplete(error)) return describeImportFailure(error.body.failedNames, error.body.added)
+  const described = describeError(error)?.message.trim()
+  if (described) return described
   const message = error instanceof Error ? error.message : String(error ?? '')
-  return message.trim() || 'The reason was not reported — see the log.'
+  return message.trim() || t('unreported')
 }
 
 export function useFileActions() {
@@ -38,11 +44,12 @@ export function useFileActions() {
   // It also toasts. Every one of these actions was started by a click and changes what the tree shows,
   // so a failure that only reached the log left the user watching a tree that silently did not change —
   // a rejected write reads exactly like a button that does nothing.
-  // `context` is a verb phrase ('create the file', 'rename to notes.md') so it reads in both places.
-  function runAction(action: Promise<unknown>, context: string): void {
+  // `context` is the English verb phrase for the log ('create the file', 'rename to notes.md'); `title` is
+  // what the toast says, in the reader's language — two arguments because the log stays English.
+  function runAction(action: Promise<unknown>, context: string, title: string): void {
     action.catch((error) => {
       arxhub.logger.error(`[explorer] failed to ${context}:`, error)
-      toaster.create({ title: `Could not ${context}`, description: reasonOf(error), type: 'error' })
+      toaster.create({ title, description: reasonOf(error), type: 'error' })
     })
   }
 
@@ -55,11 +62,11 @@ export function useFileActions() {
   }
 
   function openFile(node: TreeNode): void {
-    runAction(openPath(node.entry.pathname), 'open the file')
+    runAction(openPath(node.entry.pathname), 'open the file', t('failed.open'))
   }
 
   async function createFile(parent: string, extension = '.arx'): Promise<void> {
-    const path = await explorer.createFile(parent, `untitled${extension}`)
+    const path = await explorer.createFile(parent, `${t('names.untitled')}${extension}`)
     await openPath(path)
   }
 
@@ -79,12 +86,17 @@ export function useFileActions() {
   }
 
   function addFilesAction(parent: string): ActionItem {
-    return { id: 'add-files', label: 'Add files…', icon: 'lu:file-up', onSelect: () => runAction(addFiles(parent), 'add the files') }
+    return {
+      id: 'add-files',
+      label: t('menu.addFiles'),
+      icon: 'lu:file-up',
+      onSelect: () => runAction(addFiles(parent), 'add the files', t('failed.addFiles')),
+    }
   }
 
   async function newFolder(node: TreeNode): Promise<void> {
     const parent = node.entry.kind === 'dir' ? node.entry.pathname : dirname(node.entry.pathname)
-    await explorer.createDir(parent, 'new-folder')
+    await explorer.createDir(parent, t('names.newFolder'))
   }
 
   function startRename(node: TreeNode): void {
@@ -94,11 +106,11 @@ export function useFileActions() {
   function confirmDelete(node: TreeNode): void {
     const name = basename(node.entry.pathname)
     modals.openConfirmModal({
-      title: 'Delete',
-      content: `Delete "${name}"? This action cannot be undone.`,
-      labels: { confirm: 'Delete', cancel: 'Cancel' },
+      title: t('confirmDelete.title'),
+      content: t('confirmDelete.content', { name }),
+      labels: { confirm: t('confirmDelete.confirm'), cancel: t('confirmDelete.cancel') },
       confirmProps: { danger: true },
-      onConfirm: () => runAction(explorer.deleteEntry(node.entry.pathname), `delete ${name}`),
+      onConfirm: () => runAction(explorer.deleteEntry(node.entry.pathname), `delete ${name}`, t('failed.delete', { name })),
     })
   }
 
@@ -125,30 +137,41 @@ export function useFileActions() {
     // the built-ins so destructive built-ins stay in their familiar place.
     if (node.entry.kind === 'file') {
       return [
-        { id: 'open', label: 'Open', icon: 'lu:file-plus', onSelect: () => openFile(node), opensObject: true },
+        { id: 'open', label: t('menu.open'), icon: 'lu:file-plus', onSelect: () => openFile(node), opensObject: true },
         ...(offersExternalOpen(node, explorer.vfs)
           ? [
               {
                 id: 'open-externally',
-                label: 'Open in system app',
+                label: t('menu.openExternally'),
                 icon: 'lu:external-link',
-                onSelect: () => runAction(openExternally(explorer.vfs, node.entry.pathname), 'open the file in the system app'),
+                onSelect: () =>
+                  runAction(openExternally(explorer.vfs, node.entry.pathname), 'open the file in the system app', t('failed.openExternally')),
               } satisfies ActionItem,
             ]
           : []),
-        { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
-        { id: 'delete', label: 'Delete', icon: 'lu:trash-2', tone: 'danger', onSelect: () => confirmDelete(node) },
+        { id: 'rename', label: t('menu.rename'), icon: 'lu:pencil', onSelect: () => startRename(node) },
+        { id: 'delete', label: t('menu.delete'), icon: 'lu:trash-2', tone: 'danger', onSelect: () => confirmDelete(node) },
         ...explorer.getContributedActions(node).map(closeNavAfter),
       ]
     }
     return [
-      { id: 'new-file', label: 'New File', icon: 'lu:file-plus', onSelect: () => runAction(newFile(node), 'create the file') },
-      { id: 'new-folder', label: 'New Folder', icon: 'lu:folder-plus', onSelect: () => runAction(newFolder(node), 'create the folder') },
+      {
+        id: 'new-file',
+        label: t('menu.newFile'),
+        icon: 'lu:file-plus',
+        onSelect: () => runAction(newFile(node), 'create the file', t('failed.createFile')),
+      },
+      {
+        id: 'new-folder',
+        label: t('menu.newFolder'),
+        icon: 'lu:folder-plus',
+        onSelect: () => runAction(newFolder(node), 'create the folder', t('failed.createFolder')),
+      },
       // A folder's own menu is how the owner says "here" — the strip's button acts on the selection,
       // which is a different sentence.
       addFilesAction(node.entry.pathname),
-      { id: 'rename', label: 'Rename', icon: 'lu:pencil', onSelect: () => startRename(node) },
-      { id: 'delete', label: 'Delete', icon: 'lu:trash-2', tone: 'danger', onSelect: () => confirmDelete(node) },
+      { id: 'rename', label: t('menu.rename'), icon: 'lu:pencil', onSelect: () => startRename(node) },
+      { id: 'delete', label: t('menu.delete'), icon: 'lu:trash-2', tone: 'danger', onSelect: () => confirmDelete(node) },
       ...explorer.getContributedActions(node).map(closeNavAfter),
     ]
   }
@@ -158,15 +181,15 @@ export function useFileActions() {
       ...getTemplateActions(explorer.root),
       {
         id: 'new-file',
-        label: 'New File',
+        label: t('menu.newFile'),
         icon: 'lu:file-plus',
-        onSelect: () => runAction(createFile(explorer.root), 'create the file'),
+        onSelect: () => runAction(createFile(explorer.root), 'create the file', t('failed.createFile')),
       },
       {
         id: 'new-folder',
-        label: 'New Folder',
+        label: t('menu.newFolder'),
         icon: 'lu:folder-plus',
-        onSelect: () => runAction(explorer.createDir(explorer.root, 'new-folder'), 'create the folder'),
+        onSelect: () => runAction(explorer.createDir(explorer.root, t('names.newFolder')), 'create the folder', t('failed.createFolder')),
       },
       addFilesAction(explorer.root),
     ]
@@ -175,15 +198,20 @@ export function useFileActions() {
   function getTemplateActions(parent: string): ActionItem[] {
     return explorer.fileTemplates.value.map((template) => ({
       id: `new:${template.extension}`,
-      label: template.label,
+      label: readText(template.label),
       icon: template.icon,
-      onSelect: () => runAction(createFile(parent, template.extension), 'create the file'),
+      onSelect: () => runAction(createFile(parent, template.extension), 'create the file', t('failed.createFile')),
     }))
   }
 
   function getCreationActions(parent: string): ActionItem[] {
     return [
-      { id: 'new-document', label: 'New document', icon: 'lu:file-plus', onSelect: () => runAction(createFile(parent), 'create the file') },
+      {
+        id: 'new-document',
+        label: t('menu.newDocument'),
+        icon: 'lu:file-plus',
+        onSelect: () => runAction(createFile(parent), 'create the file', t('failed.createFile')),
+      },
       ...getTemplateActions(parent),
     ]
   }

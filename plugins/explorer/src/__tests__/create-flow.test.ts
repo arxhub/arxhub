@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createKinds, DOCUMENT_KIND, fileNameFor, folderLabel, nameProblem, uploadLabel } from '../create-flow'
+import { createKinds, documentKind, fileNameFor, folderLabel, nameProblem, uploadLabel } from '../create-flow'
 
 describe('what the phone can create', () => {
   test('the document first, then every registered format, named by its template', () => {
@@ -12,7 +12,7 @@ describe('what the phone can create', () => {
   test('a template for the document itself does not make a second document row', () => {
     const kinds = createKinds([{ extension: '.ARX', label: 'New page', icon: 'lu:file', seed: () => '' }])
 
-    expect(kinds).toEqual([DOCUMENT_KIND])
+    expect(kinds).toEqual([documentKind()])
   })
 })
 

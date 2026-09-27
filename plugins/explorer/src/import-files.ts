@@ -1,4 +1,5 @@
 import { posix } from '@arxhub/path'
+import { t } from './i18n/messages'
 
 const { basename } = posix
 
@@ -24,24 +25,26 @@ export interface ImportedFile {
 // 7 more" does.
 function listNames(names: readonly string[]): string {
   if (names.length <= 3) return names.join(', ')
-  return `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`
+  return t('imported.more', { names: names.slice(0, 3).join(', '), count: names.length - 3 })
 }
 
 // What the success toast says. A rename is the surprising half — nothing was overwritten, but what the
 // owner will look for under the name they picked is not there — so when anything was renamed that is
 // what the description spends itself on.
 export function describeImport(added: readonly ImportedFile[]): { title: string; description: string } {
-  const title = added.length === 1 ? 'File added' : `${added.length} files added`
+  const title = t('imported.title', { count: added.length })
   const renamed = added.filter((file) => basename(file.path) !== file.name)
   if (renamed.length === 0) return { title, description: listNames(added.map((file) => file.name)) }
   const pairs = renamed.map((file) => `${file.name} → ${basename(file.path)}`)
-  return { title, description: `The name was taken, so ${listNames(pairs)}.` }
+  return { title, description: t('imported.renamed', { list: listNames(pairs) }) }
 }
 
 // What a partial import tells the error toast. It has to carry both halves: which files did not land,
 // and that some did — an import that reports only the failure reads as if nothing happened, and the
 // owner picks the whole set again over the copies that are already there.
 export function describeImportFailure(failedNames: readonly string[], addedCount: number): string {
-  const failed = `${listNames(failedNames)} could not be written`
-  return addedCount === 0 ? `${failed}.` : `${failed} — ${addedCount} of ${addedCount + failedNames.length} were added.`
+  const names = listNames(failedNames)
+  return addedCount === 0
+    ? t('imported.failed', { names })
+    : t('imported.partial', { names, added: addedCount, total: addedCount + failedNames.length })
 }

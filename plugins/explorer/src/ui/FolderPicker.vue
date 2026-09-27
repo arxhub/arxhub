@@ -5,6 +5,7 @@ import { computed, onMounted, ref } from 'vue'
 import { folderLabel, nameProblem } from '../create-flow'
 import type { TreeNode } from '../explorer-extension'
 import { ExplorerExtension } from '../explorer-extension'
+import { t } from '../i18n/messages'
 import { useFileActions } from './use-file-actions'
 
 // Where something goes: the vault's folders, the root as a row of its own, and one of them chosen. It walks
@@ -35,7 +36,7 @@ function mapNode(node: TreeNode): TreeViewNode<TreeNode | null> {
     id,
     label: folderLabel(id),
     icon: 'lu:folder',
-    detail: id === props.from && id !== ROOT ? "This document's folder" : undefined,
+    detail: id === props.from && id !== ROOT ? t('picker.documentFolder') : undefined,
     branch: node.entry.kind === 'dir',
     // A folder left in the cloud has no disk behind it to write into yet.
     disabled: node.pending,
@@ -45,7 +46,15 @@ function mapNode(node: TreeNode): TreeViewNode<TreeNode | null> {
 }
 
 const nodes = computed<TreeViewNode<TreeNode | null>[]>(() => [
-  { id: ROOT, label: 'Vault', icon: 'lu:folder', detail: 'Root', branch: true, children: explorer.tree.value.map(mapNode), data: null },
+  {
+    id: ROOT,
+    label: t('vault'),
+    icon: 'lu:folder',
+    detail: t('picker.root'),
+    branch: true,
+    children: explorer.tree.value.map(mapNode),
+    data: null,
+  },
 ])
 
 const expanded = ref<string[]>([ROOT])
@@ -63,6 +72,7 @@ onMounted(() => {
       for (const folder of await explorer.loadFolderChain(props.from)) open(key(folder))
     })(),
     'list the folders',
+    t('failed.listFolders'),
   )
 })
 
@@ -75,7 +85,7 @@ function toggle(node: TreeViewNode<TreeNode | null>, next: boolean): void {
     return
   }
   open(node.id)
-  if (node.data != null) actions.runAction(explorer.load(node.data), 'list the folder')
+  if (node.data != null) actions.runAction(explorer.load(node.data), 'list the folder', t('failed.listFolder'))
 }
 
 function activate(node: TreeViewNode<TreeNode | null>): void {
@@ -84,7 +94,13 @@ function activate(node: TreeViewNode<TreeNode | null>): void {
 
 function startDraft(): void {
   open(selected.value)
-  draft.value = { parentId: selected.value, label: 'Folder name', icon: 'lu:folder', placeholder: 'Folder name', confirmLabel: 'Create folder' }
+  draft.value = {
+    parentId: selected.value,
+    label: t('picker.folderName'),
+    icon: 'lu:folder',
+    placeholder: t('picker.folderName'),
+    confirmLabel: t('picker.createFolder'),
+  }
   drafting.value = true
 }
 
@@ -111,6 +127,7 @@ function commitDraft(name: string, parentId: string | null): void {
       emit('created', created)
     })(),
     `create the folder ${typed}`,
+    t('failed.createNamedFolder', { name: typed }),
   )
 }
 </script>
@@ -120,7 +137,7 @@ function commitDraft(name: string, parentId: string | null): void {
     <TreeView
       :nodes="nodes"
       mode="pick"
-      label="Folders"
+      :label="t('picker.label')"
       :selected-id="selected"
       :expanded-ids="expanded"
       :draft="draft"
@@ -135,7 +152,7 @@ function commitDraft(name: string, parentId: string | null): void {
       as="button"
       type="button"
       icon="lu:folder-plus"
-      :label="`New folder in «${folderLabel(selected)}»`"
+      :label="t('picker.newFolderIn', { folder: folderLabel(selected) })"
       data-testid="folder-picker-new"
       @click="startDraft"
     />

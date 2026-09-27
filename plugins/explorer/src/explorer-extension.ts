@@ -1,11 +1,12 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { aggregate, illegalState } from '@arxhub/errors'
+import type { Text } from '@arxhub/i18n'
 import { basename, dirname, extname, join, posix } from '@arxhub/path'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { type VfsChange, type VfsChangeSource, type VirtualEntry, type VirtualFileSystem, renameEntry as vfsRenameEntry } from '@arxhub/vfs'
 import { ref, type ShallowRef, type WatchStopHandle, watch } from 'vue'
+import { explorerImportIncomplete, explorerMoveRefused, explorerNameTaken } from './errors'
 import { freeName } from './free-name'
-import { describeImportFailure, type ImportedFile, type ImportSource } from './import-files'
+import type { ImportedFile, ImportSource } from './import-files'
 
 export interface TreeNode {
   entry: VirtualEntry
@@ -192,11 +193,15 @@ export type NodeActionContributor = (node: TreeNode) => ActionItem[]
 
 export interface FileTemplate {
   extension: string
-  label: string
+  label: Text
   icon: string
   // A line under the label where there is room for one (the phone's "what to create"): what the format is
   // for. Unset — the extension itself.
-  hint?: string
+  hint?: Text
+  // What the confirm calls one ("Create spreadsheet in «Work»"). Unset — read off an English `label`.
+  noun?: Text
+  // The noun as the object of "create" — Russian changes it («создать таблицу», not «таблица»). Unset — `noun`.
+  object?: Text
   seed(): string
 }
 
@@ -523,7 +528,7 @@ export class ExplorerExtension extends Extension {
       }
     }
     await this.refreshDir(parentPath)
-    if (failed.length > 0) throw aggregate(errors, describeImportFailure(failed, added.length), 'Could not add every file')
+    if (failed.length > 0) throw explorerImportIncomplete(errors, failed, added.length)
     return added
   }
 
@@ -552,10 +557,10 @@ export class ExplorerExtension extends Extension {
 
   async moveEntry(srcPath: string, destPath: string): Promise<void> {
     await this.serializeCreation(async () => {
-      if (!this.canMoveEntry(srcPath, posix.dirname(destPath))) throw illegalState('This item cannot be moved to that folder')
+      if (!this.canMoveEntry(srcPath, posix.dirname(destPath))) throw explorerMoveRefused()
       const dest = dirKey(posix.normalize(destPath))
       if ((await this.vfs.exists(destPath)) || [...this.currentPending()].some((path) => path === dest || path.startsWith(`${dest}/`))) {
-        throw illegalState(`"${posix.basename(destPath)}" already exists in the destination folder`)
+        throw explorerNameTaken(posix.basename(destPath))
       }
       await vfsRenameEntry(this.vfs, srcPath, destPath)
     })

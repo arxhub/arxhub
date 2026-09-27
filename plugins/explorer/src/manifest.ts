@@ -5,4 +5,5 @@ export const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'File tree explorer for ArxHub',
+  descriptions: { ru: 'Дерево файлов хранилища' },
 } satisfies PluginManifest

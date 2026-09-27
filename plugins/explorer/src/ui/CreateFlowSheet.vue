@@ -6,6 +6,7 @@ import { toaster, useArxHub } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { type CreateKind, capitalize, createKinds, fileNameFor, folderLabel, nameProblem, uploadLabel } from '../create-flow'
 import { ExplorerExtension } from '../explorer-extension'
+import { t } from '../i18n/messages'
 import { describeImport, type ImportSource } from '../import-files'
 import FolderPicker from './FolderPicker.vue'
 import { pickFiles } from './pick-files'
@@ -39,9 +40,9 @@ const name = ref('')
 const busy = ref(false)
 const step = computed<'what' | 'where'>(() => (props.folderOnly || kind.value != null || files.value.length > 0 ? 'where' : 'what'))
 const title = computed(() => {
-  if (props.folderOnly) return 'New folder'
-  if (step.value === 'what') return 'Create'
-  return `Where · ${kind.value != null ? capitalize(kind.value.noun) : 'Upload'}`
+  if (props.folderOnly) return t('create.newFolder')
+  if (step.value === 'what') return t('create.title')
+  return t('create.where', { kind: kind.value != null ? capitalize(kind.value.noun) : t('create.upload') })
 })
 
 function close(): void {
@@ -62,7 +63,7 @@ function back(): void {
 function choose(next: CreateKind): void {
   kind.value = next
   // Filled in rather than left as a placeholder: the confirm names a real file, and the field shows it.
-  name.value = 'Untitled'
+  name.value = t('create.untitled')
 }
 
 // The system's own chooser comes first, straight from the tap — a browser opens it only from inside a
@@ -73,6 +74,7 @@ function upload(): void {
       if (picked.length > 0) files.value = picked
     }),
     'pick the files',
+    t('failed.pickFiles'),
   )
 }
 
@@ -98,11 +100,17 @@ function confirm(): void {
   const done = work.then(close).finally(() => {
     busy.value = false
   })
-  actions.runAction(done, made != null ? `create the ${made.noun}` : 'add the files')
+  actions.runAction(
+    done,
+    made != null ? `create the ${made.extension} file` : 'add the files',
+    made != null ? t('failed.createKind', { kind: made.object }) : t('failed.addFiles'),
+  )
 }
 
 const confirmLabel = computed(() =>
-  kind.value != null ? `Create ${kind.value.noun} in «${folderLabel(where.value)}»` : uploadLabel(files.value.length, where.value),
+  kind.value != null
+    ? t('create.confirm', { kind: kind.value.object, folder: folderLabel(where.value) })
+    : uploadLabel(files.value.length, where.value),
 )
 const picked = computed(() => files.value.map((file) => file.name).join(', '))
 </script>
@@ -110,7 +118,7 @@ const picked = computed(() => files.value.map((file) => file.name).join(', '))
 <template>
   <BottomSheet :open="open" :title="title" :variant="step === 'where' ? 'full' : 'auto'" footer-inset @close="close">
     <template v-if="step === 'where'" #leading>
-      <IconButton size="xl" icon="lu:chevron-left" aria-label="Back" data-testid="create-back" @click="back" />
+      <IconButton size="xl" icon="lu:chevron-left" :aria-label="t('create.back')" data-testid="create-back" @click="back" />
     </template>
 
     <template v-if="step === 'what'">
@@ -130,8 +138,8 @@ const picked = computed(() => files.value.map((file) => file.name).join(', '))
         as="button"
         type="button"
         icon="lu:file-up"
-        label="Upload from phone"
-        detail="Photos, PDFs, any files"
+        :label="t('create.uploadFromPhone')"
+        :detail="t('create.uploadHint')"
         next
         data-testid="create-kind:upload"
         @click="upload"
@@ -140,10 +148,10 @@ const picked = computed(() => files.value.map((file) => file.name).join(', '))
     <FolderPicker v-else v-model="where" v-model:drafting="drafting" :from="props.folder" :start-drafting="props.folderOnly" @created="props.folderOnly && close()" />
 
     <template v-if="step === 'where' && !drafting && !props.folderOnly" #footer>
-      <Field v-if="kind != null" label="Name" for="create-name" :error="problem">
-        <Input id="create-name" v-model="name" placeholder="Untitled" data-testid="create-name" @keydown.enter.prevent="confirm" />
+      <Field v-if="kind != null" :label="t('create.name')" for="create-name" :error="problem">
+        <Input id="create-name" v-model="name" :placeholder="t('create.untitled')" data-testid="create-name" @keydown.enter.prevent="confirm" />
       </Field>
-      <Row v-else icon="lu:file-up" :label="picked" :detail="files.length === 1 ? '1 file' : `${files.length} files`" plain wrap />
+      <Row v-else icon="lu:file-up" :label="picked" :detail="t('create.files', { count: files.length })" plain wrap />
       <Button block :disabled="busy || problem != null" data-testid="create-confirm" @click="confirm">{{ confirmLabel }}</Button>
     </template>
   </BottomSheet>

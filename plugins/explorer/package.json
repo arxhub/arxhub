@@ -24,7 +24,9 @@
   "dependencies": {
     "@arxhub/path": "workspace:*",
     "lucide-vue-next": "catalog:client",
-    "vue": "catalog:client"
+    "vue": "catalog:client",
+    "@arxhub/i18n": "workspace:*",
+    "@sinclair/typebox": "catalog:shared"
   },
   "devDependencies": {
     "@arxhub/errors": "workspace:*",
