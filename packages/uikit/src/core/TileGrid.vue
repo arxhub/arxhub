@@ -106,6 +106,9 @@ function onKeydown(event: KeyboardEvent, index: number): void {
   text-align: center;
   font-size: var(--font-size-xs);
   line-height: var(--line-height-tight);
+  /* A long word (Russian "Маркированный") does not fit a quarter of a phone: hyphenate it by the
+     document's language, and cut anywhere only where the engine has no dictionary for it. */
+  hyphens: auto;
   overflow-wrap: anywhere;
 }
 
