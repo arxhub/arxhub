@@ -7,7 +7,7 @@ defineProps<{ flow: EntryFlow }>()
 </script>
 
 <template>
-  <GateLayout center mark="lu:lock">
+  <GateLayout center="mobile" mark="lu:lock">
     <template #title>ArxHub</template>
     <template #text>Documents, sheets and notes — on your devices, encrypted with your key.</template>
 

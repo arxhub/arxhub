@@ -9,7 +9,7 @@ const layout = useShellFrame() === 'mobile' ? MobileGateLayout : DesktopGateLayo
 </script>
 
 <template>
-  <component :is="layout" :center="center" :anchor="anchor" :width="width" :mark="mark">
+  <component :is="layout" :center="center" :anchor="anchor" :width="width" :mark="mark" :bleed="bleed">
     <template v-if="$slots.kicker" #kicker><slot name="kicker" /></template>
     <template v-if="$slots.title" #title><slot name="title" /></template>
     <template v-if="$slots.text" #text><slot name="text" /></template>

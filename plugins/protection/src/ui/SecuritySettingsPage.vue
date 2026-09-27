@@ -290,7 +290,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
           data-testid="security-pair"
         />
         <div v-if="canOpenSync" class="row-action">
-          <Button block variant="secondary" data-testid="security-connect-server" @click="openSyncSettings">Connect a server</Button>
+          <Button block variant="secondary" icon="lu:server" data-testid="security-connect-server" @click="openSyncSettings">Connect a server</Button>
         </div>
       </template>
       <Row
@@ -333,14 +333,14 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
       <p class="footnote">Showing the phrase and connecting a device ask for the code every time: both hand out the vault key.</p>
     </section>
 
-    <section class="block">
-      <h3 class="block-title">Device identity</h3>
+    <section class="section">
+      <h3 class="section-title">Device identity</h3>
       <p v-if="!keyring" class="hint">This device has no identity. Sync and publishing stay idle until one exists.</p>
       <template v-else>
         <p class="hint">
           The public key is what a server pins to recognise this device. It is safe to share.
         </p>
-        <div class="row">
+        <div class="value-row">
           <code class="value" data-testid="public-key">{{ keyring.authPublicKey }}</code>
           <Button :size="buttonSize" variant="secondary" @click="run(copy(keyring.authPublicKey, 'Public key'), 'Could not copy')">Copy</Button>
         </div>
@@ -364,7 +364,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
       />
       <p v-if="normalized && !enteredValid" class="invalid">Not a valid recovery phrase — check the words and their order.</p>
       <p v-else-if="verdict" class="hint" data-testid="phrase-verdict">{{ verdict }}</p>
-      <div class="row">
+      <div class="value-row">
         <Button
           :size="buttonSize"
           :variant="restoring ? 'primary' : 'danger'"
@@ -419,14 +419,16 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   color: var(--gray-11);
 }
 
-.block {
+/* Not `.block` or `.row`: a scoped rule also lands on a child component's root, and Button and Row carry
+   those very classes — `.block` stacked the "Connect a server" button's label against its left edge. */
+.section {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
 }
 
-.block-title {
+.section-title {
   margin: 0;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
@@ -440,7 +442,7 @@ async function applyIdentity(mnemonic: string, publicKey: string, wipeVault: boo
   color: var(--gray-11);
 }
 
-.row {
+.value-row {
   display: flex;
   align-items: center;
   gap: 8px;

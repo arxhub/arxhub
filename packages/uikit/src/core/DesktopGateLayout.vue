@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { useId } from 'vue'
+import { computed, useId } from 'vue'
 import type { GateLayoutProps } from './gate-layout'
 import Icon from './Icon.vue'
 import ScrollArea from './ScrollArea.vue'
 
 const props = defineProps<GateLayoutProps>()
+const centred = computed(() => props.center === true)
 const titleId = useId()
 </script>
 
@@ -15,7 +16,7 @@ const titleId = useId()
   <div class="gate" :aria-labelledby="$slots.title ? titleId : undefined">
     <ScrollArea class="gate-scroll" content-class="gate-content">
       <!-- No frame of its own: the window is the surface, and the column just sits centred on it. -->
-      <div class="column" :class="[`width-${props.width ?? 'narrow'}`, { center }]">
+      <div class="column" :class="[`width-${props.width ?? 'narrow'}`, { center: centred }]">
         <span v-if="mark" class="mark" aria-hidden="true"><Icon :name="mark" :size="20" /></span>
         <header v-if="$slots.kicker || $slots.title || $slots.text" class="head">
           <p v-if="$slots.kicker" class="kicker"><slot name="kicker" /></p>

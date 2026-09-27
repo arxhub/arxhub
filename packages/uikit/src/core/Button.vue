@@ -16,6 +16,12 @@ const props = defineProps<{
   align?: 'center' | 'start'
   /** A leading glyph, sized by the frame (DS-8) so no call site picks the number itself. */
   icon?: string
+  /** The label is text to be copied letter for letter — a word of a recovery phrase — so it is set in
+   * the mono face the phrase itself is set in. */
+  mono?: boolean
+  /** A destructive action that IS the path the surface exists for ("Erase and connect again", alone in
+   * its sheet) is filled rather than outlined: there is no other button for it to be told apart from. */
+  solid?: boolean
 }>()
 
 // Like Row, the frame decides the default height: a control on the phone is a touch target (48px). An
@@ -28,7 +34,7 @@ const glyph = touch ? 16 : 14
 <template>
   <button
     class="btn"
-    :class="[`btn-${variant || 'primary'}`, `btn-${resolvedSize}`, { active, block, start: align === 'start' }]"
+    :class="[`btn-${variant || 'primary'}`, `btn-${resolvedSize}`, { active, block, mono, solid, start: align === 'start' }]"
     :type="type || 'button'"
     :disabled="disabled"
   >
@@ -118,6 +124,21 @@ const glyph = touch ? 16 : 14
 .btn-danger:hover:not(:disabled) {
   background-color: var(--danger-3);
   border-color: var(--danger-8);
+}
+
+.btn-danger.solid {
+  background-color: var(--danger-9);
+  border-color: transparent;
+  color: var(--danger-contrast);
+}
+.btn-danger.solid:hover:not(:disabled) {
+  background-color: var(--danger-10);
+  border-color: transparent;
+}
+
+.btn.mono {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-normal);
 }
 
 .btn-ghost.active:not(:disabled),

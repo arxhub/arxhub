@@ -109,7 +109,7 @@ function differentCode(): void {
     />
 
     <template v-if="step === 'confirm' || onBack" #actions>
-      <Button v-if="step === 'confirm'" block variant="ghost" :disabled="busy" @click="differentCode">Different code</Button>
+      <Button v-if="step === 'confirm'" block variant="ghost" icon="lu:chevron-left" :disabled="busy" @click="differentCode">Different code</Button>
       <Button v-else block variant="ghost" icon="lu:chevron-left" :disabled="busy" @click="onBack?.()">Back</Button>
     </template>
   </GateLayout>

@@ -61,7 +61,7 @@ const reason = computed(() => props.host.error.value?.message ?? 'The connection
   </template>
 
   <template v-else>
-    <Card variant="danger" icon="lu:circle-alert" :title="reason" data-testid="pairing-error" />
+    <Card notice variant="danger" icon="lu:circle-alert" :title="reason" data-testid="pairing-error" />
   </template>
 </template>
 

@@ -13,6 +13,11 @@ defineProps<{
   // Fill the width available and split it evenly between the segments. For a control in a rail or a
   // toolbar, where the intrinsic width of three labels is more than the column has.
   stretch?: boolean
+  // The options are words to be matched letter for letter (the phrase check), set in the mono face.
+  mono?: boolean
+  // The pick is wrong: the chosen segment takes the danger wash instead of the selection's accent, so the
+  // accent never reads as "right" on a pick that is not.
+  invalid?: boolean
 }>()
 
 defineEmits<(e: 'update:modelValue', value: string) => void>()
@@ -22,7 +27,7 @@ const touch = useShellFrame() === 'mobile'
 <template>
   <SegmentGroup.Root
     class="root"
-    :class="{ stretch, touch }"
+    :class="{ stretch, touch, mono, invalid }"
     :model-value="modelValue"
     :disabled="disabled"
     :aria-label="ariaLabel"
@@ -111,6 +116,15 @@ const touch = useShellFrame() === 'mobile'
   background: var(--accent-3);
   color: var(--accent-11);
   font-weight: var(--font-weight-medium);
+}
+
+.root.mono .item {
+  font-family: var(--font-mono);
+}
+
+.root.invalid .item[data-state='checked'] {
+  background: var(--danger-3);
+  color: var(--danger-11);
 }
 
 .item[data-focus-visible] {

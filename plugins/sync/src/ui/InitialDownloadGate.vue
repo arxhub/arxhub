@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { RepositoryExtension } from '@arxhub/plugin-repository'
 import { Button, Card, GateLayout, ProgressBar, Row } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import type { SyncExtension } from '../sync-extension'
 import { downloadFacts } from './download-facts'
@@ -18,6 +19,8 @@ const state = computed(() => props.sync.initialDownload.value)
 const done = computed(() => state.value.status === 'done')
 const failed = computed(() => state.value.status === 'failed')
 const facts = computed(() => downloadFacts(state.value.progress))
+// The note reads as the screen's own prose, which the phone sets a step larger (as GateLayout's text).
+const touch = useShellFrame() === 'mobile'
 const threshold = computed(() => props.repository.materializeUpToMb.value)
 </script>
 
@@ -37,11 +40,12 @@ const threshold = computed(() => props.repository.materializeUpToMb.value)
     </Card>
     <Card
       v-else-if="!done"
+      notice
       variant="warning"
       icon="lu:triangle-alert"
       title="Don't close or minimize the app while downloading. If it closes anyway, the download continues from the same place next time."
     />
-    <p v-if="threshold > 0" class="note">
+    <p v-if="threshold > 0" class="note" :class="{ touch }">
       Files over {{ threshold }} MB (videos, archives) aren't downloaded ahead — they open on demand. Change this in Settings → Storage.
     </p>
 
@@ -56,10 +60,12 @@ const threshold = computed(() => props.repository.materializeUpToMb.value)
 .facts {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .fact {
   color: var(--gray-12);
+  font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -69,5 +75,9 @@ const threshold = computed(() => props.repository.materializeUpToMb.value)
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
   color: var(--gray-11);
+}
+
+.note.touch {
+  font-size: var(--font-size-md);
 }
 </style>

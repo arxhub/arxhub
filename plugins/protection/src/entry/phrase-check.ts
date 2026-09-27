@@ -8,7 +8,7 @@ export interface PhraseQuestion {
 }
 
 export const CHECKED_WORDS = 3
-export const OPTIONS_PER_WORD = 4
+export const OPTIONS_PER_WORD = 3
 
 // `random` returns [0, 1), like Math.random — injected so a test can pin the draw.
 export type Random = () => number
@@ -17,7 +17,7 @@ function pickIndex(random: Random, length: number): number {
   return Math.min(length - 1, Math.floor(random() * length))
 }
 
-// Three positions of the phrase, each with the right word among three decoys. A decoy is never another
+// Three positions of the phrase, each with the right word among two decoys. A decoy is never another
 // word of the same phrase: "which word is #7" must have one answer, and a word the person also wrote
 // down elsewhere on the paper would be a second.
 export function phraseQuestions(words: readonly string[], random: Random = Math.random): PhraseQuestion[] {

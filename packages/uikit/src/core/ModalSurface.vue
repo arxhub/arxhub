@@ -32,7 +32,7 @@ const touch = useShellFrame() === 'mobile'
     :footer-inset="!!$slots.footer"
     @close="emit('close')"
   >
-    <div class="modal-body" :data-testid="testId"><slot /></div>
+    <div class="modal-body" :class="{ fill: full }" :data-testid="testId"><slot /></div>
     <template v-if="$slots.footer" #footer><slot name="footer" /></template>
   </BottomSheet>
   <Dialog v-else :open="open" :title="title" :size="size" centered @update:open="$event || emit('close')">
@@ -46,5 +46,11 @@ const touch = useShellFrame() === 'mobile'
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* A whole-screen task fills the sheet, so what it keeps at its foot (a keypad) sits under the thumb
+   rather than straight under the text. */
+.modal-body.fill {
+  flex: 1 1 auto;
 }
 </style>

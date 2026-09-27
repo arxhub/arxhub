@@ -30,7 +30,7 @@ const reason = computed(() => joiner.value?.error.value?.message ?? 'The connect
         <span>{{ sas ? 'Waiting for confirmation on the first device…' : 'Connecting to the first device…' }}</span>
       </p>
     </template>
-    <Card v-else variant="danger" icon="lu:circle-alert" :title="reason" data-testid="join-error" />
+    <Card v-else notice variant="danger" icon="lu:circle-alert" :title="reason" data-testid="join-error" />
 
     <template #actions>
       <template v-if="deciding">

@@ -22,7 +22,7 @@ onBeforeUnmount(() => {
 <template>
   <p class="text">Never show it to anyone. The screen hides the phrase when you leave it.</p>
   <div data-testid="recovery-phrase"><PhraseWords :words="words" /></div>
-  <Card variant="warning" icon="lu:triangle-alert" title="Anyone who knows the phrase gets access to everything. Don't take a screenshot." />
+  <Card notice variant="warning" icon="lu:triangle-alert" title="Anyone who knows the phrase gets access to everything. Don't take a screenshot." />
 </template>
 
 <style scoped>

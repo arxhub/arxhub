@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useShellFrame } from '../hooks/useShellFrame'
 import Icon from './Icon.vue'
 import SectionLabel from './SectionLabel.vue'
 
@@ -8,17 +9,23 @@ defineProps<{
   // Micro-label above the title, naming the class of card rather than its subject ("Irreversible").
   label?: string
   variant?: 'default' | 'warning' | 'danger'
+  // A statement rather than a panel: one warning read in passing ("Write it on paper…"). The tone's wash
+  // with no border, and the glyph on the first line of a title that wraps. Only the title is drawn.
+  notice?: boolean
 }>()
+
+// DS-8: the glyph follows the frame, as a button's does — 16 beside touch-sized text, 14 otherwise.
+const glyph = useShellFrame() === 'mobile' ? 16 : 14
 </script>
 
 <template>
-  <div class="card" :class="variant ?? 'default'">
+  <div class="card" :class="[variant ?? 'default', { notice }]">
     <SectionLabel v-if="label" :tone="variant === 'danger' ? 'danger' : 'muted'" class="card-label">
       {{ label }}
     </SectionLabel>
     <div v-if="title || $slots.actions" class="card-header">
       <div class="title-wrapper">
-        <Icon v-if="icon" :name="icon" :size="14" />
+        <Icon v-if="icon" :name="icon" :size="glyph" />
         <span v-if="title" class="title">{{ title }}</span>
       </div>
       <div v-if="$slots.actions" class="card-actions">
@@ -74,6 +81,42 @@ defineProps<{
   align-items: center;
   gap: 8px;
   color: var(--gray-12);
+}
+
+/* A title that wraps must not squeeze its glyph: the icon is a fixed size (DS-8), never a flex share. */
+.title-wrapper > :deep(svg),
+.title-wrapper > :deep(.icon-glyph) {
+  flex-shrink: 0;
+}
+
+.card.notice {
+  padding: 12px;
+  border-color: transparent;
+}
+
+.card.notice.warning {
+  background-color: var(--warning-3);
+}
+
+.card.notice.danger {
+  background-color: var(--danger-3);
+}
+
+.card.notice .card-header {
+  min-height: 0;
+}
+
+.card.notice .title-wrapper {
+  align-items: flex-start;
+}
+
+.card.notice .title-wrapper > :deep(*:first-child) {
+  margin-top: 2px;
+}
+
+.card.notice .title {
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
 }
 
 .title {

@@ -12,6 +12,9 @@ const emit = defineEmits<{
 defineProps<{
   // Under the viewfinder: what to point the camera at.
   hint?: string
+  // The picture takes all the room it is given (a phone's gate, edge to edge) instead of a square box,
+  // with the finder and the hint drawn over it.
+  fill?: boolean
 }>()
 
 const video = ref<HTMLVideoElement | null>(null)
@@ -22,7 +25,7 @@ const { state } = useQrScanner(video, {
 </script>
 
 <template>
-  <div class="qr-scanner" :data-state="state">
+  <div class="qr-scanner" :class="{ fill }" :data-state="state">
     <div class="viewport">
       <!-- muted + playsinline: the only combination every mobile webview autoplays inline. -->
       <video ref="video" class="video" muted playsinline aria-hidden="true" />
@@ -75,6 +78,47 @@ const { state } = useQrScanner(video, {
 .finder i:nth-child(2) { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; }
 .finder i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; }
 .finder i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; }
+
+.qr-scanner.fill {
+  position: relative;
+  flex: 1 1 auto;
+  align-self: stretch;
+  gap: 0;
+  min-height: 0;
+  background: var(--black-a12);
+}
+
+.fill .viewport {
+  position: absolute;
+  inset: 0;
+  max-width: none;
+  aspect-ratio: auto;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Over a full picture the finder is a fixed target in the middle rather than a share of a square box,
+   lifted by half the hint's room so the pair of them is what sits centred. */
+.fill .finder {
+  inset: auto;
+  top: calc(50% - 132px);
+  left: calc(50% - 112px);
+  width: 224px;
+  height: 224px;
+}
+
+.fill .finder i {
+  width: var(--size-xs);
+  height: var(--size-xs);
+}
+
+.fill .hint {
+  position: absolute;
+  top: calc(50% + 108px);
+  right: 16px;
+  left: 16px;
+  color: var(--white-a12);
+}
 
 .hint {
   margin: 0;

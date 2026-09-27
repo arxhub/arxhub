@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button, GateLayout } from '@arxhub/uikit/core'
+import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import type { EntryFlow } from '../../entry/entry-flow'
 import EntryError from './EntryError.vue'
@@ -7,6 +8,9 @@ import PhraseWords from './PhraseWords.vue'
 
 const props = defineProps<{ flow: EntryFlow; kicker: string }>()
 
+// The phone has the paste button a thumb away and a narrow column to fill; the sentence about pasting
+// is the desktop's, where a paste is a keyboard shortcut nobody sees.
+const touch = useShellFrame() === 'mobile'
 const check = computed(() => props.flow.phraseCheck.value)
 const pasteFailed = ref(false)
 
@@ -38,7 +42,7 @@ function blurred(index: number): void {
   <GateLayout width="wide">
     <template #kicker>{{ kicker }}</template>
     <template #title>Recovery phrase</template>
-    <template #text>In order, as written down on the first device. You can paste the whole phrase.</template>
+    <template #text>In order, as written down on the first device.{{ touch ? '' : ' You can paste the whole phrase.' }}</template>
 
     <PhraseWords
       editable
@@ -51,17 +55,16 @@ function blurred(index: number): void {
     />
     <p v-if="problem" class="problem" role="alert" data-testid="phrase-problem">{{ problem }}</p>
     <p v-else-if="pasteFailed" class="problem" role="alert">This device won't let the app read the clipboard — paste into the first word instead</p>
-    <div class="paste">
-      <Button variant="ghost" icon="lu:clipboard-paste" data-testid="phrase-paste" @click="paste">Paste from clipboard</Button>
-    </div>
+    <Button block variant="ghost" icon="lu:clipboard-paste" data-testid="phrase-paste" @click="paste">Paste from clipboard</Button>
 
     <template v-if="flow.suggestions.value.length > 0" #dock>
       <!-- mousedown.prevent: the field being typed in keeps the focus, so the tap knows which word it completes. -->
       <Button
         v-for="word in flow.suggestions.value"
         :key="word"
-        size="sm"
+        size="md"
         variant="secondary"
+        mono
         :data-testid="`phrase-suggestion-${word}`"
         @mousedown.prevent
         @click="flow.pickSuggestion(word)"
@@ -83,9 +86,6 @@ function blurred(index: number): void {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
   color: var(--danger-11);
-}
-
-.paste {
-  display: flex;
+  text-align: center;
 }
 </style>

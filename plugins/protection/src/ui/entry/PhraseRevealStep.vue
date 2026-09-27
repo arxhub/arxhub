@@ -34,15 +34,14 @@ async function copy(): Promise<void> {
     <template #text>12 words — the only way to connect another device or get your vault back if this device is lost.</template>
 
     <PhraseWords :words="flow.words.value" :veiled="!flow.revealed.value" />
-    <div class="reveal">
-      <Button v-if="!flow.revealed.value" variant="secondary" icon="lu:eye" data-testid="reveal-phrase" @click="flow.reveal()">
-        Show phrase
-      </Button>
-      <Button v-else variant="ghost" :icon="copied ? 'lu:check' : 'lu:copy'" @click="copy">
-        {{ copied ? 'Copied' : 'Copy' }}
-      </Button>
-    </div>
+    <Button v-if="!flow.revealed.value" block variant="secondary" icon="lu:eye" data-testid="reveal-phrase" @click="flow.reveal()">
+      Show phrase
+    </Button>
+    <Button v-else block variant="ghost" :icon="copied ? 'lu:check' : 'lu:copy'" @click="copy">
+      {{ copied ? 'Copied' : 'Copy' }}
+    </Button>
     <Card
+      notice
       variant="warning"
       icon="lu:triangle-alert"
       title="Write it on paper. Don't take a screenshot or send it in a messenger. Anyone who knows the phrase gets access to everything."
@@ -55,9 +54,3 @@ async function copy(): Promise<void> {
     </template>
   </GateLayout>
 </template>
-
-<style scoped>
-.reveal {
-  display: flex;
-}
-</style>

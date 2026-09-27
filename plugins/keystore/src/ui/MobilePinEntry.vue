@@ -108,12 +108,18 @@ defineExpose({ focus })
   flex-direction: column;
   align-items: center;
   width: 100%;
-  gap: 4px;
+  gap: 12px;
 }
 
+/* The screen's own title already says what the dots are for (the mock draws no caption); the label
+   stays for assistive technology, which reads the field by it. */
 .label {
-  font-size: var(--font-size-sm);
-  color: var(--gray-11);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .display {
@@ -121,9 +127,7 @@ defineExpose({ focus })
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--size-xl);
   width: 100%;
-  border-radius: var(--radius-sm);
 }
 
 /* The input is an assistive/hardware entry, not a second visual control. The always-visible dots
@@ -145,8 +149,7 @@ defineExpose({ focus })
   justify-content: center;
   gap: 12px;
   max-width: 252px;
-  padding: 12px;
-  border-radius: var(--radius-sm);
+  padding: 2px 0;
   pointer-events: none;
 }
 
@@ -167,11 +170,10 @@ defineExpose({ focus })
   animation: shake 280ms;
 }
 
-.dots.invalid .dot {
-  border-color: var(--danger-9);
-}
-
+/* A refused entry is cleared, so what turns red is only what is still typed; the empty dots stay the
+   neutral slots they are, and the shake and the message say the rest. */
 .dots.invalid .dot.filled {
+  border-color: var(--danger-9);
   background: var(--danger-9);
 }
 

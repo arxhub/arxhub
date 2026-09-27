@@ -380,6 +380,9 @@ const rowAttrs = computed(() => {
   font-weight: var(--font-weight-medium);
 }
 
+/* The answer is the whole screen: its name wraps rather than being cut to an ellipsis, as its second
+   line does. */
+.row.choice .row-label,
 .row.choice .row-detail {
   white-space: normal;
 }
@@ -403,6 +406,7 @@ const rowAttrs = computed(() => {
   font-weight: var(--font-weight-medium);
 }
 
+.row.plated .row-label,
 .row.plated .row-detail {
   white-space: normal;
 }
@@ -429,6 +433,16 @@ const rowAttrs = computed(() => {
 .row.flush > .row-main,
 .row.touch.flush > .row-main {
   padding-right: 0;
+}
+
+/* A fact is read, never pressed, so it takes no target height in either frame: the lines of a key/value
+   read-out sit as close as the prose around them, the key in the meta step and the value in the slot. */
+.row.flush.plain,
+.row.touch.flush.plain {
+  height: auto;
+  min-height: 0;
+  font-size: var(--font-size-sm);
+  color: var(--gray-11);
 }
 
 /* Flat, not faded — an unavailable row must not read as a dimmed available one. */

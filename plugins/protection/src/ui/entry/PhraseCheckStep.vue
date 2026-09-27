@@ -7,7 +7,7 @@ defineProps<{ flow: EntryFlow; kicker: string }>()
 </script>
 
 <template>
-  <GateLayout width="wide">
+  <GateLayout>
     <template #kicker>{{ kicker }}</template>
     <template #title>Check the phrase</template>
     <template #text>Pick the words you wrote down — so we know the phrase is recorded correctly.</template>
@@ -20,6 +20,8 @@ defineProps<{ flow: EntryFlow; kicker: string }>()
     >
       <Segmented
         stretch
+        mono
+        :invalid="flow.wrongAt(question.position)"
         :model-value="flow.picks.value[question.position]"
         :options="question.options.map((word) => ({ value: word, label: word }))"
         :aria-label="`Word #${question.position}`"

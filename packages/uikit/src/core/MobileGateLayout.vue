@@ -16,10 +16,10 @@ const keyboardInset = useKeyboardInset()
   <!-- Not <main>, for the same reason as the desktop gate. The gate ends where the keyboard begins, so
        the dock and the actions stay above it rather than under it. -->
   <div class="gate" :aria-labelledby="$slots.title ? titleId : undefined" :style="{ bottom: `${keyboardInset}px` }">
-    <ScrollArea class="gate-scroll" content-class="gate-content">
+    <ScrollArea class="gate-scroll" :class="{ bleed }" content-class="gate-content">
       <div class="column" :class="{ center, end: center && anchor === 'end' }">
         <span v-if="mark" class="mark" aria-hidden="true"><Icon :name="mark" :size="20" /></span>
-        <header v-if="$slots.kicker || $slots.title || $slots.text" class="head">
+        <header v-if="$slots.kicker || $slots.title || $slots.text" class="head" :class="{ unseen: bleed }">
           <p v-if="$slots.kicker" class="kicker"><slot name="kicker" /></p>
           <h1 v-if="$slots.title" :id="titleId" class="title"><slot name="title" /></h1>
           <p v-if="$slots.text" class="text"><slot name="text" /></p>
@@ -67,6 +67,23 @@ const keyboardInset = useKeyboardInset()
   flex-direction: column;
   box-sizing: border-box;
   padding: calc(40px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
+}
+
+.gate-scroll.bleed :deep(.gate-content) {
+  padding: 0;
+}
+
+.gate-scroll.bleed .column {
+  gap: 0;
+}
+
+.head.unseen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .column {
