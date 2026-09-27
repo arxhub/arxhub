@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { EmptyState, ScrollArea } from '@arxhub/uikit/core'
 import { computed } from 'vue'
+import { t } from '../i18n/messages'
 import BlockSideBySide from './BlockSideBySide.vue'
 import BlockStream from './BlockStream.vue'
-import { DIFF_LABELS } from './labels'
 import ReplacedView from './ReplacedView.vue'
 import SheetBody from './SheetBody.vue'
 import TextSideBySide from './TextSideBySide.vue'
@@ -26,7 +26,7 @@ const tab = computed(() => {
 
 <template>
   <div class="diff-body">
-    <EmptyState v-if="model == null || model.identical" icon="lu:check" :text="DIFF_LABELS.identical" data-testid="diff-empty" />
+    <EmptyState v-if="model == null || model.identical" icon="lu:check" :text="t('identical')" data-testid="diff-empty" />
     <template v-else-if="model.format === 'sheets'">
       <SheetBody v-if="tab" :key="tab.id" :tab="tab" :book-note="model.note" />
     </template>

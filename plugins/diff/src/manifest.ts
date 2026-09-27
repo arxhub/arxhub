@@ -6,4 +6,5 @@ export const manifest = {
   version: '0.1.0',
   author: 'arxhub',
   description: 'Format-neutral comparison of two versions of a file',
+  descriptions: { ru: 'Сравнение двух версий файла в любом формате' },
 } satisfies PluginManifest

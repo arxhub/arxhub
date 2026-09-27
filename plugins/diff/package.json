@@ -22,6 +22,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/i18n": "workspace:*",
     "@sinclair/typebox": "catalog:shared",
     "vue": "catalog:client"
   },

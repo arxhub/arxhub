@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { EmptyState } from '@arxhub/uikit/core'
 import { computed } from 'vue'
+import { t } from '../i18n/messages'
 import type { DiffSheetTab } from '../model'
-import { DIFF_LABELS, sheetAddedLabel, sheetRemovedLabel, sheetRenamedLabel } from './labels'
+import { sheetAddedLabel, sheetRemovedLabel, sheetRenamedLabel } from './labels'
 import SheetGrid from './SheetGrid.vue'
 import SheetList from './SheetList.vue'
 import { useDiffViewContext } from './use-diff-view'
@@ -23,7 +24,7 @@ const banner = computed(() => {
   return lines.length ? lines.join(' · ') : null
 })
 // "No changes" beside a banner that names one would contradict it: only the values stayed.
-const empty = computed(() => (banner.value == null ? DIFF_LABELS.noChangesOnSheet : DIFF_LABELS.noValueChangesOnSheet))
+const empty = computed(() => (banner.value == null ? t('noChangesOnSheet') : t('noValueChangesOnSheet')))
 </script>
 
 <template>

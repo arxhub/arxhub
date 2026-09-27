@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Icon, IconButton } from '@arxhub/uikit/core'
 import { computed, ref } from 'vue'
+import { t } from '../i18n/messages'
 import DiffOptionsSheet from './DiffOptionsSheet.vue'
 import DiffPartsSheet from './DiffPartsSheet.vue'
-import { BAND_LABELS, counterLabel, DIFF_LABELS } from './labels'
+import { counterLabel } from './labels'
 import type { DiffBandProps } from './types'
 
 // The phone's controls for an open diff, in the band above the type row (the host docks it): nothing of the diff
@@ -26,7 +27,7 @@ const hostParts = computed(() => props.parts ?? [])
 const hasParts = computed(() => hostParts.value.length > 1 || tabs.value.length > 1)
 const icon = computed(() => props.icon ?? (result.value?.model.format === 'sheets' ? 'lu:table-2' : 'lu:file-text'))
 const name = computed(() => (activeTab.value != null ? `${props.title} · ${activeTab.value.name}` : props.title))
-const partsTitle = computed(() => props.partsTitle ?? (hostParts.value.length === 0 && sheets.value != null ? DIFF_LABELS.sheets : props.title))
+const partsTitle = computed(() => props.partsTitle ?? (hostParts.value.length === 0 && sheets.value != null ? t('sheets') : props.title))
 
 const total = computed(() => props.controller.stops.value.length)
 const counter = computed(() => counterLabel(props.controller.current.value, total.value))
@@ -45,7 +46,7 @@ function pickTab(id: string): void {
       type="button"
       class="name"
       :class="{ open: layer === 'parts' }"
-      :aria-label="`${name} · ${BAND_LABELS.parts}`"
+      :aria-label="`${name} · ${t('parts')}`"
       aria-haspopup="dialog"
       :aria-expanded="layer === 'parts'"
       data-testid="diff-band-parts"
@@ -63,7 +64,7 @@ function pickTab(id: string): void {
     <span class="key">
       <IconButton
         size="xl"
-        :aria-label="DIFF_LABELS.previousTitle"
+        :aria-label="t('previousTitle')"
         :disabled="total === 0"
         data-testid="diff-previous"
         @click="controller.step(-1)"
@@ -72,14 +73,14 @@ function pickTab(id: string): void {
       </IconButton>
     </span>
     <span class="key">
-      <IconButton size="xl" :aria-label="DIFF_LABELS.nextTitle" :disabled="total === 0" data-testid="diff-next" @click="controller.step(1)">
+      <IconButton size="xl" :aria-label="t('nextTitle')" :disabled="total === 0" data-testid="diff-next" @click="controller.step(1)">
         <Icon name="lu:arrow-down" :size="16" />
       </IconButton>
     </span>
     <span class="key">
       <IconButton
         size="xl"
-        :aria-label="DIFF_LABELS.more"
+        :aria-label="t('more')"
         :active="layer === 'options'"
         aria-haspopup="dialog"
         data-testid="diff-more"

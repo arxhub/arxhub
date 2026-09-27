@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { type ActionItem, BottomSheet, Checkbox, Icon, Row, Segmented, type SelectOption, ZoomControl } from '@arxhub/uikit/core'
 import { computed } from 'vue'
+import { t } from '../i18n/messages'
 import type { DiffController } from './controller'
 import DiffSummary from './DiffSummary.vue'
-import { BAND_LABELS, DIFF_LABELS, ZOOM_LABELS } from './labels'
+import { zoomLabels } from './labels'
 import { DIFF_ZOOM_STEPS } from './types'
 
 // The phone's «…»: everything the desktop strip shows at once and the band has no room for — what is compared,
@@ -21,10 +22,10 @@ const emit = defineEmits<{ close: [] }>()
 
 const sheets = computed(() => props.controller.model.value?.format === 'sheets')
 const grid = computed(() => props.controller.sheetView.value === 'grid')
-const viewOptions: SelectOption[] = [
-  { value: 'list', label: DIFF_LABELS.list },
-  { value: 'grid', label: DIFF_LABELS.grid },
-]
+const viewOptions = computed<SelectOption[]>(() => [
+  { value: 'list', label: t('list') },
+  { value: 'grid', label: t('grid') },
+])
 
 // The source row is offered only when there is a raw diff to switch to, or to switch back from.
 const sourceAvailable = computed(() => props.controller.showSource.value || props.controller.result.value?.source() != null)
@@ -51,7 +52,7 @@ function run(action: ActionItem): void {
 </script>
 
 <template>
-  <BottomSheet :open="open" :title="DIFF_LABELS.menuTitle" @close="emit('close')">
+  <BottomSheet :open="open" :title="t('menuTitle')" @close="emit('close')">
     <div class="options" data-testid="diff-options">
       <Row plain wrap class="info">
         <span class="text">
@@ -61,25 +62,25 @@ function run(action: ActionItem): void {
       </Row>
       <template v-if="sheets">
         <Row plain class="option">
-          <span class="text">{{ DIFF_LABELS.view }}</span>
+          <span class="text">{{ t('view') }}</span>
           <Segmented
             class="control"
             stretch
             :model-value="controller.sheetView.value"
             :options="viewOptions"
-            :aria-label="DIFF_LABELS.view"
+            :aria-label="t('view')"
             @update:model-value="pickView"
           />
         </Row>
         <Row v-if="grid" plain class="option">
-          <span class="text">{{ BAND_LABELS.rows }}</span>
-          <Checkbox v-model="controller.onlyChangedRows.value" :label="DIFF_LABELS.onlyChangedRows" />
+          <span class="text">{{ t('rows') }}</span>
+          <Checkbox v-model="controller.onlyChangedRows.value" :label="t('onlyChangedRows')" />
         </Row>
         <!-- Zoom scales the grid only; the list has nothing it would change. -->
         <Row v-if="grid" plain class="option">
           <span class="text">
-            <span>{{ DIFF_LABELS.zoom }}</span>
-            <span class="meta">{{ DIFF_LABELS.zoomHint }}</span>
+            <span>{{ t('zoom') }}</span>
+            <span class="meta">{{ t('zoomHint') }}</span>
           </span>
           <ZoomControl
             v-model="controller.zoom.value"
@@ -87,17 +88,17 @@ function run(action: ActionItem): void {
             :max="DIFF_ZOOM_STEPS[DIFF_ZOOM_STEPS.length - 1]"
             :steps="DIFF_ZOOM_STEPS"
             :reset-to="1"
-            :labels="ZOOM_LABELS"
+            :labels="zoomLabels()"
           />
         </Row>
       </template>
       <Row v-if="sourceAvailable" as="button" data-testid="diff-source" @click="toggleSource">
         <Icon name="lu:code" :size="16" />
-        <span class="text">{{ controller.showSource.value ? DIFF_LABELS.showDiff : DIFF_LABELS.showSource }}</span>
+        <span class="text">{{ controller.showSource.value ? t('showDiff') : t('showSource') }}</span>
       </Row>
       <Row v-if="props.openDocument" as="button" data-testid="diff-open-document" @click="runOpenDocument">
         <Icon name="lu:file-text" :size="16" />
-        <span class="text">{{ DIFF_LABELS.openDocument }}</span>
+        <span class="text">{{ t('openDocument') }}</span>
       </Row>
       <Row
         v-for="action in actions ?? []"

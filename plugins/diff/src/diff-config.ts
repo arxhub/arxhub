@@ -1,28 +1,22 @@
 import { type Static, Type } from '@sinclair/typebox'
 
 // Synced (no `deviceLocal`): how much context a diff keeps is a reading preference of the vault's owner, and a
-// history that folds differently on each device would read as two different histories.
-export const DiffConfigSchema = Type.Object(
-  {
-    'context.blocks': Type.Integer({
-      title: 'Контекст вокруг правки — блоки',
-      description: 'Сколько неизменённых блоков документа или таблицы оставлять рядом с правкой; остальное сворачивается.',
-      group: 'Контекст',
-      minimum: 0,
-      maximum: 20,
-      default: 2,
-    }),
-    'context.lines': Type.Integer({
-      title: 'Контекст вокруг правки — строки',
-      description: 'Сколько неизменённых строк текстового файла оставлять рядом с правкой.',
-      group: 'Контекст',
-      minimum: 0,
-      maximum: 50,
-      default: 3,
-    }),
-  },
-  { description: 'Как ArxHub показывает сравнение версий.' },
-)
+// history that folds differently on each device would read as two different histories. What the form says about each
+// field lives in the catalog's `config` section (i18n/en.ts).
+export const DiffConfigSchema = Type.Object({
+  'context.blocks': Type.Integer({
+    group: 'context',
+    minimum: 0,
+    maximum: 20,
+    default: 2,
+  }),
+  'context.lines': Type.Integer({
+    group: 'context',
+    minimum: 0,
+    maximum: 50,
+    default: 3,
+  }),
+})
 
 export type DiffConfig = Static<typeof DiffConfigSchema>
 

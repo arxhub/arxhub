@@ -5,6 +5,7 @@ import { SettingsExtension } from '@arxhub/plugin-settings'
 import { DIFF_LAYER, DIFF_NEXT_CHANGE, DIFF_PREVIOUS_CHANGE } from './contributions'
 import { DiffConfigSchema, toDiffSettings } from './diff-config'
 import { DiffExtension } from './diff-extension'
+import { messages, t } from './i18n/messages'
 import { manifest } from './manifest'
 import { textDiff } from './text-differ'
 
@@ -42,11 +43,13 @@ export class DiffPlugin extends Plugin {
 
     ctx.extensions.get(SettingsExtension).register({
       id: 'diff',
-      title: 'Сравнение',
+      title: () => t('settings.title'),
+      description: () => t('settings.description'),
       icon: 'lu:git-compare',
       order: 14,
       schema: DiffConfigSchema,
       config,
+      messages,
     })
     this.unwatchConfig = config.watch(DiffConfigSchema, (cfg) => {
       this.bootConfigPending = false
@@ -61,14 +64,14 @@ export class DiffPlugin extends Plugin {
         id: DIFF_NEXT_CHANGE,
         chord: 'Alt-ArrowDown',
         layer: DIFF_LAYER,
-        title: 'Следующая правка',
+        title: () => t('hotkeys.next'),
         run: () => diff.focusedView()?.step(1),
       }),
       hotkeys.register({
         id: DIFF_PREVIOUS_CHANGE,
         chord: 'Alt-ArrowUp',
         layer: DIFF_LAYER,
-        title: 'Предыдущая правка',
+        title: () => t('hotkeys.previous'),
         run: () => diff.focusedView()?.step(-1),
       }),
     )

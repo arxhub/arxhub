@@ -8,6 +8,7 @@ export default defineConfig((env) =>
       '@arxhub/config',
       '@arxhub/core',
       '@arxhub/errors',
+      '@arxhub/i18n',
       '@arxhub/logger',
       '@arxhub/plugin-hotkeys',
       '@arxhub/plugin-hotkeys/ui',

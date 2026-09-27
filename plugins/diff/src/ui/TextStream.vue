@@ -3,7 +3,7 @@ import type { DiffTextModel } from '../model'
 import DiffFold from './DiffFold.vue'
 import DiffGlyph from './DiffGlyph.vue'
 import DiffInline from './DiffInline.vue'
-import { foldLabel } from './labels'
+import { foldLinesLabel } from './labels'
 import { useDiffViewContext, useFolds } from './use-diff-view'
 
 const props = defineProps<{ model: DiffTextModel }>()
@@ -20,7 +20,7 @@ const entries = useFolds(() => props.model.lines, {
 <template>
   <div class="text-stream" :class="{ touch }">
     <template v-for="entry in entries" :key="entry.kind === 'fold' ? entry.id : entry.item.id">
-      <DiffFold v-if="entry.kind === 'fold'" :label="foldLabel(entry.count, 'lines')" @expand="controller.expand(entry.id)" />
+      <DiffFold v-if="entry.kind === 'fold'" :label="foldLinesLabel(entry.count)" @expand="controller.expand(entry.id)" />
       <div
         v-else
         class="line"

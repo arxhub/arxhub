@@ -1,10 +1,11 @@
+import { errorReason } from '@arxhub/i18n'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { type MaybeRefOrGetter, type Ref, readonly, ref, type ShallowRef, shallowReadonly, shallowRef, toValue, watch } from 'vue'
 import { DEFAULT_DIFF_SETTINGS, type DiffSettings } from '../diff-config'
 import { DiffExtension } from '../diff-extension'
 import type { DiffRequest } from '../differ'
+import { t } from '../i18n/messages'
 import type { DiffResult } from '../model'
-import { DIFF_LABELS } from './labels'
 
 function diffExtension(): DiffExtension | null {
   const extensions = useArxHub().extensions
@@ -36,7 +37,7 @@ export function useDiff(request: MaybeRefOrGetter<DiffRequest | null>): {
       }
       if (extension == null) {
         loading.value = false
-        error.value = DIFF_LABELS.disabled
+        error.value = t('disabled')
         return
       }
       loading.value = true
@@ -44,7 +45,7 @@ export function useDiff(request: MaybeRefOrGetter<DiffRequest | null>): {
         const answer = await extension.diff(next)
         if (ticket === latest) result.value = answer
       } catch (cause) {
-        if (ticket === latest) error.value = cause instanceof Error && cause.message !== '' ? cause.message : DIFF_LABELS.failed
+        if (ticket === latest) error.value = errorReason(cause, t('failed'))
       } finally {
         if (ticket === latest) loading.value = false
       }

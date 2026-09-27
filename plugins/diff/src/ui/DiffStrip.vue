@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { type ActionItem, ActionMenuButton, Icon, IconButton, Segmented, Strip } from '@arxhub/uikit/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { t } from '../i18n/messages'
 import { collapsedCount } from '../strip-collapse'
 import type { DiffController } from './controller'
 import DiffSummary from './DiffSummary.vue'
-import { changesLabel, DIFF_LABELS, positionLabel } from './labels'
+import { changesLabel, positionLabel } from './labels'
 import type { DiffLayout } from './types'
 
 const props = defineProps<{
@@ -31,10 +32,10 @@ const layoutApplies = computed(() => {
   const format = props.controller.model.value?.format
   return format === 'blocks' || format === 'text'
 })
-const layoutOptions = [
-  { value: 'stream', label: DIFF_LABELS.stream },
-  { value: 'side', label: DIFF_LABELS.side },
-]
+const layoutOptions = computed(() => [
+  { value: 'stream', label: t('stream') },
+  { value: 'side', label: t('side') },
+])
 
 function setLayout(value: string): void {
   if (value === 'stream' || value === 'side') props.controller.layout.value = value satisfies DiffLayout
@@ -108,7 +109,7 @@ function menuItems(): ActionItem[] {
   if (props.controller.showSource.value || result?.source() != null) {
     items.push({
       id: 'diff.source',
-      label: props.controller.showSource.value ? DIFF_LABELS.showDiff : DIFF_LABELS.showSource,
+      label: props.controller.showSource.value ? t('showDiff') : t('showSource'),
       icon: 'lu:code',
       onSelect: () => {
         props.controller.showSource.value = !props.controller.showSource.value
@@ -119,14 +120,14 @@ function menuItems(): ActionItem[] {
     const side = props.controller.layout.value === 'side'
     items.push({
       id: 'diff.layout',
-      label: side ? DIFF_LABELS.showStream : DIFF_LABELS.showSide,
+      label: side ? t('showStream') : t('showSide'),
       icon: side ? 'lu:rows-3' : 'lu:columns-2',
       onSelect: () => setLayout(side ? 'stream' : 'side'),
     })
   }
   if (props.openDocument != null) {
     const open = props.openDocument
-    items.push({ id: 'diff.open', label: DIFF_LABELS.openDocument, icon: 'lu:file-text', opensObject: true, onSelect: () => open() })
+    items.push({ id: 'diff.open', label: t('openDocument'), icon: 'lu:file-text', opensObject: true, onSelect: () => open() })
   }
   items.push(...(props.actions ?? []))
   return items
@@ -148,7 +149,7 @@ function menuItems(): ActionItem[] {
           <IconButton
             size="lg"
             icon="lu:arrow-up"
-            :tooltip="DIFF_LABELS.previous"
+            :tooltip="t('previous')"
             :disabled="total === 0"
             data-testid="diff-previous"
             @click="controller.step(-1)"
@@ -156,7 +157,7 @@ function menuItems(): ActionItem[] {
           <IconButton
             size="lg"
             icon="lu:arrow-down"
-            :tooltip="DIFF_LABELS.next"
+            :tooltip="t('next')"
             :disabled="total === 0"
             data-testid="diff-next"
             @click="controller.step(1)"
@@ -166,12 +167,12 @@ function menuItems(): ActionItem[] {
           <Segmented
             :model-value="controller.layout.value"
             :options="layoutOptions"
-            :aria-label="DIFF_LABELS.layout"
+            :aria-label="t('layout')"
             @update:model-value="setLayout"
           />
         </span>
         <span ref="menuEl" class="fixed">
-          <ActionMenuButton :label="DIFF_LABELS.more" :title="DIFF_LABELS.menuTitle" :items="menuItems" />
+          <ActionMenuButton :label="t('more')" :title="t('menuTitle')" :items="menuItems" />
         </span>
       </template>
     </Strip>

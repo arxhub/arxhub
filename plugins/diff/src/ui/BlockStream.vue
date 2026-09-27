@@ -3,7 +3,7 @@ import type { DiffBlocksModel } from '../model'
 import BlockUnit from './BlockUnit.vue'
 import { stopTargets } from './block-view'
 import DiffFold from './DiffFold.vue'
-import { foldLabel } from './labels'
+import { foldBlocksLabel } from './labels'
 import { useDiffViewContext, useFolds } from './use-diff-view'
 
 const props = defineProps<{ model: DiffBlocksModel }>()
@@ -22,7 +22,7 @@ const entries = useFolds(() => props.model.units.filter((unit) => unit.ghost !==
 <template>
   <div class="block-stream">
     <template v-for="entry in entries" :key="entry.kind === 'fold' ? entry.id : entry.item.id">
-      <DiffFold v-if="entry.kind === 'fold'" :label="foldLabel(entry.count, 'blocks')" @expand="controller.expand(entry.id)" />
+      <DiffFold v-if="entry.kind === 'fold'" :label="foldBlocksLabel(entry.count)" @expand="controller.expand(entry.id)" />
       <BlockUnit v-else :unit="entry.item" />
     </template>
   </div>

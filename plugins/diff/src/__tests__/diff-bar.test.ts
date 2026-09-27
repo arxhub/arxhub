@@ -38,10 +38,10 @@ describe('diffBarControls', () => {
     const controller = useDiffController(textResult())
     const controls = diffBarControls(controller)
     expect(controls.actions.map((action) => action.id)).toEqual(['diff.previous', 'diff.next'])
-    expect(controls.sub).toBe('1 правка')
+    expect(controls.sub).toBe('1 change')
     controls.actions[1].onSelect()
     expect(controller.current.value).toBe(0)
-    expect(diffBarControls(controller).sub).toBe('1 из 1')
+    expect(diffBarControls(controller).sub).toBe('1 of 1')
   })
 
   test('a text diff has no sheets and no view options, only what applies to it', () => {
@@ -54,7 +54,7 @@ describe('diffBarControls', () => {
   test('a workbook names its sheet, offers its sheets and its view, and a pick switches the sheet', () => {
     const controller = useDiffController(sheetResult())
     const controls = diffBarControls(controller)
-    expect(controls.sub).toBe('two · 3 правки')
+    expect(controls.sub).toBe('two · 3 changes')
     expect(controls.sheets.map((sheet) => sheet.id)).toEqual(['one', 'two'])
     expect(controls.activeSheet).toBe('two')
     expect(controls.menu.map((action) => action.id)).toEqual(['diff.view', 'diff.source'])

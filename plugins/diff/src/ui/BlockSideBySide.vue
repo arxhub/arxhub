@@ -4,7 +4,7 @@ import type { DiffBlocksModel } from '../model'
 import BlockUnit from './BlockUnit.vue'
 import { stopTargets } from './block-view'
 import DiffFold from './DiffFold.vue'
-import { foldLabel } from './labels'
+import { foldBlocksLabel } from './labels'
 import { useDiffViewContext, useFolds } from './use-diff-view'
 
 const props = defineProps<{ model: DiffBlocksModel; leftLabel: string; rightLabel: string }>()
@@ -25,7 +25,7 @@ const entries = useFolds(() => props.model.units, {
     <div class="head right">{{ rightLabel }}</div>
     <template v-for="entry in entries" :key="entry.kind === 'fold' ? entry.id : entry.item.id">
       <div v-if="entry.kind === 'fold'" class="full">
-        <DiffFold :label="foldLabel(entry.count, 'blocks')" @expand="controller.expand(entry.id)" />
+        <DiffFold :label="foldBlocksLabel(entry.count)" @expand="controller.expand(entry.id)" />
       </div>
       <template v-else>
         <template v-for="row in alignBlocks([entry.item])" :key="row.id">

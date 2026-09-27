@@ -9,7 +9,7 @@ function block(id: string, change: DiffBlock['change'], extra: Partial<DiffBlock
 
 describe('block columns', () => {
   const moved = block('n3', 'moved', { stop: 0, move: { direction: 'up', distance: 3 }, note: 'перемещён выше на 3 блока' })
-  const ghost = block('g5', 'moved', { ghost: true, move: { direction: 'up', distance: 3 }, note: 'было здесь · перемещён выше' })
+  const ghost = block('g5', 'moved', { ghost: true, move: { direction: 'up', distance: 3 }, note: 'был здесь · перемещён выше' })
 
   test('the stream hides ghosts; the left column shows the old document, the right the new one', () => {
     expect(visibleOn(ghost, null)).toBe(false)
@@ -26,8 +26,8 @@ describe('block columns', () => {
     const both = block('n0', 'changed', { stop: 0, move: { direction: 'up', distance: 3 }, note: 'задача отмечена' })
     expect(visibleOn(both, 'left')).toBe(false)
     expect(visibleOn(both, 'right')).toBe(true)
-    expect(noteFor(both, null)).toBe('перемещён выше на 3 блока · задача отмечена')
-    expect(noteFor(both, 'right')).toBe('перемещён сюда · было на 3 блока ниже · задача отмечена')
+    expect(noteFor(both, null)).toBe('moved up by 3 blocks · задача отмечена')
+    expect(noteFor(both, 'right')).toBe('moved here · was 3 blocks below · задача отмечена')
   })
 
   test('a change is focusable once: on the right, except a removal', () => {
@@ -51,9 +51,9 @@ describe('block columns', () => {
   })
 
   test('the moved unit on the right says where it came from; its ghost keeps the differ note', () => {
-    expect(noteFor(moved, 'right')).toBe('перемещён сюда · было на 3 блока ниже')
+    expect(noteFor(moved, 'right')).toBe('moved here · was 3 blocks below')
     expect(noteFor(moved, null)).toBe('перемещён выше на 3 блока')
-    expect(noteFor(ghost, 'left')).toBe('было здесь · перемещён выше')
+    expect(noteFor(ghost, 'left')).toBe('был здесь · перемещён выше')
     expect(noteFor(block('c', 'changed', { note: 'задача отмечена' }), 'left')).toBeUndefined()
   })
 

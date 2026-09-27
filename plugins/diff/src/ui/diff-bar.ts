@@ -1,7 +1,8 @@
 import { type ActionItem, stepZoomValue } from '@arxhub/uikit/core'
+import { t } from '../i18n/messages'
 import type { DiffSheetTab } from '../model'
 import type { DiffController } from './controller'
-import { counterLabel, DIFF_LABELS, sheetPartMeta } from './labels'
+import { counterLabel, sheetPartMeta } from './labels'
 import { DIFF_ZOOM_STEPS } from './types'
 
 // What an open diff contributes to a band a host describes as data (the phone's object bar): "k из n", the
@@ -42,7 +43,7 @@ export function diffBarControls(controller: DiffController, options: { openDocum
     const grid = controller.sheetView.value === 'grid'
     menu.push({
       id: 'diff.view',
-      label: `${DIFF_LABELS.view}: ${grid ? DIFF_LABELS.list : DIFF_LABELS.grid}`,
+      label: t('viewAs', { view: grid ? t('list') : t('grid') }),
       icon: grid ? 'lu:list' : 'lu:grid-3x3',
       onSelect: () => {
         controller.sheetView.value = grid ? 'list' : 'grid'
@@ -53,7 +54,7 @@ export function diffBarControls(controller: DiffController, options: { openDocum
       menu.push(
         {
           id: 'diff.rows',
-          label: only ? 'Показать все строки' : `Показать ${DIFF_LABELS.onlyChangedRows}`,
+          label: only ? t('showAllRows') : t('showOnlyChangedRows'),
           icon: 'lu:rows-3',
           onSelect: () => {
             controller.onlyChangedRows.value = !only
@@ -61,7 +62,7 @@ export function diffBarControls(controller: DiffController, options: { openDocum
         },
         {
           id: 'diff.zoom-out',
-          label: DIFF_LABELS.zoomOut,
+          label: t('zoomOut'),
           icon: 'lu:zoom-out',
           disabled: controller.zoom.value <= ZOOM.min,
           onSelect: () => {
@@ -70,7 +71,7 @@ export function diffBarControls(controller: DiffController, options: { openDocum
         },
         {
           id: 'diff.zoom-in',
-          label: DIFF_LABELS.zoomIn,
+          label: t('zoomIn'),
           icon: 'lu:zoom-in',
           disabled: controller.zoom.value >= ZOOM.max,
           onSelect: () => {
@@ -84,7 +85,7 @@ export function diffBarControls(controller: DiffController, options: { openDocum
     const source = controller.showSource.value
     menu.push({
       id: 'diff.source',
-      label: source ? DIFF_LABELS.showDiff : DIFF_LABELS.showSource,
+      label: source ? t('showDiff') : t('showSource'),
       icon: 'lu:code',
       onSelect: () => {
         controller.showSource.value = !source
@@ -94,7 +95,7 @@ export function diffBarControls(controller: DiffController, options: { openDocum
   if (options.openDocument != null) {
     menu.push({
       id: 'diff.open-document',
-      label: DIFF_LABELS.openDocument,
+      label: t('openDocument'),
       icon: 'lu:file-text',
       opensObject: true,
       onSelect: options.openDocument,
@@ -106,12 +107,12 @@ export function diffBarControls(controller: DiffController, options: { openDocum
     actions: [
       {
         id: 'diff.previous',
-        label: DIFF_LABELS.previousTitle,
+        label: t('previousTitle'),
         icon: 'lu:arrow-up',
         disabled: total === 0,
         onSelect: () => controller.step(-1),
       },
-      { id: 'diff.next', label: DIFF_LABELS.nextTitle, icon: 'lu:arrow-down', disabled: total === 0, onSelect: () => controller.step(1) },
+      { id: 'diff.next', label: t('nextTitle'), icon: 'lu:arrow-down', disabled: total === 0, onSelect: () => controller.step(1) },
     ],
     menu,
     sheets,

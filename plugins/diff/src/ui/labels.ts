@@ -1,107 +1,66 @@
+import { t } from '../i18n/messages'
 import type { DiffMove, SheetStatus } from '../model'
-import { pluralRu } from '../stops'
 
-// Every word the diff UI says, in one place: both frames and the band read the same answer.
-export const DIFF_LABELS = {
-  stream: 'Лента',
-  side: 'Рядом',
-  layout: 'Вид сравнения',
-  list: 'Список',
-  grid: 'Сетка',
-  view: 'Вид',
-  onlyChangedRows: 'только изменённые строки',
-  showSource: 'Показать JSON',
-  showDiff: 'Показать сравнение',
-  showSide: 'Показать рядом',
-  showStream: 'Показать лентой',
-  openDocument: 'Открыть документ',
-  more: 'Ещё',
-  menuTitle: 'Сравнение',
-  previous: 'Предыдущая правка · Alt+↑',
-  next: 'Следующая правка · Alt+↓',
-  previousTitle: 'Предыдущая правка',
-  nextTitle: 'Следующая правка',
-  identical: 'Версии совпадают — изменений нет',
-  noChangesOnSheet: 'На этом листе изменений нет',
-  noValueChangesOnSheet: 'Значения ячеек не изменились',
-  sheets: 'Листы',
-  noCaption: 'без заголовка',
-  zoom: 'Масштаб',
-  zoomHint: 'или щипок двумя пальцами',
-  zoomOut: 'Уменьшить',
-  zoomIn: 'Увеличить',
-  zoomReset: 'Сбросить масштаб',
-  disabled: 'Сравнение выключено: включите плагин Diff',
-  failed: 'Не удалось сравнить версии',
-  binary: 'Файл не текстовый — показаны размеры и начало обеих версий',
-} as const
+// The composed phrases of the diff UI, in one place: both frames and the band read the same answer. Each reads
+// the language when called, so a template or computed calling one follows a switch.
 
-export const ZOOM_LABELS = { out: DIFF_LABELS.zoomOut, in: DIFF_LABELS.zoomIn, reset: DIFF_LABELS.zoomReset }
+export function zoomLabels(): { out: string; in: string; reset: string } {
+  return { out: t('zoomOut'), in: t('zoomIn'), reset: t('zoomReset') }
+}
 
 export function positionLabel(current: number, total: number): string {
-  return `${current + 1} из ${total}`
+  return t('position', { current: current + 1, total })
 }
 
 export function changesLabel(n: number): string {
-  return `${n} ${pluralRu(n, 'правка', 'правки', 'правок')}`
+  return t('changes', { count: n })
 }
 
 export type FoldUnit = 'blocks' | 'lines' | 'items' | 'rows'
 
-const FOLD_NOUNS: Record<FoldUnit, [string, string, string]> = {
-  blocks: ['блок', 'блока', 'блоков'],
-  lines: ['строка', 'строки', 'строк'],
-  items: ['пункт', 'пункта', 'пунктов'],
-  rows: ['строка', 'строки', 'строк'],
-}
-
 export function foldLabel(count: number, unit: FoldUnit): string {
-  const [one, few, many] = FOLD_NOUNS[unit]
-  return `${count} ${pluralRu(count, one, few, many)} без изменений`
+  return t(`fold.${unit}`, { count })
 }
 
-// Rows are named by their sheet numbers, since a grid reader looks for "строки 12–40" in the row header.
+export const foldBlocksLabel = (count: number): string => foldLabel(count, 'blocks')
+export const foldLinesLabel = (count: number): string => foldLabel(count, 'lines')
+
+// Rows are named by their sheet numbers, since a grid reader looks for "rows 12–40" in the row header.
 export function rowGapLabel(first: number, last: number): string {
-  return first === last ? `строка ${first + 1} без изменений` : `строки ${first + 1}–${last + 1} без изменений`
+  return first === last ? t('rowGap.single', { row: first + 1 }) : t('rowGap.range', { first: first + 1, last: last + 1 })
 }
 
 // The live unit on the right of the side-by-side view says where it came from; its ghost on the left carries the
-// differ's own note ('было здесь · перемещён выше').
+// differ's own note ('was here · moved up').
 export function movedHereLabel(move: DiffMove | undefined): string {
-  if (move == null) return 'перемещён сюда'
-  const where = move.direction === 'up' ? 'ниже' : 'выше'
-  return `перемещён сюда · было на ${move.distance} ${pluralRu(move.distance, 'блок', 'блока', 'блоков')} ${where}`
+  if (move == null) return t('moved.here')
+  return t(move.direction === 'up' ? 'moved.hereFromBelow' : 'moved.hereFromAbove', { count: move.distance })
 }
 
 // The stream's word for a block that was moved and edited at once; a pure move carries the differ's own note.
 export function movedLabel(move: DiffMove | undefined): string {
-  if (move == null) return 'перемещён'
-  const where = move.direction === 'up' ? 'выше' : 'ниже'
-  return `перемещён ${where} на ${move.distance} ${pluralRu(move.distance, 'блок', 'блока', 'блоков')}`
-}
-
-function filledCells(n: number): string {
-  return `${n} ${pluralRu(n, 'заполненная ячейка', 'заполненные ячейки', 'заполненных ячеек')}`
+  if (move == null) return t('moved.plain')
+  return t(move.direction === 'up' ? 'moved.up' : 'moved.down', { count: move.distance })
 }
 
 export function sheetAddedLabel(filled: number): string {
-  return `Лист добавлен · ${filledCells(filled)}`
+  return t('sheet.added', { count: filled })
 }
 
 export function sheetRemovedLabel(filled: number): string {
-  return `Лист удалён · было ${filledCells(filled)}`
+  return t('sheet.removed', { count: filled })
 }
 
 export function sheetRenamedLabel(before: string, after: string): string {
-  return `Лист переименован: «${before}» → «${after}»`
+  return t('sheet.renamed', { before, after })
 }
 
 export function rowGroupLabel(row: number, context: string): string {
-  return context === '' ? `Строка ${row + 1}` : `Строка ${row + 1} · ${context}`
+  return context === '' ? t('sheet.row', { row: row + 1 }) : t('sheet.rowWithContext', { row: row + 1, context })
 }
 
 export function bytesLabel(n: number): string {
-  return `${n} ${pluralRu(n, 'байт', 'байта', 'байт')}`
+  return t('bytes', { count: n })
 }
 
 // What the strip's and the band's counter say: nothing without changes, the total before a first step, then the
@@ -113,14 +72,8 @@ export function counterLabel(current: number, total: number): string {
 
 // A sheet's line in the phone's parts sheet: its status when it came or went as a whole, else its changes.
 export function sheetPartMeta(status: SheetStatus, changes: number): string {
-  if (status === 'added') return 'лист добавлен'
-  if (status === 'removed') return 'лист удалён'
-  if (status === 'renamed') return 'лист переименован'
-  return changes > 0 ? changesLabel(changes) : 'без изменений'
+  if (status === 'added') return t('part.added')
+  if (status === 'removed') return t('part.removed')
+  if (status === 'renamed') return t('part.renamed')
+  return changes > 0 ? changesLabel(changes) : t('part.unchanged')
 }
-
-export const BAND_LABELS = {
-  parts: 'Части сравнения',
-  close: 'Закрыть',
-  rows: 'Строки',
-} as const

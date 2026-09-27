@@ -6,7 +6,7 @@ import type { DiffLine, DiffTextModel } from '../model'
 import DiffFold from './DiffFold.vue'
 import DiffGlyph from './DiffGlyph.vue'
 import DiffInline from './DiffInline.vue'
-import { foldLabel } from './labels'
+import { foldLinesLabel } from './labels'
 import { useDiffViewContext, useFolds } from './use-diff-view'
 
 const props = defineProps<{ model: DiffTextModel; leftLabel: string; rightLabel: string }>()
@@ -47,7 +47,7 @@ const pieces = computed<Piece[]>(() => {
     <div class="head right">{{ rightLabel }}</div>
     <template v-for="piece in pieces" :key="piece.kind === 'fold' ? piece.fold.id : piece.row.id">
       <div v-if="piece.kind === 'fold'" class="full">
-        <DiffFold :label="foldLabel(piece.fold.count, 'lines')" @expand="controller.expand(piece.fold.id)" />
+        <DiffFold :label="foldLinesLabel(piece.fold.count)" @expand="controller.expand(piece.fold.id)" />
       </div>
       <template v-else>
         <template v-for="(cell, column) in [piece.row.left, piece.row.right]" :key="column">

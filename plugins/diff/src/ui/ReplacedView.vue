@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ScrollArea } from '@arxhub/uikit/core'
+import { t } from '../i18n/messages'
 import type { DiffReplacedModel } from '../model'
-import { bytesLabel, DIFF_LABELS } from './labels'
+import { bytesLabel } from './labels'
 import { useDiffViewContext } from './use-diff-view'
 
 defineProps<{ model: DiffReplacedModel; leftLabel: string; rightLabel: string }>()
@@ -10,7 +11,7 @@ const { touch } = useDiffViewContext()
 
 <template>
   <div class="replaced" :class="{ touch }" data-diff-stop="replaced" tabindex="-1">
-    <p class="summary">{{ DIFF_LABELS.binary }}</p>
+    <p class="summary">{{ t('binary') }}</p>
     <div class="sides">
       <section v-for="(side, index) in [model.left, model.right]" :key="index" class="side" :data-change="index === 0 ? 'removed' : 'added'">
         <div class="side-head">

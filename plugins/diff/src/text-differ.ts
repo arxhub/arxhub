@@ -1,3 +1,4 @@
+import { t } from './i18n/messages'
 import type { DiffCounts, DiffLine, DiffReplacedModel, DiffStop, DiffTextModel } from './model'
 import { diffSequence } from './sequence'
 import { decodeText, wordDiff } from './word-diff'
@@ -80,7 +81,7 @@ function stripCr(line: string): string {
 
 function endingNote(before: string, after: string): string {
   const name = (line: string) => (line.endsWith('\r') ? 'CRLF' : 'LF')
-  return `окончание строки: ${name(before)} → ${name(after)}`
+  return t('lineEnding', { before: name(before), after: name(after) })
 }
 
 function plain(text: string): DiffLine['segments'] {
@@ -101,7 +102,7 @@ export function replacedModel(left: Uint8Array, right: Uint8Array): DiffReplaced
 
 function preview(bytes: Uint8Array): string {
   const text = decodeText(bytes)
-  return text == null ? `[binary ${bytes.byteLength} bytes]` : text.slice(0, PREVIEW_CHARS)
+  return text == null ? t('binaryPreview', { count: bytes.byteLength }) : text.slice(0, PREVIEW_CHARS)
 }
 
 function sameBytes(a: Uint8Array, b: Uint8Array): boolean {

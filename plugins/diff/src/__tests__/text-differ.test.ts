@@ -56,7 +56,7 @@ describe('textDiff', () => {
     expect(model.identical).toBe(false)
     expect(model.counts).toEqual({ added: 0, removed: 0, changed: 1 })
     const added = model.lines.find((line) => line.change === 'added')
-    expect(added?.note).toBe('окончание строки: CRLF → LF')
+    expect(added?.note).toBe('line ending: CRLF → LF')
     expect(model.lines.every((line) => line.segments.every((segment) => !segment.text.includes('\r')))).toBe(true)
     expect(consistent(model)).toBe(true)
   })
@@ -80,7 +80,7 @@ describe('replacedModel', () => {
   test('one changed stop and a text preview capped at 240 characters', () => {
     const model = replacedModel(new TextEncoder().encode('x'.repeat(300)), new Uint8Array([0, 1, 2]))
     expect(model.left.preview).toHaveLength(240)
-    expect(model.right.preview).toBe('[binary 3 bytes]')
+    expect(model.right.preview).toBe('[binary, 3 bytes]')
     expect(model.stops).toEqual([{ index: 0, target: 'replaced', change: 'changed' }])
     expect(consistent(model)).toBe(true)
   })

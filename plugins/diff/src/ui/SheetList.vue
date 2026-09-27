@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ScrollArea, SectionLabel } from '@arxhub/uikit/core'
+import { t } from '../i18n/messages'
 import type { DiffSheetTab } from '../model'
-import { DIFF_LABELS, rowGroupLabel } from './labels'
+import { rowGroupLabel } from './labels'
 import { useDiffViewContext } from './use-diff-view'
 
 const props = defineProps<{ tab: DiffSheetTab }>()
@@ -27,7 +28,7 @@ function targetOf(stop: number): string | undefined {
         >
           <span class="address">{{ cell.address }}</span>
           <span class="value">
-            <span class="caption">{{ cell.caption ?? DIFF_LABELS.noCaption }}</span>
+            <span class="caption">{{ cell.caption ?? t('noCaption') }}</span>
             <template v-if="cell.change === 'changed'">
               <span class="before">{{ cell.before }}</span><span class="arrow" aria-hidden="true">→</span><span class="after">{{ cell.after }}</span>
             </template>
