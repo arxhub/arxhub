@@ -5,16 +5,19 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "test": "vitest"
   },
   "dependencies": {
     "@arxhub/boot": "workspace:*",
     "@arxhub/core": "workspace:*",
+    "@arxhub/i18n": "workspace:*",
     "@arxhub/plugin-ai-workspace": "workspace:*",
     "@arxhub/plugin-budget": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
     "@arxhub/plugin-config": "workspace:*",
     "@arxhub/plugin-diff": "workspace:*",
+    "@arxhub/plugin-documents": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",
     "@arxhub/plugin-explorer": "workspace:*",
     "@arxhub/plugin-gateway": "workspace:*",
@@ -22,7 +25,6 @@
     "@arxhub/plugin-keystore": "workspace:*",
     "@arxhub/plugin-logger": "workspace:*",
     "@arxhub/plugin-maintenance": "workspace:*",
-    "@arxhub/plugin-documents": "workspace:*",
     "@arxhub/plugin-panels": "workspace:*",
     "@arxhub/plugin-preview": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",

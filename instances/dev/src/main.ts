@@ -35,6 +35,7 @@ import { VfsPlugin } from '@arxhub/plugin-vfs'
 import { detectShellFrame } from '@arxhub/uikit/hooks'
 import { HttpFileSystem, VFS_NAMESPACE } from '@arxhub/vfs-http'
 import { h, markRaw } from 'vue'
+import { t } from './i18n/messages'
 import WelcomePanel from './panels/WelcomePanel.vue'
 
 const themes: Theme[] = [
@@ -107,16 +108,16 @@ await bootClient({
     // otherwise the shell would have to depend on settings, which already depends on the shell.
     arxhub.extensions.get(SettingsExtension).register({
       id: 'about',
-      title: 'About',
+      title: () => t('about.title'),
       icon: 'lu:info',
       order: 900,
       component: markRaw({ render: () => h(AboutSettingsPage, { version: __APP_VERSION__ }) }),
     })
 
     const { store } = arxhub.extensions.get(PanelStoreExtension)
-    store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
+    store.registerPanel({ id: 'arxhub.welcome', title: () => t('welcome.title'), component: WelcomePanel })
     // dedupe: a workspace restored from a previous session may already have Welcome open — without this,
     // every boot added a second one on top of it rather than bringing the existing tab to front.
-    store.openPanel('arxhub.welcome', {}, 'Welcome', undefined, () => true)
+    store.openPanel('arxhub.welcome', {}, undefined, undefined, () => true)
   },
 })

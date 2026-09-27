@@ -34,6 +34,7 @@ import { VfsPlugin } from '@arxhub/plugin-vfs'
 import { isTauri } from '@tauri-apps/api/core'
 import { h, markRaw } from 'vue'
 import { appBudgetCapture } from './budget-capture'
+import { t } from './i18n/messages'
 import { appPairingScanner } from './pairing-scanner'
 import WelcomePanel from './panels/WelcomePanel.vue'
 import VaultSettingsPage from './settings/VaultSettingsPage.vue'
@@ -128,23 +129,23 @@ await bootClient({
     // otherwise the shell would have to depend on settings, which already depends on the shell.
     arxhub.extensions.get(SettingsExtension).register({
       id: 'about',
-      title: 'About',
+      title: () => t('about.title'),
       icon: 'lu:info',
       order: 900,
       component: markRaw({ render: () => h(AboutSettingsPage, { version: __APP_VERSION__ }) }),
     })
     arxhub.extensions.get(SettingsExtension).register({
       id: 'vault',
-      title: 'Vault',
+      title: () => t('vault.title'),
       icon: 'lu:folder',
       order: 20,
       component: markRaw(VaultSettingsPage),
     })
 
     const { store } = arxhub.extensions.get(PanelStoreExtension)
-    store.registerPanel({ id: 'arxhub.welcome', title: 'Welcome', component: WelcomePanel })
+    store.registerPanel({ id: 'arxhub.welcome', title: () => t('welcome.title'), component: WelcomePanel })
     // dedupe: a workspace restored from a previous session may already have Welcome open — without this,
     // every boot added a second one on top of it rather than bringing the existing tab to front.
-    store.openPanel('arxhub.welcome', {}, 'Welcome', undefined, () => true)
+    store.openPanel('arxhub.welcome', {}, undefined, undefined, () => true)
   },
 })

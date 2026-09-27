@@ -5,6 +5,7 @@ import { isTauri } from '@tauri-apps/api/core'
 import { homeDir, join } from '@tauri-apps/api/path'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { ref } from 'vue'
+import { t } from '../i18n/messages'
 
 const buttonSize = useShellFrame() === 'mobile' ? 'lg' : 'md'
 
@@ -14,7 +15,10 @@ const error = ref<string | null>(null)
 async function openVault(): Promise<void> {
   error.value = null
   try {
-    if (!isTauri()) throw new Error('Opening the vault folder is available in the desktop app only')
+    if (!isTauri()) {
+      error.value = t('vault.desktopOnly')
+      return
+    }
     vaultPath.value = await join(await homeDir(), '.arxhub', 'vault')
     await openPath(vaultPath.value)
   } catch (reason) {
@@ -24,10 +28,10 @@ async function openVault(): Promise<void> {
 </script>
 
 <template>
-  <PageLayout title="Vault" description="The folder where your notes and attachments are stored on this device.">
+  <PageLayout :title="t('vault.title')" :description="t('vault.description')">
     <div class="vault-settings">
       <p class="vault-path">{{ vaultPath ?? '~/.arxhub/vault' }}</p>
-      <Button :size="buttonSize" variant="secondary" @click="openVault">Open vault folder</Button>
+      <Button :size="buttonSize" variant="secondary" @click="openVault">{{ t('vault.open') }}</Button>
       <p v-if="error" class="vault-error">{{ error }}</p>
     </div>
   </PageLayout>

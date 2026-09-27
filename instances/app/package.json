@@ -6,12 +6,14 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "tauri": "cross-env WEBKIT_DISABLE_DMABUF_RENDERER=1 tauri"
+    "tauri": "cross-env WEBKIT_DISABLE_DMABUF_RENDERER=1 tauri",
+    "test": "vitest"
   },
   "dependencies": {
     "@arxhub/boot": "workspace:*",
     "@arxhub/core": "workspace:*",
     "@arxhub/errors": "workspace:*",
+    "@arxhub/i18n": "workspace:*",
     "@arxhub/plugin-budget": "workspace:*",
     "@arxhub/plugin-codemirror": "workspace:*",
     "@arxhub/plugin-config": "workspace:*",

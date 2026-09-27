@@ -6,6 +6,8 @@ import { useHotkeysExtension } from '@arxhub/plugin-shell/ui'
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import { Button, ScrollArea } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
+import { computed } from 'vue'
+import { t } from '../i18n/messages'
 
 // The frame is already decided and published at boot, so the copy can name the control the reader is
 // actually looking at instead of describing both and leaving them to work out which one they have.
@@ -13,20 +15,20 @@ const mobile = useShellFrame() === 'mobile'
 
 const shell = useArxHub().extensions.get(ShellExtension)
 const hotkeys = useHotkeysExtension()
-const SHORTCUTS = [
-  { chord: 'Mod-k', does: 'Open or switch to' },
-  { chord: 'Mod-s', does: 'Save the open file' },
-  { chord: 'Mod-b', does: 'Bold in a note' },
-  { chord: 'Mod-i', does: 'Italic' },
-  { chord: 'Mod-Shift-k', does: 'Insert a link in markdown' },
-  { chord: 'F2', does: 'Rename in the file tree' },
-]
+const shortcuts = computed(() => [
+  { chord: 'Mod-k', does: t('welcome.shortcuts.open') },
+  { chord: 'Mod-s', does: t('welcome.shortcuts.save') },
+  { chord: 'Mod-b', does: t('welcome.shortcuts.bold') },
+  { chord: 'Mod-i', does: t('welcome.shortcuts.italic') },
+  { chord: 'Mod-Shift-k', does: t('welcome.shortcuts.link') },
+  { chord: 'F2', does: t('welcome.shortcuts.rename') },
+])
 
 async function createDocument(): Promise<void> {
   try {
     await shell.types.get(DOCUMENTS_TYPE_ID)?.create?.run()
   } catch (error) {
-    toaster.create({ title: 'Could not create the note', description: String(error), type: 'error' })
+    toaster.create({ title: t('welcome.createFailed'), description: String(error), type: 'error' })
   }
 }
 </script>
@@ -34,21 +36,21 @@ async function createDocument(): Promise<void> {
 <template>
   <ScrollArea class="welcome-panel" :class="{ touch: mobile }" content-class="welcome-inner">
     <div class="sheet">
+      <!-- design-ignore: the product's name is not translated -->
       <h1>ArxHub</h1>
-      <p class="lede">
-        Your notes, stored as files in your vault. Create structured .arx notes, or read and edit markdown alongside them.
-      </p>
+
+      <p class="lede">{{ t('welcome.lede') }}</p>
 
       <div class="welcome-actions">
-        <Button :size="mobile ? 'lg' : 'md'" @click="createDocument">New note</Button>
-        <Button v-if="shell.types.has(SEARCH_TYPE_ID)" :size="mobile ? 'lg' : 'md'" variant="secondary" @click="shell.workspace.activateType(SEARCH_TYPE_ID)">Find a note</Button>
+        <Button :size="mobile ? 'lg' : 'md'" @click="createDocument">{{ t('welcome.newNote') }}</Button>
+        <Button v-if="shell.types.has(SEARCH_TYPE_ID)" :size="mobile ? 'lg' : 'md'" variant="secondary" @click="shell.workspace.activateType(SEARCH_TYPE_ID)">{{ t('welcome.findNote') }}</Button>
       </div>
-      <p class="next">Use Vault to browse files, or Open or switch to to reach all your tools.</p>
+      <p class="next">{{ t('welcome.next') }}</p>
 
       <!-- Desktop only: a phone has no keyboard to press these on until something is focused, and the
            list would be five rows of noise on the smaller screen. -->
       <dl v-if="!mobile" class="shortcuts">
-        <div v-for="shortcut in SHORTCUTS" :key="shortcut.does" class="shortcut">
+        <div v-for="shortcut in shortcuts" :key="shortcut.chord" class="shortcut">
           <dt>
             <kbd>{{ hotkeys.label(shortcut.chord) }}</kbd>
           </dt>
