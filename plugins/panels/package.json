@@ -24,6 +24,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/i18n": "workspace:*",
     "@arxhub/path": "workspace:*",
     "@atlaskit/pragmatic-drag-and-drop": "catalog:client",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "catalog:client",

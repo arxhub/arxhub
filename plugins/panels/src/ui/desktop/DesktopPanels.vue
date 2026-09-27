@@ -4,6 +4,7 @@ import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/ad
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
 import { computed, onMounted, onUnmounted, provide, shallowReactive, useId } from 'vue'
 import { type DropZone, isPanelTabDragData } from '../../composables/drag-types'
+import { t } from '../../i18n/messages'
 import type { PanelStore } from '../../types'
 import LayoutRenderer from '../LayoutRenderer.vue'
 import PanelView from '../PanelView.vue'
@@ -92,7 +93,7 @@ onUnmounted(() => {
       :group-id="page.groupId"
       :is-active="page.instance.instanceId === current?.instance.instanceId"
     />
-    <EmptyState v-if="!current" fill icon="lu:layers" text="Nothing is open." />
+    <EmptyState v-if="!current" fill icon="lu:layers" :text="t('desktop.nothing')" />
   </template>
   <template v-else>
     <div :id="parkingId" hidden />
@@ -104,6 +105,6 @@ onUnmounted(() => {
         :is-active="page.instance.instanceId === store.groups.value[page.groupId]?.activeInstanceId"
       />
     </Teleport>
-    <EmptyState v-if="!layout" fill icon="lu:layers" text="No panels open." />
+    <EmptyState v-if="!layout" fill icon="lu:layers" :text="t('desktop.noPanels')" />
   </template>
 </template>

@@ -2,6 +2,7 @@ import type { HostedPanel, Json, PanelHost } from '@arxhub/plugin-shell'
 import { nanoid } from 'nanoid'
 import { type Component, defineComponent, h, markRaw, type PropType } from 'vue'
 import { getAllGroupIds } from './panel-store'
+import { panelTitle } from './panel-title'
 import type { LayoutNode, PanelGroup, PanelInstance, PanelStore } from './types'
 import PanelsLayout from './ui/PanelsLayout.vue'
 
@@ -150,7 +151,7 @@ export class StorePanelHost implements PanelHost {
     }
     const definition = this.store.getDefinition(instance.definitionId)
     if (definition == null) return undefined
-    return { key, title: instance.title, component: definition.component, props: { ...props } }
+    return { key, title: panelTitle(this.store, instance), component: definition.component, props: { ...props } }
   }
 
   open(panel: HostedPanel): void {

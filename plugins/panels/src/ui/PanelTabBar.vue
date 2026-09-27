@@ -3,6 +3,8 @@
 import { IconButton, ScrollArea, Strip } from '@arxhub/uikit/core'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
+import { t } from '../i18n/messages'
+import { panelTitle } from '../panel-title'
 import { usePanels } from '../use-panels'
 import DraggableTab from './DraggableTab.vue'
 import { PanelChromeRegistryKey } from './panel-targets'
@@ -79,7 +81,7 @@ watch(
         :instance-id="instance.instanceId"
         :group-id="groupId"
         :index="index"
-        :title="instance.title"
+        :title="panelTitle(store, instance)"
         :chrome="chrome?.states.get(instance.instanceId)?.value"
         :is-active="isActiveGroup && instance.instanceId === group?.activeInstanceId"
         @click="onTabClick(instance.instanceId)"
@@ -89,8 +91,8 @@ watch(
     <template #actions>
       <span v-if="group?.activeInstanceId && chrome?.states.get(group.activeInstanceId)?.value.mode" class="panel-mode">{{ chrome.states.get(group.activeInstanceId)?.value.mode }}</span>
       <div ref="actionsEl" class="panel-actions" />
-      <IconButton size="lg" icon="lu:columns-2" tooltip="Split right" :disabled="(group?.instances.length ?? 0) < 2" @click="onSplit('horizontal')" />
-      <IconButton size="lg" icon="lu:rows-2" tooltip="Split down" :disabled="(group?.instances.length ?? 0) < 2" @click="onSplit('vertical')" />
+      <IconButton size="lg" icon="lu:columns-2" :tooltip="t('split.right')" :disabled="(group?.instances.length ?? 0) < 2" @click="onSplit('horizontal')" />
+      <IconButton size="lg" icon="lu:rows-2" :tooltip="t('split.down')" :disabled="(group?.instances.length ?? 0) < 2" @click="onSplit('vertical')" />
     </template>
   </Strip>
 </template>

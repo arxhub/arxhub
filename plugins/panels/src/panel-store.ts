@@ -1,6 +1,7 @@
 import './events'
 import { illegalState } from '@arxhub/errors'
 import type { EventBus } from '@arxhub/events'
+import { readText } from '@arxhub/i18n'
 import { nanoid } from 'nanoid'
 import { markRaw, readonly, ref } from 'vue'
 import type { DropZone } from './composables/drag-types'
@@ -89,7 +90,7 @@ export function createPanelStore(bus: EventBus): PanelStore {
       const instance: PanelInstance = {
         instanceId,
         definitionId,
-        title: title ?? def.title,
+        title: title ?? readText(def.title),
         props,
       }
 

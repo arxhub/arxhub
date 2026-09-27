@@ -1,3 +1,4 @@
+import type { Text } from '@arxhub/i18n'
 import type { Component, DeepReadonly, Ref } from 'vue'
 import type { DropZone } from './composables/drag-types'
 
@@ -5,7 +6,10 @@ export type PanelComponent = Component
 
 export interface PanelDefinition {
   id: string
-  title: string
+  // A function names every instance of the definition and is read at render time, so a utility panel
+  // (Welcome, the SQL console) follows a language switch and a title persisted in another language.
+  // A string only seeds an instance, whose own title (a document's name) is what the tab shows.
+  title: Text
   icon?: string
   component: PanelComponent
 }

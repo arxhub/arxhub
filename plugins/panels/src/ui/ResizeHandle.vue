@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted } from 'vue'
+import { t } from '../i18n/messages'
 
 const props = defineProps<{
   direction: 'horizontal' | 'vertical'
@@ -84,7 +85,7 @@ function onKeyDown(e: KeyboardEvent) {
     tabindex="0"
     role="separator"
     :aria-orientation="ariaOrientation"
-    aria-label="Resize panels"
+    :aria-label="t('split.resize')"
     :aria-valuenow="ariaValueNow"
     aria-valuemin="10"
     aria-valuemax="90"

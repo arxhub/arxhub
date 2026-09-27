@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { EmptyState } from '@arxhub/uikit/core'
+import { t } from '../../i18n/messages'
 import type { PanelStore } from '../../types'
 import PanelView from '../PanelView.vue'
 import { useOpenTabsList } from '../use-open-tabs'
@@ -32,7 +33,7 @@ const { openTabs, current } = useOpenTabsList(props.store)
         :group-id="tab.groupId"
         :is-active="tab.instance.instanceId === current?.instance.instanceId"
       />
-      <EmptyState v-if="!current" icon="lu:file-text" text="No document open" hint="Pick a file in the vault or create one with +." />
+      <EmptyState v-if="!current" icon="lu:file-text" :text="t('mobile.empty')" :hint="t('mobile.emptyHint')" />
     </div>
   </div>
 </template>

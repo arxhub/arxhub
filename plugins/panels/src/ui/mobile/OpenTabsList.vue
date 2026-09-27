@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { EmptyState, Row, ScrollArea } from '@arxhub/uikit/core'
+import { t } from '../../i18n/messages'
+import { panelTitle } from '../../panel-title'
 import type { PanelStore } from '../../types'
 import { useOpenTabsList } from '../use-open-tabs'
 
@@ -10,7 +12,7 @@ const { openTabs, pathOf, select } = useOpenTabsList(props.store)
 
 <template>
   <ScrollArea class="open-tabs-list">
-    <div class="open-tabs-menu" role="menu" aria-label="Open documents">
+    <div class="open-tabs-menu" role="menu" :aria-label="t('mobile.open')">
       <Row
         v-for="tab in openTabs"
         :key="tab.instance.instanceId"
@@ -23,11 +25,11 @@ const { openTabs, pathOf, select } = useOpenTabsList(props.store)
         @click="select(tab.groupId, tab.instance.instanceId)"
       >
         <span class="entry-text">
-          <span class="entry-name">{{ tab.instance.title }}</span>
+          <span class="entry-name">{{ panelTitle(props.store, tab.instance) }}</span>
           <span v-if="pathOf(tab.instance)" class="entry-path">{{ pathOf(tab.instance) }}</span>
         </span>
       </Row>
-      <EmptyState v-if="openTabs.length === 0" compact icon="lu:file-text" text="No documents open." />
+      <EmptyState v-if="openTabs.length === 0" compact icon="lu:file-text" :text="t('mobile.none')" />
     </div>
   </ScrollArea>
 </template>

@@ -3,6 +3,7 @@ import { type ActionItem, actionMenu, Icon, IconButton } from '@arxhub/uikit/cor
 import type { PanelChromeState } from '@arxhub/uikit/hooks'
 import { ref } from 'vue'
 import { useDraggableTab } from '../composables/use-draggable-tab'
+import { t } from '../i18n/messages'
 import { usePanels } from '../use-panels'
 import TabDropIndicator from './TabDropIndicator.vue'
 
@@ -46,7 +47,7 @@ function onContextMenu(event: MouseEvent) {
   const items: ActionItem[] = [
     {
       id: 'move-left',
-      label: 'Move left',
+      label: t('tab.moveLeft'),
       icon: 'lu:arrow-left',
       disabled: index === 0,
       // toIndex === index - 1 swaps this tab with its left neighbour (movePanel treats toIndex as an
@@ -55,7 +56,7 @@ function onContextMenu(event: MouseEvent) {
     },
     {
       id: 'move-right',
-      label: 'Move right',
+      label: t('tab.moveRight'),
       icon: 'lu:arrow-right',
       disabled: index === group.instances.length - 1,
       // toIndex === index + 2 swaps this tab with its right neighbour, for the same reason.
@@ -67,7 +68,7 @@ function onContextMenu(event: MouseEvent) {
     items.push(
       {
         id: 'move-to-previous-split',
-        label: 'Move to previous split',
+        label: t('tab.movePrevious'),
         icon: 'lu:arrow-left-to-line',
         disabled: !previousGroupId,
         onSelect: () => {
@@ -78,7 +79,7 @@ function onContextMenu(event: MouseEvent) {
       },
       {
         id: 'move-to-next-split',
-        label: 'Move to next split',
+        label: t('tab.moveNext'),
         icon: 'lu:arrow-right-to-line',
         disabled: !nextGroupId,
         onSelect: () => {
@@ -109,7 +110,7 @@ function onContextMenu(event: MouseEvent) {
     <Icon v-if="chrome?.icon" :name="chrome.icon" :size="14" aria-hidden="true" />
     <span class="tab-title">{{ title }}</span>
     <span v-if="chrome?.status" class="tab-status" :class="chrome.status.tone" role="status" :aria-label="chrome.status.label" :title="chrome.status.label"><Icon :name="chrome.status.icon" :size="14" /></span>
-    <IconButton class="tab-close" icon="lu:x" size="xs" tooltip="Close" @click.stop="emit('close')" />
+    <IconButton class="tab-close" icon="lu:x" size="xs" :tooltip="t('tab.close')" @click.stop="emit('close')" />
     <TabDropIndicator :edge="closestEdge" />
   </div>
 </template>

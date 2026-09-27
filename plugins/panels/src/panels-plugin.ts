@@ -1,6 +1,7 @@
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { VaultWatcher } from '@arxhub/vfs'
+import { t } from './i18n/messages'
 import manifest from './manifest'
 import { PanelStoreExtension } from './panel-store-extension'
 import { applyVaultChangeToPanels } from './vault-panel-sync'
@@ -27,7 +28,7 @@ export class PanelsPlugin extends Plugin {
       const closed = applyVaultChangeToPanels(store, change)
       // A rename is silent — it is still the same document, just at a new path. A delete is not: the
       // panel just disappeared, and nothing else would tell the owner why.
-      if (closed) toaster.create({ title: 'File deleted', description: change.pathname, type: 'info' })
+      if (closed) toaster.create({ title: t('deleted'), description: change.pathname, type: 'info' })
     })
     return super.start(ctx)
   }
