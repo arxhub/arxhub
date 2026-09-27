@@ -2,6 +2,7 @@
 import { useNavHost } from '@arxhub/plugin-shell/ui'
 import { EmptyState, Row } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
+import { t } from '../i18n/messages'
 import { PublishExtension } from '../publish-extension'
 import { publicationsView } from './publications-view'
 
@@ -20,8 +21,8 @@ function pick(root: string): void {
 </script>
 
 <template>
-  <nav aria-label="Published paths" data-testid="published-paths">
-    <EmptyState v-if="roots.length === 0" compact icon="lu:globe" text="Nothing is published." />
+  <nav :aria-label="t('sheet.label')" data-testid="published-paths">
+    <EmptyState v-if="roots.length === 0" compact icon="lu:globe" :text="t('sheet.empty')" />
     <Row
       v-for="root in roots"
       :key="root"

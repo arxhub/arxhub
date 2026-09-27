@@ -4,10 +4,12 @@ import { basename } from '@arxhub/path'
 import type { ActionItem } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { ref, type ShallowRef, shallowRef } from 'vue'
+import { publishExportUnsaved, publishExportUnsupported, publishNotConfigured, publishStorageUnavailable } from './errors'
+import { t } from './i18n/messages'
 import { publicUrl } from './public-url'
 import type { PublicationRecord } from './publish-history'
 import type { Publisher } from './publisher'
-import { type ReportFailures, reportFailures } from './report'
+import { errorText, type ReportFailures, reportFailures } from './report'
 import { type ArxNode, arxAssetPaths, arxMarkdown, arxReader } from './server/arx-reader'
 import { contentTypeFor } from './server/content-type'
 
@@ -54,8 +56,8 @@ export class PublishExtension extends Extension {
   }
 
   private async exportContent(path: string): Promise<{ raw: string; assets: Map<string, string> }> {
-    if (!this.readFile) throw illegalState('Publication storage is not available')
-    if (this.beforeRead && !(await this.beforeRead(path))) throw illegalState('Save or recover the document before exporting it')
+    if (!this.readFile) throw publishStorageUnavailable()
+    if (this.beforeRead && !(await this.beforeRead(path))) throw publishExportUnsaved()
     const raw = new TextDecoder().decode(await this.readFile(path))
     const assets = new Map<string, string>()
     for (const asset of arxAssetPaths(raw)) {
@@ -70,7 +72,7 @@ export class PublishExtension extends Extension {
   async exportHtml(path: string): Promise<{ html: string; filename: string }> {
     const { raw, assets } = await this.exportContent(path)
     const page = this.renderArx(raw, path, assets)
-    if (page.status !== 200) throw illegalState('This document cannot be exported with the installed plugins')
+    if (page.status !== 200) throw publishExportUnsupported()
     const source = new TextEncoder().encode(raw)
     let binary = ''
     for (let offset = 0; offset < source.length; offset += 32768) binary += String.fromCharCode(...source.subarray(offset, offset + 32768))
@@ -102,14 +104,12 @@ export class PublishExtension extends Extension {
   documentActions(path: string): ActionItem[] {
     if (!path.toLowerCase().endsWith('.arx')) return []
     const run = (action: Promise<void>) => {
-      action.catch((error) =>
-        toaster.create({ title: 'Export failed', description: error instanceof Error ? error.message : String(error), type: 'error' }),
-      )
+      action.catch((error) => toaster.create({ title: t('export.failed'), description: errorText(error), type: 'error' }))
     }
     return [
-      { id: 'export-markdown', label: 'Export Markdown', icon: 'lu:download', onSelect: () => run(this.downloadMarkdown(path)) },
-      { id: 'export-html', label: 'Export HTML', icon: 'lu:download', onSelect: () => run(this.downloadHtml(path)) },
-      { id: 'print-document', label: 'Print / Save PDF', icon: 'lu:printer', onSelect: () => run(this.printDocument(path)) },
+      { id: 'export-markdown', label: t('export.markdown'), icon: 'lu:download', onSelect: () => run(this.downloadMarkdown(path)) },
+      { id: 'export-html', label: t('export.html'), icon: 'lu:download', onSelect: () => run(this.downloadHtml(path)) },
+      { id: 'print-document', label: t('export.print'), icon: 'lu:printer', onSelect: () => run(this.printDocument(path)) },
     ]
   }
 
@@ -151,7 +151,7 @@ export class PublishExtension extends Extension {
         frame.contentWindow?.focus()
         frame.contentWindow?.print()
       } catch (error) {
-        toaster.create({ title: 'Printing failed', description: String(error), type: 'error' })
+        toaster.create({ title: t('export.printFailed'), description: errorText(error), type: 'error' })
       } finally {
         setTimeout(() => frame.remove(), 60000)
       }
@@ -211,7 +211,7 @@ export class PublishExtension extends Extension {
   // Refreshed in a finally: a failed publish already put the roots back, and the page has to show that too.
   private async operate(action: (publisher: Publisher) => Promise<void>): Promise<void> {
     const publisher = this.current.value
-    if (publisher == null) throw illegalState('Publishing is not configured — set the server URL and identity in Settings')
+    if (publisher == null) throw publishNotConfigured()
     try {
       await action(publisher)
     } finally {

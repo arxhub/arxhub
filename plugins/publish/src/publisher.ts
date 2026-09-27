@@ -1,10 +1,10 @@
 import type { Logger } from '@arxhub/core'
 import { createHasher } from '@arxhub/crypto'
-import { illegalState } from '@arxhub/errors'
 import { sha256 } from '@arxhub/stdlib/crypto/sha256'
 import { stableStringify } from '@arxhub/stdlib/record/stable-stringify'
 import { Chunker, type SnapshotFile, type SyncRemote } from '@arxhub/sync'
 import type { VirtualFile, VirtualFileSystem } from '@arxhub/vfs'
+import { publicationGone, publicationNotInHistory, publishHeadMoved, publishHistoryMoved, publishUnsaved } from './errors'
 import { appendHistory, historyLimit, type PublicationKind, type PublicationRecord, sanitizeHistory } from './publish-history'
 import type { PublishManifest } from './publish-manifest'
 import { arxAssetPaths, arxReader } from './server/arx-reader'
@@ -119,13 +119,13 @@ export class Publisher {
     const operation = this.pending.then(async () => {
       this.records = await this.readHistory()
       const entry = this.records.find((it) => it.hash === hash)
-      if (entry == null) throw illegalState(`Publication ${hash.slice(0, 8)} is not in the history`)
+      if (entry == null) throw publicationNotInHistory(hash.slice(0, 8))
       // The bookmark can outlive the object — a server wiped and re-paired, say — and a head pointing at
       // nothing would 404 every reader at once.
-      if (!(await this.remote.hasObjects([hash])).has(hash)) throw illegalState(`The server no longer holds publication ${hash.slice(0, 8)}`)
+      if (!(await this.remote.hasObjects([hash])).has(hash)) throw publicationGone(hash.slice(0, 8))
       const current = await this.remote.getHead()
       if (!(await this.remote.setHead(current, hash))) {
-        throw illegalState('The publication changed on another device since this history was read — look at it again before rolling back')
+        throw publishHistoryMoved()
       }
       const roots = new Set(entry.roots)
       await this.storage.file(ROOTS_FILE).writeJSON([...roots])
@@ -177,7 +177,7 @@ export class Publisher {
     const attachments = new Set<string>()
     const consume = async (file: VirtualFile) => {
       if (files[file.pathname]) return
-      if (this.beforeRead && !(await this.beforeRead(file.pathname))) throw illegalState('Save or recover open documents before publishing')
+      if (this.beforeRead && !(await this.beforeRead(file.pathname))) throw publishUnsaved()
       const fileChunks: { hash: string; size: number }[] = []
       const source: Uint8Array[] = []
       const arx = file.pathname.toLowerCase().endsWith('.arx')
@@ -282,6 +282,6 @@ export class Publisher {
       if (expected === manifestHash) return false
       if (await this.remote.setHead(expected, manifestHash)) return true
     }
-    throw illegalState('Publish head moved during upload — try publishing again')
+    throw publishHeadMoved()
   }
 }

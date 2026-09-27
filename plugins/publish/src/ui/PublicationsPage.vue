@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { formatDate } from '@arxhub/i18n'
 import { Badge, IconButton, PageLayout, Row } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
+import { t } from '../i18n/messages'
 import { PublishExtension } from '../publish-extension'
 import type { PublicationKind } from '../publish-history'
 import PublicationActions from './PublicationActions.vue'
@@ -13,13 +15,15 @@ const roots = publish.roots
 const history = publish.history
 const rowIconSize = useShellFrame() === 'mobile' ? 'lg' : 'sm'
 
-const KIND_LABEL: Record<PublicationKind, string> = { publish: 'Published', unpublish: 'Unpublished', rollback: 'Rolled back' }
+function kindLabel(kind: PublicationKind): string {
+  return t(`kind.${kind}`)
+}
 
 const enabled = computed(() => publish.enabled)
 // One mono fact about where the page comes from — the server, or the reason there is none. The identity
 // case (a server set, no phrase) lands here too, because the extension carries no origin until both hold;
 // the log names which one is missing.
-const meta = computed(() => (enabled.value ? publish.serverUrl : 'Publishing is off — set a server URL in Settings'))
+const meta = computed(() => (enabled.value ? publish.serverUrl : t('page.offMeta')))
 // The newest entry IS the head as far as the synced record knows; every other entry with that hash says
 // the same state, so none of them is offered as a place to go back to.
 const head = computed(() => history.value[0]?.hash ?? null)
@@ -28,7 +32,7 @@ const view = publicationsView(publish)
 const busy = view.busy
 
 function when(at: string): string {
-  return new Date(at).toLocaleString()
+  return formatDate(at, { dateStyle: 'short', timeStyle: 'medium' })
 }
 </script>
 
@@ -36,11 +40,11 @@ function when(at: string): string {
   <!-- Attrs on a native root: PageLayout is a Vue SFC and does not declare these, and fallthrough
        onto its root is easy to lose across the uikit entry — e2e needs a stable hook for "off". -->
   <div class="publications" data-testid="publications-page" :data-publishing="enabled ? 'on' : 'off'">
-    <PageLayout title="Publications" :meta="[meta]">
+    <PageLayout :title="t('type.title')" :meta="[meta]">
     <section class="block">
-      <h3 class="block-title">Published</h3>
+      <h3 class="block-title">{{ t('page.published') }}</h3>
       <p v-if="roots.length === 0" class="hint" :data-testid="enabled ? 'publications-empty' : 'publishing-off-hint'">
-        {{ enabled ? 'Nothing is published. Publish a note or a folder from the tree.' : 'Turn publishing on to share a note or a folder by link.' }}
+        {{ enabled ? t('page.empty') : t('page.offHint') }}
       </p>
       <ul v-else class="list" data-testid="publications">
         <Row v-for="root in roots" :key="root" as="li" plain wrap class="publication">
@@ -62,17 +66,17 @@ function when(at: string): string {
     </section>
 
     <section class="block">
-      <h3 class="block-title">History</h3>
-      <p v-if="history.length === 0" class="hint">History starts with the first publication.</p>
+      <h3 class="block-title">{{ t('page.history') }}</h3>
+      <p v-if="history.length === 0" class="hint">{{ t('page.historyEmpty') }}</p>
       <ul v-else class="list" data-testid="publication-history">
         <Row v-for="entry in history" :key="`${entry.at}:${entry.hash}`" as="li" plain wrap class="publication">
           <div class="text">
-            <span class="title">{{ KIND_LABEL[entry.kind] }} · {{ when(entry.at) }}</span>
+            <span class="title">{{ kindLabel(entry.kind) }} · {{ when(entry.at) }}</span>
             <span class="meta">{{ counts(entry) }} · <span class="mono">{{ short(entry.hash) }}</span></span>
           </div>
           <div class="actions">
-            <Badge v-if="entry.hash === head">Current</Badge>
-            <IconButton v-else :size="rowIconSize" icon="lu:undo-2" tooltip="Roll back" :disabled="busy" @click="view.rollback(entry)" />
+            <Badge v-if="entry.hash === head">{{ t('page.current') }}</Badge>
+            <IconButton v-else :size="rowIconSize" icon="lu:undo-2" :tooltip="t('action.rollBack')" :disabled="busy" @click="view.rollback(entry)" />
           </div>
         </Row>
       </ul>

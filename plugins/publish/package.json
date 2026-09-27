@@ -22,6 +22,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/i18n": "workspace:*",
     "@arxhub/crypto": "workspace:*",
     "@arxhub/http": "workspace:*",
     "@arxhub/path": "workspace:*",

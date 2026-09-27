@@ -14,6 +14,7 @@ import { PluginVfs, VaultVfs } from '@arxhub/vfs'
 import { type Static, Type } from '@sinclair/typebox'
 import { markRaw } from 'vue'
 import { PUBLISH_TYPE_ID } from './contributions'
+import { messages, t } from './i18n/messages'
 import { manifest } from './manifest'
 import { PUBLISH_NAMESPACE } from './namespace'
 import { PublishExtension } from './publish-extension'
@@ -24,33 +25,25 @@ import PublicationsPage from './ui/PublicationsPage.vue'
 import PublishedPathsSheet from './ui/PublishedPathsSheet.vue'
 import { publicationsBar } from './ui/publications-view'
 
-export const PublishConfigSchema = Type.Object(
-  {
-    // The server ORIGIN (e.g. https://hub.example.com) — the /publish route prefix is appended here.
-    // Optional, not for want of a default: an empty address is the normal "publishing is off" state
-    // (applyConfig below reads it that way), so clearing the field must not be blocked by the form
-    // treating a required-and-empty field as invalid the moment the section opens (same trap
-    // `index.exclude` in `plugins/search` found first).
-    serverUrl: Type.Optional(
-      Type.String({ title: 'Server URL', description: 'ArxHub server origin, e.g. https://hub.example.com', default: '' }),
-    ),
-    // Dotted, like the search plugin's keys: TOML writes it as one quoted key, which is what the generated
-    // form reads — a nested table would never reach it.
-    'history.limit': Type.Integer({
-      title: 'History length',
-      description: 'How many publications are remembered — each one can be rolled back to.',
-      default: DEFAULT_HISTORY_LIMIT,
-      minimum: 1,
-    }),
-  },
-  { description: 'Share selected notes and folders through public links.' },
-)
+export const PublishConfigSchema = Type.Object({
+  // The server ORIGIN (e.g. https://hub.example.com) — the /publish route prefix is appended here.
+  // Optional, not for want of a default: an empty address is the normal "publishing is off" state
+  // (applyConfig below reads it that way), so clearing the field must not be blocked by the form
+  // treating a required-and-empty field as invalid the moment the section opens (same trap
+  // `index.exclude` in `plugins/search` found first).
+  serverUrl: Type.Optional(Type.String({ default: '' })),
+  // Dotted, like the search plugin's keys: TOML writes it as one quoted key, which is what the generated
+  // form reads — a nested table would never reach it.
+  'history.limit': Type.Integer({
+    default: DEFAULT_HISTORY_LIMIT,
+    minimum: 1,
+  }),
+})
 
 // Honest about both halves of what publishing is: the content stops being encrypted, and a copy once
 // downloaded is out of the owner's hands for good — unpublishing only stops serving new ones (Q-05).
 function publishWarning(path: string, folder: boolean): string {
-  const subject = folder ? `"${basename(path)}" and everything inside it, attachments included,` : `"${basename(path)}" and its attachments`
-  return `${subject} will be uploaded unencrypted and readable by anyone with the link. Unpublishing stops serving them, but cannot recall copies already downloaded.`
+  return folder ? t('warning.folder', { name: basename(path) }) : t('warning.file', { name: basename(path) })
 }
 
 export class PublishPlugin extends Plugin {
@@ -79,7 +72,17 @@ export class PublishPlugin extends Plugin {
 
     const config = ctx.services.get(PluginConfig)
     const settings = ctx.extensions.get(SettingsExtension)
-    settings.register({ id: 'publish', title: 'Publishing', icon: 'lu:globe', schema: PublishConfigSchema, order: 11, config })
+    // The field names and the page's description are the catalog's (`config` in i18n/en.ts).
+    settings.register({
+      id: 'publish',
+      title: () => t('settings.title'),
+      description: () => t('settings.description'),
+      icon: 'lu:globe',
+      schema: PublishConfigSchema,
+      order: 11,
+      config,
+      messages,
+    })
 
     // A-33 first said no type here: publishing is something done TO a note that belongs to another type,
     // and a key opening an empty panel is worse than no key. The premise changed with the history (F-12): a
@@ -89,13 +92,13 @@ export class PublishPlugin extends Plugin {
     ctx.extensions.get(ShellExtension).types.register({
       id: PUBLISH_TYPE_ID,
       icon: 'lu:globe',
-      title: 'Publications',
+      title: () => t('type.title'),
       order: 20,
       pinned: false,
       content: markRaw(PublicationsPage),
       bar: () => publicationsBar(ctx.extensions.get(PublishExtension)),
-      summary: () => 'Shared by link',
-      sheet: { title: 'Paths', content: markRaw(PublishedPathsSheet) },
+      summary: () => t('type.summary'),
+      sheet: { title: () => t('type.sheetTitle'), content: markRaw(PublishedPathsSheet) },
     })
 
     // The server address applies without a restart: every write of THIS section rebuilds the remote
@@ -121,15 +124,16 @@ export class PublishPlugin extends Plugin {
       const publishNow = () =>
         run(
           publish.publish(path).then(() => {
-            toaster.create({ title: 'Published', description: publish.publicUrl(path) ?? path, type: 'success' })
+            toaster.create({ title: t('toast.published'), description: publish.publicUrl(path) ?? path, type: 'success' })
           }),
           `publish ${path}`,
+          t('failed.publish', { path }),
         )
       const actions: ActionItem[] = [
         ...exports,
         {
           id: 'publish',
-          label: published ? 'Republish' : 'Publish',
+          label: published ? t('action.republish') : t('action.publish'),
           icon: 'lu:globe',
           // The question is asked once, at the moment a path LEAVES encryption (FR-167). A republish
           // changes what a reader sees, not who can see it, so asking again would only teach the owner
@@ -137,9 +141,9 @@ export class PublishPlugin extends Plugin {
           onSelect: () => {
             if (published) return publishNow()
             modals.openConfirmModal({
-              title: 'Publish',
+              title: t('action.publish'),
               content: publishWarning(path, node.entry.kind === 'dir'),
-              labels: { confirm: 'Publish', cancel: 'Cancel' },
+              labels: { confirm: t('action.publish'), cancel: t('action.cancel') },
               confirmProps: { danger: true },
               onConfirm: publishNow,
             })
@@ -149,29 +153,31 @@ export class PublishPlugin extends Plugin {
       if (published) {
         actions.push({
           id: 'copy-link',
-          label: 'Copy public link',
+          label: t('action.copyPublicLink'),
           icon: 'lu:link',
           onSelect: () => {
             const url = publish.publicUrl(path)
             if (url == null) return
             run(
               navigator.clipboard.writeText(url).then(() => {
-                toaster.create({ title: 'Link copied', description: url, type: 'success' })
+                toaster.create({ title: t('toast.linkCopied'), description: url, type: 'success' })
               }),
               `copy link for ${path}`,
+              t('failed.copyLink', { path }),
             )
           },
         })
         actions.push({
           id: 'unpublish',
-          label: 'Unpublish',
+          label: t('action.unpublish'),
           icon: 'lu:eye-off',
           onSelect: () =>
             run(
               publish.unpublish(path).then(() => {
-                toaster.create({ title: 'Unpublished', description: path, type: 'success' })
+                toaster.create({ title: t('toast.unpublished'), description: path, type: 'success' })
               }),
               `unpublish ${path}`,
+              t('failed.unpublish', { path }),
             ),
         })
       }

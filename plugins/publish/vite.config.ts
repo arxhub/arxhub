@@ -20,6 +20,7 @@ export default defineConfig((env) =>
       '@arxhub/uikit/core',
       '@arxhub/uikit/hooks',
       '@arxhub/errors',
+      '@arxhub/i18n',
       '@arxhub/plugin-explorer',
       '@arxhub/plugin-gateway',
       '@arxhub/plugin-protection',
