@@ -2,8 +2,9 @@
 import { Card, EmptyState, Row } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
+import { t } from '../i18n/messages'
 import { accountBalance, type BudgetData, categoryTotals, monthlyTotals } from '../model'
-import { formatAmount } from '../money'
+import { money } from './budget-ui'
 
 const props = defineProps<{
   data: BudgetData
@@ -19,53 +20,53 @@ const spending = computed(() =>
 )
 
 function categoryName(id: string): string {
-  return props.data.categories.find((entry) => entry.id === id)?.name ?? 'Unknown category'
+  return props.data.categories.find((entry) => entry.id === id)?.name ?? t('common.unknownCategory')
 }
 </script>
 
 <template>
   <div class="summary" :class="{ touch }" data-testid="budget-summary">
     <section class="section" aria-labelledby="budget-monthly-heading">
-      <h2 id="budget-monthly-heading">This month</h2>
+      <h2 id="budget-monthly-heading">{{ t('summary.thisMonth') }}</h2>
       <div v-if="totals.length" class="summary-grid">
         <Card v-for="total in totals" :key="total.currency" :title="total.currency" icon="lu:chart-no-axes-column-increasing">
           <dl class="facts">
             <div>
-              <dt>Income</dt>
-              <dd class="income">{{ formatAmount(total.income, total.currency) }}</dd>
+              <dt>{{ t('common.income') }}</dt>
+              <dd class="income">{{ money(total.income, total.currency) }}</dd>
             </div>
             <div>
-              <dt>Expenses</dt>
-              <dd>{{ formatAmount(total.expense, total.currency) }}</dd>
+              <dt>{{ t('summary.expenses') }}</dt>
+              <dd>{{ money(total.expense, total.currency) }}</dd>
             </div>
             <div>
-              <dt>Net</dt>
-              <dd :class="{ income: total.balance > 0, expense: total.balance < 0 }">{{ formatAmount(total.balance, total.currency) }}</dd>
+              <dt>{{ t('summary.net') }}</dt>
+              <dd :class="{ income: total.balance > 0, expense: total.balance < 0 }">{{ money(total.balance, total.currency) }}</dd>
             </div>
           </dl>
         </Card>
       </div>
-      <EmptyState v-else icon="lu:calendar" text="No activity in this month." />
+      <EmptyState v-else icon="lu:calendar" :text="t('summary.noActivity')" />
     </section>
 
     <section class="section" aria-labelledby="budget-balances-heading">
-      <h2 id="budget-balances-heading">Account balances</h2>
-      <EmptyState v-if="data.accounts.length === 0" icon="lu:wallet" text="Create an account to start tracking money." />
+      <h2 id="budget-balances-heading">{{ t('summary.balances') }}</h2>
+      <EmptyState v-if="data.accounts.length === 0" icon="lu:wallet" :text="t('summary.noAccounts')" />
       <ul v-else class="list">
         <Row v-for="account in data.accounts" :key="account.id" as="li" plain>
           <span class="row-title">{{ account.name }}</span>
-          <span class="money">{{ formatAmount(accountBalance(data, account.id), account.currency) }}</span>
+          <span class="money">{{ money(accountBalance(data, account.id), account.currency) }}</span>
         </Row>
       </ul>
     </section>
 
     <section class="section" aria-labelledby="budget-spending-heading">
-      <h2 id="budget-spending-heading">Spending by category</h2>
-      <EmptyState v-if="spending.length === 0" icon="lu:chart-pie" text="No expenses in this month." />
+      <h2 id="budget-spending-heading">{{ t('summary.spending') }}</h2>
+      <EmptyState v-if="spending.length === 0" icon="lu:chart-pie" :text="t('summary.noExpenses')" />
       <ul v-else class="list">
         <Row v-for="entry in spending" :key="`${entry.categoryId}:${entry.currency}`" as="li" plain>
           <span class="row-title">{{ categoryName(entry.categoryId) }}</span>
-          <span class="money">{{ formatAmount(entry.amount, entry.currency) }}</span>
+          <span class="money">{{ money(entry.amount, entry.currency) }}</span>
         </Row>
       </ul>
     </section>

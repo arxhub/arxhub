@@ -9,6 +9,7 @@ export default defineConfig((env) =>
       '@arxhub/config',
       '@arxhub/crypto',
       '@arxhub/errors',
+      '@arxhub/i18n',
       '@arxhub/http',
       '@arxhub/plugin-gateway',
       '@arxhub/plugin-protection',

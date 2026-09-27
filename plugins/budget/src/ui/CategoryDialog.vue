@@ -3,6 +3,7 @@ import { Button, Dialog, Field, Input, Segmented } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import type { BudgetCategory, TransactionKind } from '../model'
 import { errorMessage } from './budget-ui'
 
@@ -23,10 +24,10 @@ const kind = ref<TransactionKind>('expense')
 const error = ref<string | null>(null)
 const saving = ref(false)
 const kindLocked = computed(() => !!props.previous && budget.data.value.transactions.some((entry) => entry.categoryId === props.previous?.id))
-const kindOptions = [
-  { value: 'expense', label: 'Expense' },
-  { value: 'income', label: 'Income' },
-]
+const kindOptions = computed(() => [
+  { value: 'expense', label: t('common.expense') },
+  { value: 'income', label: t('common.income') },
+])
 
 watch(
   () => props.open,
@@ -42,7 +43,7 @@ async function save(): Promise<void> {
   error.value = null
   const normalizedName = name.value.trim()
   if (!normalizedName) {
-    error.value = 'Enter a category name.'
+    error.value = t('categories.nameRequired')
     return
   }
 
@@ -63,21 +64,21 @@ async function save(): Promise<void> {
 <template>
   <Dialog
     :open="open"
-    :title="previous ? 'Edit category' : 'New category'"
+    :title="previous ? t('categories.dialogEdit') : t('categories.dialogNew')"
     size="sm"
     :close-on-escape="!saving"
     :close-on-interact-outside="!saving"
     @update:open="emit('update:open', $event)"
   >
     <form id="budget-category-form" class="form" @submit.prevent="save">
-      <Field label="Name" for="budget-category-name">
-        <Input id="budget-category-name" v-model="name" autocomplete="off" placeholder="Groceries" :disabled="saving" />
+      <Field :label="t('common.name')" for="budget-category-name">
+        <Input id="budget-category-name" v-model="name" autocomplete="off" :placeholder="t('categories.namePlaceholder')" :disabled="saving" />
       </Field>
-      <Field label="Type" :hint="kindLocked ? 'Type cannot change after the category has transactions.' : undefined">
+      <Field :label="t('categories.type')" :hint="kindLocked ? t('categories.typeLocked') : undefined">
         <Segmented
           :model-value="kind"
           :options="kindOptions"
-          aria-label="Category type"
+          :aria-label="t('categories.typeLabel')"
           stretch
           :disabled="saving || kindLocked"
           @update:model-value="kind = $event as TransactionKind"
@@ -86,9 +87,9 @@ async function save(): Promise<void> {
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </form>
     <template #footer>
-      <Button :size="buttonSize" variant="secondary" :disabled="saving" @click="emit('update:open', false)">Cancel</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="saving" @click="emit('update:open', false)">{{ t('common.cancel') }}</Button>
       <Button :size="buttonSize" type="submit" form="budget-category-form" :disabled="saving">
-        {{ saving ? 'Saving…' : 'Save category' }}
+        {{ saving ? t('common.saving') : t('categories.save') }}
       </Button>
     </template>
   </Dialog>

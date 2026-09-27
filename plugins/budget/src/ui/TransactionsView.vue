@@ -3,9 +3,9 @@ import { Badge, Button, EmptyState, IconButton, modals, Row } from '@arxhub/uiki
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import type { BudgetTransaction } from '../model'
-import { formatAmount } from '../money'
-import { accountCurrency, errorMessage } from './budget-ui'
+import { accountCurrency, displayDay, errorMessage, money } from './budget-ui'
 
 const props = defineProps<{ month: string }>()
 const emit = defineEmits<{
@@ -26,39 +26,38 @@ const transactions = computed(() =>
 const canAdd = computed(() => budget.data.value.accounts.length > 0 && budget.data.value.categories.length > 0)
 
 function accountName(id: string): string {
-  return budget.data.value.accounts.find((entry) => entry.id === id)?.name ?? 'Unknown account'
+  return budget.data.value.accounts.find((entry) => entry.id === id)?.name ?? t('common.unknownAccount')
 }
 
 function categoryName(id: string): string {
-  return budget.data.value.categories.find((entry) => entry.id === id)?.name ?? 'Unknown category'
+  return budget.data.value.categories.find((entry) => entry.id === id)?.name ?? t('common.unknownCategory')
 }
 
 function placeName(id: string | null): string | null {
   if (!id) return null
-  return budget.data.value.places.find((entry) => entry.id === id)?.name ?? 'Unknown place'
+  return budget.data.value.places.find((entry) => entry.id === id)?.name ?? t('common.unknownPlace')
 }
 
 function details(transaction: BudgetTransaction): string[] {
   const result: string[] = []
   const place = placeName(transaction.placeId)
   if (place) result.push(place)
-  if (transaction.items.length) result.push(`${transaction.items.length} ${transaction.items.length === 1 ? 'item' : 'items'}`)
-  if (transaction.attachments.length)
-    result.push(`${transaction.attachments.length} ${transaction.attachments.length === 1 ? 'photo' : 'photos'}`)
-  if (transaction.fiscalReceipt) result.push('Fiscal receipt')
+  if (transaction.items.length) result.push(t('transactions.items', { count: transaction.items.length }))
+  if (transaction.attachments.length) result.push(t('transactions.photos', { count: transaction.attachments.length }))
+  if (transaction.fiscalReceipt) result.push(t('transactions.fiscalReceipt'))
   return result
 }
 
 function displayAmount(transaction: BudgetTransaction): string {
   const currency = accountCurrency(budget.data.value, transaction.accountId)
-  return formatAmount(transaction.kind === 'expense' ? -transaction.amount : transaction.amount, currency)
+  return money(transaction.kind === 'expense' ? -transaction.amount : transaction.amount, currency)
 }
 
 function confirmRemove(transaction: BudgetTransaction): void {
   modals.openConfirmModal({
-    title: 'Remove transaction?',
-    children: `Remove the ${displayAmount(transaction)} transaction from ${transaction.date}?`,
-    labels: { confirm: 'Remove transaction', cancel: 'Cancel' },
+    title: t('transactions.removeQuestion'),
+    children: t('transactions.removeBody', { amount: displayAmount(transaction), date: displayDay(transaction.date, { dateStyle: 'long' }) }),
+    labels: { confirm: t('transactions.remove'), cancel: t('common.cancel') },
     confirmProps: { danger: true },
     onConfirm: () => void remove(transaction),
   })
@@ -67,10 +66,10 @@ function confirmRemove(transaction: BudgetTransaction): void {
 async function remove(transaction: BudgetTransaction): Promise<void> {
   try {
     await budget.removeTransaction(transaction)
-    toaster.create({ title: 'Transaction removed', type: 'success' })
+    toaster.create({ title: t('transactions.removed'), type: 'success' })
   } catch (cause) {
     arxhub.logger.error('[budget] could not remove transaction', cause)
-    toaster.create({ title: 'Could not remove transaction', description: errorMessage(cause), type: 'error' })
+    toaster.create({ title: t('transactions.removeFailed'), description: errorMessage(cause), type: 'error' })
   }
 }
 </script>
@@ -79,14 +78,14 @@ async function remove(transaction: BudgetTransaction): Promise<void> {
   <section class="section" :class="{ touch }" data-testid="budget-transactions" aria-labelledby="budget-transactions-heading">
     <div class="section-head">
       <div>
-        <h2 id="budget-transactions-heading">Transactions</h2>
-        <p>{{ transactions.length }} in this month</p>
+        <h2 id="budget-transactions-heading">{{ t('transactions.title') }}</h2>
+        <p>{{ t('transactions.inMonth', { count: transactions.length }) }}</p>
       </div>
     </div>
 
-    <EmptyState v-if="!canAdd" icon="lu:receipt" text="Create at least one account and one category before adding a transaction." />
-    <EmptyState v-else-if="transactions.length === 0" icon="lu:receipt" text="No transactions in this month.">
-      <template #actions><Button :size="buttonSize" @click="emit('add')">Add the first one</Button></template>
+    <EmptyState v-if="!canAdd" icon="lu:receipt" :text="t('transactions.needSetup')" />
+    <EmptyState v-else-if="transactions.length === 0" icon="lu:receipt" :text="t('transactions.empty')">
+      <template #actions><Button :size="buttonSize" @click="emit('add')">{{ t('transactions.addFirst') }}</Button></template>
     </EmptyState>
     <ul v-else class="list">
       <Row
@@ -104,27 +103,27 @@ async function remove(transaction: BudgetTransaction): Promise<void> {
             <span class="amount" :class="transaction.kind">{{ displayAmount(transaction) }}</span>
           </div>
           <span class="row-meta">
-            {{ transaction.date }} · {{ categoryName(transaction.categoryId) }} · {{ accountName(transaction.accountId) }}
+            {{ displayDay(transaction.date) }} · {{ categoryName(transaction.categoryId) }} · {{ accountName(transaction.accountId) }}
           </span>
           <span v-if="details(transaction).length" class="row-meta">{{ details(transaction).join(' · ') }}</span>
         </div>
         <Badge v-if="!touch" :variant="transaction.kind === 'income' ? 'success' : 'neutral'">
-          {{ transaction.kind === 'income' ? 'Income' : 'Expense' }}
+          {{ transaction.kind === 'income' ? t('common.income') : t('common.expense') }}
         </Badge>
         <div class="row-actions">
           <IconButton
             icon="lu:pencil"
             :size="iconSize"
-            tooltip="Edit transaction"
-            :aria-label="`Edit ${transaction.note || categoryName(transaction.categoryId)} transaction`"
+            :tooltip="t('transactions.edit')"
+            :aria-label="t('transactions.editNamed', { name: transaction.note || categoryName(transaction.categoryId) })"
             :disabled="budget.busy.value"
             @click="emit('edit', transaction)"
           />
           <IconButton
             icon="lu:trash-2"
             :size="iconSize"
-            tooltip="Remove transaction"
-            :aria-label="`Remove ${transaction.note || categoryName(transaction.categoryId)} transaction`"
+            :tooltip="t('transactions.remove')"
+            :aria-label="t('transactions.removeNamed', { name: transaction.note || categoryName(transaction.categoryId) })"
             :disabled="budget.busy.value"
             @click="confirmRemove(transaction)"
           />

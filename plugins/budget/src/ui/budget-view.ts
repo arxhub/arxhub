@@ -4,10 +4,10 @@ import type { ActionItem } from '@arxhub/uikit/core'
 import { toaster } from '@arxhub/uikit/hooks'
 import { ref, shallowRef } from 'vue'
 import type { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import type { BudgetTransaction } from '../model'
-import { formatAmount } from '../money'
 import { budgetMonths, monthName } from '../months'
-import { type BudgetSection, errorMessage, isValidMonth, localMonth } from './budget-ui'
+import { type BudgetSection, errorMessage, isValidMonth, localMonth, money } from './budget-ui'
 
 // What the budget screen is looking at. It outlives the page because two things outside the page read and
 // move it: the phone's band names the month and offers a new purchase, and the second-tap sheet picks the
@@ -48,16 +48,16 @@ export function budgetView(budget: BudgetExtension): BudgetView {
 }
 
 export function spentLabel(expenses: { currency: string; amount: number }[]): string {
-  return expenses.length === 0 ? 'Nothing spent' : expenses.map((entry) => formatAmount(entry.amount, entry.currency)).join(' · ')
+  return expenses.length === 0 ? t('month.nothingSpent') : expenses.map((entry) => money(entry.amount, entry.currency)).join(' · ')
 }
 
 export async function refreshBudget(budget: BudgetExtension, logger: Logger, announce: boolean): Promise<void> {
   try {
     await budget.refresh()
-    if (announce) toaster.create({ title: 'Budget refreshed', type: 'success' })
+    if (announce) toaster.create({ title: t('refresh.done'), type: 'success' })
   } catch (cause) {
     logger.error('[budget] could not refresh budget data', cause)
-    toaster.create({ title: announce ? 'Could not refresh budget' : 'Could not load budget', description: errorMessage(cause), type: 'error' })
+    toaster.create({ title: announce ? t('refresh.failed') : t('refresh.loadFailed'), description: errorMessage(cause), type: 'error' })
   }
 }
 
@@ -82,14 +82,14 @@ export function budgetBar(budget: BudgetExtension, logger: Logger): ObjectBar | 
   const actions: ActionItem[] = [
     {
       id: 'budget.new',
-      label: 'New purchase',
+      label: t('common.newPurchase'),
       icon: 'lu:plus',
       disabled: budget.busy.value || data.accounts.length === 0 || data.categories.length === 0,
       onSelect: () => view.addTransaction(),
     },
     {
       id: 'budget.refresh',
-      label: 'Refresh',
+      label: t('common.refresh'),
       icon: 'lu:refresh-cw',
       disabled: budget.busy.value,
       onSelect: () => void refreshBudget(budget, logger, true),

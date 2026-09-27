@@ -3,6 +3,7 @@ import { Badge, Button, EmptyState, IconButton, modals, Row } from '@arxhub/uiki
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import type { BudgetCategory } from '../model'
 import { errorMessage } from './budget-ui'
 import CategoryDialog from './CategoryDialog.vue'
@@ -32,9 +33,9 @@ function used(category: BudgetCategory): boolean {
 
 function confirmRemove(category: BudgetCategory): void {
   modals.openConfirmModal({
-    title: 'Remove category?',
-    children: `Remove “${category.name}”? This cannot be undone.`,
-    labels: { confirm: 'Remove category', cancel: 'Cancel' },
+    title: t('categories.removeQuestion'),
+    children: t('common.removeTitle', { name: category.name }),
+    labels: { confirm: t('categories.remove'), cancel: t('common.cancel') },
     confirmProps: { danger: true },
     onConfirm: () => void remove(category),
   })
@@ -43,10 +44,10 @@ function confirmRemove(category: BudgetCategory): void {
 async function remove(category: BudgetCategory): Promise<void> {
   try {
     await budget.removeCategory(category)
-    toaster.create({ title: 'Category removed', description: category.name, type: 'success' })
+    toaster.create({ title: t('categories.removed'), description: category.name, type: 'success' })
   } catch (cause) {
     arxhub.logger.error('[budget] could not remove category', cause)
-    toaster.create({ title: 'Could not remove category', description: errorMessage(cause), type: 'error' })
+    toaster.create({ title: t('categories.removeFailed'), description: errorMessage(cause), type: 'error' })
   }
 }
 </script>
@@ -55,40 +56,40 @@ async function remove(category: BudgetCategory): Promise<void> {
   <section class="section" :class="{ touch }" aria-labelledby="budget-categories-heading">
     <div class="section-head">
       <div>
-        <h2 id="budget-categories-heading">Categories</h2>
-        <p>Keep income and spending separate so monthly totals stay clear.</p>
+        <h2 id="budget-categories-heading">{{ t('categories.title') }}</h2>
+        <p>{{ t('categories.description') }}</p>
       </div>
-      <Button :size="buttonSize" variant="secondary" :disabled="budget.busy.value" @click="create">New category</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="budget.busy.value" @click="create">{{ t('categories.new') }}</Button>
     </div>
 
-    <EmptyState v-if="categories.length === 0" icon="lu:tags" text="No categories yet.">
-      <template #actions><Button :size="buttonSize" @click="create">Create your first category</Button></template>
+    <EmptyState v-if="categories.length === 0" icon="lu:tags" :text="t('categories.empty')">
+      <template #actions><Button :size="buttonSize" @click="create">{{ t('categories.createFirst') }}</Button></template>
     </EmptyState>
     <ul v-else class="list">
       <Row v-for="category in categories" :key="category.id" as="li" plain :data-category-id="category.id">
         <span class="row-title">{{ category.name }}</span>
-        <Badge :variant="category.kind === 'income' ? 'success' : 'neutral'">{{ category.kind === 'income' ? 'Income' : 'Expense' }}</Badge>
+        <Badge :variant="category.kind === 'income' ? 'success' : 'neutral'">{{ category.kind === 'income' ? t('common.income') : t('common.expense') }}</Badge>
         <div class="row-actions">
           <IconButton
             icon="lu:pencil"
             :size="iconSize"
-            tooltip="Edit category"
-            :aria-label="`Edit ${category.name}`"
+            :tooltip="t('categories.edit')"
+            :aria-label="t('categories.editNamed', { name: category.name })"
             :disabled="budget.busy.value"
             @click="edit(category)"
           />
           <IconButton
             icon="lu:trash-2"
             :size="iconSize"
-            tooltip="Remove category"
-            :aria-label="`Remove ${category.name}`"
+            :tooltip="t('categories.remove')"
+            :aria-label="t('categories.removeNamed', { name: category.name })"
             :disabled="budget.busy.value || used(category)"
             @click="confirmRemove(category)"
           />
         </div>
       </Row>
     </ul>
-    <p v-if="categories.some(used)" class="footnote">Categories with transactions cannot be removed or change type.</p>
+    <p v-if="categories.some(used)" class="footnote">{{ t('categories.inUse') }}</p>
   </section>
 
   <CategoryDialog v-model:open="dialogOpen" :previous="editing" />

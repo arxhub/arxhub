@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { validation } from '@arxhub/errors'
 // biome-ignore lint/correctness/noUnusedImports: ScrollArea is used in template
 import { Button, Field, Icon, Input, ScrollArea, Segmented } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { budgetError } from '../errors'
 import { fiscalQr, type ImportedReceipt, parseFiscalFields, parseFiscalQr, parseReceiptJson } from '../fiscal'
+import { t } from '../i18n/messages'
 import type { FiscalReceipt } from '../model'
-import { formatAmount } from '../money'
-import { amountInput, errorMessage } from './budget-ui'
+import { amountInput, errorMessage, money } from './budget-ui'
 
 const props = defineProps<{
   active: boolean
@@ -47,10 +47,10 @@ let run = 0
 let controller: AbortController | null = null
 let filling = false
 
-const operationOptions = [
-  { value: '1', label: 'Expense' },
-  { value: '2', label: 'Refund income' },
-]
+const operationOptions = computed(() => [
+  { value: '1', label: t('common.expense') },
+  { value: '2', label: t('receipt.refund') },
+])
 
 watch(
   () => props.active,
@@ -114,7 +114,7 @@ onBeforeUnmount(cancelWork)
 
 function supported(receipt: FiscalReceipt): FiscalReceipt {
   if (receipt.operation !== 1 && receipt.operation !== 2) {
-    throw validation('Only purchase and purchase return receipts can be imported.')
+    throw budgetError('BudgetUnsupportedOperation')
   }
   return receipt
 }
@@ -171,7 +171,7 @@ async function scanSelected(event: Event): Promise<void> {
   try {
     const raw = await budget.scanReceiptPhoto(file, { signal: activeController.signal })
     if (current !== run || !props.active) return
-    if (!raw) throw validation('No fiscal QR code was found in this image.')
+    if (!raw) throw budgetError('BudgetNoQr')
     qr.value = raw
     parseQrText(raw)
     if (!error.value) emit('photo', file)
@@ -194,7 +194,7 @@ async function importJson(event: Event): Promise<void> {
   working.value = true
   error.value = null
   try {
-    if (file.size > 4 * 1024 * 1024) throw validation('Receipt JSON files can be up to 4 MB.')
+    if (file.size > 4 * 1024 * 1024) throw budgetError('BudgetJsonTooLarge')
     const value: unknown = JSON.parse(await file.text())
     if (current !== run || !props.active) return
     const result = parseReceiptJson(value, preview.value ?? undefined)
@@ -254,46 +254,47 @@ function clear(): void {
 <template>
   <section class="receipt" :class="{ touch }" aria-labelledby="fiscal-receipt-heading">
     <div>
-      <h3 id="fiscal-receipt-heading">Fiscal receipt</h3>
-      <p>Optional. Scan its QR, paste the QR text, or enter the fiscal details.</p>
+      <h3 id="fiscal-receipt-heading">{{ t('receipt.title') }}</h3>
+      <p>{{ t('receipt.description') }}</p>
     </div>
 
-    <input ref="cameraInput" type="file" accept="image/*" capture="environment" aria-label="Scan receipt QR with camera" hidden @change="scanSelected" />
-    <input ref="photoInput" type="file" accept="image/*" aria-label="Scan receipt QR from photo" hidden @change="scanSelected" />
-    <input ref="jsonInput" type="file" accept="application/json,.json" aria-label="Import receipt JSON" hidden @change="importJson" />
+    <input ref="cameraInput" type="file" accept="image/*" capture="environment" :aria-label="t('receipt.scanCamera')" hidden @change="scanSelected" />
+    <input ref="photoInput" type="file" accept="image/*" :aria-label="t('receipt.scanPhoto')" hidden @change="scanSelected" />
+    <input ref="jsonInput" type="file" accept="application/json,.json" :aria-label="t('receipt.importJsonLabel')" hidden @change="importJson" />
     <div class="receipt-actions">
       <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="choose(cameraInput)">
         <Icon name="lu:scan-line" :size="glyphSize" />
-        Scan QR
+        {{ t('receipt.scan') }}
       </Button>
-      <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="choose(photoInput)">Choose QR photo</Button>
-      <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="choose(jsonInput)">Import JSON</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="choose(photoInput)">{{ t('receipt.choosePhoto') }}</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="choose(jsonInput)">{{ t('receipt.importJson') }}</Button>
     </div>
 
-    <Field label="Receipt QR text" for="budget-receipt-qr" hint="Paste the text encoded in the QR">
+    <Field :label="t('receipt.qrText')" for="budget-receipt-qr" :hint="t('receipt.qrHint')">
       <div class="with-action">
+        <!-- design-ignore: the placeholder is the QR payload's own key=value syntax, not prose -->
         <Input id="budget-receipt-qr" v-model="qr" autocomplete="off" placeholder="t=…&amp;s=…&amp;fn=…" :disabled="disabled || working" />
-        <Button :size="buttonSize" variant="secondary" :disabled="disabled || working || !qr.trim()" @click="parseQrText(qr)">Read QR</Button>
+        <Button :size="buttonSize" variant="secondary" :disabled="disabled || working || !qr.trim()" @click="parseQrText(qr)">{{ t('receipt.readQr') }}</Button>
       </div>
     </Field>
 
     <div class="fiscal-fields">
-      <Field label="FN" for="budget-receipt-fn"><Input id="budget-receipt-fn" v-model="fn" inputmode="numeric" :disabled="disabled || working" /></Field>
-      <Field label="FD" for="budget-receipt-fd"><Input id="budget-receipt-fd" v-model="fd" inputmode="numeric" :disabled="disabled || working" /></Field>
-      <Field label="FP" for="budget-receipt-fp"><Input id="budget-receipt-fp" v-model="fp" inputmode="numeric" :disabled="disabled || working" /></Field>
+      <Field :label="t('receipt.fn')" for="budget-receipt-fn"><Input id="budget-receipt-fn" v-model="fn" inputmode="numeric" :disabled="disabled || working" /></Field>
+      <Field :label="t('receipt.fd')" for="budget-receipt-fd"><Input id="budget-receipt-fd" v-model="fd" inputmode="numeric" :disabled="disabled || working" /></Field>
+      <Field :label="t('receipt.fp')" for="budget-receipt-fp"><Input id="budget-receipt-fp" v-model="fp" inputmode="numeric" :disabled="disabled || working" /></Field>
     </div>
-    <Field label="Receipt date and time" for="budget-receipt-issued-at">
+    <Field :label="t('receipt.issuedAt')" for="budget-receipt-issued-at">
       <Input id="budget-receipt-issued-at" v-model="issuedAt" type="datetime-local" :disabled="disabled || working" />
     </Field>
     <div class="fiscal-fields two">
-      <Field label="Receipt total, RUB" for="budget-receipt-total">
+      <Field :label="t('receipt.total')" for="budget-receipt-total">
         <Input id="budget-receipt-total" v-model="receiptAmount" inputmode="decimal" placeholder="0.00" :disabled="disabled || working" />
       </Field>
-      <Field label="Operation">
+      <Field :label="t('receipt.operation')">
         <Segmented
           :model-value="operation"
           :options="operationOptions"
-          aria-label="Receipt operation"
+          :aria-label="t('receipt.operationLabel')"
           stretch
           :disabled="disabled || working"
           @update:model-value="operation = $event ?? '1'"
@@ -301,36 +302,36 @@ function clear(): void {
       </Field>
     </div>
     <div class="manual-actions">
-      <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="reviewManual">Review fiscal details</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="reviewManual">{{ t('receipt.review') }}</Button>
       <Button v-if="dirty || receipt" :size="buttonSize" variant="danger" :disabled="disabled || working" @click="clear">
-        Remove fiscal receipt
+        {{ t('receipt.remove') }}
       </Button>
     </div>
 
-    <p v-if="dirty" class="draft-warning" role="status">These fiscal changes are not applied yet. Review them and use the receipt before saving.</p>
+    <p v-if="dirty" class="draft-warning" role="status">{{ t('receipt.dirty') }}</p>
     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-    <div v-if="preview" class="preview" aria-label="Receipt preview">
+    <div v-if="preview" class="preview" :aria-label="t('receipt.preview')">
       <div>
-        <strong>{{ imported?.merchantName || 'Fiscal receipt' }}</strong>
-        <span>{{ formatAmount(preview.total, 'RUB') }} · {{ preview.issuedAt.replace('T', ' ') }}</span>
+        <strong>{{ imported?.merchantName || t('receipt.title') }}</strong>
+        <span>{{ money(preview.total, 'RUB') }} · {{ preview.issuedAt.replace('T', ' ') }}</span>
         <span v-if="imported?.address">{{ imported.address }}</span>
-        <span>FN {{ preview.fn }} · FD {{ preview.fd }} · FP {{ preview.fp }}</span>
+        <span>{{ t('receipt.fiscalLine', { fn: preview.fn, fd: preview.fd, fp: preview.fp }) }}</span>
       </div>
       <ScrollArea v-if="imported" class="receipt-items-scroll">
         <ul class="receipt-items">
           <li v-for="item in imported.items" :key="item.id">
-            <span>{{ item.name }} × {{ item.quantity }}</span><strong>{{ formatAmount(item.total, 'RUB') }}</strong>
+            <span>{{ item.name }} × {{ item.quantity }}</span><strong>{{ money(item.total, 'RUB') }}</strong>
           </li>
         </ul>
       </ScrollArea>
-      <p v-else>Fiscal details are ready. Receipt items require configured receipt access or a receipt JSON file.</p>
+      <p v-else>{{ t('receipt.ready') }}</p>
       <div class="preview-actions">
         <Button :size="buttonSize" variant="secondary" :disabled="disabled || working" @click="getDetails">
-          {{ working ? 'Getting details…' : 'Get receipt details' }}
+          {{ working ? t('receipt.gettingDetails') : t('receipt.getDetails') }}
         </Button>
-        <Button :size="buttonSize" :disabled="disabled || working" @click="apply">Use receipt</Button>
+        <Button :size="buttonSize" :disabled="disabled || working" @click="apply">{{ t('receipt.use') }}</Button>
       </div>
-      <p class="fns-note">Getting receipt details sends the fiscal details and your current location to the Federal Tax Service.</p>
+      <p class="fns-note">{{ t('receipt.fnsNote') }}</p>
     </div>
   </section>
 </template>

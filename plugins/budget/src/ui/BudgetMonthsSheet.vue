@@ -4,6 +4,7 @@ import { Row, SectionLabel } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import { budgetMonths, monthName } from '../months'
 import { localMonth } from './budget-ui'
 import { budgetView, spentLabel } from './budget-view'
@@ -18,7 +19,7 @@ const years = computed(() => budgetMonths(budget.data.value, current))
 
 function detail(month: string, expenses: { currency: string; amount: number }[]): string {
   const spent = spentLabel(expenses)
-  return month === current ? `${spent} · this month` : spent
+  return month === current ? t('month.thisMonth', { spent }) : spent
 }
 
 function pick(month: string): void {
@@ -28,7 +29,7 @@ function pick(month: string): void {
 </script>
 
 <template>
-  <nav aria-label="Budget months" data-testid="budget-months">
+  <nav :aria-label="t('month.list')" data-testid="budget-months">
     <template v-for="year in years" :key="year.year">
       <SectionLabel inset>{{ year.year }}</SectionLabel>
       <Row

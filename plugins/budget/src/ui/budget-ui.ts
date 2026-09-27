@@ -1,5 +1,6 @@
+import { describeError, formatDate, locale } from '@arxhub/i18n'
 import type { BudgetData } from '../model'
-import { currencyDigits } from '../money'
+import { currencyDigits, formatAmount } from '../money'
 
 export type BudgetSection = 'overview' | 'transactions' | 'accounts' | 'categories' | 'places'
 
@@ -8,6 +9,11 @@ export function localDate(now = new Date()): string {
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+// A stored day (YYYY-MM-DD) is a calendar day, not an instant: read as a UTC day so no timezone moves it.
+export function displayDay(day: string, options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }): string {
+  return formatDate(`${day}T00:00:00Z`, { ...options, timeZone: 'UTC' })
 }
 
 export function localMonth(now = new Date()): string {
@@ -48,5 +54,10 @@ export function accountCurrency(data: BudgetData, accountId: string): string {
 }
 
 export function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
+  return describeError(error)?.message || (error instanceof Error ? error.message : String(error))
+}
+
+// Money in the interface language; reading `locale()` makes a template calling it follow a switch.
+export function money(minor: number, currency: string): string {
+  return formatAmount(minor, currency, locale())
 }

@@ -3,6 +3,7 @@ import { Button, EmptyState, IconButton, modals, Row } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import type { BudgetPlace } from '../model'
 import { errorMessage } from './budget-ui'
 import PlaceDialog from './PlaceDialog.vue'
@@ -31,15 +32,15 @@ function used(place: BudgetPlace): boolean {
 }
 
 function location(place: BudgetPlace): string {
-  if (place.latitude === null || place.longitude === null) return 'No coordinates'
+  if (place.latitude === null || place.longitude === null) return t('places.noCoordinates')
   return `${place.latitude.toFixed(5)}, ${place.longitude.toFixed(5)}`
 }
 
 function confirmRemove(place: BudgetPlace): void {
   modals.openConfirmModal({
-    title: 'Remove place?',
-    children: `Remove “${place.name}”? This cannot be undone.`,
-    labels: { confirm: 'Remove place', cancel: 'Cancel' },
+    title: t('places.removeQuestion'),
+    children: t('common.removeTitle', { name: place.name }),
+    labels: { confirm: t('places.remove'), cancel: t('common.cancel') },
     confirmProps: { danger: true },
     onConfirm: () => void remove(place),
   })
@@ -48,10 +49,10 @@ function confirmRemove(place: BudgetPlace): void {
 async function remove(place: BudgetPlace): Promise<void> {
   try {
     await budget.removePlace(place)
-    toaster.create({ title: 'Place removed', description: place.name, type: 'success' })
+    toaster.create({ title: t('places.removed'), description: place.name, type: 'success' })
   } catch (cause) {
     arxhub.logger.error('[budget] could not remove place', cause)
-    toaster.create({ title: 'Could not remove place', description: errorMessage(cause), type: 'error' })
+    toaster.create({ title: t('places.removeFailed'), description: errorMessage(cause), type: 'error' })
   }
 }
 </script>
@@ -60,14 +61,14 @@ async function remove(place: BudgetPlace): Promise<void> {
   <section class="section" :class="{ touch }" aria-labelledby="budget-places-heading">
     <div class="section-head">
       <div>
-        <h2 id="budget-places-heading">Places</h2>
-        <p>Save shops and other places to recognize nearby purchases.</p>
+        <h2 id="budget-places-heading">{{ t('places.title') }}</h2>
+        <p>{{ t('places.description') }}</p>
       </div>
-      <Button :size="buttonSize" variant="secondary" :disabled="budget.busy.value" @click="create">New place</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="budget.busy.value" @click="create">{{ t('places.new') }}</Button>
     </div>
 
-    <EmptyState v-if="places.length === 0" icon="lu:map-pin" text="No places yet.">
-      <template #actions><Button :size="buttonSize" @click="create">Create your first place</Button></template>
+    <EmptyState v-if="places.length === 0" icon="lu:map-pin" :text="t('places.empty')">
+      <template #actions><Button :size="buttonSize" @click="create">{{ t('places.createFirst') }}</Button></template>
     </EmptyState>
     <ul v-else class="list">
       <Row v-for="place in places" :key="place.id" as="li" plain wrap :data-place-id="place.id">
@@ -79,23 +80,23 @@ async function remove(place: BudgetPlace): Promise<void> {
           <IconButton
             icon="lu:pencil"
             :size="iconSize"
-            tooltip="Edit place"
-            :aria-label="`Edit ${place.name}`"
+            :tooltip="t('places.edit')"
+            :aria-label="t('places.editNamed', { name: place.name })"
             :disabled="budget.busy.value"
             @click="edit(place)"
           />
           <IconButton
             icon="lu:trash-2"
             :size="iconSize"
-            tooltip="Remove place"
-            :aria-label="`Remove ${place.name}`"
+            :tooltip="t('places.remove')"
+            :aria-label="t('places.removeNamed', { name: place.name })"
             :disabled="budget.busy.value || used(place)"
             @click="confirmRemove(place)"
           />
         </div>
       </Row>
     </ul>
-    <p v-if="places.some(used)" class="footnote">Places used by transactions cannot be removed.</p>
+    <p v-if="places.some(used)" class="footnote">{{ t('places.inUse') }}</p>
   </section>
 
   <PlaceDialog v-model:open="dialogOpen" :previous="editing" />

@@ -2,7 +2,8 @@
 import { Field, IconButton, Input } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
-import { formatAmount } from '../money'
+import { t } from '../i18n/messages'
+import { money } from './budget-ui'
 import { itemsSubtotal, itemTotal, type PurchaseItemDraft } from './purchase-draft'
 
 const props = defineProps<{
@@ -38,36 +39,36 @@ function remove(index: number): void {
   <section class="items" aria-labelledby="purchase-items-heading">
     <div class="section-head">
       <div>
-        <h3 id="purchase-items-heading">Items</h3>
-        <p>Optional item details from the receipt.</p>
+        <h3 id="purchase-items-heading">{{ t('items.title') }}</h3>
+        <p>{{ t('items.description') }}</p>
       </div>
-      <IconButton icon="lu:plus" :size="iconSize" tooltip="Add item" :disabled="disabled" @click="add" />
+      <IconButton icon="lu:plus" :size="iconSize" :tooltip="t('items.add')" :disabled="disabled" @click="add" />
     </div>
 
-    <div v-for="(item, index) in modelValue" :key="item.id" class="item" :aria-label="`Item ${index + 1}`">
+    <div v-for="(item, index) in modelValue" :key="item.id" class="item" :aria-label="t('items.item', { index: index + 1 })">
       <div class="item-head">
-        <strong>Item {{ index + 1 }}</strong>
+        <strong>{{ t('items.item', { index: index + 1 }) }}</strong>
         <IconButton
           icon="lu:trash-2"
           :size="iconSize"
-          tooltip="Remove item"
-          :aria-label="`Remove item ${index + 1}`"
+          :tooltip="t('items.remove')"
+          :aria-label="t('items.removeNamed', { index: index + 1 })"
           :disabled="disabled"
           @click="remove(index)"
         />
       </div>
-      <Field label="Name" :for="`budget-item-${index}-name`">
+      <Field :label="t('common.name')" :for="`budget-item-${index}-name`">
         <Input
           :id="`budget-item-${index}-name`"
           :model-value="item.name"
           autocomplete="off"
-          placeholder="Milk"
+          :placeholder="t('items.namePlaceholder')"
           :disabled="disabled"
           @update:model-value="update(index, { name: $event ?? '' })"
         />
       </Field>
       <div class="item-numbers">
-        <Field label="Quantity" :for="`budget-item-${index}-quantity`">
+        <Field :label="t('items.quantity')" :for="`budget-item-${index}-quantity`">
           <Input
             :id="`budget-item-${index}-quantity`"
             :model-value="item.quantity"
@@ -78,7 +79,7 @@ function remove(index: number): void {
             @update:model-value="update(index, { quantity: $event ?? '' })"
           />
         </Field>
-        <Field label="Unit price" :for="`budget-item-${index}-price`">
+        <Field :label="t('items.unitPrice')" :for="`budget-item-${index}-price`">
           <Input
             :id="`budget-item-${index}-price`"
             :model-value="item.unitPrice"
@@ -91,14 +92,14 @@ function remove(index: number): void {
         </Field>
       </div>
       <p class="line-total">
-        Line total
-        <strong>{{ itemTotal(item, currency) === null ? 'Check quantity and price' : formatAmount(itemTotal(item, currency) ?? 0, currency) }}</strong>
+        {{ t('items.lineTotal') }}
+        <strong>{{ itemTotal(item, currency) === null ? t('items.checkLine') : money(itemTotal(item, currency) ?? 0, currency) }}</strong>
       </p>
     </div>
 
     <p v-if="modelValue.length" class="subtotal">
-      Items subtotal
-      <strong>{{ subtotal === null ? 'Check item details' : formatAmount(subtotal, currency) }}</strong>
+      {{ t('items.subtotal') }}
+      <strong>{{ subtotal === null ? t('items.checkItems') : money(subtotal, currency) }}</strong>
     </p>
   </section>
 </template>

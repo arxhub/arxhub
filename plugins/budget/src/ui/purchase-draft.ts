@@ -1,4 +1,4 @@
-import { validation } from '@arxhub/errors'
+import { budgetError } from '../errors'
 import { calculateItemTotal, validateQuantity } from '../items'
 import type { BudgetTransaction } from '../model'
 import { parseAmount } from '../money'
@@ -44,10 +44,10 @@ export function itemTotal(draft: PurchaseItemDraft, currency: string): number | 
 export function purchaseItems(drafts: PurchaseItemDraft[], currency: string): TransactionItem[] {
   return drafts.map((draft, index) => {
     const name = draft.name.trim()
-    if (!name) throw validation(`Enter a name for item ${index + 1}.`)
+    if (!name) throw budgetError('BudgetItemName', { item: index + 1 })
     const quantity = validateQuantity(draft.quantity.replace(',', '.'))
     const unitPrice = parseAmount(draft.unitPrice, currency)
-    if (unitPrice < 0) throw validation(`Unit price for item ${index + 1} cannot be negative.`)
+    if (unitPrice < 0) throw budgetError('BudgetItemPriceNegative', { item: index + 1 })
     return { id: draft.id, name, quantity, unitPrice, total: lineTotal(draft, unitPrice, quantity) }
   })
 }

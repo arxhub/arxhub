@@ -1,4 +1,5 @@
 import { validation } from '@arxhub/errors'
+import { budgetError } from './errors'
 
 const CURRENCY = /^[A-Z]{3}$/
 const DECIMAL = /^([+-]?)(\d+)(?:[.,](\d+))?$/
@@ -8,7 +9,7 @@ function validMinor(minor: number): void {
 }
 
 export function currencyDigits(currency: string): number {
-  if (!CURRENCY.test(currency)) throw validation(`Invalid currency "${currency}": use a three-letter uppercase currency code`)
+  if (!CURRENCY.test(currency)) throw budgetError('BudgetCurrencyInvalid', { currency })
   try {
     const digits = new Intl.NumberFormat(undefined, { style: 'currency', currency }).resolvedOptions().maximumFractionDigits
     if (digits === undefined) throw new RangeError('Intl did not report currency precision')
@@ -21,10 +22,10 @@ export function currencyDigits(currency: string): number {
 export function parseAmount(input: string, currency: string): number {
   const digits = currencyDigits(currency)
   const match = DECIMAL.exec(input.trim())
-  if (!match) throw validation(`Invalid amount "${input}"`)
+  if (!match) throw budgetError('BudgetAmountInvalid', { input })
 
   const fraction = match[3] ?? ''
-  if (fraction.length > digits) throw validation(`${currency} amounts can have at most ${digits} fractional digit${digits === 1 ? '' : 's'}`)
+  if (fraction.length > digits) throw budgetError('BudgetAmountPrecision', { currency, digits })
 
   const magnitude = BigInt(match[2]) * 10n ** BigInt(digits) + BigInt(fraction.padEnd(digits, '0') || '0')
   const signed = match[1] === '-' ? -magnitude : magnitude
@@ -34,7 +35,9 @@ export function parseAmount(input: string, currency: string): number {
   return Number(signed)
 }
 
-export function formatAmount(minor: number, currency: string): string {
+// `locale` is the interface language's: the UI passes it (see ui/budget-ui.ts). This module also runs on the
+// headless server, which has no interface language, so it does not read one itself.
+export function formatAmount(minor: number, currency: string, locale?: string): string {
   validMinor(minor)
   const digits = currencyDigits(currency)
   const scale = 10n ** BigInt(digits)
@@ -42,7 +45,7 @@ export function formatAmount(minor: number, currency: string): string {
   const magnitude = signed < 0n ? -signed : signed
   const whole = magnitude / scale
   const remainder = magnitude % scale
-  const formatter = new Intl.NumberFormat(undefined, {
+  const formatter = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
     minimumFractionDigits: digits,

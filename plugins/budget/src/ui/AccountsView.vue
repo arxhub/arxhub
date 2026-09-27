@@ -3,10 +3,10 @@ import { Button, EmptyState, IconButton, modals, Row } from '@arxhub/uikit/core'
 import { toaster, useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import { accountBalance, type BudgetAccount } from '../model'
-import { formatAmount } from '../money'
 import AccountDialog from './AccountDialog.vue'
-import { errorMessage } from './budget-ui'
+import { errorMessage, money } from './budget-ui'
 
 const arxhub = useArxHub()
 const budget = arxhub.extensions.get(BudgetExtension)
@@ -33,9 +33,9 @@ function used(account: BudgetAccount): boolean {
 
 function confirmRemove(account: BudgetAccount): void {
   modals.openConfirmModal({
-    title: 'Remove account?',
-    children: `Remove “${account.name}”? This cannot be undone.`,
-    labels: { confirm: 'Remove account', cancel: 'Cancel' },
+    title: t('accounts.removeQuestion'),
+    children: t('common.removeTitle', { name: account.name }),
+    labels: { confirm: t('accounts.remove'), cancel: t('common.cancel') },
     confirmProps: { danger: true },
     onConfirm: () => void remove(account),
   })
@@ -44,10 +44,10 @@ function confirmRemove(account: BudgetAccount): void {
 async function remove(account: BudgetAccount): Promise<void> {
   try {
     await budget.removeAccount(account)
-    toaster.create({ title: 'Account removed', description: account.name, type: 'success' })
+    toaster.create({ title: t('accounts.removed'), description: account.name, type: 'success' })
   } catch (cause) {
     arxhub.logger.error('[budget] could not remove account', cause)
-    toaster.create({ title: 'Could not remove account', description: errorMessage(cause), type: 'error' })
+    toaster.create({ title: t('accounts.removeFailed'), description: errorMessage(cause), type: 'error' })
   }
 }
 </script>
@@ -56,42 +56,44 @@ async function remove(account: BudgetAccount): Promise<void> {
   <section class="section" :class="{ touch }" aria-labelledby="budget-accounts-heading">
     <div class="section-head">
       <div>
-        <h2 id="budget-accounts-heading">Accounts</h2>
-        <p>Track each place where you keep money. Balances include every recorded transaction.</p>
+        <h2 id="budget-accounts-heading">{{ t('accounts.title') }}</h2>
+        <p>{{ t('accounts.description') }}</p>
       </div>
-      <Button :size="buttonSize" variant="secondary" :disabled="budget.busy.value" @click="create">New account</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="budget.busy.value" @click="create">{{ t('accounts.new') }}</Button>
     </div>
 
-    <EmptyState v-if="accounts.length === 0" icon="lu:wallet" text="No accounts yet.">
-      <template #actions><Button :size="buttonSize" @click="create">Create your first account</Button></template>
+    <EmptyState v-if="accounts.length === 0" icon="lu:wallet" :text="t('accounts.empty')">
+      <template #actions><Button :size="buttonSize" @click="create">{{ t('accounts.createFirst') }}</Button></template>
     </EmptyState>
     <ul v-else class="list">
       <Row v-for="account in accounts" :key="account.id" as="li" plain wrap :data-account-id="account.id">
         <div class="row-main">
           <span class="row-title">{{ account.name }}</span>
-          <span class="row-meta">{{ account.currency }} · Balance {{ formatAmount(accountBalance(budget.data.value, account.id), account.currency) }}</span>
+          <span class="row-meta">{{
+            t('accounts.meta', { currency: account.currency, balance: money(accountBalance(budget.data.value, account.id), account.currency) })
+          }}</span>
         </div>
         <div class="row-actions">
           <IconButton
             icon="lu:pencil"
             :size="iconSize"
-            tooltip="Edit account"
-            :aria-label="`Edit ${account.name}`"
+            :tooltip="t('accounts.edit')"
+            :aria-label="t('accounts.editNamed', { name: account.name })"
             :disabled="budget.busy.value"
             @click="edit(account)"
           />
           <IconButton
             icon="lu:trash-2"
             :size="iconSize"
-            tooltip="Remove account"
-            :aria-label="`Remove ${account.name}`"
+            :tooltip="t('accounts.remove')"
+            :aria-label="t('accounts.removeNamed', { name: account.name })"
             :disabled="budget.busy.value || used(account)"
             @click="confirmRemove(account)"
           />
         </div>
       </Row>
     </ul>
-    <p v-if="accounts.some(used)" class="footnote">Accounts with transactions cannot be removed.</p>
+    <p v-if="accounts.some(used)" class="footnote">{{ t('accounts.inUse') }}</p>
   </section>
 
   <AccountDialog v-model:open="dialogOpen" :previous="editing" />

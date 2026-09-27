@@ -1,4 +1,4 @@
-import { validation } from '@arxhub/errors'
+import { budgetError } from './errors'
 import { type BudgetItem, type FiscalReceipt, validateFiscalReceipt } from './model'
 import { parseAmount } from './money'
 
@@ -28,7 +28,7 @@ export interface ReceiptLookupOptions {
 }
 
 export function parseFiscalFields(fields: FiscalFields): FiscalReceipt {
-  if (!/^[1-4]$/.test(String(fields.operation).trim())) throw validation('Invalid fiscal receipt operation.')
+  if (!/^[1-4]$/.test(String(fields.operation).trim())) throw budgetError('BudgetInvalidOperation')
   return validateFiscalReceipt({
     fn: fields.fn.trim(),
     fd: fields.fd.trim().replace(/^0+(?=\d)/, ''),
@@ -42,22 +42,22 @@ export function parseFiscalFields(fields: FiscalFields): FiscalReceipt {
 // The QR is a lookup key, not a list of goods. Decoding it works offline and never follows a URL.
 export function parseFiscalQr(raw: string): FiscalReceipt {
   let text = raw.trim()
-  if (text.length > 4096) throw validation('The receipt QR is too long.')
+  if (text.length > 4096) throw budgetError('BudgetQrTooLong')
   if (/^https?:\/\//i.test(text)) {
     try {
       text = new URL(text).search.slice(1)
     } catch {
-      throw validation('Invalid receipt QR URL.')
+      throw budgetError('BudgetQrInvalidUrl')
     }
   }
   const params = new URLSearchParams(text)
   const value = (key: string): string => {
     const entries = params.getAll(key)
-    if (entries.length !== 1 || !entries[0]) throw validation(`Receipt QR must contain exactly one ${key} field.`)
+    if (entries.length !== 1 || !entries[0]) throw budgetError('BudgetQrField', { field: key })
     return entries[0]
   }
   const time = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?$/.exec(value('t'))
-  if (!time) throw validation('Invalid date and time in the receipt QR.')
+  if (!time) throw budgetError('BudgetQrDateTime')
   const issuedAt = `${time[1]}-${time[2]}-${time[3]}T${time[4]}:${time[5]}${time[6] ? `:${time[6]}` : ''}`
   return parseFiscalFields({ fn: value('fn'), fd: value('i'), fp: value('fp'), issuedAt, amount: value('s'), operation: value('n') })
 }
@@ -73,36 +73,40 @@ export function fiscalReceiptKey(receipt: FiscalReceipt): string {
   return `${receipt.fn}:${BigInt(receipt.fd)}:${BigInt(receipt.fp)}`
 }
 
-function object(value: unknown, name: string): Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) throw validation(`Invalid ${name}.`)
+// `field` is the key in the FNS JSON, not a description: it is what the person finds when they open the file,
+// and a key is not translated. `null` is the document itself.
+function object(value: unknown, field: string | null): Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    throw field === null ? budgetError('BudgetReceiptJsonInvalid') : budgetError('BudgetReceiptFieldInvalid', { field })
   return value as Record<string, unknown>
 }
 
-function text(value: unknown, name: string): string {
-  if (typeof value !== 'string' || !value.trim()) throw validation(`Invalid receipt ${name}.`)
+function text(value: unknown, field: string): string {
+  if (typeof value !== 'string' || !value.trim()) throw budgetError('BudgetReceiptFieldInvalid', { field })
   return value.trim()
 }
 
-function integer(value: unknown, name: string): number {
-  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) throw validation(`Invalid receipt ${name}.`)
+function integer(value: unknown, field: string): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) throw budgetError('BudgetReceiptFieldInvalid', { field })
   return value
 }
 
-function fiscalNumber(value: unknown, name: string): string {
+function fiscalNumber(value: unknown, field: string): string {
   if (typeof value === 'string') return value
   if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) return String(value)
-  throw validation(`Invalid receipt ${name}; large identifiers must be stored as strings.`)
+  if (typeof value === 'number') throw budgetError('BudgetReceiptNumberAsString', { field })
+  throw budgetError('BudgetReceiptFieldInvalid', { field })
 }
 
 function receiptDate(value: unknown, expected?: FiscalReceipt): string {
-  if (typeof value !== 'number') return text(value, 'date and time').replace(/Z$/, '')
-  if (!Number.isSafeInteger(value) || value < 0 || value > 253402300799) throw validation('Invalid receipt timestamp.')
+  if (typeof value !== 'number') return text(value, 'dateTime').replace(/Z$/, '')
+  if (!Number.isSafeInteger(value) || value < 0 || value > 253402300799) throw budgetError('BudgetReceiptTimestampInvalid')
   // Some FNS responses carry epoch seconds but no cash-register timezone. The QR states the local
   // calendar time, which accounting must retain even if this device is in another timezone.
-  if (!expected) throw validation('This receipt JSON has no local timezone. Read its QR or enter the fiscal details before importing it.')
+  if (!expected) throw budgetError('BudgetReceiptNoTimezone')
   const localAsUtc = Date.parse(`${expected.issuedAt}Z`)
   if (!Number.isFinite(localAsUtc) || Math.abs(localAsUtc - value * 1000) > (14 * 60 * 60 + 60) * 1000) {
-    throw validation('The receipt timestamp does not match the scanned fiscal details.')
+    throw budgetError('BudgetReceiptTimestampMismatch')
   }
   return expected.issuedAt
 }
@@ -110,17 +114,17 @@ function receiptDate(value: unknown, expected?: FiscalReceipt): string {
 // FNS JSON uses minor units in price/sum/totalSum and permits weighted goods. Preserve the line sum:
 // discounts and receipt rounding can make it differ from unit price multiplied by quantity.
 export function parseReceiptJson(value: unknown, expected?: FiscalReceipt): ImportedReceipt {
-  let receipt = object(value, 'receipt JSON')
-  if ('document' in receipt) receipt = object(receipt.document, 'receipt document')
+  let receipt = object(value, null)
+  if ('document' in receipt) receipt = object(receipt.document, 'document')
   if ('receipt' in receipt) receipt = object(receipt.receipt, 'receipt')
-  if ('bso' in receipt) receipt = object(receipt.bso, 'receipt')
+  if ('bso' in receipt) receipt = object(receipt.bso, 'bso')
   const rawDate = receiptDate(receipt.dateTime, expected)
   const fiscalReceipt = validateFiscalReceipt({
-    fn: fiscalNumber(receipt.fiscalDriveNumber, 'FN'),
-    fd: fiscalNumber(receipt.fiscalDocumentNumber, 'FD'),
-    fp: fiscalNumber(receipt.fiscalSign, 'FP'),
+    fn: fiscalNumber(receipt.fiscalDriveNumber, 'fiscalDriveNumber'),
+    fd: fiscalNumber(receipt.fiscalDocumentNumber, 'fiscalDocumentNumber'),
+    fp: fiscalNumber(receipt.fiscalSign, 'fiscalSign'),
     issuedAt: rawDate,
-    total: integer(receipt.totalSum, 'total'),
+    total: integer(receipt.totalSum, 'totalSum'),
     operation: receipt.operationType,
   })
   if (
@@ -130,28 +134,28 @@ export function parseReceiptJson(value: unknown, expected?: FiscalReceipt): Impo
       fiscalReceipt.operation !== expected.operation ||
       fiscalReceipt.issuedAt.slice(0, 16) !== expected.issuedAt.slice(0, 16))
   )
-    throw validation('The returned receipt does not match the scanned fiscal details.')
+    throw budgetError('BudgetReceiptMismatch')
   if (!Array.isArray(receipt.items) || receipt.items.length === 0 || receipt.items.length > 10000) {
-    throw validation('The receipt must contain between 1 and 10000 items.')
+    throw budgetError('BudgetReceiptItemCount')
   }
   const items = receipt.items.map((value, index): BudgetItem => {
-    const item = object(value, `receipt item ${index + 1}`)
-    const quantity = typeof item.quantity === 'number' ? String(item.quantity) : text(item.quantity, 'quantity')
-    if (!/^\d+(?:\.\d{1,6})?$/.test(quantity) || !/[1-9]/.test(quantity)) throw validation(`Invalid quantity in receipt item ${index + 1}.`)
+    const item = object(value, `items[${index}]`)
+    const quantity = typeof item.quantity === 'number' ? String(item.quantity) : text(item.quantity, `items[${index}].quantity`)
+    if (!/^\d+(?:\.\d{1,6})?$/.test(quantity) || !/[1-9]/.test(quantity)) throw budgetError('BudgetReceiptItemQuantity', { item: index + 1 })
     return {
       id: crypto.randomUUID(),
-      name: text(item.name, `item ${index + 1} name`),
+      name: text(item.name, `items[${index}].name`),
       quantity,
-      unitPrice: integer(item.price, `item ${index + 1} price`),
-      total: integer(item.sum, `item ${index + 1} sum`),
+      unitPrice: integer(item.price, `items[${index}].price`),
+      total: integer(item.sum, `items[${index}].sum`),
     }
   })
   const itemTotal = items.reduce((sum, item) => sum + BigInt(item.total), 0n)
-  if (itemTotal !== BigInt(fiscalReceipt.total)) throw validation('Receipt item totals do not match its fiscal total.')
+  if (itemTotal !== BigInt(fiscalReceipt.total)) throw budgetError('BudgetReceiptTotals')
   return {
     fiscalReceipt,
     merchantName:
-      typeof receipt.retailPlace === 'string' && receipt.retailPlace.trim() ? receipt.retailPlace.trim() : text(receipt.user, 'merchant'),
+      typeof receipt.retailPlace === 'string' && receipt.retailPlace.trim() ? receipt.retailPlace.trim() : text(receipt.user, 'user'),
     address:
       typeof receipt.retailPlaceAddress === 'string'
         ? receipt.retailPlaceAddress

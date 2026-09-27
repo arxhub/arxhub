@@ -3,6 +3,7 @@ import { Button, Dialog, Field, Input } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import type { BudgetAccount } from '../model'
 import { parseAmount } from '../money'
 import { amountInput, errorMessage } from './budget-ui'
@@ -44,7 +45,7 @@ async function save(): Promise<void> {
   const normalizedName = name.value.trim()
   const normalizedCurrency = currency.value.trim().toUpperCase()
   if (!normalizedName) {
-    error.value = 'Enter an account name.'
+    error.value = t('accounts.nameRequired')
     return
   }
 
@@ -66,21 +67,22 @@ async function save(): Promise<void> {
 <template>
   <Dialog
     :open="open"
-    :title="previous ? 'Edit account' : 'New account'"
+    :title="previous ? t('accounts.dialogEdit') : t('accounts.dialogNew')"
     size="sm"
     :close-on-escape="!saving"
     :close-on-interact-outside="!saving"
     @update:open="emit('update:open', $event)"
   >
     <form id="budget-account-form" class="form" @submit.prevent="save">
-      <Field label="Name" for="budget-account-name">
-        <Input id="budget-account-name" v-model="name" autocomplete="off" placeholder="Everyday account" :disabled="saving" />
+      <Field :label="t('common.name')" for="budget-account-name">
+        <Input id="budget-account-name" v-model="name" autocomplete="off" :placeholder="t('accounts.namePlaceholder')" :disabled="saving" />
       </Field>
       <Field
-        label="Currency"
+        :label="t('accounts.currency')"
         for="budget-account-currency"
-        :hint="currencyLocked ? 'Currency cannot change after the account has transactions.' : 'Use a three-letter currency code.'"
+        :hint="currencyLocked ? t('accounts.currencyLocked') : t('accounts.currencyHint')"
       >
+        <!-- design-ignore: the placeholder is an ISO 4217 code, the same in every language -->
         <Input
           id="budget-account-currency"
           v-model="currency"
@@ -91,7 +93,7 @@ async function save(): Promise<void> {
           @update:model-value="currency = ($event ?? '').toUpperCase()"
         />
       </Field>
-      <Field label="Opening balance" for="budget-account-opening" hint="The balance before your first transaction.">
+      <Field :label="t('accounts.openingBalance')" for="budget-account-opening" :hint="t('accounts.openingBalanceHint')">
         <Input
           id="budget-account-opening"
           v-model="openingBalance"
@@ -104,9 +106,9 @@ async function save(): Promise<void> {
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </form>
     <template #footer>
-      <Button :size="buttonSize" variant="secondary" :disabled="saving" @click="emit('update:open', false)">Cancel</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="saving" @click="emit('update:open', false)">{{ t('common.cancel') }}</Button>
       <Button :size="buttonSize" type="submit" form="budget-account-form" :disabled="saving">
-        {{ saving ? 'Saving…' : 'Save account' }}
+        {{ saving ? t('common.saving') : t('accounts.save') }}
       </Button>
     </template>
   </Dialog>

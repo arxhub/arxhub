@@ -1,5 +1,5 @@
-import { validation } from '@arxhub/errors'
 import type { VirtualFileSystem } from '@arxhub/vfs'
+import { budgetError } from './errors'
 import { type BudgetAttachment, validateBudgetAttachment } from './model'
 
 const MAX_PHOTO_SIZE = 10 * 1024 * 1024
@@ -41,20 +41,20 @@ type PhotoMimeType = keyof typeof photoTypes
 
 function photoType(mimeType: string): (typeof photoTypes)[PhotoMimeType] {
   const type = photoTypes[mimeType as PhotoMimeType]
-  if (!type) throw validation('Receipt photos must be JPEG, PNG, or WebP images')
+  if (!type) throw budgetError('BudgetPhotoType')
   return type
 }
 
 function validatePhotoBytes(bytes: Uint8Array, mimeType: string): void {
-  if (bytes.length < 1) throw validation('Receipt photos must not be empty')
-  if (bytes.length > MAX_PHOTO_SIZE) throw validation('Receipt photos can be up to 10 MB')
-  if (!photoType(mimeType).matches(bytes)) throw validation(`Receipt photo content does not match ${mimeType}`)
+  if (bytes.length < 1) throw budgetError('BudgetPhotoEmpty')
+  if (bytes.length > MAX_PHOTO_SIZE) throw budgetError('BudgetPhotoTooLarge')
+  if (!photoType(mimeType).matches(bytes)) throw budgetError('BudgetPhotoContent', { mimeType })
 }
 
 function checkedAttachment(value: unknown): BudgetAttachment {
   const attachment = validateBudgetAttachment(value)
   const type = photoType(attachment.mimeType)
-  if (attachment.path !== `receipts/${attachment.id}.${type.extension}`) throw validation('Invalid receipt photo path')
+  if (attachment.path !== `receipts/${attachment.id}.${type.extension}`) throw budgetError('BudgetPhotoPathInvalid')
   return attachment
 }
 
@@ -62,8 +62,8 @@ export class ReceiptPhotoStore {
   public constructor(private readonly vfs: Pick<VirtualFileSystem, 'read' | 'write' | 'delete'>) {}
 
   public async add(file: File): Promise<BudgetAttachment> {
-    if (file.size < 1) throw validation('Receipt photos must not be empty')
-    if (file.size > MAX_PHOTO_SIZE) throw validation('Receipt photos can be up to 10 MB')
+    if (file.size < 1) throw budgetError('BudgetPhotoEmpty')
+    if (file.size > MAX_PHOTO_SIZE) throw budgetError('BudgetPhotoTooLarge')
     const type = photoType(file.type)
     const bytes = new Uint8Array(await file.arrayBuffer())
     validatePhotoBytes(bytes, file.type)
@@ -82,7 +82,7 @@ export class ReceiptPhotoStore {
   public async read(value: BudgetAttachment): Promise<Blob> {
     const attachment = checkedAttachment(value)
     const bytes = await this.vfs.read(attachment.path)
-    if (bytes.length !== attachment.size) throw validation('Receipt photo size does not match its attachment record')
+    if (bytes.length !== attachment.size) throw budgetError('BudgetPhotoSizeMismatch')
     validatePhotoBytes(bytes, attachment.mimeType)
     return new Blob([bytes.slice().buffer as ArrayBuffer], { type: attachment.mimeType })
   }

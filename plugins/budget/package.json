@@ -19,6 +19,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/i18n": "workspace:*",
     "elysia": "catalog:server",
     "saxes": "catalog:server",
     "vue": "catalog:client"

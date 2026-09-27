@@ -81,6 +81,6 @@ describe('receipt details', () => {
   it('refuses a partial or corrupted item list instead of silently changing the purchase total', () => {
     expect(() => parseReceiptJson({ ...receipt(), items: [{ name: 'Apple', price: 100, quantity: 1, sum: 100 }] })).toThrow('totals')
     expect(() => parseReceiptJson({ ...receipt(), items: [] })).toThrow('items')
-    expect(() => parseReceiptJson({ ...receipt(), fiscalDriveNumber: 9282440300123456 })).toThrow('identifiers')
+    expect(() => parseReceiptJson({ ...receipt(), fiscalDriveNumber: 9282440300123456 })).toThrow('must be a string')
   })
 })

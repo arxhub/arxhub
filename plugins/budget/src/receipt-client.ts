@@ -2,6 +2,7 @@ import { apiBaseUrl } from '@arxhub/core'
 import { type RequestSigner, signingMiddleware } from '@arxhub/crypto'
 import { illegalState } from '@arxhub/errors'
 import { createTypedHttp } from '@arxhub/http'
+import { budgetError } from './errors'
 import { fiscalQr, type ImportedReceipt, parseReceiptJson, type ReceiptLookupOptions } from './fiscal'
 import { BUDGET_NAMESPACE } from './manifest'
 import type { FiscalReceipt } from './model'
@@ -13,7 +14,7 @@ export async function downloadReceipt(
   receipt: FiscalReceipt,
   options: ReceiptLookupOptions = {},
 ): Promise<ImportedReceipt> {
-  if (!options.position) throw illegalState('Enable location to request receipt details from FNS, or import the receipt JSON.')
+  if (!options.position) throw budgetError('BudgetLocationRequired')
   const signal = AbortSignal.any([AbortSignal.timeout(60000), ...(options.signal ? [options.signal] : [])])
   const http = createTypedHttp<BudgetReceiptRoutes>({
     baseUrl: apiBaseUrl(serverUrl, BUDGET_NAMESPACE),
@@ -36,7 +37,7 @@ export async function downloadReceipt(
     )
       throw illegalState(error.json.message)
     if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
-      throw illegalState('Receipt download is unavailable on this server. Update it or set the receipt server URL in Budget settings.')
+      throw budgetError('BudgetReceiptServerOutdated')
     }
     throw error
   }

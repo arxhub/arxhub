@@ -1,4 +1,5 @@
 import { validation } from '@arxhub/errors'
+import { formatDate } from '@arxhub/i18n'
 import type { BudgetData } from './model'
 
 export interface MonthExpense {
@@ -56,9 +57,5 @@ export function budgetMonths(data: BudgetData, current: string): BudgetYear[] {
 export function monthName(month: string, withYear = true): string {
   if (!MONTH.test(month)) return month
   const [year, index] = month.split('-').map(Number)
-  return new Date(Date.UTC(year, index - 1, 1)).toLocaleString(undefined, {
-    month: 'long',
-    ...(withYear ? { year: 'numeric' } : {}),
-    timeZone: 'UTC',
-  })
+  return formatDate(Date.UTC(year, index - 1, 1), { month: 'long', ...(withYear ? { year: 'numeric' } : {}), timeZone: 'UTC' })
 }

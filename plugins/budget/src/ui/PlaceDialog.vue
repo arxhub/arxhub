@@ -3,6 +3,7 @@ import { Button, Dialog, Field, Input } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import type { BudgetPlace } from '../model'
 import { errorMessage } from './budget-ui'
 
@@ -40,17 +41,17 @@ function coordinates(): Pick<BudgetPlace, 'latitude' | 'longitude'> | null {
   const longitudeText = longitude.value.trim()
   if (!latitudeText && !longitudeText) return { latitude: null, longitude: null }
   if (!latitudeText || !longitudeText) {
-    error.value = 'Enter both latitude and longitude, or leave both empty.'
+    error.value = t('places.bothCoordinates')
     return null
   }
   const parsedLatitude = Number(latitudeText.replace(',', '.'))
   const parsedLongitude = Number(longitudeText.replace(',', '.'))
   if (!Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90) {
-    error.value = 'Latitude must be between -90 and 90.'
+    error.value = t('places.latitudeRange')
     return null
   }
   if (!Number.isFinite(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180) {
-    error.value = 'Longitude must be between -180 and 180.'
+    error.value = t('places.longitudeRange')
     return null
   }
   return { latitude: parsedLatitude, longitude: parsedLongitude }
@@ -60,7 +61,7 @@ async function save(): Promise<void> {
   error.value = null
   const normalizedName = name.value.trim()
   if (!normalizedName) {
-    error.value = 'Enter a place name.'
+    error.value = t('places.nameRequired')
     return
   }
   const point = coordinates()
@@ -83,31 +84,31 @@ async function save(): Promise<void> {
 <template>
   <Dialog
     :open="open"
-    :title="previous ? 'Edit place' : 'New place'"
+    :title="previous ? t('places.dialogEdit') : t('places.dialogNew')"
     size="sm"
     :close-on-escape="!saving"
     :close-on-interact-outside="!saving"
     @update:open="emit('update:open', $event)"
   >
     <form id="budget-place-form" class="form" @submit.prevent="save">
-      <Field label="Name" for="budget-place-name">
-        <Input id="budget-place-name" v-model="name" autocomplete="off" placeholder="Corner shop" :disabled="saving" />
+      <Field :label="t('common.name')" for="budget-place-name">
+        <Input id="budget-place-name" v-model="name" autocomplete="off" :placeholder="t('places.namePlaceholder')" :disabled="saving" />
       </Field>
       <div class="coordinates">
-        <Field label="Latitude" for="budget-place-latitude" hint="Optional">
+        <Field :label="t('places.latitude')" for="budget-place-latitude" :hint="t('common.optional')">
           <Input id="budget-place-latitude" v-model="latitude" inputmode="decimal" autocomplete="off" placeholder="54.7104" :disabled="saving" />
         </Field>
-        <Field label="Longitude" for="budget-place-longitude" hint="Optional">
+        <Field :label="t('places.longitude')" for="budget-place-longitude" :hint="t('common.optional')">
           <Input id="budget-place-longitude" v-model="longitude" inputmode="decimal" autocomplete="off" placeholder="20.4522" :disabled="saving" />
         </Field>
       </div>
-      <p class="hint">Coordinates let new purchases recognize this place nearby.</p>
+      <p class="hint">{{ t('places.coordinatesHint') }}</p>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </form>
     <template #footer>
-      <Button :size="buttonSize" variant="secondary" :disabled="saving" @click="emit('update:open', false)">Cancel</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="saving" @click="emit('update:open', false)">{{ t('common.cancel') }}</Button>
       <Button :size="buttonSize" type="submit" form="budget-place-form" :disabled="saving">
-        {{ saving ? 'Saving…' : 'Save place' }}
+        {{ saving ? t('common.saving') : t('places.save') }}
       </Button>
     </template>
   </Dialog>

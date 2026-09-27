@@ -1,11 +1,12 @@
 import { validation } from '@arxhub/errors'
+import { budgetError } from './errors'
 
 const QUANTITY = /^(0|[1-9]\d*)(?:\.(\d{1,6}))?$/
 
 export function validateQuantity(quantity: string): string {
   const match = QUANTITY.exec(quantity)
-  if (!match) throw validation('Quantity must be a decimal string with at most 6 fractional digits')
-  if (BigInt(match[1]) === 0n && !/[1-9]/.test(match[2] ?? '')) throw validation('Quantity must be greater than zero')
+  if (!match) throw budgetError('BudgetQuantityInvalid')
+  if (BigInt(match[1]) === 0n && !/[1-9]/.test(match[2] ?? '')) throw budgetError('BudgetQuantityZero')
   return quantity
 }
 

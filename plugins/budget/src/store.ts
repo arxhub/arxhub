@@ -1,5 +1,6 @@
-import { hasErrorCode, illegalState, validation } from '@arxhub/errors'
+import { hasErrorCode, validation } from '@arxhub/errors'
 import { compareAndSwap, type VirtualEntry, type VirtualFileSystem } from '@arxhub/vfs'
+import { budgetError } from './errors'
 import { type BudgetData, emptyBudget, parseBudget, serializeBudget, validateBudget } from './model'
 
 export const BUDGET_PATH = 'budget.jsonl'
@@ -39,7 +40,7 @@ export class BudgetStore {
       await this.refuseConflictCopies()
       if (await compareAndSwap(this.vfs, BUDGET_PATH, currentBytes, nextBytes)) return parseBudget(decode(nextBytes))
     }
-    throw illegalState(`Could not update ${BUDGET_PATH} after ${MAX_BUDGET_UPDATE_RETRIES} concurrent changes; retry the action`)
+    throw budgetError('BudgetUpdateContention', { path: BUDGET_PATH, attempts: MAX_BUDGET_UPDATE_RETRIES })
   }
 
   private async readCurrent(): Promise<Uint8Array | null> {
@@ -64,8 +65,6 @@ export class BudgetStore {
       .map((entry) => entry.pathname)
       .sort()
     if (conflicts.length === 0) return
-    throw illegalState(
-      `Budget data has unresolved conflict ${conflicts.length === 1 ? 'copy' : 'copies'} (${conflicts.join(', ')}). Resolve or remove ${conflicts.length === 1 ? 'it' : 'them'} before using the budget.`,
-    )
+    throw budgetError('BudgetConflictCopies', { count: conflicts.length, names: conflicts.join(', ') })
   }
 }

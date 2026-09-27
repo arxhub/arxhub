@@ -4,10 +4,11 @@ import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { type ComponentPublicInstance, computed, nextTick, ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
 import type { ImportedReceipt } from '../fiscal'
+import { t } from '../i18n/messages'
 import type { BudgetAttachment, BudgetTransaction, FiscalReceipt, TransactionKind } from '../model'
-import { formatAmount, parseAmount } from '../money'
+import { parseAmount } from '../money'
 import { nearestKnownPlace } from '../places'
-import { accountCurrency, amountInput, errorMessage, localDate } from './budget-ui'
+import { accountCurrency, amountInput, errorMessage, localDate, money } from './budget-ui'
 import PurchaseItemsEditor from './PurchaseItemsEditor.vue'
 import { itemsSubtotal, type PurchaseItemDraft, purchaseItemDraft, purchaseItems } from './purchase-draft'
 import ReceiptImport from './ReceiptImport.vue'
@@ -50,10 +51,10 @@ let resetting = false
 let rememberedAccountId = ''
 const rememberedCategoryIds: Partial<Record<TransactionKind, string>> = {}
 
-const kindOptions = [
-  { value: 'expense', label: 'Expense' },
-  { value: 'income', label: 'Income' },
-]
+const kindOptions = computed(() => [
+  { value: 'expense', label: t('common.expense') },
+  { value: 'income', label: t('common.income') },
+])
 const accounts = computed(() => budget.data.value.accounts)
 const categories = computed(() => budget.data.value.categories.filter((entry) => entry.kind === kind.value))
 const places = computed(() => budget.data.value.places)
@@ -62,9 +63,11 @@ const category = computed(() => categories.value.find((entry) => entry.id === ca
 const place = computed(() => places.value.find((entry) => entry.id === placeId.value))
 const currency = computed(() => account.value?.currency ?? 'RUB')
 const ready = computed(() => !!account.value && !!category.value)
-const dialogTitle = computed(() => (props.previous ? 'Edit transaction' : 'New transaction'))
+const dialogTitle = computed(() => (props.previous ? t('transaction.dialogEdit') : t('transaction.dialogNew')))
 const detailsSummary = computed(() =>
-  [kind.value === 'expense' ? 'Expense' : 'Income', account.value?.name, category.value?.name, date.value].filter(Boolean).join(' · '),
+  [kind.value === 'expense' ? t('common.expense') : t('common.income'), account.value?.name, category.value?.name, date.value]
+    .filter(Boolean)
+    .join(' · '),
 )
 const subtotal = computed(() => itemsSubtotal(itemDrafts.value, currency.value))
 const enteredAmount = computed(() => {
@@ -182,7 +185,7 @@ async function saveInlinePlace(): Promise<void> {
   cancelLocation()
   const name = newPlaceName.value.trim()
   if (!name) {
-    error.value = 'Enter a place name.'
+    error.value = t('transaction.placeNameRequired')
     return
   }
   try {
@@ -262,7 +265,7 @@ function applyReceipt(receipt: FiscalReceipt, imported: ImportedReceipt | null):
   error.value = null
   const rubAccount = account.value?.currency === 'RUB' ? account.value : accounts.value.find((entry) => entry.currency === 'RUB')
   if (!rubAccount) {
-    error.value = 'A fiscal receipt needs a RUB account. Create one before using this receipt.'
+    error.value = t('transaction.needRubAccount')
     return
   }
   accountId.value = rubAccount.id
@@ -297,35 +300,35 @@ async function save(): Promise<void> {
   error.value = null
   if (receiptDirty.value) {
     receiptOpen.value = true
-    error.value = 'Review and use the changed fiscal details, or remove the fiscal receipt before saving.'
+    error.value = t('transaction.receiptDirty')
     return
   }
   if (!account.value) {
-    error.value = 'Choose an account.'
+    error.value = t('transaction.accountRequired')
     return
   }
   if (!category.value) {
-    error.value = `Create or choose an ${kind.value} category.`
+    error.value = kind.value === 'expense' ? t('transaction.expenseCategoryRequired') : t('transaction.incomeCategoryRequired')
     return
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date.value)) {
-    error.value = 'Choose a valid date.'
+    error.value = t('transaction.dateInvalid')
     return
   }
   if (!props.previous && kind.value === 'expense' && !place.value) {
-    error.value = 'Choose a saved place or add this place before saving the purchase.'
+    error.value = t('transaction.placeMissing')
     return
   }
 
   try {
     const minor = parseAmount(amount.value, currency.value)
     if (minor <= 0) {
-      error.value = 'Amount must be greater than zero.'
+      error.value = t('transaction.amountPositive')
       return
     }
     const items = purchaseItems(itemDrafts.value, currency.value)
     if (fiscalReceipt.value && (currency.value !== 'RUB' || fiscalReceipt.value.total !== minor)) {
-      error.value = 'The account must use RUB and the amount must match the fiscal receipt total.'
+      error.value = t('transaction.receiptMismatch')
       return
     }
     saving.value = true
@@ -377,7 +380,7 @@ async function save(): Promise<void> {
     @update:open="handleOpen"
   >
     <form id="budget-transaction-form" class="form" :class="{ touch }" @submit.prevent="save">
-      <Field label="Amount" for="budget-transaction-amount">
+      <Field :label="t('transaction.amount')" for="budget-transaction-amount">
         <div class="amount-control">
           <Input
             id="budget-transaction-amount"
@@ -393,40 +396,40 @@ async function save(): Promise<void> {
         </div>
       </Field>
 
-      <Field :label="kind === 'expense' && !previous ? 'Place (required)' : 'Place'">
+      <Field :label="kind === 'expense' && !previous ? t('transaction.placeRequired') : t('transaction.place')">
         <div class="place-actions">
           <Dropdown>
             <template #trigger>
-              <Button class="choice" variant="secondary" :size="buttonSize" :disabled="saving || places.length === 0" aria-label="Place">
-                <span>{{ place?.name ?? 'Choose place' }}</span>
+              <Button class="choice" variant="secondary" :size="buttonSize" :disabled="saving || places.length === 0" :aria-label="t('transaction.place')">
+                <span>{{ place?.name ?? t('transaction.choosePlace') }}</span>
                 <Icon name="lu:chevron-down" :size="touch ? 16 : 14" />
               </Button>
             </template>
             <MenuItem v-for="entry in places" :key="entry.id" :value="entry.id" @select="choosePlace(entry.id)">{{ entry.name }}</MenuItem>
           </Dropdown>
           <Button :size="buttonSize" variant="secondary" :disabled="saving || locationState === 'locating'" @click="findNearbyPlace">
-            {{ locationState === 'locating' ? 'Locating…' : 'Use nearby' }}
+            {{ locationState === 'locating' ? t('transaction.locating') : t('transaction.useNearby') }}
           </Button>
-          <Button :size="buttonSize" variant="secondary" :disabled="saving" @click="toggleAddingPlace">Add place</Button>
+          <Button :size="buttonSize" variant="secondary" :disabled="saving" @click="toggleAddingPlace">{{ t('transaction.addPlace') }}</Button>
         </div>
-        <p v-if="locationState === 'matched' && place" class="choice-hint">Recognized {{ place.name }} nearby.</p>
-        <p v-else-if="locationState === 'choose'" class="choice-hint">No saved place is nearby. Choose one or add the current place.</p>
-        <p v-else-if="locationState === 'unavailable'" class="choice-hint">Location is unavailable. Choose a place or add one by name.</p>
+        <p v-if="locationState === 'matched' && place" class="choice-hint">{{ t('transaction.recognized', { name: place.name }) }}</p>
+        <p v-else-if="locationState === 'choose'" class="choice-hint">{{ t('transaction.noNearby') }}</p>
+        <p v-else-if="locationState === 'unavailable'" class="choice-hint">{{ t('transaction.locationUnavailable') }}</p>
         <div v-if="addingPlace" class="inline-place">
-          <Input v-model="newPlaceName" aria-label="New place name" autocomplete="off" placeholder="Place name" :disabled="saving || savingPlace" />
+          <Input v-model="newPlaceName" :aria-label="t('transaction.newPlaceName')" autocomplete="off" :placeholder="t('transaction.placeName')" :disabled="saving || savingPlace" />
           <Button :size="buttonSize" variant="secondary" :disabled="saving || savingPlace" @click="saveInlinePlace">
-            {{ savingPlace ? 'Saving…' : 'Save place' }}
+            {{ savingPlace ? t('common.saving') : t('transaction.savePlace') }}
           </Button>
         </div>
       </Field>
 
       <p v-if="subtotalMismatch" class="mismatch" role="status">
-        Items add up to {{ formatAmount(subtotal ?? 0, currency) }}, while the transaction amount is {{ formatAmount(enteredAmount ?? 0, currency) }}.
+        {{ t('transaction.mismatch', { items: money(subtotal ?? 0, currency), amount: money(enteredAmount ?? 0, currency) }) }}
       </p>
       <PurchaseItemsEditor v-model="itemDrafts" :currency="currency" :disabled="saving" />
       <Button class="receipt-toggle" :size="buttonSize" variant="secondary" :active="receiptOpen" @click="receiptOpen = !receiptOpen">
         <Icon name="lu:receipt-text" :size="touch ? 16 : 14" />
-        {{ receiptOpen ? 'Hide receipt and photos' : 'Add receipt or photo' }}
+        {{ receiptOpen ? t('transaction.hideReceipt') : t('transaction.showReceipt') }}
       </Button>
       <div v-show="receiptOpen" class="receipt-details">
         <ReceiptPhotosEditor
@@ -451,17 +454,17 @@ async function save(): Promise<void> {
 
       <Button class="details-toggle" :size="buttonSize" variant="secondary" :active="detailsOpen" @click="detailsOpen = !detailsOpen">
         <span class="details-toggle-copy">
-          <strong>{{ detailsOpen ? 'Hide transaction details' : 'Transaction details' }}</strong>
+          <strong>{{ detailsOpen ? t('transaction.hideDetails') : t('transaction.details') }}</strong>
           <span>{{ detailsSummary }}</span>
         </span>
         <Icon :name="detailsOpen ? 'lu:chevron-up' : 'lu:chevron-down'" :size="touch ? 16 : 14" />
       </Button>
-      <section v-if="detailsOpen" class="transaction-details" aria-label="Transaction details">
-        <Field label="Type">
+      <section v-if="detailsOpen" class="transaction-details" :aria-label="t('transaction.details')">
+        <Field :label="t('transaction.type')">
           <Segmented
             :model-value="kind"
             :options="kindOptions"
-            aria-label="Transaction type"
+            :aria-label="t('transaction.typeLabel')"
             stretch
             :disabled="saving"
             @update:model-value="kind = $event as TransactionKind"
@@ -469,7 +472,7 @@ async function save(): Promise<void> {
         </Field>
 
         <div class="field-grid">
-          <Field label="Account">
+          <Field :label="t('transaction.account')">
             <Dropdown>
               <template #trigger>
                 <Button
@@ -477,9 +480,9 @@ async function save(): Promise<void> {
                   variant="secondary"
                   :size="buttonSize"
                   :disabled="saving || accounts.length === 0"
-                  aria-label="Account"
+                  :aria-label="t('transaction.account')"
                 >
-                  <span>{{ account?.name ?? 'Choose account' }}</span>
+                  <span>{{ account?.name ?? t('transaction.chooseAccount') }}</span>
                   <span v-if="account" class="choice-meta">{{ account.currency }}</span>
                   <Icon name="lu:chevron-down" :size="touch ? 16 : 14" />
                 </Button>
@@ -488,10 +491,10 @@ async function save(): Promise<void> {
                 <span class="menu-name">{{ entry.name }}</span><span class="menu-meta">{{ entry.currency }}</span>
               </MenuItem>
             </Dropdown>
-            <p v-if="accounts.length === 0" class="choice-hint">Create an account before adding a transaction.</p>
+            <p v-if="accounts.length === 0" class="choice-hint">{{ t('transaction.noAccounts') }}</p>
           </Field>
 
-          <Field label="Category">
+          <Field :label="t('transaction.category')">
             <Dropdown>
               <template #trigger>
                 <Button
@@ -499,32 +502,34 @@ async function save(): Promise<void> {
                   variant="secondary"
                   :size="buttonSize"
                   :disabled="saving || categories.length === 0"
-                  aria-label="Category"
+                  :aria-label="t('transaction.category')"
                 >
-                  <span>{{ category?.name ?? `Choose ${kind} category` }}</span>
+                  <span>{{ category?.name ?? (kind === 'expense' ? t('transaction.chooseExpenseCategory') : t('transaction.chooseIncomeCategory')) }}</span>
                   <Icon name="lu:chevron-down" :size="touch ? 16 : 14" />
                 </Button>
               </template>
               <MenuItem v-for="entry in categories" :key="entry.id" :value="entry.id" @select="categoryId = entry.id">{{ entry.name }}</MenuItem>
             </Dropdown>
-            <p v-if="categories.length === 0" class="choice-hint">Create an {{ kind }} category before adding this transaction.</p>
+            <p v-if="categories.length === 0" class="choice-hint">
+              {{ kind === 'expense' ? t('transaction.noExpenseCategories') : t('transaction.noIncomeCategories') }}
+            </p>
           </Field>
         </div>
 
-        <Field label="Date" for="budget-transaction-date">
+        <Field :label="t('transaction.date')" for="budget-transaction-date">
           <Input id="budget-transaction-date" v-model="date" type="date" :disabled="saving" />
         </Field>
 
-        <Field label="Note" for="budget-transaction-note" hint="Optional">
-          <Input id="budget-transaction-note" v-model="note" autocomplete="off" placeholder="What was this for?" :disabled="saving" />
+        <Field :label="t('transaction.note')" for="budget-transaction-note" :hint="t('common.optional')">
+          <Input id="budget-transaction-note" v-model="note" autocomplete="off" :placeholder="t('transaction.notePlaceholder')" :disabled="saving" />
         </Field>
       </section>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     </form>
     <template #footer>
-      <Button :size="buttonSize" variant="secondary" :disabled="saving" @click="handleOpen(false)">Cancel</Button>
+      <Button :size="buttonSize" variant="secondary" :disabled="saving" @click="handleOpen(false)">{{ t('common.cancel') }}</Button>
       <Button :size="buttonSize" type="submit" form="budget-transaction-form" :disabled="saving || !ready">
-        {{ saving ? 'Saving…' : previous ? 'Save transaction' : kind === 'expense' ? 'Save purchase' : 'Save income' }}
+        {{ saving ? t('common.saving') : previous ? t('transaction.saveTransaction') : kind === 'expense' ? t('transaction.savePurchase') : t('transaction.saveIncome') }}
       </Button>
     </template>
   </Dialog>

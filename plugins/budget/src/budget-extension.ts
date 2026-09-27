@@ -1,7 +1,8 @@
 import { Extension, type ExtensionArgs } from '@arxhub/core'
-import { illegalState, validation } from '@arxhub/errors'
+import { illegalState } from '@arxhub/errors'
 import { ref, shallowRef } from 'vue'
 import type { BudgetCapture } from './capture-media'
+import { budgetError } from './errors'
 import type { ImportedReceipt, ReceiptLookupOptions } from './fiscal'
 import {
   type BudgetAccount,
@@ -33,7 +34,7 @@ interface BudgetExtensionArgs extends ExtensionArgs {
 function requireUnchanged<T extends { id: string }>(records: T[], previous: T): void {
   const actual = records.find((record) => record.id === previous.id)
   if (!actual || JSON.stringify(actual) !== JSON.stringify(previous)) {
-    throw validation('This entry changed elsewhere. Refresh the budget and reopen the entry before saving your changes.')
+    throw budgetError('BudgetEntryChanged')
   }
 }
 
@@ -46,7 +47,7 @@ function replace<T extends { id: string }>(records: T[], next: T, previous?: T):
 function receiptPhotoAttachment(value: BudgetAttachment): BudgetAttachment {
   const checked = validateBudgetAttachment(value)
   const pathId = checked.path.slice('receipts/'.length, checked.path.lastIndexOf('.'))
-  if (pathId !== checked.id) throw validation('Invalid receipt photo path')
+  if (pathId !== checked.id) throw budgetError('BudgetPhotoPathInvalid')
   return checked
 }
 
@@ -54,6 +55,8 @@ export class BudgetExtension extends Extension {
   readonly data = shallowRef<BudgetData>(emptyBudget())
   readonly status = ref<'opening' | 'ready' | 'failed' | 'stopped'>('opening')
   readonly error = ref<string | null>(null)
+  // The cause itself, so the screen can say it in the language it is showing now; `error` is its English text.
+  readonly failure = shallowRef<unknown>(null)
   readonly busy = ref(false)
   private readonly store: BudgetStore
   private readonly prepare: () => Promise<void>
@@ -95,9 +98,11 @@ export class BudgetExtension extends Extension {
         this.data.value = await this.store.load()
         this.status.value = 'ready'
         this.error.value = null
+        this.failure.value = null
       } catch (error) {
         this.status.value = 'failed'
         this.error.value = error instanceof Error ? error.message : String(error)
+        this.failure.value = error
         throw error
       }
     })
@@ -105,7 +110,7 @@ export class BudgetExtension extends Extension {
 
   private change(update: (data: BudgetData) => BudgetData): Promise<void> {
     return this.enqueue(async () => {
-      if (this.status.value !== 'ready') throw illegalState('Open the budget successfully before making changes.')
+      if (this.status.value !== 'ready') throw budgetError('BudgetNotReady')
       try {
         await this.prepare()
         this.data.value = await this.mutate(() => this.store.update(update))
@@ -126,7 +131,7 @@ export class BudgetExtension extends Extension {
     }
     return this.change((data) => {
       if (previous && previous.currency !== account.currency && data.transactions.some((entry) => entry.accountId === previous.id)) {
-        throw validation('The currency of an account with transactions cannot be changed.')
+        throw budgetError('BudgetAccountCurrencyLocked')
       }
       return { ...data, accounts: replace(data.accounts, account, previous) }
     })
@@ -136,7 +141,7 @@ export class BudgetExtension extends Extension {
     const category = { id: previous?.id ?? crypto.randomUUID(), ...input, name: input.name.trim() }
     return this.change((data) => {
       if (previous && previous.kind !== category.kind && data.transactions.some((entry) => entry.categoryId === previous.id)) {
-        throw validation('The type of a category with transactions cannot be changed.')
+        throw budgetError('BudgetCategoryKindLocked')
       }
       return { ...data, categories: replace(data.categories, category, previous) }
     })
@@ -150,8 +155,7 @@ export class BudgetExtension extends Extension {
   removeAccount(previous: BudgetAccount): Promise<void> {
     return this.change((data) => {
       requireUnchanged(data.accounts, previous)
-      if (data.transactions.some((entry) => entry.accountId === previous.id))
-        throw validation('This account has transactions and cannot be deleted.')
+      if (data.transactions.some((entry) => entry.accountId === previous.id)) throw budgetError('BudgetAccountInUse')
       return { ...data, accounts: data.accounts.filter((entry) => entry.id !== previous.id) }
     })
   }
@@ -159,8 +163,7 @@ export class BudgetExtension extends Extension {
   removeCategory(previous: BudgetCategory): Promise<void> {
     return this.change((data) => {
       requireUnchanged(data.categories, previous)
-      if (data.transactions.some((entry) => entry.categoryId === previous.id))
-        throw validation('This category has transactions and cannot be deleted.')
+      if (data.transactions.some((entry) => entry.categoryId === previous.id)) throw budgetError('BudgetCategoryInUse')
       return { ...data, categories: data.categories.filter((entry) => entry.id !== previous.id) }
     })
   }
@@ -190,25 +193,24 @@ export class BudgetExtension extends Extension {
   removePlace(previous: BudgetPlace): Promise<void> {
     return this.change((data) => {
       requireUnchanged(data.places, previous)
-      if (data.transactions.some((entry) => entry.placeId === previous.id))
-        throw validation('This place has transactions and cannot be deleted.')
+      if (data.transactions.some((entry) => entry.placeId === previous.id)) throw budgetError('BudgetPlaceInUse')
       return { ...data, places: data.places.filter((entry) => entry.id !== previous.id) }
     })
   }
 
   locate(options?: { signal?: AbortSignal }) {
-    if (!this.capture) return Promise.reject(illegalState('Location is unavailable on this device. Choose a saved place or add one by name.'))
+    if (!this.capture) return Promise.reject(budgetError('BudgetLocationUnavailable'))
     return this.capture.locate(options)
   }
 
   scanReceiptPhoto(file: Blob, options?: { signal?: AbortSignal }): Promise<string | null> {
-    if (!this.capture) return Promise.reject(illegalState('QR scanning is unavailable. Enter the fiscal details manually.'))
+    if (!this.capture) return Promise.reject(budgetError('BudgetQrUnavailable'))
     return this.capture.scanReceiptPhoto(file, options)
   }
 
   addReceiptPhoto(file: File): Promise<BudgetAttachment> {
     return this.enqueue(async () => {
-      if (this.status.value !== 'ready' || !this.photos) throw illegalState('Open the budget before attaching a receipt.')
+      if (this.status.value !== 'ready' || !this.photos) throw budgetError('BudgetPhotoNotReady')
       const photos = this.photos
       await this.prepare()
       return this.mutate(() => photos.add(file))
@@ -216,7 +218,7 @@ export class BudgetExtension extends Extension {
   }
 
   async readReceiptPhoto(attachment: BudgetAttachment): Promise<Blob> {
-    if (!this.photos) throw illegalState('Receipt photos are unavailable.')
+    if (!this.photos) throw budgetError('BudgetPhotosUnavailable')
     // Never ask the repository to materialize a caller-controlled path before the domain has
     // established that it is confined to the receipt-photo namespace.
     const checked = receiptPhotoAttachment(attachment)
@@ -243,8 +245,7 @@ export class BudgetExtension extends Extension {
   }
 
   lookupReceipt(receipt: FiscalReceipt, options?: ReceiptLookupOptions): Promise<ImportedReceipt> {
-    if (!this.receiptLookup)
-      return Promise.reject(illegalState('Receipt download is not configured. You can still save the QR details or import receipt JSON.'))
+    if (!this.receiptLookup) return Promise.reject(budgetError('BudgetReceiptLookupUnavailable'))
     return this.receiptLookup(validateFiscalReceipt(receipt), options)
   }
 

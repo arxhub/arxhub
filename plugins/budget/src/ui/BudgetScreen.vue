@@ -4,9 +4,10 @@ import { Button, PageLayout, ScrollArea, Segmented } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, useSlots } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import AccountsView from './AccountsView.vue'
 import BudgetSummary from './BudgetSummary.vue'
-import { type BudgetSection, isValidMonth } from './budget-ui'
+import { type BudgetSection, errorMessage, isValidMonth } from './budget-ui'
 import { budgetView, refreshBudget } from './budget-view'
 import CategoriesView from './CategoriesView.vue'
 import MonthPicker from './MonthPicker.vue'
@@ -28,13 +29,14 @@ const section = view.section
 const month = view.month
 const data = computed(() => budget.data.value)
 const monthValid = computed(() => isValidMonth(month.value))
-const sections = [
-  { value: 'overview', label: 'Overview' },
-  { value: 'transactions', label: 'Transactions' },
-  { value: 'accounts', label: 'Accounts' },
-  { value: 'categories', label: 'Categories' },
-  { value: 'places', label: 'Places' },
-]
+const sections = computed(() => [
+  { value: 'overview', label: t('screen.overview') },
+  { value: 'transactions', label: t('transactions.title') },
+  { value: 'accounts', label: t('accounts.title') },
+  { value: 'categories', label: t('categories.title') },
+  { value: 'places', label: t('places.title') },
+])
+const failure = computed(() => (budget.failure.value == null ? budget.error.value : errorMessage(budget.failure.value)))
 
 function retry(): Promise<void> {
   return refreshBudget(budget, arxhub.logger, false)
@@ -43,29 +45,29 @@ function retry(): Promise<void> {
 
 <template>
   <div class="budget-page" data-testid="budget-page">
-    <PageLayout title="Budget" description="Track accounts, income, and expenses month by month.">
+    <PageLayout :title="t('type.title')" :description="t('screen.description')">
       <div v-if="budget.status.value === 'opening'" class="state" role="status">
-        <span class="state-title">Opening your budget…</span>
-        <span>Accounts and transactions will appear here in a moment.</span>
+        <span class="state-title">{{ t('screen.opening') }}</span>
+        <span>{{ t('screen.openingHint') }}</span>
       </div>
 
       <div v-else-if="budget.status.value === 'failed'" class="state danger" role="alert">
-        <span class="state-title">Budget could not be opened</span>
-        <span>{{ budget.error.value || 'Try loading it again.' }}</span>
-        <Button :size="buttonSize" variant="secondary" :disabled="budget.busy.value" @click="retry">Retry</Button>
+        <span class="state-title">{{ t('screen.failed') }}</span>
+        <span>{{ failure || t('screen.failedHint') }}</span>
+        <Button :size="buttonSize" variant="secondary" :disabled="budget.busy.value" @click="retry">{{ t('common.retry') }}</Button>
       </div>
 
       <div v-else-if="budget.status.value === 'stopped'" class="state" role="status">
-        <span class="state-title">Budget is unavailable</span>
+        <span class="state-title">{{ t('screen.stopped') }}</span>
       </div>
 
       <template v-else>
         <ScrollArea axis="x" class="section-nav" content-class="section-nav-content">
-          <nav aria-label="Budget sections">
+          <nav :aria-label="t('screen.sections')">
             <Segmented
               :model-value="section"
               :options="sections"
-              aria-label="Budget sections"
+              :aria-label="t('screen.sections')"
               @update:model-value="view.section.value = $event as BudgetSection"
             />
           </nav>
@@ -73,7 +75,7 @@ function retry(): Promise<void> {
 
         <div v-if="props.periodPicker && (section === 'overview' || section === 'transactions')" class="period">
           <MonthPicker v-model="view.month.value" />
-          <p v-if="!monthValid" class="month-error" role="alert">Choose a month between 0001 and 9999.</p>
+          <p v-if="!monthValid" class="month-error" role="alert">{{ t('screen.monthRange') }}</p>
         </div>
 
         <BudgetSummary v-if="section === 'overview' && monthValid" :data="data" :month="month" />

@@ -1,7 +1,6 @@
 import { PluginConfig } from '@arxhub/config'
 import { Plugin, type PluginArgs, type PluginContext } from '@arxhub/core'
 import { MutableRequestSigner } from '@arxhub/crypto'
-import { illegalState, validation } from '@arxhub/errors'
 import { KeyringExtension } from '@arxhub/plugin-protection'
 import { RepositoryExtension } from '@arxhub/plugin-repository'
 import { SettingsExtension } from '@arxhub/plugin-settings'
@@ -12,6 +11,8 @@ import { markRaw, watch } from 'vue'
 import { BudgetExtension } from './budget-extension'
 import { type BudgetCapture, browserBudgetCapture } from './capture-media'
 import { BUDGET_TYPE_ID } from './contributions'
+import { budgetError } from './errors'
+import { messages, t } from './i18n/messages'
 import { manifest } from './manifest'
 import { mergeBudgets } from './merge'
 import { downloadReceipt } from './receipt-client'
@@ -28,19 +29,10 @@ export interface BudgetPluginArgs extends PluginArgs {
 
 const budgetMetadata = (path: string): boolean => path === 'budget.jsonl' || /^conflict-[0-9a-f]{8}-budget(?:-\d+)?\.jsonl$/.test(path)
 
-const BudgetConfigSchema = Type.Object(
-  {
-    receiptServerUrl: Type.Optional(
-      Type.String({
-        title: 'Receipt server URL',
-        description:
-          'Your ArxHub server with FNS access. Leave blank to use the current browser server. The FNS master token belongs only on that server.',
-        default: '',
-      }),
-    ),
-  },
-  { description: 'Download itemized receipts through the free official FNS API. QR decoding and JSON import also work offline.' },
-)
+// What the form says about each field is the catalog's `config` section; the schema describes the file.
+const BudgetConfigSchema = Type.Object({
+  receiptServerUrl: Type.Optional(Type.String({ default: '' })),
+})
 
 export class BudgetPlugin extends Plugin {
   private bringUp: Promise<void> | null = null
@@ -74,16 +66,16 @@ export class BudgetPlugin extends Plugin {
           try {
             url = new URL(serverUrl)
           } catch {
-            throw validation('Set a valid receipt server origin in Budget settings.')
+            throw budgetError('BudgetReceiptServerInvalid')
           }
           if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password || url.search || url.hash || url.pathname !== '/') {
-            throw validation('The receipt server URL must be an HTTP(S) origin without credentials or a path.')
+            throw budgetError('BudgetReceiptServerOrigin')
           }
         } else if (this.receiptServerUrlRequired) {
-          throw illegalState('Set your ArxHub receipt server URL in Budget settings to download receipt details.')
+          throw budgetError('BudgetReceiptServerMissing')
         }
         const keyring = ctx.extensions.get(KeyringExtension).keyring
-        if (!keyring) throw illegalState('Set up your ArxHub identity before downloading a receipt.')
+        if (!keyring) throw budgetError('BudgetIdentityMissing')
         const signer = new MutableRequestSigner()
         signer.install(keyring)
         return downloadReceipt(serverUrl, signer, receipt, options)
@@ -95,24 +87,26 @@ export class BudgetPlugin extends Plugin {
     super.configure(ctx)
     ctx.extensions.get(SettingsExtension).register({
       id: 'budget',
-      title: 'Budget receipts',
+      title: () => t('settings.title'),
+      description: () => t('settings.description'),
       icon: 'lu:receipt-text',
       schema: BudgetConfigSchema,
       order: 12,
       config: ctx.services.get(PluginConfig),
+      messages,
     })
     const repository = ctx.extensions.get(RepositoryExtension)
     const budget = ctx.extensions.get(BudgetExtension)
     ctx.extensions.get(ShellExtension).types.register({
       id: BUDGET_TYPE_ID,
-      title: 'Budget',
+      title: () => t('type.title'),
       icon: 'lu:wallet',
       order: 30,
       pinned: false,
       content: markRaw(BudgetPage),
       bar: () => budgetBar(budget, this.logger),
       summary: () => budgetSummary(budget),
-      sheet: { title: 'Months', content: markRaw(BudgetMonthsSheet) },
+      sheet: { title: () => t('type.months'), content: markRaw(BudgetMonthsSheet) },
     })
     this.unwatch = watch(repository.storageRevision, () => {
       void budget.refresh().catch((error) => this.logger.error('Could not reload the budget after sync', error))

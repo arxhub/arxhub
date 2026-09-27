@@ -1,5 +1,5 @@
-import { validation } from '@arxhub/errors'
 import { decodeQr } from '@arxhub/uikit/hooks'
+import { budgetError } from './errors'
 
 export interface BudgetPosition {
   latitude: number
@@ -29,7 +29,7 @@ function throwIfAborted(signal?: AbortSignal): void {
 async function locateInBrowser(options?: BudgetCaptureOptions): Promise<BudgetPosition> {
   const { signal } = options ?? {}
   throwIfAborted(signal)
-  if (!globalThis.navigator?.geolocation) throw validation('Location is unavailable on this device')
+  if (!globalThis.navigator?.geolocation) throw budgetError('BudgetDeviceLocationUnavailable')
 
   return new Promise((resolve, reject) => {
     let settled = false
@@ -55,7 +55,7 @@ async function locateInBrowser(options?: BudgetCaptureOptions): Promise<BudgetPo
             !Number.isFinite(accuracy) ||
             accuracy < 0
           ) {
-            reject(validation('The device returned an invalid location'))
+            reject(budgetError('BudgetInvalidLocation'))
             return
           }
           resolve({ latitude, longitude, accuracy })
@@ -69,8 +69,8 @@ async function locateInBrowser(options?: BudgetCaptureOptions): Promise<BudgetPo
 async function scanInBrowser(blob: Blob, options?: BudgetCaptureOptions): Promise<string | null> {
   const { signal } = options ?? {}
   throwIfAborted(signal)
-  if (blob.size < 1) throw validation('Receipt photos must not be empty')
-  if (blob.size > MAX_RECEIPT_PHOTO_SIZE) throw validation('Receipt photos can be up to 10 MB')
+  if (blob.size < 1) throw budgetError('BudgetPhotoEmpty')
+  if (blob.size > MAX_RECEIPT_PHOTO_SIZE) throw budgetError('BudgetPhotoTooLarge')
   return decodeQr(blob, { signal })
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { IconButton, Input } from '@arxhub/uikit/core'
 import { useShellFrame } from '@arxhub/uikit/hooks'
+import { t } from '../i18n/messages'
 import { canMoveMonth, moveMonth } from './budget-ui'
 
 const month = defineModel<string>({ required: true })
@@ -8,21 +9,21 @@ const buttonSize = useShellFrame() === 'mobile' ? 'xl' : 'md'
 </script>
 
 <template>
-  <div class="month-picker" aria-label="Month">
+  <div class="month-picker" :aria-label="t('month.label')">
     <IconButton
       icon="lu:chevron-left"
       :size="buttonSize"
-      aria-label="Previous month"
-      tooltip="Previous month"
+      :aria-label="t('month.previous')"
+      :tooltip="t('month.previous')"
       :disabled="!canMoveMonth(month, -1)"
       @click="month = moveMonth(month, -1)"
     />
-    <Input v-model="month" class="month-input" type="month" aria-label="Month" />
+    <Input v-model="month" class="month-input" type="month" :aria-label="t('month.label')" />
     <IconButton
       icon="lu:chevron-right"
       :size="buttonSize"
-      aria-label="Next month"
-      tooltip="Next month"
+      :aria-label="t('month.next')"
+      :tooltip="t('month.next')"
       :disabled="!canMoveMonth(month, 1)"
       @click="month = moveMonth(month, 1)"
     />

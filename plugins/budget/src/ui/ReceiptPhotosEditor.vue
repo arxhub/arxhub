@@ -3,6 +3,7 @@ import { Button, Dialog, Icon, IconButton } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { BudgetExtension } from '../budget-extension'
+import { t } from '../i18n/messages'
 import type { BudgetTransaction } from '../model'
 
 type Attachment = BudgetTransaction['attachments'][number]
@@ -115,19 +116,19 @@ function showPhoto(name: string, url: string | undefined): void {
 <template>
   <section class="photos" aria-labelledby="receipt-photos-heading">
     <div>
-      <h3 id="receipt-photos-heading">Receipt photos</h3>
-      <p>Optional. Keep a photo with this transaction.</p>
+      <h3 id="receipt-photos-heading">{{ t('photos.title') }}</h3>
+      <p>{{ t('photos.description') }}</p>
     </div>
-    <input ref="cameraInput" type="file" accept="image/*" capture="environment" aria-label="Take receipt photo" hidden @change="selected" />
-    <input ref="fileInput" type="file" accept="image/*" aria-label="Choose receipt photo" hidden multiple @change="selected" />
+    <input ref="cameraInput" type="file" accept="image/*" capture="environment" :aria-label="t('photos.takeLabel')" hidden @change="selected" />
+    <input ref="fileInput" type="file" accept="image/*" :aria-label="t('photos.chooseLabel')" hidden multiple @change="selected" />
     <div class="photo-actions">
       <Button :size="buttonSize" variant="secondary" :disabled="disabled" @click="choose(cameraInput)">
         <Icon name="lu:camera" :size="glyphSize" />
-        Take photo
+        {{ t('photos.take') }}
       </Button>
       <Button :size="buttonSize" variant="secondary" :disabled="disabled" @click="choose(fileInput)">
         <Icon name="lu:image-plus" :size="glyphSize" />
-        Choose photo
+        {{ t('photos.choose') }}
       </Button>
     </div>
     <ul v-if="existing.length || newPhotos.length" class="photo-list">
@@ -136,8 +137,8 @@ function showPhoto(name: string, url: string | undefined): void {
           v-if="existingUrls.get(attachment.id)"
           class="photo-preview-button"
           :size="iconSize"
-          :tooltip="`View ${attachment.name}`"
-          :aria-label="`View ${attachment.name}`"
+          :tooltip="t('photos.view', { name: attachment.name })"
+          :aria-label="t('photos.view', { name: attachment.name })"
           :disabled="disabled"
           @click="showPhoto(attachment.name, existingUrls.get(attachment.id))"
         >
@@ -148,8 +149,8 @@ function showPhoto(name: string, url: string | undefined): void {
         <IconButton
           icon="lu:x"
           :size="iconSize"
-          tooltip="Remove receipt photo"
-          :aria-label="`Remove ${attachment.name}`"
+          :tooltip="t('photos.remove')"
+          :aria-label="t('photos.removeNamed', { name: attachment.name })"
           :disabled="disabled"
           @click="emit('remove-existing', attachment)"
         />
@@ -158,8 +159,8 @@ function showPhoto(name: string, url: string | undefined): void {
         <IconButton
           class="photo-preview-button"
           :size="iconSize"
-          :tooltip="`View ${photo.file.name}`"
-          :aria-label="`View ${photo.file.name}`"
+          :tooltip="t('photos.view', { name: photo.file.name })"
+          :aria-label="t('photos.view', { name: photo.file.name })"
           :disabled="disabled"
           @click="showPhoto(photo.file.name, photo.url)"
         >
@@ -169,8 +170,8 @@ function showPhoto(name: string, url: string | undefined): void {
         <IconButton
           icon="lu:x"
           :size="iconSize"
-          tooltip="Remove receipt photo"
-          :aria-label="`Remove ${photo.file.name}`"
+          :tooltip="t('photos.remove')"
+          :aria-label="t('photos.removeNamed', { name: photo.file.name })"
           :disabled="disabled"
           @click="removeFile(photo.file)"
         />
@@ -178,7 +179,7 @@ function showPhoto(name: string, url: string | undefined): void {
     </ul>
     <Dialog
       :open="!!previewPhoto"
-      :title="previewPhoto?.name ?? 'Receipt photo'"
+      :title="previewPhoto?.name ?? t('photos.photo')"
       size="lg"
       @update:open="previewPhoto = $event ? previewPhoto : null"
     >
