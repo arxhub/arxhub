@@ -26,6 +26,9 @@ html {
 }
 
 body {
+  /* Whatever a component teleports to <body> (the editor's slash menu, a Row button with `font: inherit`)
+     inherits from here, and with no family set that was the UA serif. */
+  font-family: var(--font-sans);
   /* 4. Add accessible line-height */
   line-height: 1.5;
   /* 5. Improve text rendering */
