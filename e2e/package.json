@@ -16,6 +16,7 @@
     "@arxhub/errors": "workspace:*",
     "@arxhub/plugin-editor": "workspace:*",
     "@arxhub/plugin-protection": "workspace:*",
+    "@arxhub/sync": "workspace:*",
     "@arxhub/toolchain-tsconfig": "workspace:*",
     "@arxhub/uikit": "workspace:*",
     "@noble/hashes": "catalog:shared",

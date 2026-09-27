@@ -312,6 +312,9 @@ importers:
       '@arxhub/plugin-protection':
         specifier: workspace:*
         version: link:../plugins/protection
+      '@arxhub/sync':
+        specifier: workspace:*
+        version: link:../packages/sync
       '@arxhub/toolchain-tsconfig':
         specifier: workspace:*
         version: link:../toolchains/tsconfig

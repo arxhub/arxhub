@@ -15,6 +15,7 @@ import { expect, SEEDED_MNEMONIC, test } from './fixtures'
 // is also the screen's own failure state, the one with no way into the app but "Try again".
 
 const hostModule = `/@fs${fileURLToPath(new URL('../fixtures/pairing-host.ts', import.meta.url))}`
+const seedModule = `/@fs${fileURLToPath(new URL('../fixtures/seed-remote.ts', import.meta.url))}`
 
 // The suite's phrase with two words swapped so that every word is valid and the checksum is not.
 function misordered(phrase: string): string {
@@ -84,6 +85,48 @@ test.describe('Connecting a device by its recovery phrase', () => {
 
     // Nothing was written: the phrase stays in memory until the code step.
     expect(await page.evaluate((key) => localStorage.getItem(key), IDENTITY_KEY)).toBeNull()
+  })
+})
+
+test.describe('Connecting a device by its recovery phrase, against the stand', () => {
+  test('the stand holds the vault, the code locks the phrase, and the download holds the app', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: 'ArxHub' })).toBeVisible()
+    // The suite's identity is the one the stand has pinned, so the vault it holds is this phrase's.
+    await page.evaluate(
+      async ([module, mnemonic]) => {
+        const { seedRemoteVault } = (await import(module)) as {
+          seedRemoteVault: (m: string, path: string, text: string) => Promise<void>
+        }
+        await seedRemoteVault(mnemonic, 'vault/joined-by-phrase.md', '# joined')
+      },
+      [seedModule, SEEDED_MNEMONIC] as const,
+    )
+
+    await toJoinMethod(page)
+    await page.getByTestId('join-by-phrase').click()
+    await page.getByTestId('phrase-word-1').fill(SEEDED_MNEMONIC)
+    await page.getByTestId('phrase-next').click()
+
+    await expect(page.getByRole('heading', { name: 'Where is your vault' })).toBeVisible()
+    await expect(page.getByTestId('server-address')).toHaveText(new URL(page.url()).origin)
+    await expect(page.getByTestId('server-status')).toHaveText('Vault found · 1 document · 8 B')
+
+    // From here on the download must not reach the stand: see the note at the top.
+    await page.route('**/api/sync/**', (route) => route.abort('connectionrefused'))
+    await page.getByTestId('server-next').click()
+    await createCode(page, 3)
+
+    await expect(page.getByTestId('initial-download')).toBeVisible()
+    await expect(page.getByTestId('download-retry')).toBeVisible()
+    await expect(page.locator('main')).toHaveCount(0)
+    const stored = await page.evaluate(
+      ([identity, entry]) => ({ identity: localStorage.getItem(identity), entry: localStorage.getItem(entry) }),
+      [IDENTITY_KEY, ENTRY_KEY] as const,
+    )
+    expect(stored.identity).not.toBeNull()
+    for (const word of SEEDED_MNEMONIC.split(' ')) expect(stored.identity).not.toContain(word)
+    expect(JSON.parse(stored.entry ?? '{}')).toMatchObject({ v: 1, kind: 'join', serverUrl: new URL(page.url()).origin })
   })
 })
 

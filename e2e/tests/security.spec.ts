@@ -1,9 +1,8 @@
 import { fileURLToPath } from 'node:url'
-import type { Page } from '@playwright/test'
 import type { JoinerHandle } from '../fixtures/pairing-host'
 import { enterCode } from './entry-helpers'
 import { expect, OTHER_MNEMONIC, openSecuritySettings, SEEDED_MNEMONIC, storedMnemonic, test, waitForApp } from './fixtures'
-import { lockDevice, securityTask as task } from './security-helpers'
+import { lockDevice, serveSyncAddress, securityTask as task } from './security-helpers'
 
 const UNLOCK_CODE = '314159'
 
@@ -191,20 +190,6 @@ test.describe('Security settings', () => {
 })
 
 const pairingModule = `/@fs${fileURLToPath(new URL('../fixtures/pairing-host.ts', import.meta.url))}`
-
-// Sync's address is shared config, and every other test of the project reads the same file — so the
-// address this page sees is answered by a route on this page only, never written to the stand. The sync
-// routes are refused for the same reason: this page must not sync the project's shared tree.
-async function serveSyncAddress(app: Page, serverUrl: string): Promise<void> {
-  await app.route('**/api/sync/**', (route) => route.abort('connectionrefused'))
-  await app.route('**/api/vfs/read?**', (route) => {
-    const url = decodeURIComponent(route.request().url())
-    if (!url.includes('sync/config.toml')) return route.fallback()
-    return route.fulfill({ status: 200, contentType: 'application/octet-stream', body: `serverUrl = "${serverUrl}"\n` })
-  })
-  await app.reload()
-  await waitForApp(app)
-}
 
 test.describe('Connect a device', () => {
   test('is unavailable without a sync server, and says where to set one', async ({ app }) => {
