@@ -3,7 +3,8 @@ import { useNavHost } from '@arxhub/plugin-shell/ui'
 import { Row, SectionLabel } from '@arxhub/uikit/core'
 import { useArxHub } from '@arxhub/uikit/hooks'
 import { onMounted } from 'vue'
-import { LEVELS, logView, sessionLabel } from '../log-view'
+import { t } from '../i18n/messages'
+import { LEVELS, levelLabel, logView, sessionLabel } from '../log-view'
 import { LoggerExtension } from '../logger-extension'
 
 // The second tap on Logs: which levels the log shows, and which session it reads. Levels are toggles — several
@@ -22,13 +23,13 @@ onMounted(() => void view.loadSessions())
 </script>
 
 <template>
-  <nav aria-label="Log levels and sessions" data-testid="log-levels">
-    <SectionLabel inset>Levels</SectionLabel>
+  <nav :aria-label="t('sheet.label')" data-testid="log-levels">
+    <SectionLabel inset>{{ t('sheet.levels') }}</SectionLabel>
     <Row
       as="button"
       type="button"
       icon="lu:list"
-      label="All levels"
+      :label="t('levels.all')"
       :checked="allLevels"
       :aria-pressed="allLevels"
       @click="view.showAllLevels()"
@@ -39,13 +40,13 @@ onMounted(() => void view.loadSessions())
       as="button"
       type="button"
       icon="lu:list-filter"
-      :label="level.label"
+      :label="levelLabel(level.name)"
       :checked="enabled[level.name]"
       :aria-pressed="enabled[level.name]"
       :data-testid="`log-level:${level.name}`"
       @click="view.toggle(level.name)"
     />
-    <SectionLabel inset>Session</SectionLabel>
+    <SectionLabel inset>{{ t('sheet.session') }}</SectionLabel>
     <Row
       v-for="entry in ['', ...sessions]"
       :key="entry"

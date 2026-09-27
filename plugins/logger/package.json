@@ -21,6 +21,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@arxhub/i18n": "workspace:*",
     "dayjs": "catalog:shared",
     "vue": "catalog:client"
   },

@@ -5,7 +5,8 @@ import { Button, EmptyState, IconButton, Row, ScrollArea, SearchField } from '@a
 import { useArxHub } from '@arxhub/uikit/hooks'
 import dayjs from 'dayjs'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { LEVELS, levelName, logView } from '../log-view'
+import { t } from '../i18n/messages'
+import { LEVELS, levelName, logView, sessionLabel } from '../log-view'
 import { LoggerExtension } from '../logger-extension'
 import LogToolbar from './LogToolbar.vue'
 
@@ -82,24 +83,24 @@ onBeforeUnmount(() => listening?.removeEventListener('scroll', onScroll))
         </Button>
       </template>
       <template #actions>
-        <IconButton size="lg" icon="lu:refresh-cw" tooltip="Reload sessions" @click="view.loadSessions()" />
-        <Button variant="secondary" size="sm" :disabled="source !== ''" @click="view.clear()">Clear</Button>
+        <IconButton size="lg" icon="lu:refresh-cw" :tooltip="t('panel.reload')" @click="view.loadSessions()" />
+        <Button variant="secondary" size="sm" :disabled="source !== ''" @click="view.clear()">{{ t('panel.clear') }}</Button>
       </template>
       <template #search>
       <div class="search">
-        <SearchField v-model="view.search.value" placeholder="Filter logs…" aria-label="Filter logs" />
+        <SearchField v-model="view.search.value" :placeholder="t('filter.placeholder')" :aria-label="t('filter.label')" />
       </div>
       </template>
       <template #session>
-      <select :value="source" class="session" aria-label="Log session" @change="view.showSource(($event.target as HTMLSelectElement).value)">
-        <option value="">Live</option>
+      <select :value="source" class="session" :aria-label="t('session.label')" @change="view.showSource(($event.target as HTMLSelectElement).value)">
+        <option value="">{{ sessionLabel('') }}</option>
         <option v-for="s in sessions" :key="s" :value="s">{{ s.replace('logs/', '') }}</option>
       </select>
       </template>
     </LogToolbar>
 
     <ScrollArea ref="area" class="rows" content-class="rows-content">
-      <EmptyState v-if="visible.length === 0" icon="lu:scroll-text" text="No log entries." />
+      <EmptyState v-if="visible.length === 0" icon="lu:scroll-text" :text="t('panel.empty')" />
       <!-- An entry is read and copied, never activated, and a long message grows the line downwards. -->
       <Row v-for="(r, i) in visible" :key="i" plain wrap class="log-row" :tone="levelTone(r.level)">
         <span class="time">{{ dayjs(r.time).format('HH:mm:ss.SSS') }}</span>

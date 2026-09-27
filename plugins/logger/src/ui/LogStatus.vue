@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { formatNumber } from '@arxhub/i18n'
 import { ShellExtension } from '@arxhub/plugin-shell'
 import { StatusDot } from '@arxhub/uikit/core'
 import { useArxHub, useShellFrame } from '@arxhub/uikit/hooks'
 import { computed } from 'vue'
 import { LOGS_TYPE_ID } from '../contributions'
+import { t } from '../i18n/messages'
 import { LoggerExtension } from '../logger-extension'
 
 const arxhub = useArxHub()
@@ -30,7 +32,7 @@ const tone = computed(() => {
 
 // Keep the bar narrow: counts past 999 add no signal, only width.
 function fmt(n: number): string {
-  return n > 999 ? '999+' : String(n)
+  return n > 999 ? `${formatNumber(999)}+` : formatNumber(n)
 }
 
 function openLogs(): void {
@@ -41,9 +43,9 @@ function openLogs(): void {
 </script>
 
 <template>
-  <button type="button" class="fx-item" :class="{ touch }" aria-label="Open logs" title="Open logs" @click="openLogs">
+  <button type="button" class="fx-item" :class="{ touch }" :aria-label="t('status.open')" :title="t('status.open')" @click="openLogs">
     <StatusDot :tone="tone" />
-    <span>Logs</span>
+    <span>{{ t('status.name') }}</span>
     <span v-if="counts.warn > 0" class="count count--warn">{{ fmt(counts.warn) }}</span>
     <span v-if="counts.error > 0" class="count count--error">{{ fmt(counts.error) }}</span>
   </button>
